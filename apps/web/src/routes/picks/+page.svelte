@@ -12,9 +12,9 @@
   import { TEAM_META } from '$lib/teams';
   import { Check } from '@lucide/svelte/icons';
   import { textOn } from '$lib/ui/color';
+  import { WEIGHTS } from '$lib/scoring';
 
   // ----- Types -----
-  type Weight = 'L' | 'M' | 'H' | 'A';
   type Game = {
     id: string;
     kickoff: string; // ISO
@@ -51,8 +51,6 @@
       spread: 3.0
     }
   ];
-
-  const weights: Weight[] = ['L', 'M', 'H', 'A'];
 
   function teamVars(abbr: string) {
     const meta = TEAM_META[abbr] ?? {
@@ -106,18 +104,16 @@
       <header class="flex items-center justify-between mb-2">
         <div class="min-w-0">
           <h2 class="font-semibold truncate">{g.away} @ {g.home}</h2>
-          <p class="text-xs opacity-70 truncate" title={`${team(g.away)} @ ${team(g.home)}`}>
-            Line: {g.spreadTeam === 'away' ? g.away : g.home}
-            {g.spread > 0 ? `-${g.spread}` : g.spread}
-          </p>
+          <p class="text-xs opacity-70 truncate">Line: ...</p>
         </div>
-        <time
-          class="text-xs opacity-70 whitespace-nowrap"
-          datetime={g.kickoff}
-          title={new Date(g.kickoff).toUTCString()}
-        >
-          {formatKickoff(g.kickoff)}
-        </time>
+        <div class="flex items-center gap-2">
+          <time class="text-xs opacity-70 whitespace-nowrap">{formatKickoff(g.kickoff)}</time>
+          {#if locked}
+            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-500">
+              Locked
+            </span>
+          {/if}
+        </div>
       </header>
 
       <!-- Team buttons -->
@@ -146,20 +142,32 @@
         </button>
       </div>
 
-      <!-- Weight & status -->
-      <div class="mt-3 flex items-center justify-between gap-3">
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-[1fr,auto] items-center gap-3">
+        <!-- Weights -->
         <div class="min-w-0">
           <label class="text-xs block mb-1">Weight</label>
+
           <Segment
             name={'w_' + g.id}
             value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
             disabled={!canChange}
-            onValueChange={(e) => setWeight(g.id, e.value as Weight)}
+            onValueChange={(e) => setWeight(g.id, e.value as keyof typeof WEIGHTS)}
+            class="h-10"
           >
-            {#each weights as w}
-              <Segment.Item value={w} disabled={w === 'A' && !canUseAce(g.id)}>{w}</Segment.Item>
+            {#each Object.entries(WEIGHTS) as [code, w]}
+              <Segment.Item
+                value={code}
+                disabled={code === 'A' && !canUseAce(g.id)}
+                class="px-3 py-[3px]"
+              >
+                <div class="flex flex-col items-center leading-none">
+                  <span class="font-semibold text-sm">{code}</span>
+                  <span class="text-[10px] opacity-80 mt-[1px]">{w.points}</span>
+                </div>
+              </Segment.Item>
             {/each}
           </Segment>
+
           {#if entry.lockedPick?.weight === 'A'}
             <p class="text-[11px] mt-1 opacity-70">A used here</p>
           {:else if !canUseAce(g.id)}
@@ -167,20 +175,22 @@
           {/if}
         </div>
 
-        <!-- Lock/Unlock -->
-        <div class="flex flex-col items-end gap-2">
+        <div class="mt-3">
           {#if locked}
-            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-600">
-              Locked
-            </span>
-            {#if canUnlock}
-              <button class="btn preset-tonal text-xs" on:click={() => onUnlock(g)}>Unlock</button>
-            {:else}
-              <button class="btn preset-tonal text-xs" disabled>Unlock</button>
-            {/if}
+            <button
+              class="w-full h-10 rounded-xl font-semibold
+             bg-surface-700 text-white hover:bg-surface-600
+             disabled:opacity-50"
+              on:click={() => onUnlock(g)}
+              disabled={!canUnlock}
+            >
+              Unlock
+            </button>
           {:else}
             <button
-              class="btn preset-filled"
+              class="w-full h-10 font-semibold
+             bg-success-900 text-white hover:bg-success-800
+             disabled:bg-surface-400"
               on:click={() => onLock(g)}
               disabled={!entry.selected ||
                 (entry.selected.weight === 'A' && !canUseAce(g.id)) ||
@@ -190,12 +200,12 @@
             </button>
           {/if}
         </div>
-      </div>
 
-      <!-- Post-kickoff notice -->
-      {#if started}
-        <p class="mt-2 text-xs opacity-70">Kickoff passed — picks locked.</p>
-      {/if}
+        <!-- Post-kickoff notice -->
+        {#if started}
+          <p class="mt-2 text-xs opacity-70">Kickoff passed — picks locked.</p>
+        {/if}
+      </div>
     </article>
   {/each}
 </div>

@@ -3,12 +3,11 @@
 
 /* Skeleton core + optional presets + a theme */
 @import "@skeletonlabs/skeleton";
-@import "@skeletonlabs/skeleton/optional/presets";
 @import "@skeletonlabs/skeleton/themes/cerberus";
+@import "@skeletonlabs/skeleton/optional/presets";
 
 /* Tell Tailwind (v4) where to scan for class usage */
-@source "./**/*.{svelte,ts,js}";
-@source "../node_modules/@skeletonlabs/skeleton-svelte/**/*.{svelte,js}";
+@source '../node_modules/@skeletonlabs/skeleton-svelte/dist';
 
 /* Room for app-level tweaks */
 :root {
@@ -77,4 +76,6 @@
 @media (prefers-reduced-motion: reduce) {
   .btn-accent-outline, .check { transition: none; }
 }
+
+
 
