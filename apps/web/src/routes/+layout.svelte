@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { AppBar } from '@skeletonlabs/skeleton-svelte';
+  import AppHeader from '$lib/components/AppHeader.svelte';
   let { children } = $props();
 
   const nav = [
@@ -13,16 +14,7 @@
 
 <div class="min-h-svh flex flex-col">
   <AppBar>
-    {#snippet lead()}
-      <span class="font-semibold">NFL Bets</span>
-    {/snippet}
-    <nav class="flex items-center gap-4 ml-6">
-      {#each nav as n}
-        <a class="text-sm hover:underline" href={n.href} data-sveltekit-preload-data="hover">
-          {n.label}
-        </a>
-      {/each}
-    </nav>
+    <AppHeader />
   </AppBar>
 
   <main class="container mx-auto p-4 flex-1">
