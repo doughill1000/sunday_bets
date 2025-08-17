@@ -38,7 +38,7 @@
     <button
       class="p-2 -ml-1 rounded hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary-500 md:hidden"
       aria-label="Open navigation menu"
-      on:click={() => (open = true)}
+      onclick={() => (open = true)}
     >
       <Menu size={20} />
     </button>
@@ -73,7 +73,7 @@
 <!-- Drawer + Scrim -->
 {#if open}
   <!-- Scrim -->
-  <div class="fixed inset-0 z-40 bg-black/50" transition:fade on:click={() => (open = false)} />
+  <div class="fixed inset-0 z-40 bg-black/50" transition:fade onclick={() => (open = false)} />
 {/if}
 
 <aside
@@ -92,7 +92,7 @@
     <button
       class="p-2 rounded hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-primary-500"
       aria-label="Close menu"
-      on:click={() => (open = false)}
+      onclick={() => (open = false)}
     >
       <X size={18} />
     </button>
@@ -100,22 +100,17 @@
 
   <nav class="p-3 space-y-1 text-sm">
     <a href="/week" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">This Week</a>
-    <a href="/my-picks" class="block px-3 h-10 rounded flex items-center hover:bg-white/5"
-      >My Picks</a
-    >
+    <a href="/picks" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">My Picks</a>
     <a href="/leaderboard" class="block px-3 h-10 rounded flex items-center hover:bg-white/5"
       >Leaderboard</a
     >
-    <a href="/history" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">History</a
-    >
     <a href="/admin" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">Admin</a>
-
     <div class="my-2 h-px bg-white/10"></div>
 
     {#if canInstall}
       <button
         class="w-full px-3 h-10 rounded text-left font-medium bg-primary-600 hover:bg-primary-500"
-        on:click={installPwa}
+        onclick={installPwa}
       >
         Install App
       </button>
