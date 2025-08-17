@@ -152,40 +152,50 @@
             value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
             disabled={!canChange}
             onValueChange={(e) => setWeight(g.id, e.value as keyof typeof WEIGHTS)}
-            class="h-10"
+            classes="w-full"
           >
             {#each Object.entries(WEIGHTS) as [code, w]}
               <Segment.Item
                 value={code}
                 disabled={code === 'A' && !canUseAce(g.id)}
-                class="px-3 py-[3px]"
+                classes="px-3 py-[3px] flex-1"
               >
                 <div class="flex flex-col items-center leading-none">
-                  <span class="font-semibold text-sm">{code}</span>
+                  <span class="font-semibold text-sm">{w.label}</span>
                   <span class="text-[10px] opacity-80 mt-[1px]">{w.points}</span>
                 </div>
               </Segment.Item>
             {/each}
           </Segment>
 
-          {#if entry.lockedPick?.weight === 'A'}
-            <p class="text-[11px] mt-1 opacity-70">A used here</p>
-          {:else if !canUseAce(g.id)}
-            <p class="text-[11px] mt-1 opacity-70">A already used on another game</p>
+          {#if !canUseAce(g.id)}
+            <p class="text-[11px] mt-1 opacity-70">
+              {WEIGHTS.A.label} has already used on another game
+            </p>
           {/if}
         </div>
 
         <div class="mt-3">
           {#if locked}
             <button
-              class="w-full h-10 rounded-xl font-semibold
-             bg-surface-700 text-white hover:bg-surface-600
-             disabled:opacity-50"
+              class={`w-full h-10 font-semibold
+              ${
+                canUnlock
+                  ? 'bg-warning-900 text-white hover:bg-warning-800'
+                  : 'bg-surface-700 text-white opacity-50'
+              }        
+            `}
               on:click={() => onUnlock(g)}
               disabled={!canUnlock}
             >
               Unlock
             </button>
+
+            {#if canUnlock}
+              <p class="mt-1 text-[11px] text-center opacity-70">1 unlock remaining</p>
+            {:else if (entry.unlocksUsed ?? 0) >= 1}
+              <p class="mt-1 text-[11px] text-center opacity-70">0 unlock remaining</p>
+            {/if}
           {:else}
             <button
               class="w-full h-10 font-semibold
