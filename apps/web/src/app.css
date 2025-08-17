@@ -1,0 +1,17 @@
+/* Tailwind v4 entrypoint */
+@import "tailwindcss";
+
+/* Skeleton core + optional presets + a theme */
+@import "@skeletonlabs/skeleton";
+@import "@skeletonlabs/skeleton/optional/presets";
+@import "@skeletonlabs/skeleton/themes/cerberus";
+
+/* Tell Tailwind (v4) where to scan for class usage */
+@source "./**/*.{svelte,ts,js}";
+@source "../node_modules/@skeletonlabs/skeleton-svelte/**/*.{svelte,js}";
+
+/* Room for app-level tweaks */
+:root {
+  /* example: shared radius token if you want it */
+  --radius-xl: 1.25rem;
+}
