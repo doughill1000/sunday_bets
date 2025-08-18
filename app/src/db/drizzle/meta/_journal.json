@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1755467828794,
+      "tag": "0000_naive_victor_mancha",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1755473085455,
+      "tag": "0001_get_games_with_active_lines",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1755473085456,
+      "tag": "0002_get_active_week_games",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1755474991597,
+      "tag": "0003_elite_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1755475005431,
+      "tag": "0004_strange_shriek",
+      "breakpoints": true
+    }
+  ]
+}
