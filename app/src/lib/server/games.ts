@@ -143,7 +143,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
       away: { id: r.awayTeamId, name: r.awayName, shortName: r.awayShort },
       line: {
         spreadTeamId: r.spreadTeamId ?? null,
-        spreadValue: r.spreadValue ?? null,
+        spreadValue: toDecimalNumber(r.spreadValue),
         fetchedAt: r.fetchedAt ? new Date(r.fetchedAt).toISOString() : null
       },
       started,
