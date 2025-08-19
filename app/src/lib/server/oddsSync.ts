@@ -124,6 +124,19 @@ export async function syncOddsForActiveWeek() {
         .returning()
         .then(rows => rows[0]);
 
+      // If no row was inserted (due to conflict), fetch the existing row
+      if (!gameRow) {
+        gameRow = await tx
+          .select()
+          .from(gamesTable)
+          .where(
+            and(
+              eq(gamesTable.externalGameId, g.id),
+              eq(gamesTable.weekId, week.id)
+            )
+          )
+          .then(rows => rows[0]);
+      }
       if (!gameRow) continue;
 
       // Extract Fanduel line (one authoritative source)
