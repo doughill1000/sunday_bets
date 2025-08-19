@@ -1,6 +1,6 @@
 // src/routes/admin/+page.server.ts
 import type { PageServerLoad } from './$types';
-import { supabaseService } from '$lib/supabase/service';
+import { supabaseService } from '../../lib/server/supabase';
 
 type SettingsRow = {
   odds_api_monthly_cap: number | null;

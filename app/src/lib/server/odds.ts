@@ -1,6 +1,8 @@
+// lib/server/odds.ts
 import { ODDS_API_KEY1, ODDS_API_KEY2 } from '$env/static/private';
 import { PUBLIC_ODDS_API_BASE } from '$env/static/public';
 import { isoNoMs } from '$lib/utils/dates';
+import type { OddsApiGame, WeekWindow } from '../types/server';
 
 type OddsGame = {
   id: string;                      // external_game_id
@@ -16,8 +18,6 @@ type OddsGame = {
   }>;
 };
 
-type WeekLike = { start_ts: string; end_ts: string; week_number: number };
-
 const API_KEYS = [ODDS_API_KEY1!, ODDS_API_KEY2!];
 // simple round-robin pointer
 let keyIndex = 0;
@@ -28,7 +28,7 @@ function getNextApiKey() {
   return key;
 }
 
-function sportKeyForWeek(week: WeekLike) {
+function sportKeyForWeek(week: WeekWindow) {
   return week.week_number < 0 ? 'americanfootball_nfl_preseason' : 'americanfootball_nfl';
 }
 
@@ -38,7 +38,7 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-export async function fetchNFLSpreadsForWeek(week: WeekLike) {
+export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsApiGame[]> {
   const sport = sportKeyForWeek(week);
   const params = new URLSearchParams({
     apiKey: getNextApiKey(),
@@ -58,6 +58,7 @@ export async function fetchNFLSpreadsForWeek(week: WeekLike) {
   }
   return res.json();
 }
+
 export function extractFanduelSpread(g: OddsGame) {
   const fanduel = g.bookmakers.find(b => b.key === 'fanduel');
   if (!fanduel) return null;

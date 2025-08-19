@@ -1,3 +1,15 @@
+export type WeightCode = 'L' | 'M' | 'H' | 'A';
+export type Id = string & { readonly brand: unique symbol }; // if you like branded IDs
+export interface Team { id: string; name: string; shortName: string }
+export interface Line { spreadTeamId: string | null; spreadValue: number | null; fetchedAt: string | null }
+
+export const WEIGHTS: Record<WeightCode, { label: string; points: number }> = {
+  L: { label: 'Low',     points: 1 },
+  M: { label: 'Medium',  points: 3 },
+  H: { label: 'High',    points: 5 },
+  A: { label: 'All-In',  points: 10 }
+};
+
 export type TeamMeta = { name: string; colors: [string, string] };
 
 export const TEAM_META: Record<string, TeamMeta> = {

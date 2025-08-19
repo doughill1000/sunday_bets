@@ -20,7 +20,7 @@ export const users = pgTable("users", {
 ]);
 
 export const seasons = pgTable("seasons", {
-	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
+	id: bigserial({ mode: "number" }).primaryKey().notNull(),
 	league: text().default('NFL').notNull(),
 	year: integer().notNull(),
 }, (table) => [
@@ -28,7 +28,7 @@ export const seasons = pgTable("seasons", {
 ]);
 
 export const weeks = pgTable("weeks", {
-	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
+	id: bigserial({ mode: "number" }).primaryKey().notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	seasonId: bigint("season_id", { mode: "number" }).notNull(),
 	weekNumber: integer("week_number").notNull(),
@@ -44,7 +44,7 @@ export const weeks = pgTable("weeks", {
 ]);
 
 export const teams = pgTable("teams", {
-	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
+	id: bigserial({ mode: "number" }).primaryKey().notNull(),
 	league: text().default('NFL').notNull(),
 	externalKey: text("external_key"),
 	name: text().notNull(),
@@ -54,12 +54,12 @@ export const teams = pgTable("teams", {
 ]);
 
 export const gameLines = pgTable("game_lines", {
-	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
+	id: bigserial({ mode: "number" }).primaryKey().notNull(),
 	gameId: uuid("game_id").notNull(),
 	source: text().default('fanduel').notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	spreadTeamId: bigint("spread_team_id", { mode: "number" }).notNull(),
-	spreadValue: numeric("spread_value").notNull(),
+	spreadValue: numeric("spread_value", { mode: "number" }).notNull(),
 	fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	isActiveLine: boolean("is_active_line").default(false).notNull(),
 }, (table) => [

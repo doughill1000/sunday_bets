@@ -9,10 +9,10 @@
     kickoffPassed,
     canUseAce
   } from '$lib/stores/picks';
-  import { TEAM_META } from '$lib/teams';
+  import { TEAM_META } from '$lib/types/domain';
   import { Check } from '@lucide/svelte/icons';
   import { textOn } from '$lib/ui/color';
-  import { WEIGHTS } from '$lib/scoring';
+  import { WEIGHTS } from '$lib/types/domain';
 
   // ----- Types -----
   type Game = {

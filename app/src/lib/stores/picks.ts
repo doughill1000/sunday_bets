@@ -1,9 +1,9 @@
+import type { WeightCode } from '$lib/types/domain';
 import { writable, get } from 'svelte/store';
 
 export type TeamSide = 'away' | 'home';
-export type Weight = 'L' | 'M' | 'H' | 'A';
 
-export type PickState = { team: TeamSide; weight: Weight };
+export type PickState = { team: TeamSide; weight: WeightCode };
 export type PickEntry = {
   // current working selection in the UI
   selected?: PickState;
