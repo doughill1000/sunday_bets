@@ -1,16 +1,19 @@
 import type { RequestHandler } from './$types';
 import { supabaseService } from '$lib/supabase/service';
-import { fetchNFLSpreadsForWeek, extractBarstoolSpread } from '$lib/server/odds';
-
-function clampISO(d: Date) { return d.toISOString(); }
+import { fetchNFLSpreadsForWeek, extractFanduelSpread } from '$lib/server/odds';
 
 export const POST: RequestHandler = async () => {
   // 1) Find the active week window
-  const { data: week, error: werr } = await supabaseService
-    .from('weeks')
-    .select('*')
-    .eq('is_active', true)
-    .single();
+const now = new Date().toISOString();
+
+const { data: week, error: werr } = await supabaseService
+  .from('weeks')
+  .select('*')
+  .lte('start_ts', now)
+  .gt('end_ts', now)
+  .order('start_ts', { ascending: false })
+  .limit(1)
+  .single();
 
   if (werr || !week) {
     return new Response(JSON.stringify({ ok: false, reason: 'No active week' }), { status: 400 });
@@ -18,7 +21,7 @@ export const POST: RequestHandler = async () => {
 
   // 2) Rate cap guard (settings table)
   const { data: st } = await supabaseService.from('settings').select('*').limit(1).maybeSingle();
-  const cap = st?.odds_api_monthly_cap ?? 500;
+  const cap = st?.odds_api_monthly_cap ?? 1000;
   const used = st?.odds_api_calls_used_current_month ?? 0;
   if (used + 1 > cap) {
     return new Response(JSON.stringify({ ok: false, reason: 'Monthly cap reached' }), { status: 429 });
@@ -27,7 +30,7 @@ export const POST: RequestHandler = async () => {
   // Optional: “Sunday morning if >80%” holdback rule lives here
 
   // 3) Fetch odds
-  const games = await fetchNFLSpreadsForWeek(clampISO(new Date(week.start_ts)), clampISO(new Date(week.end_ts)));
+  const games = await fetchNFLSpreadsForWeek(week);
 
   // 4) Upsert teams (ensure by short_name/external key)
   // If you already seeded teams, you can skip this. Otherwise, map names->your team keys before upsert lines.
@@ -56,8 +59,8 @@ export const POST: RequestHandler = async () => {
       .single();
     if (gErr || !gameRow) continue;
 
-    // Extract barstool spread
-    const spread = extractBarstoolSpread(g);
+    // Extract fanduel spread
+    const spread = extractFanduelSpread(g);
     if (!spread) continue;
 
     // Determine spread team id
@@ -72,7 +75,7 @@ export const POST: RequestHandler = async () => {
     // Insert new active line
     await supabaseService.from('game_lines').insert({
       game_id: gameRow.id,
-      source: 'barstool',
+      source: 'fanduel',
       spread_team_id: spreadTeamId,
       spread_value: spread.spreadValue,
       fetched_at: new Date().toISOString(),
