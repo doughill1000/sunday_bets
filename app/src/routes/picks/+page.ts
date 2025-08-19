@@ -1,47 +1,26 @@
+import type { UIGame } from '$lib/types/ui';
 import type { PageLoad } from './$types';
+import type { ServerGame } from '$lib/types/server';
 
-type WeightCode = 'L' | 'M' | 'H' | 'A';
+export const load: PageLoad = async ({ fetch }) => {
+  const res = await fetch('api/games', { cache: 'no-store' });
 
-type ServerGame = {
-  id: string;
-  commenceTime: string;
-  status: string;
-  home: { id: string; name: string; shortName: string };
-  away: { id: string; name: string; shortName: string };
-  line: { spreadTeamId: string | null; spreadValue: number | null; fetchedAt: string | null };
-  started: boolean;
-  picks: Array<{
-    userId: string;
-    displayName: string;
-    pickedTeamId: string | null;
-    weight: WeightCode | null;
-    lockedAt: string | null;
-    isMe: boolean;
-  }>;
-};
-
-export const load: PageLoad = async ({ fetch, params }) => {
-  const res = await fetch(`api/games`, { cache: 'no-store' });
   if (!res.ok) {
-    return { games: [] as any[] };
+    return { games: [] as UIGame[] };
   }
-  const { games } = await res.json() as { games: ServerGame[] };
 
-  // Map to your existing UI's Game shape
-  const mapped = games.map((g) => {
-    // decide which side the spread is for, expressed as 'home' | 'away'
-    const spreadTeam: 'home' | 'away' =
-      g.line.spreadTeamId === g.home.id ? 'home'
-      : g.line.spreadTeamId === g.away.id ? 'away'
-      : 'home'; // default defensively
+  const data: { games: ServerGame[] } = await res.json();
+
+  const mapped: UIGame[] = data.games.map((g) => {
+    const spreadTeam = g.spread_team === 'away' ? 'away' : 'home'; // defensive default
 
     return {
-      id: g.id,
-      kickoff: g.commenceTime,
-      away: g.away.shortName,   // e.g. "BUF"
-      home: g.home.shortName,   // e.g. "NYJ"
+      id: g.game_id,
+      kickoff: g.kickoff,
+      away: g.away_code, // e.g., "BUF"
+      home: g.home_code, // e.g., "NYJ"
       spreadTeam,
-      spread: g.line.spreadValue ?? 0
+      spread: g.spread_value
     };
   });
 

@@ -54,7 +54,7 @@ create table if not exists public.games (
 create table if not exists public.game_lines (
   id bigserial primary key,
   game_id uuid not null references public.games(id) on delete cascade,
-  source text not null default 'barstool',
+  source text not null default 'fanduel',
   spread_team_id bigint not null references public.teams(id), -- team that is giving/taking points
   spread_value numeric not null,                               -- negative = favorite
   fetched_at timestamptz not null default now(),

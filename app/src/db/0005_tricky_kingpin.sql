@@ -1,0 +1,1 @@
+ALTER TABLE "weeks" DROP COLUMN "is_active";

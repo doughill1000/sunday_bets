@@ -15,9 +15,10 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"db:push": "drizzle-kit push",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:generate": "drizzle-kit generate && npm run supa:gen",
+		"db:migrate": "drizzle-kit migrate && npm run supa:gen",
+		"db:studio": "drizzle-kit studio",
+		"supa:gen": "supabase gen types typescript --project-id $SUPABASE_REF > src/lib/supabase/types.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -30,6 +31,7 @@
 		"@tailwindcss/vite": "^4.1.12",
 		"@types/node": "^22",
 		"@vitest/browser": "^3.2.3",
+		"dotenv": "^17.2.1",
 		"drizzle-kit": "^0.30.6",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
@@ -49,7 +51,6 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^0.539.0",
-		"@supabase/auth-helpers-sveltekit": "^0.13.0",
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.55.0",
 		"drizzle-orm": "0.41.0",
