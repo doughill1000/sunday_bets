@@ -59,7 +59,7 @@ export const gameLines = pgTable("game_lines", {
 	source: text().default('fanduel').notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	spreadTeamId: bigint("spread_team_id", { mode: "number" }).notNull(),
-	spreadValue: numeric("spread_value", { mode: "number" }).notNull(),
+	spreadValue: numeric("spread_value", { mode: "string" }).notNull(),
 	fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	isActiveLine: boolean("is_active_line").default(false).notNull(),
 }, (table) => [
