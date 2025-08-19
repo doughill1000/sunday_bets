@@ -34,7 +34,6 @@ export const weeks = pgTable("weeks", {
 	weekNumber: integer("week_number").notNull(),
 	startTs: timestamp("start_ts", { withTimezone: true, mode: 'string' }).notNull(),
 	endTs: timestamp("end_ts", { withTimezone: true, mode: 'string' }).notNull(),
-	isActive: boolean("is_active").default(false).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.seasonId],
@@ -57,7 +56,7 @@ export const teams = pgTable("teams", {
 export const gameLines = pgTable("game_lines", {
 	id: bigserial({ mode: "bigint" }).primaryKey().notNull(),
 	gameId: uuid("game_id").notNull(),
-	source: text().default('barstool').notNull(),
+	source: text().default('fanduel').notNull(),
 	// You can use { mode: "bigint" } if numbers are exceeding js number limitations
 	spreadTeamId: bigint("spread_team_id", { mode: "number" }).notNull(),
 	spreadValue: numeric("spread_value").notNull(),

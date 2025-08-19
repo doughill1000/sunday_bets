@@ -37,5 +37,3 @@ as $$
   where g.week_id = p_week_id
   order by g.commence_time asc;
 $$;
-
-grant execute on function public.get_games_with_active_lines(uuid) to anon, authenticated;
