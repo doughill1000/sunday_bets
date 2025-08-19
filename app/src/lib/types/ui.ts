@@ -4,5 +4,5 @@ export type UIGame = {
   away: string;
   home: string;
   spreadTeam: 'home' | 'away';
-  spread: number;
+  spread: string;
 };

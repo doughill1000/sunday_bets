@@ -20,7 +20,7 @@ export const load: PageLoad = async ({ fetch }) => {
       away: g.away_code, // e.g., "BUF"
       home: g.home_code, // e.g., "NYJ"
       spreadTeam,
-      spread: Number(g.spread_value ?? 0),
+      spread: g.spread_value
     };
   });
 

@@ -21,7 +21,7 @@ export type GameDTO = {
   away: { id: number; name: string; shortName: string };
   line: {
     spreadTeamId: number | null;        // teams.id (bigint -> number)
-    spreadValue: number | null;
+    spreadValue: string | null;
     fetchedAt: string | null;
   };
   started: boolean;
@@ -143,7 +143,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
       away: { id: r.awayTeamId, name: r.awayName, shortName: r.awayShort },
       line: {
         spreadTeamId: r.spreadTeamId ?? null,
-        spreadValue: toDecimalNumber(r.spreadValue),
+        spreadValue: r.spreadValue,
         fetchedAt: r.fetchedAt ? new Date(r.fetchedAt).toISOString() : null
       },
       started,

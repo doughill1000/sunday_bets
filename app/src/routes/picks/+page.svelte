@@ -13,19 +13,11 @@
   import { Check } from '@lucide/svelte/icons';
   import { textOn } from '$lib/ui/color';
   import { WEIGHTS } from '$lib/types/domain';
+  import type { UIGame } from '$lib/types/ui';
 
   // ----- Types -----
-  type Game = {
-    id: string;
-    kickoff: string; // ISO
-    away: string;
-    home: string;
-    spreadTeam: 'away' | 'home';
-    spread: number;
-  };
-
   export let data: {
-    games: Game[];
+    games: UIGame[];
   };
 
   const games = data.games;
@@ -49,12 +41,12 @@
     return TEAM_META[abbr]?.name ?? abbr;
   }
 
-  function onLock(g: Game) {
+  function onLock(g: UIGame) {
     const { ok, reason } = lockPick(g.id);
     if (!ok && reason) alert(reason);
   }
 
-  function onUnlock(g: Game) {
+  function onUnlock(g: UIGame) {
     const { ok, reason } = unlockPick(g.id);
     if (!ok && reason) alert(reason);
   }
@@ -65,6 +57,16 @@
     const date = d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }); // "9/7"
     const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); // "1:00 PM"
     return `${dow} ${date} ${time}`;
+  }
+
+  function spreadLine(g: UIGame): string {
+    const val = g.spread;
+    const favId = g.spreadTeam;
+
+    if (val == null || favId == null) return 'No line';
+    if (val === "0") return 'PK';
+
+    return `${g[g.spreadTeam]} -${val}`;
   }
 </script>
 
@@ -82,7 +84,7 @@
       <header class="flex items-center justify-between mb-2">
         <div class="min-w-0">
           <h2 class="font-semibold truncate">{g.away} @ {g.home}</h2>
-          <p class="text-xs opacity-70 truncate">Line: ...</p>
+          <p class="text-xs opacity-70 truncate">{spreadLine(g)}</p>
         </div>
         <div class="flex items-center gap-2">
           <time class="text-xs opacity-70 whitespace-nowrap">{formatKickoff(g.kickoff)}</time>

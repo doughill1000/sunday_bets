@@ -42,6 +42,6 @@ export type ServerGame = {
   away_code: string;
   away_name: string;
   spread_team: 'home' | 'away' | null;
-  spread_value: number | null;
+  spread_value: string;
   line_source: string | null;
 };
