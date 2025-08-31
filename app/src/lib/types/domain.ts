@@ -1,6 +1,7 @@
 export type WeightCode = 'L' | 'M' | 'H' | 'A';
 export type Id = string & { readonly brand: unique symbol }; // if you like branded IDs
 export interface Team { id: string; name: string; shortName: string }
+export type TeamSide = 'away' | 'home';
 export interface Line { spreadTeamId: string | null; spreadValue: number | null; fetchedAt: string | null }
 
 export const WEIGHTS: Record<WeightCode, { label: string; points: number }> = {
@@ -46,3 +47,4 @@ export const TEAM_META: Record<string, TeamMeta> = {
   TEN: { name: 'Tennessee Titans',         colors: ['#0C2340', '#4B92DB'] },
   WAS: { name: 'Washington Commanders',    colors: ['#5A1414', '#FFB612'] }
 };
+
