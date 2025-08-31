@@ -1,5 +1,5 @@
 // src/lib/server/oddsSync.ts
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import { weeks } from '../../../../db/schema';
 import { desc, eq, and, lte, gte } from 'drizzle-orm';
 

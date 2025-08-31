@@ -1,4 +1,4 @@
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import { settings } from '../../../../db/schema'; // adjust path if needed
 
 export async function getSettings() {

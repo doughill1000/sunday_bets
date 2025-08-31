@@ -1,5 +1,5 @@
-import { dbClient } from '$lib/server/db/dbClient'; // adjust import to your db instance
-import { games, teams, gameLines } from '../../../../db/schema';
+import { dbClient } from '$lib/server/db'; // adjust import to your db instance
+import { games, teams, gameLines } from '$lib/server/db';
 import { eq, and, sql } from 'drizzle-orm';
 
 export async function getGamesWithActiveLines(weekId: number) {

@@ -1,4 +1,4 @@
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import { picks, users } from '../../../../db/schema';
 import { inArray, eq } from 'drizzle-orm';
 

@@ -1,6 +1,6 @@
 import { gameLines } from '../../../../db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { DbOrTx } from '../types';
+import type { DbOrTx } from '$lib/server/db';
 
 export async function deactivateActiveLines(tx: DbOrTx, gameId: string) {
   await tx

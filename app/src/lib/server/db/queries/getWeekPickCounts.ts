@@ -1,4 +1,4 @@
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import * as schema from '../../../../db/schema';
 import { eq, count } from 'drizzle-orm';
 

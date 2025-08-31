@@ -1,4 +1,4 @@
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import * as schema from '../../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { PickEntry, TeamSide, WeightCode } from '$lib/types/domain';

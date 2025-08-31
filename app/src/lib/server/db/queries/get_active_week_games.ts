@@ -1,5 +1,5 @@
-import { dbClient } from '$lib/server/db/dbClient';
-import {weeks} from '../../../../db/schema'; 
+import { dbClient } from '$lib/server/db';
+import {weeks} from '$lib/server/db';
 import { getGamesWithActiveLines } from './get_games_with_active_lines';
 import { desc, eq, and, lt, gte, lte } from 'drizzle-orm';
 

@@ -1,7 +1,7 @@
 import { games as gamesTable } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { OddsGame, TeamRow } from '$lib/types/server';
-import type { DbOrTx } from '../types';
+import type { DbOrTx } from '$lib/server/db';
 
 export async function upsertGame(
   tx: DbOrTx,

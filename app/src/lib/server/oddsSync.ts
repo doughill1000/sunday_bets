@@ -1,5 +1,5 @@
 // src/lib/server/oddsSync.ts
-import { dbClient } from '$lib/server/db/dbClient';
+import { dbClient } from '$lib/server/db';
 import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds';
 import type { WeekRow, WeekWindow } from '../types/server';
 import { findActiveWeek } from './db/queries/find_active_week';
