@@ -1,22 +1,9 @@
 // lib/server/odds.ts
 import { ODDS_API_KEY1, ODDS_API_KEY2 } from '$env/static/private';
 import { PUBLIC_ODDS_API_BASE } from '$env/static/public';
+import type { WeekWindow } from '$lib/types/server';
 import { isoNoMs } from '$lib/utils/dates';
-import type { OddsApiGame, WeekWindow } from '../types/server';
-
-type OddsGame = {
-  id: string;                      // external_game_id
-  commence_time: string;           // ISO
-  home_team: string;               // full team name
-  away_team: string;
-  bookmakers: Array<{
-    key: string;                   // "fanduel"
-    markets: Array<{
-      key: string;                 // "spreads"
-      outcomes: Array<{ name: string; point: number }>; // [{name:"PHI", point:-1.5}, ...]
-    }>;
-  }>;
-};
+import type { OddsGame } from '../types/oddsApi';
 
 const API_KEYS = [ODDS_API_KEY1!, ODDS_API_KEY2!];
 // simple round-robin pointer
@@ -29,7 +16,7 @@ function getNextApiKey() {
 }
 
 function sportKeyForWeek(week: WeekWindow) {
-  return week.week_number < 0 ? 'americanfootball_nfl_preseason' : 'americanfootball_nfl';
+  return week.weekNumber < 0 ? 'americanfootball_nfl_preseason' : 'americanfootball_nfl';
 }
 
 function addDays(date: Date, days: number): Date {
@@ -38,7 +25,7 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsApiGame[]> {
+export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsGame[]> {
   const sport = sportKeyForWeek(week);
   const params = new URLSearchParams({
     apiKey: getNextApiKey(),
@@ -46,8 +33,8 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsApi
     markets: 'spreads',
     oddsFormat: 'american',
     dateFormat: 'iso',
-    commenceTimeFrom: isoNoMs(new Date(week.start_ts)),
-    commenceTimeTo: isoNoMs(addDays(new Date(week.end_ts), 1)),
+    commenceTimeFrom: isoNoMs(new Date(week.startTs)),
+    commenceTimeTo: isoNoMs(addDays(new Date(week.endTs), 1)),
   });
 
   const url = `${PUBLIC_ODDS_API_BASE}/sports/${sport}/odds?${params}`;

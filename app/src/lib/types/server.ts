@@ -1,47 +1,51 @@
-import type { WeightCode } from "./domain";
+import type { TeamSide, WeightCode } from "./domain";
 
 // Minimal, DB-agnostic shape your Odds adapter needs
 export type WeekWindow = {
-  start_ts: string;     // ISO
-  end_ts: string;       // ISO
-  week_number: number;  // negative for preseason if you do that
+  startTs: string;     // ISO
+  endTs: string;       // ISO
+  weekNumber: number;  // negative for preseason if you do that
   id?: number;          // optional, handy in callers
 };
 
-type OddsApiBookmaker = {
-  key: string;
-  title: string;
-  last_update: string;
-  markets: Array<{
-    key: string; // e.g. "spreads"
-    last_update: string;
-    outcomes: Array<{
-      name: string;   // team name
-      price: number;  // odds (e.g. -110)
-      point: number;  // spread value (e.g. -3.5)
-    }>;
-  }>;
+
+export type ServerGame = {
+  gameId: string;
+  externalGameId: string | null;
+  kickoff: string; // timestamptz → ISO string
+  homeCode: string;
+  homeName: string;
+  awayCode: string;
+  awayName: string;
+  spreadTeam: 'home' | 'away' | null;
+  spreadValue: string;
+  lineSource: string | null;
 };
 
-export type OddsApiGame = {
+
+export type WeekRow = {
+  id: number;
+  startTs: string;
+  endTs: string;
+  weekNumber: number
+};
+
+export type TeamRow = {
+  id: number;
+  short_name: string;
+};
+
+export type OddsGame = {
   id: string;
-  sport_key: string;
-  sport_title: string;
   commence_time: string;
   home_team: string;
   away_team: string;
-  bookmakers: OddsApiBookmaker[];
 };
 
-export type ServerGame = {
-  game_id: string;
-  external_game_id: string | null;
-  kickoff: string; // timestamptz → ISO string
-  home_code: string;
-  home_name: string;
-  away_code: string;
-  away_name: string;
-  spread_team: 'home' | 'away' | null;
-  spread_value: string;
-  line_source: string | null;
+export type PickState = { team: TeamSide; weight: WeightCode };
+export type PickEntry = {
+  selected?: PickState;
+  lockedPick?: PickState;
+  lockedAt?: string;
+  unlocksUsed?: number;
 };

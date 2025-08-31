@@ -39,8 +39,7 @@ using (
 on (t.season_id = src.season_id and t.week_number = src.week_number)
 when matched then
   update set start_ts = src.start_ts,
-             end_ts   = src.end_ts,
-             is_active = false
+             end_ts   = src.end_ts
 when not matched then
-  insert (season_id, week_number, start_ts, end_ts, is_active)
-  values (src.season_id, src.week_number, src.start_ts, src.end_ts, false);
+  insert (season_id, week_number, start_ts, end_ts)
+  values (src.season_id, src.week_number, src.start_ts, src.end_ts);

@@ -1,32 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { usersInAuth, users, seasons, weeks, games, gameLines, teams, results, auditLog, totals, picks } from "./drizzle/schema";
-
-export const usersRelations = relations(users, ({one, many}) => ({
-	usersInAuth: one(usersInAuth, {
-		fields: [users.id],
-		references: [usersInAuth.id]
-	}),
-	auditLogs: many(auditLog),
-	totals: many(totals),
-	picks: many(picks),
-}));
-
-export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
-	users: many(users),
-}));
-
-export const weeksRelations = relations(weeks, ({one, many}) => ({
-	season: one(seasons, {
-		fields: [weeks.seasonId],
-		references: [seasons.id]
-	}),
-	games: many(games),
-	totals: many(totals),
-}));
-
-export const seasonsRelations = relations(seasons, ({many}) => ({
-	weeks: many(weeks),
-}));
+import { games, gameLines, teams, users, auditLog, results, weeks, seasons, totals, picks } from "./schema";
 
 export const gameLinesRelations = relations(gameLines, ({one}) => ({
 	game: one(games, {
@@ -70,6 +43,27 @@ export const teamsRelations = relations(teams, ({many}) => ({
 	picks: many(picks),
 }));
 
+export const auditLogRelations = relations(auditLog, ({one}) => ({
+	user: one(users, {
+		fields: [auditLog.actor],
+		references: [users.id]
+	}),
+}));
+
+export const usersRelations = relations(users, ({one, many}) => ({
+	auditLogs: many(auditLog),
+	user: one(users, {
+		fields: [users.id],
+		references: [users.id],
+		relationName: "users_id_users_id"
+	}),
+	users: many(users, {
+		relationName: "users_id_users_id"
+	}),
+	totals: many(totals),
+	picks: many(picks),
+}));
+
 export const resultsRelations = relations(results, ({one}) => ({
 	game: one(games, {
 		fields: [results.gameId],
@@ -77,11 +71,17 @@ export const resultsRelations = relations(results, ({one}) => ({
 	}),
 }));
 
-export const auditLogRelations = relations(auditLog, ({one}) => ({
-	user: one(users, {
-		fields: [auditLog.actor],
-		references: [users.id]
+export const weeksRelations = relations(weeks, ({one, many}) => ({
+	games: many(games),
+	season: one(seasons, {
+		fields: [weeks.seasonId],
+		references: [seasons.id]
 	}),
+	totals: many(totals),
+}));
+
+export const seasonsRelations = relations(seasons, ({many}) => ({
+	weeks: many(weeks),
 }));
 
 export const totalsRelations = relations(totals, ({one}) => ({
