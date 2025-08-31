@@ -1,6 +1,11 @@
-import { getEntry } from './getEntry';
+import { findUserPickForGame } from './findUserPickForGame';
 
-export async function isLocked(userId: string, gameId: string): Promise<boolean> {
-  const entry = await getEntry(userId, gameId);
-  return !!entry.lockedPick;
+import type { RequestEvent } from '@sveltejs/kit';
+
+export async function isLocked(
+  event: Pick<RequestEvent, 'cookies'>,
+  gameId: string
+): Promise<boolean> {
+  const entry = await findUserPickForGame(event, gameId);
+  return !!entry?.lockedPick;
 }

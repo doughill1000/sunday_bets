@@ -1,17 +1,10 @@
-import { dbClient } from '$lib/server/db';
-import * as schema from '../../../../db/schema';
-import { eq, count } from 'drizzle-orm';
+import { createSupabaseService } from '$lib/supabase/service';
 
-const { picks, games } = schema;
+const supabase = createSupabaseService();
 
 export async function getWeekPickCounts(weekId: number) {
-  return dbClient
-    .select({
-      gameId: picks.gameId,
-      pickCount: count()
-    })
-    .from(picks)
-    .innerJoin(games, eq(games.id, picks.gameId))
-    .where(eq(games.weekId, weekId))
-    .groupBy(picks.gameId);
+  const { data, error } = await supabase.rpc('get_week_pick_counts', { week_id: weekId }); // If you have a view or RPC for this
+
+  if (error) throw error;
+  return data ?? [];
 }

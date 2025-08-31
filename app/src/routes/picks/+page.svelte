@@ -2,12 +2,9 @@
   import { Segment } from '@skeletonlabs/skeleton-svelte';
   import {
     picks,
+    setPicks,
     selectTeam,
     setWeight,
-    lockPick,
-    unlockPick,
-    kickoffPassed,
-    canUseAce
   } from '$lib/stores/picks';
   import { TEAM_META } from '$lib/types/domain';
   import { Check } from '@lucide/svelte/icons';
@@ -64,10 +61,13 @@
     const favId = g.spreadTeam;
 
     if (val == null || favId == null) return 'No line';
-    if (val === "0") return 'PK';
+    if (val === '0') return 'PK';
 
     return `${g[g.spreadTeam]} -${val}`;
   }
+
+  // Set picks from server on page load
+  setPicks(data.picks);
 </script>
 
 <h1 class="h3 mb-4">This Week’s Games</h1>

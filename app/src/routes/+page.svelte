@@ -1,19 +1,23 @@
 <!-- apps/web/src/routes/+page.svelte -->
 <script lang="ts">
   import Brand from '$lib/Brand.svelte';
-  import { WEIGHTS } from '$lib/scoring';
+  import { WEIGHTS } from '$lib/types/domain';
 </script>
 
-<section class="relative overflow-hidden rounded-2xl border border-surface-600/20 bg-surface-500/5 shadow-lg">
+<section
+  class="relative overflow-hidden rounded-2xl border border-surface-600/20 bg-surface-500/5 shadow-lg"
+>
   <!-- Hero background accent -->
-  <div class="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-emerald-500/20 to-surface-500/5"></div>
+  <div
+    class="absolute inset-0 bg-gradient-to-br from-sky-500/20 via-emerald-500/20 to-surface-500/5"
+  ></div>
 
   <div class="relative z-10 flex flex-col items-center text-center px-6 py-16 md:py-24">
     <Brand size={56} />
 
     <p class="mt-4 max-w-xl text-lg text-surface-200 scheme-dark:text-surface-200">
-      Lock your picks each week, track your friends, and climb the leaderboard.
-      Choose your weight wisely — <span class="font-semibold">L / M / H / A</span> can make or break the season.
+      Lock your picks each week, track your friends, and climb the leaderboard. Choose your weight
+      wisely — <span class="font-semibold">L / M / H / A</span> can make or break the season.
     </p>
 
     <div class="mt-8 flex flex-wrap justify-center gap-4">

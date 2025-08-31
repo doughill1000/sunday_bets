@@ -1,4 +1,4 @@
-import type { WeightCode } from "./domain";
+import type { WeightCode } from './domain';
 
 export type UIGame = {
   id: string;
@@ -10,21 +10,21 @@ export type UIGame = {
 };
 
 export type GameDTO = {
-  id: string;                           // games.id (uuid)
-  commenceTime: string;                 // ISO
+  id: string; // games.id (uuid)
+  commenceTime: string; // ISO
   status: string;
   home: { id: number; name: string; shortName: string }; // teams are bigserial -> number
   away: { id: number; name: string; shortName: string };
   line: {
-    spreadTeamId: number | null;        // teams.id (bigint -> number)
+    spreadTeamId: number | null; // teams.id (bigint -> number)
     spreadValue: string | null;
     fetchedAt: string | null;
   };
   started: boolean;
   picks: Array<{
-    userId: string;                     // users.id (uuid)
+    userId: string; // users.id (uuid)
     displayName: string;
-    pickedTeamId: number | null;        // teams.id
+    pickedTeamId: number | null; // teams.id
     weight: WeightCode | null;
     lockedAt: string | null;
     isMe: boolean;

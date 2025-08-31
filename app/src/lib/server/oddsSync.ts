@@ -2,8 +2,8 @@
 import { dbClient } from '$lib/server/db';
 import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds';
 import type { WeekRow, WeekWindow } from '../types/server';
-import { findActiveWeek } from './db/queries/find_active_week';
-import { findTeamsByNames } from './db/queries/find_teams_by_names';
+import { findActiveWeek } from './db/queries/findActiveWeek';
+import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGame } from './db/commands/upsert_game';
 import { deactivateActiveLines } from './db/commands/deactivate_lines';
 import { insertActiveLine } from './db/commands/insert_active_line';
@@ -32,15 +32,13 @@ export async function syncOddsForActiveWeek() {
   const games = await fetchNFLSpreadsForWeek(weekWindow);
 
   // Build a single-shot team lookup to avoid per-row queries
-  const teamNames = Array.from(
-    new Set(games.flatMap(g => [g.home_team, g.away_team]))
-  );
+  const teamNames = Array.from(new Set(games.flatMap((g) => [g.home_team, g.away_team])));
 
   // Load all teams once
   const teamsAll = await findTeamsByNames(teamNames);
 
   const byName = new Map<string, { id: number; short_name: string }>();
-  (teamsAll ?? []).forEach(t => byName.set(t.name, { id: t.id, short_name: t.short_name }));
+  (teamsAll ?? []).forEach((t) => byName.set(t.name, { id: t.id, short_name: t.short_name }));
 
   let inserted = 0;
 
@@ -56,8 +54,7 @@ export async function syncOddsForActiveWeek() {
       const spread = extractFanduelSpread(g);
       if (!spread) continue;
 
-      const spreadTeamId =
-        spread.spreadTeamName === home.short_name ? home.id : away.id;
+      const spreadTeamId = spread.spreadTeamName === home.short_name ? home.id : away.id;
 
       await deactivateActiveLines(tx, gameRow.id);
       await insertActiveLine(tx, gameRow.id, spreadTeamId, spread.spreadValue);

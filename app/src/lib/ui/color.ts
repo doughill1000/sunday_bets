@@ -3,9 +3,10 @@
 
 function hexToRgb(hex: string): [number, number, number] {
   const n = hex.replace('#', '');
-  const v = n.length === 3
-    ? n.split('').map((c) => parseInt(c + c, 16))
-    : [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+  const v =
+    n.length === 3
+      ? n.split('').map((c) => parseInt(c + c, 16))
+      : [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
   return v as [number, number, number];
 }
 
@@ -16,7 +17,9 @@ function srgbToLin(c: number) {
 
 function luminance(hex: string) {
   const [r, g, b] = hexToRgb(hex);
-  const R = srgbToLin(r), G = srgbToLin(g), B = srgbToLin(b);
+  const R = srgbToLin(r),
+    G = srgbToLin(g),
+    B = srgbToLin(b);
   return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 }
 

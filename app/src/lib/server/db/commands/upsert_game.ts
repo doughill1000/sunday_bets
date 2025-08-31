@@ -1,48 +1,23 @@
-import { games as gamesTable } from '../../../../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { createSupabaseService } from '$lib/supabase/service';
 import type { OddsGame, TeamRow } from '$lib/types/server';
-import type { DbOrTx } from '$lib/server/db';
 
-export async function upsertGame(
-  tx: DbOrTx,
-  g: OddsGame,
-  home: TeamRow,
-  away: TeamRow,
-  weekId: number
-) {
-  let gameRow = await tx
-    .insert(gamesTable)
-    .values({
-      weekId,
-      externalGameId: g.id,
-      commenceTime: g.commence_time,
-      homeTeamId: home.id,
-      awayTeamId: away.id,
-      status: 'scheduled',
-    })
-    .onConflictDoUpdate({
-      target: [gamesTable.externalGameId, gamesTable.weekId],
-      set: {
-        commenceTime: g.commence_time,
-        homeTeamId: home.id,
-        awayTeamId: away.id,
-        status: 'scheduled',
+const supabase = createSupabaseService();
+
+export async function upsertGame(g: OddsGame, home: TeamRow, away: TeamRow, weekId: number) {
+  // Try to upsert the game by external_game_id and week_id
+  const { error } = await supabase.from('games').upsert(
+    [
+      {
+        week_id: weekId,
+        external_game_id: g.id,
+        commence_time: g.commence_time,
+        home_team_id: home.id,
+        away_team_id: away.id,
+        status: 'scheduled'
       }
-    })
-    .returning()
-    .then(rows => rows[0]);
+    ],
+    { onConflict: 'external_game_id,week_id' }
+  );
 
-  if (!gameRow) {
-    gameRow = await tx
-      .select()
-      .from(gamesTable)
-      .where(
-        and(
-          eq(gamesTable.externalGameId, g.id),
-          eq(gamesTable.weekId, weekId)
-        )
-      )
-      .then(rows => rows[0]);
-  }
-  return gameRow;
+  if (error) throw error;
 }

@@ -1,13 +1,13 @@
-import { gameLines } from '../../../../db/schema';
-import { eq, and } from 'drizzle-orm';
-import type { DbOrTx } from '$lib/server/db';
+import { createSupabaseService } from '$lib/supabase/service';
 
-export async function deactivateActiveLines(tx: DbOrTx, gameId: string) {
-  await tx
-    .update(gameLines)
-    .set({ isActiveLine: false })
-    .where(and(
-      eq(gameLines.gameId, gameId),
-      eq(gameLines.isActiveLine, true)
-    ));
+const supabase = createSupabaseService();
+
+export async function deactivateActiveLines(gameId: string) {
+  const { error } = await supabase
+    .from('game_lines')
+    .update({ is_active_line: false })
+    .eq('game_id', gameId)
+    .eq('is_active_line', true);
+
+  if (error) throw error;
 }

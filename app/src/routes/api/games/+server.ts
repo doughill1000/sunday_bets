@@ -1,5 +1,5 @@
 // src/routes/api/games/+server.ts
-import { json, type RequestHandler} from '@sveltejs/kit';
+import { json, type RequestHandler } from '@sveltejs/kit';
 import { createSupabaseService } from '$lib/supabase/service';
 
 export const GET: RequestHandler = async () => {
@@ -10,4 +10,3 @@ export const GET: RequestHandler = async () => {
 
   return json({ games: data ?? [] }, { status: 200 });
 };
-

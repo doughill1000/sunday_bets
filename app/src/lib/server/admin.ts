@@ -32,7 +32,8 @@ export async function getSettingsSummary(): Promise<SettingsSummary> {
 
   if (error) {
     // Sensible defaults if the row is missing or RLS blocks it
-    const cap = 1000, used = 0;
+    const cap = 1000,
+      used = 0;
     return { cap, used, remaining: cap - used, usagePct: used / cap };
   }
 

@@ -13,9 +13,12 @@ import { findPicksForGames } from './db/queries/findPicksForGames';
  */
 export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number | string) {
   // 1) Auth
-  const { data: { user }, error: authErr } = await event.locals.supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authErr
+  } = await event.locals.supabase.auth.getUser();
   if (authErr) throw new Error('Auth check failed');
-  if (!user)   throw new Error('Not authenticated');
+  if (!user) throw new Error('Not authenticated');
 
   // 2) Verify week exists
   const weekRow = await findWeekById(weekId);
@@ -25,7 +28,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
   const rows = await listGamesWithActiveLine(weekId);
 
   // 4) Fetch picks for those games
-  const gameIds = rows.map(r => r.gameId);
+  const gameIds = rows.map((r) => r.gameId);
   const allPicks = await findPicksForGames(gameIds);
 
   const now = new Date();
@@ -36,9 +39,9 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
     const started = kickoff <= now;
 
     const visible = allPicks
-      .filter(p => p.gameId === r.gameId)
-      .filter(p => started || p.userId === user.id)
-      .map(p => {
+      .filter((p) => p.gameId === r.gameId)
+      .filter((p) => started || p.userId === user.id)
+      .map((p) => {
         // choose final locked if exists, else initial locked
         const lockedTeamId = p.finalLockedSpreadTeamId ?? p.initialLockedSpreadTeamId ?? null;
         const lockedAtRaw = p.finalLockedAt ?? p.initialLockedAt ?? null;

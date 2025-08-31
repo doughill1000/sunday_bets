@@ -2,6 +2,7 @@
   import { fly, fade } from 'svelte/transition';
   import { onMount } from 'svelte';
   import { Menu, X, Trophy, User } from '@lucide/svelte/icons';
+    import { supabaseBrowser } from '$lib/supabase/browser';
 
   let open = false;
   let canInstall = false;
@@ -15,6 +16,13 @@
       canInstall = true;
     };
     window.addEventListener('beforeinstallprompt', handler);
+
+    // Run async logic separately
+    (async () => {
+      const obj = await supabaseBrowser.auth.signInWithOtp({ email: "doughill1000@gmail.com" });
+      // handle error if needed
+    })();
+
     return () => window.removeEventListener('beforeinstallprompt', handler);
   });
 

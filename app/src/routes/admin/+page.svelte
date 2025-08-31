@@ -31,7 +31,8 @@
 
         data.settings.used += 1;
         data.settings.remaining = Math.max(data.settings.cap - data.settings.used, 0);
-        data.settings.usagePct = data.settings.cap > 0 ? Math.min(data.settings.used / data.settings.cap, 1) : 1;
+        data.settings.usagePct =
+          data.settings.cap > 0 ? Math.min(data.settings.used / data.settings.cap, 1) : 1;
       } else if (res.status === 429) {
         resultMsg = body?.reason ?? 'Monthly cap reached. Try again next month.';
         resultKind = 'warn';
