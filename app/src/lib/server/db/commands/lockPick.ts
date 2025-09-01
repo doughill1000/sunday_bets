@@ -1,4 +1,3 @@
-import { createSSRClient } from '$lib/supabase/ssr';
 import type { RequestEvent } from '@sveltejs/kit';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
 
@@ -8,14 +7,14 @@ export async function lockPick(
   team: TeamSide,
   weight: WeightCode
 ) {
-  const supabase = createSSRClient(event);
+  const supabase = event.locals.supabase;
 
-  // Use an RPC or insert logic as needed
-  const { error } = await supabase.rpc('lock_pick', {
-    game_id: gameId,
-    picked_team: team,
-    weight
+  const { data, error } = await supabase.rpc('lock_pick', {
+    p_game_id: gameId,
+    p_side: team,
+    p_weight: weight
   });
 
   if (error) throw error;
+  return data?.[0] ?? null;
 }

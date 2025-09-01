@@ -1,19 +1,21 @@
-import { getMyPicks } from '$lib/server/db';
-import { findActiveWeek } from '$lib/server/db';
+// +page.server.ts
+import type { PageServerLoad } from './$types';
+import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
+import { toUIGamesFromDb } from '$lib/adapters/games';
+import { toPickEntries } from '$lib/adapters/picks';
+import { findActiveWeek, getMyPicks } from '$lib/server/db';
 
-export async function load(event) {
+export const load: PageServerLoad = async (event) => {
   const week = await findActiveWeek();
-  if (!week) return { picks: {}, week: null };
+  if (!week) return { week: null, games: [], picks: {} };
 
-  const data = await getMyPicks(event, week.id);
-  const picks: Record<string, any> = {};
-  for (const row of data) {
-    picks[row.game_id] = {
-      lockedPick: row.lockedPick,
-      lockedAt: row.lockedAt,
-      unlocksUsed: row.unlocksUsed,
-    };
-  }
+  const [dbRows, myPicks] = await Promise.all([
+    getActiveWeekGames(),         
+    getMyPicks(event, week.id)
+  ]);
 
-  return { picks, week };
-}
+  const games = toUIGamesFromDb(dbRows);
+  const picks = toPickEntries(myPicks);
+
+  return { week, games, picks };
+};

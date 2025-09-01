@@ -11,7 +11,7 @@ import { findPicksForGames } from './db/queries/findPicksForGames';
  * Visibility rule: show all players’ picks once the game has started; before
  * kickoff show only the current user’s locked pick (others hidden).
  */
-export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number | string) {
+export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number) {
   // 1) Auth
   const {
     data: { user },
@@ -28,47 +28,47 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
   const rows = await listGamesWithActiveLine(weekId);
 
   // 4) Fetch picks for those games
-  const gameIds = rows.map((r) => r.gameId);
+  const gameIds = rows.map((r) => r.id);
   const allPicks = await findPicksForGames(gameIds);
 
   const now = new Date();
 
   // 5) Shape into DTO with visibility rules
   const data: GameDTO[] = rows.map((r) => {
-    const kickoff = new Date(r.commenceTime);
+    const kickoff = new Date(r.commence_time);
     const started = kickoff <= now;
 
     const visible = allPicks
-      .filter((p) => p.gameId === r.gameId)
-      .filter((p) => started || p.userId === user.id)
+      .filter((p) => p.game_id === r.id)
+      .filter((p) => started || p.user_id === user.id)
       .map((p) => {
-        // choose final locked if exists, else initial locked
-        const lockedTeamId = p.finalLockedSpreadTeamId ?? p.initialLockedSpreadTeamId ?? null;
-        const lockedAtRaw = p.finalLockedAt ?? p.initialLockedAt ?? null;
-
-        // Map spread-team "id" (teams.id) straight through.
-        const pickedTeamId = lockedTeamId ?? null;
+        const lockedAtRaw = p.final_locked_at ?? null;
 
         return {
-          userId: p.userId,
-          displayName: p.displayName,
-          pickedTeamId,
+          userId: p.user_id ?? '', 
+          displayName: p.picked_team_short ?? '', 
+          pickedTeamId: p.picked_team_id, 
           weight: (p.weight as WeightCode) ?? null,
           lockedAt: lockedAtRaw ? new Date(lockedAtRaw).toISOString() : null,
-          isMe: p.userId === user.id
+          isMe: p.user_id === user.id
         };
       });
 
+    // unwrap the single active line and pluck fields
+    const line = Array.isArray(r.game_lines) ? r.game_lines[0] : r.game_lines;
+
     return {
-      id: r.gameId,
-      commenceTime: new Date(r.commenceTime).toISOString(),
+      id: r.id,
+      commenceTime: new Date(r.commence_time).toISOString(),
       status: r.status,
-      home: { id: r.homeTeamId, name: r.homeName, shortName: r.homeShort },
-      away: { id: r.awayTeamId, name: r.awayName, shortName: r.awayShort },
+      home: { id: r.home_team.id, name: r.home_team.name, shortName: r.home_team.short_name },
+      away: { id: r.away_team.id, name: r.away_team.name, shortName: r.away_team.short_name },
       line: {
-        spreadTeamId: r.spreadTeamId ?? null,
-        spreadValue: r.spreadValue,
-        fetchedAt: r.fetchedAt ? new Date(r.fetchedAt).toISOString() : null
+        // if your GameDTO insists on non-null here, ensure your query always returns an active line
+        spreadTeamId: line?.spread_team_id as number,
+        spreadValue: line?.spread_value as number,
+        source: line?.source as string,
+        fetchedAt: line?.fetched_at ? new Date(line.fetched_at).toISOString() : null
       },
       started,
       picks: visible

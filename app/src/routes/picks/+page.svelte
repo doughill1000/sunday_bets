@@ -1,24 +1,34 @@
 <script lang="ts">
   import { Segment } from '@skeletonlabs/skeleton-svelte';
-  import {
-    picks,
-    setPicks,
-    selectTeam,
-    setWeight,
-  } from '$lib/stores/picks';
-  import { TEAM_META } from '$lib/types/domain';
   import { Check } from '@lucide/svelte/icons';
-  import { textOn } from '$lib/ui/color';
-  import { WEIGHTS } from '$lib/types/domain';
-  import type { UIGame } from '$lib/types/ui';
 
-  // ----- Types -----
+  // UI + domain
+  import { picks, setPicks, selectTeam, setWeight, lockPick } from '$lib/stores/picks';
+  import { TEAM_META, WEIGHTS, type TeamSide, type WeightCode } from '$lib/types/domain';
+  import type { UIGame } from '$lib/types/ui';
+  import { textOn } from '$lib/ui/color';
+  import { kickoffPassed, canUseAce as canUseAceRule } from '$lib/domain/rules';
+  import { onMount } from 'svelte';
+
+  // ----- Props from +page.server.ts -----
   export let data: {
     games: UIGame[];
+    picks: Record<string, import('$lib/types/server').PickEntry>;
   };
 
-  const games = data.games;
+  // ----- One-time store initialization (client only) -----
+  let initialized = false;
+  onMount(() => {
+    if (!initialized && data?.picks) {
+      setPicks(data.picks);
+      initialized = true;
+    }
+  });
 
+  // convenience local
+  const games = data.games ?? [];
+
+  // ----- Helpers -----
   function teamVars(abbr: string) {
     const meta = TEAM_META[abbr] ?? {
       name: abbr,
@@ -26,176 +36,182 @@
     };
     const [c1, c2] = meta.colors;
     const fg = textOn(c1, c2);
-    // expose as CSS variables so CSS can style elegantly
     return `--c1:${c1};--c2:${c2};--fg:${fg}`;
   }
 
-  function isSelected(id: string, side: 'away' | 'home') {
-    return ($picks[id]?.selected?.team ?? $picks[id]?.lockedPick?.team ?? '') === side;
+  function isSelected(gameId: string, side: TeamSide) {
+    const entry = $picks[gameId];
+    const chosen = entry?.selected?.team ?? entry?.lockedPick?.team;
+    return chosen === side;
   }
 
-  function team(abbr: string) {
-    return TEAM_META[abbr]?.name ?? abbr;
-  }
-
-  function onLock(g: UIGame) {
-    const { ok, reason } = lockPick(g.id);
-    if (!ok && reason) alert(reason);
-  }
-
-  function onUnlock(g: UIGame) {
-    const { ok, reason } = unlockPick(g.id);
+  async function onLock(g: UIGame) {
+    const { ok, reason } = await lockPick(g.id);
     if (!ok && reason) alert(reason);
   }
 
   function formatKickoff(iso: string) {
     const d = new Date(iso);
-    const dow = d.toLocaleDateString(undefined, { weekday: 'short' }); // e.g., "Sun"
-    const date = d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }); // "9/7"
-    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); // "1:00 PM"
+    const dow = d.toLocaleDateString(undefined, { weekday: 'short' });
+    const date = d.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     return `${dow} ${date} ${time}`;
   }
 
   function spreadLine(g: UIGame): string {
-    const val = g.spread;
-    const favId = g.spreadTeam;
-
-    if (val == null || favId == null) return 'No line';
-    if (val === '0') return 'PK';
-
-    return `${g[g.spreadTeam]} -${val}`;
+    if (!g.spread || !g.spreadTeam) return 'No line';
+    if (g.spread === '0') return 'PK';
+    const favName = g.spreadTeam === 'home' ? g.home : g.away;
+    return `${favName} -${g.spread}`;
   }
 
-  // Set picks from server on page load
-  setPicks(data.picks);
+  // wrapper so template can call with current store value
+  function canUseAce(gameId: string) {
+    return canUseAceRule(gameId, $picks);
+  }
 </script>
 
 <h1 class="h3 mb-4">This Week’s Games</h1>
 
-<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-  {#each games as g}
-    {@const entry = $picks[g.id] ?? {}}
-    {@const locked = !!entry.lockedPick}
-    {@const started = kickoffPassed(g.kickoff)}
-    {@const canChange = !started && !locked}
-    {@const canUnlock = !started && locked && (entry.unlocksUsed ?? 0) < 1}
+{#if games.length === 0}
+  <p class="opacity-70">No scheduled games for the active week.</p>
+{:else}
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    {#each games as g (g.id)}
+      {@const entry = $picks[g.id] ?? {} }
+      {@const started = kickoffPassed(g.kickoff) }
+      {@const locked = !!entry.lockedPick }
+      {@const canChange = !started && !locked }
+      {@const canRelock = !started && locked && (entry.unlocksUsed ?? 0) < 1 }
 
-    <article class="rounded-2xl p-4 border border-surface-600/20 bg-surface-500/5">
-      <header class="flex items-center justify-between mb-2">
-        <div class="min-w-0">
-          <h2 class="font-semibold truncate">{g.away} @ {g.home}</h2>
-          <p class="text-xs opacity-70 truncate">{spreadLine(g)}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <time class="text-xs opacity-70 whitespace-nowrap">{formatKickoff(g.kickoff)}</time>
-          {#if locked}
-            <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-500">
-              Locked
-            </span>
-          {/if}
-        </div>
-      </header>
-
-      <!-- Team buttons -->
-      <div class="flex gap-2">
-        <button
-          class="btn btn-neutral btn-accent-outline flex-1"
-          style={teamVars(g.away)}
-          aria-pressed={isSelected(g.id, 'away')}
-          disabled={!canChange}
-          on:click={() => selectTeam(g.id, 'away')}
-        >
-          <span class="font-semibold tracking-wide">{g.away}</span>
-          <span class="check" aria-hidden="true"><Check size={14} /></span>
-        </button>
-
-        <!-- Home -->
-        <button
-          class="btn btn-neutral btn-accent-outline flex-1"
-          style={teamVars(g.home)}
-          aria-pressed={isSelected(g.id, 'home')}
-          disabled={!canChange}
-          on:click={() => selectTeam(g.id, 'home')}
-        >
-          <span class="font-semibold tracking-wide">{g.home}</span>
-          <span class="check" aria-hidden="true"><Check size={14} /></span>
-        </button>
-      </div>
-
-      <div class="mt-3 grid grid-cols-1 md:grid-cols-[1fr,auto] items-center gap-3">
-        <!-- Weights -->
-        <div class="min-w-0">
-          <label class="text-xs block mb-1">Weight</label>
-
-          <Segment
-            name={'w_' + g.id}
-            value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
-            disabled={!canChange}
-            onValueChange={(e) => setWeight(g.id, e.value as keyof typeof WEIGHTS)}
-            classes="w-full"
-          >
-            {#each Object.entries(WEIGHTS) as [code, w]}
-              <Segment.Item
-                value={code}
-                disabled={code === 'A' && !canUseAce(g.id)}
-                classes="px-3 py-[3px] flex-1"
-              >
-                <div class="flex flex-col items-center leading-none">
-                  <span class="font-semibold text-sm">{w.label}</span>
-                  <span class="text-[10px] opacity-80 mt-[1px]">{w.points}</span>
-                </div>
-              </Segment.Item>
-            {/each}
-          </Segment>
-
-          {#if !canUseAce(g.id)}
-            <p class="text-[11px] mt-1 opacity-70">
-              {WEIGHTS.A.label} has already used on another game
-            </p>
-          {/if}
-        </div>
-
-        <div class="mt-3">
-          {#if locked}
-            <button
-              class={`w-full h-10 font-semibold
-              ${
-                canUnlock
-                  ? 'bg-warning-900 text-white hover:bg-warning-800'
-                  : 'bg-surface-700 text-white opacity-50'
-              }        
-            `}
-              on:click={() => onUnlock(g)}
-              disabled={!canUnlock}
-            >
-              Unlock
-            </button>
-
-            {#if canUnlock}
-              <p class="mt-1 text-[11px] text-center opacity-70">1 unlock remaining</p>
-            {:else if (entry.unlocksUsed ?? 0) >= 1}
-              <p class="mt-1 text-[11px] text-center opacity-70">0 unlock remaining</p>
+      <article class="rounded-2xl p-4 border border-surface-600/20 bg-surface-500/5" aria-labelledby={`game-${g.id}-title`}>
+        <header class="flex items-center justify-between mb-2">
+          <div class="min-w-0">
+            <h2 id={`game-${g.id}-title`} class="font-semibold truncate">{g.away} @ {g.home}</h2>
+            <p class="text-xs opacity-70 truncate">{spreadLine(g)}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <time class="text-xs opacity-70 whitespace-nowrap" datetime={g.kickoff}>{formatKickoff(g.kickoff)}</time>
+            {#if locked}
+              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-500" aria-label="Locked">
+                Locked
+              </span>
             {/if}
-          {:else}
-            <button
-              class="w-full h-10 font-semibold
-             bg-success-900 text-white hover:bg-success-800
-             disabled:bg-surface-400"
-              on:click={() => onLock(g)}
-              disabled={!entry.selected ||
-                (entry.selected.weight === 'A' && !canUseAce(g.id)) ||
-                started}
-            >
-              Lock Pick
-            </button>
-          {/if}
+          </div>
+        </header>
+
+        <!-- Team buttons -->
+        <div class="flex gap-2" role="group" aria-label="Pick a team">
+          <!-- Away -->
+          <button
+            class="btn btn-neutral btn-accent-outline flex-1"
+            style={teamVars(g.away)}
+            aria-pressed={isSelected(g.id, 'away')}
+            disabled={!canChange}
+            on:click={() => selectTeam(g.id, 'away')}
+          >
+            <span class="font-semibold tracking-wide">{g.away}</span>
+            {#if isSelected(g.id, 'away')}
+              <span class="check ml-1" aria-hidden="true"><Check size={14} /></span>
+            {/if}
+          </button>
+
+          <!-- Home -->
+          <button
+            class="btn btn-neutral btn-accent-outline flex-1"
+            style={teamVars(g.home)}
+            aria-pressed={isSelected(g.id, 'home')}
+            disabled={!canChange}
+            on:click={() => selectTeam(g.id, 'home')}
+          >
+            <span class="font-semibold tracking-wide">{g.home}</span>
+            {#if isSelected(g.id, 'home')}
+              <span class="check ml-1" aria-hidden="true"><Check size={14} /></span>
+            {/if}
+          </button>
         </div>
 
-        <!-- Post-kickoff notice -->
-        {#if started}
-          <p class="mt-2 text-xs opacity-70">Kickoff passed — picks locked.</p>
-        {/if}
-      </div>
-    </article>
-  {/each}
-</div>
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-[1fr,auto] items-center gap-3">
+          <!-- Weights -->
+          <div class="min-w-0">
+            <label class="text-xs block mb-1" for={`w_${g.id}`}>Weight</label>
+
+            <Segment
+              name={'w_' + g.id}
+              value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
+              disabled={!canChange}
+              onValueChange={(e) => setWeight(g.id, e.value as WeightCode)}
+              classes="w-full"
+            >
+              {#each Object.entries(WEIGHTS) as [code, w]}
+                <Segment.Item
+                  value={code}
+                  disabled={code === 'A' && !canUseAce(g.id)}
+                  classes="px-3 py-[3px] flex-1"
+                >
+                  <div class="flex flex-col items-center leading-none">
+                    <span class="font-semibold text-sm">{w.label}</span>
+                    <span class="text-[10px] opacity-80 mt-[1px]">{w.points}</span>
+                  </div>
+                </Segment.Item>
+              {/each}
+            </Segment>
+
+            {#if entry.selected?.weight === 'A' && !canUseAce(g.id)}
+              <p class="text-[11px] mt-1 opacity-70">
+                {WEIGHTS.A.label} has already been used on another game.
+              </p>
+            {/if}
+          </div>
+
+          <!-- Lock / Relock -->
+          <div class="mt-3">
+            {#if locked}
+              <button
+                class={`w-full h-10 font-semibold ${
+                  canRelock
+                    ? 'bg-warning-900 text-white hover:bg-warning-800'
+                    : 'bg-surface-700 text-white opacity-50'
+                }`}
+                on:click={() => onLock(g)}
+                disabled={!canRelock}
+              >
+                Relock
+              </button>
+
+              {#if canRelock}
+                <p class="mt-1 text-[11px] text-center opacity-70">1 unlock remaining</p>
+              {:else if (entry.unlocksUsed ?? 0) >= 1}
+                <p class="mt-1 text-[11px] text-center opacity-70">0 unlock remaining</p>
+              {/if}
+            {:else}
+              <button
+                class="w-full h-10 font-semibold bg-success-900 text-white hover:bg-success-800 disabled:bg-surface-400"
+                on:click={() => onLock(g)}
+                disabled={!entry.selected || (entry.selected.weight === 'A' && !canUseAce(g.id)) || started}
+              >
+                Lock Pick
+              </button>
+            {/if}
+          </div>
+
+          {#if started}
+            <p class="mt-2 text-xs opacity-70">Kickoff passed — picks locked.</p>
+          {/if}
+        </div>
+      </article>
+    {/each}
+  </div>
+{/if}
+
+<style>
+  /* use CSS variables provided by teamVars for accessible contrast */
+  .btn[style] {
+    --btn-bg: var(--c1);
+    --btn-bg2: var(--c2);
+    --btn-fg: var(--fg);
+    background: linear-gradient(135deg, var(--btn-bg), var(--btn-bg2));
+    color: var(--btn-fg);
+  }
+  .check { display: inline-flex; }
+</style>

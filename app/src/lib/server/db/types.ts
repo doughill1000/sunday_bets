@@ -408,13 +408,21 @@ export type Database = {
       }
     }
     Views: {
-      picks_view: {
+      picks_status_view: {
         Row: {
-          display_name: string | null
+          can_relock_now: boolean | null
+          commence_time: string | null
           final_locked_at: string | null
           game_id: string | null
-          picked_side: string | null
-          picked_team: string | null
+          game_started: boolean | null
+          has_relock_available: boolean | null
+          initial_locked_at: string | null
+          is_final_locked: boolean | null
+          picked_side: Database["public"]["Enums"]["side_enum"] | null
+          picked_team_id: number | null
+          picked_team_short: string | null
+          relock_used: boolean | null
+          user_display_name: string | null
           user_id: string | null
           weight: Database["public"]["Enums"]["weight_enum"] | null
         }
@@ -424,6 +432,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["picked_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
@@ -475,6 +490,7 @@ export type Database = {
       }
     }
     Enums: {
+      side_enum: "home" | "away"
       weight_enum: "L" | "M" | "H" | "A"
     }
     CompositeTypes: {
@@ -603,6 +619,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      side_enum: ["home", "away"],
       weight_enum: ["L", "M", "H", "A"],
     },
   },

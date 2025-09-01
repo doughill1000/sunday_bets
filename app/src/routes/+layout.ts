@@ -1,8 +1,9 @@
 // src/routes/+layout.ts
 import { createBrowserClient, createServerClient, isBrowser } from '@supabase/ssr';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
+import type { LayoutLoad } from './$types';
 
-export const load = async ({ data, depends, fetch }) => {
+export const load: LayoutLoad = async ({ data, depends, fetch }) => {
   // So we can invalidate on auth changes
   depends('supabase:auth');
 

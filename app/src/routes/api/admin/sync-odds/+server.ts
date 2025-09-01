@@ -10,7 +10,7 @@ export const POST: RequestHandler = async (event) => {
     const res = await syncOddsForActiveWeek();
     if (!res.ok) {
       return new Response(JSON.stringify({ ok: false, reason: res.reason }), {
-        status: res.status ?? 400
+        status: 400
       });
     }
 

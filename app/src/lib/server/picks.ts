@@ -1,9 +1,9 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { findUserPickForGame } from './db/queries/findUserPickForGame';
 
-export async function isLocked(event: Pick<RequestEvent, 'cookies'>, gameId: string): Promise<boolean> {
+export async function isLocked(event: RequestEvent, gameId: string): Promise<boolean> {
   const entry = await findUserPickForGame(event, gameId);
-  return !!entry?.lockedPick;
+  return !!entry?.final_locked_at;
 }
 
 export function kickoffPassed(kickoffISO: string): boolean {

@@ -1,7 +1,7 @@
 // src/lib/supabase/ssr.ts
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import type { RequestEvent } from '@sveltejs/kit';
-import type { Database } from '$lib/supabase/types';
+import type { Database } from '$lib/server/db';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 export function createSSRClient(event: Pick<RequestEvent, 'cookies'>) {

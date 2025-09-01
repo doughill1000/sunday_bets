@@ -1,4 +1,5 @@
 import { createSupabaseService } from '$lib/supabase/service';
+import type { TeamSide } from '$lib/types/domain';
 
 const supabase = createSupabaseService();
 
@@ -10,12 +11,12 @@ export async function getGamesWithActiveLines(weekId: number) {
       id,
       external_game_id,
       commence_time,
-      home_team:home_team_id (
+      home_team:teams!home_team_id (
         id,
         name,
         short_name
       ),
-      away_team:away_team_id (
+      away_team:teams!away_team_id (
         id,
         name,
         short_name
@@ -34,14 +35,10 @@ export async function getGamesWithActiveLines(weekId: number) {
   if (error) throw error;
   if (!data) return [];
 
-  // Filter for active lines and shape the result
   return data
-    .map((g: any) => {
-      const activeLine = Array.isArray(g.game_lines)
-        ? g.game_lines.find((l: any) => l.is_active_line)
-        : g.game_lines?.is_active_line
-          ? g.game_lines
-          : null;
+    .map((g) => {
+      const lines = Array.isArray(g.game_lines) ? g.game_lines : [g.game_lines].filter(Boolean);
+      const activeLine = lines.find((l) => l.is_active_line) ?? null;
 
       if (!activeLine) return null;
 
@@ -53,10 +50,10 @@ export async function getGamesWithActiveLines(weekId: number) {
         home_name: g.home_team?.name,
         away_code: g.away_team?.short_name,
         away_name: g.away_team?.name,
-        spread_team: activeLine.spread_team_id === g.home_team?.id ? 'home' : 'away',
+        spread_team: activeLine.spread_team_id === g.home_team?.id ? 'home' : 'away' as TeamSide,
         spread_value: activeLine.spread_value,
         line_source: activeLine.source
       };
     })
-    .filter(Boolean);
+    .filter((g) => g !== null);
 }

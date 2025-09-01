@@ -1,7 +1,6 @@
-// src/lib/server/db/queries/listGamesWithActiveLine.ts
 import { createSupabaseService } from '$lib/supabase/service';
 
-export async function listGamesWithActiveLineRaw(weekId: number) {
+export async function listGamesWithActiveLine(weekId: number) {
   const supabase = createSupabaseService();
   const { data, error } = await supabase
     .from('games')
@@ -11,15 +10,17 @@ export async function listGamesWithActiveLineRaw(weekId: number) {
       week_id,
       commence_time,
       status,
-      home_team:home_team_id ( id, name, short_name ),
-      away_team:away_team_id ( id, name, short_name ),
-      game_lines!inner ( id, spread_team_id, spread_value, source, is_active_line )
+      home_team:teams!home_team_id ( id, name, short_name ),
+      away_team:teams!away_team_id ( id, name, short_name ),
+      game_lines!inner ( id, spread_team_id, spread_value, source, is_active_line, fetched_at )
     `
     )
     .eq('week_id', weekId)
     .eq('game_lines.is_active_line', true)
+    // constrain nested relation to one row (still comes back as an array)
+    .limit(1, { foreignTable: 'game_lines' })
     .order('commence_time', { ascending: true });
 
-  if (error) throw new Error(`listGamesWithActiveLineRaw failed: ${error.message}`);
+  if (error) throw new Error(`listGamesWithActiveLine failed: ${error.message}`);
   return data ?? [];
 }

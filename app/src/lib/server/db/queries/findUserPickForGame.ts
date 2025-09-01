@@ -1,14 +1,10 @@
-import { createSSRClient } from '$lib/supabase/ssr';
 import type { RequestEvent } from '@sveltejs/kit';
 
-export async function findUserPickForGame(
-  event: Pick<RequestEvent, 'cookies'>,
-  gameId: string
-) {
-  const supabase = createSSRClient(event);
+export async function findUserPickForGame(event: RequestEvent, gameId: string) {
+  const supabase = event.locals.supabase;
 
   const { data, error } = await supabase
-    .from('picks_view')
+    .from('picks_status_view')
     .select('*')
     .eq('game_id', gameId)
     .limit(1)

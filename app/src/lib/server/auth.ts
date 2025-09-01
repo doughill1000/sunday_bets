@@ -1,9 +1,8 @@
 // src/lib/server/auth.ts
-import { createSSRClient } from '$lib/supabase/ssr';
 import type { RequestEvent } from '@sveltejs/kit';
 
 export async function requireAdmin(event: RequestEvent) {
-  const supabase = createSSRClient(event);
+  const supabase = event.locals.supabase;
 
   const {
     data: { user }
