@@ -5,7 +5,6 @@ import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGame } from './db/commands/upsert_game';
 import { deactivateActiveLines } from './db/commands/deactivate_lines';
 import { insertActiveLine } from './db/commands/insert_active_line';
-import { createSupabaseService } from '$lib/supabase/service';
 
 /**
  * Sync fanduel spreads for the active week.
@@ -34,8 +33,6 @@ export async function syncOddsForActiveWeek() {
   (teamsAll ?? []).forEach((t) => byName.set(t.name, { id: t.id, short_name: t.short_name }));
 
   let inserted = 0;
-
-  const supabase = createSupabaseService();
 
   // Supabase JS does not support true SQL transactions, but you can batch operations
   // If you need atomicity, consider using RPC or Postgres functions for the transaction

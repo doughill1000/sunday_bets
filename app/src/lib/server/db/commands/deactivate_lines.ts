@@ -1,9 +1,7 @@
-import { createSupabaseService } from '$lib/supabase/service';
-
-const supabase = createSupabaseService();
+import { supabaseService } from '$lib/supabase/service';
 
 export async function deactivateActiveLines(gameId: string) {
-  const { error } = await supabase
+  const { error } = await supabaseService
     .from('game_lines')
     .update({ is_active_line: false })
     .eq('game_id', gameId)

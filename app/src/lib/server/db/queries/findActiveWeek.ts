@@ -1,11 +1,9 @@
 // src/lib/server/oddsSync.ts
-import { createSupabaseService } from '$lib/supabase/service';
-
-const supabase = createSupabaseService();
+import { supabaseService } from '$lib/supabase/service';
 
 export async function findActiveWeek() {
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseService
     .from('weeks')
     .select('*')
     .lte('start_ts', now)

@@ -1,11 +1,20 @@
 // src/lib/supabase/service.ts
-import { createClient } from '@supabase/supabase-js';
+import type { Database } from '$lib/server/db';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { SUPABASE_SERVICE_ROLE } from '$env/static/private';
-import type { Database } from '$lib/server/db/types';
 
-export function createSupabaseService() {
-  return createClient<Database>(PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE, {
-    auth: { persistSession: false }
-  });
-}
+if (!PUBLIC_SUPABASE_URL) throw new Error('PUBLIC_SUPABASE_URL env var is required');
+if (!SUPABASE_SERVICE_ROLE) throw new Error('SUPABASE_SERVICE_ROLE env var is required');
+
+const url = PUBLIC_SUPABASE_URL;
+const serviceKey = SUPABASE_SERVICE_ROLE; // server-only secret
+
+// Hot-reload safe singleton (dev)
+let _client: SupabaseClient<Database> | undefined;
+export const supabaseService =
+  _client ??
+  (_client = createClient<Database>(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { 'x-app-role': 'service' } }
+  }));

@@ -1,9 +1,7 @@
-import { createSupabaseService } from '$lib/supabase/service';
-
-const supabase = createSupabaseService();
+import { supabaseService } from '$lib/supabase/service';
 
 export async function insertActiveLine(gameId: string, spreadTeamId: number, spreadValue: number) {
-  const { error } = await supabase.from('game_lines').insert([
+  const { error } = await supabaseService.from('game_lines').insert([
     {
       game_id: gameId,
       source: 'fanduel',

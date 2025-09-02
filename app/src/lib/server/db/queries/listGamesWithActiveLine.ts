@@ -1,8 +1,7 @@
-import { createSupabaseService } from '$lib/supabase/service';
+import { supabaseService } from '$lib/supabase/service';
 
 export async function listGamesWithActiveLine(weekId: number) {
-  const supabase = createSupabaseService();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseService
     .from('games')
     .select(
       `

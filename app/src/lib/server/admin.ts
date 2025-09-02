@@ -13,7 +13,6 @@ export type ActiveWeek = {
   week_number: number;
   start_ts: string;
   end_ts: string;
-  is_active: boolean | null;
 } | null;
 
 type SettingsRow = {
@@ -48,9 +47,10 @@ export async function getSettingsSummary(): Promise<SettingsSummary> {
 export async function getActiveWeek(nowIso: string): Promise<ActiveWeek> {
   const { data: week, error } = await supabaseService
     .from('weeks')
-    .select('id,week_number,start_ts,end_ts,is_active')
+    .select('id,week_number,start_ts,end_ts')
+    // want start_ts <= now <= end_ts
     .lte('start_ts', nowIso)
-    .gt('end_ts', nowIso)
+    .gte('end_ts', nowIso)
     .order('start_ts', { ascending: false })
     .limit(1)
     .maybeSingle();

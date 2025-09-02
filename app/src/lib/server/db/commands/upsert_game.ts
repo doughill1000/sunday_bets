@@ -1,11 +1,9 @@
-import { createSupabaseService } from '$lib/supabase/service';
+import { supabaseService } from '$lib/supabase/service';
 import type { OddsGame, TeamRow } from '$lib/types/server';
-
-const supabase = createSupabaseService();
 
 export async function upsertGame(g: OddsGame, home: TeamRow, away: TeamRow, weekId: number): Promise<string> {
   // Try to upsert the game by external_game_id and week_id
-  const { data, error } = await supabase
+  const { data, error } = await supabaseService
     .from('games')
     .upsert(
       [
@@ -18,7 +16,7 @@ export async function upsertGame(g: OddsGame, home: TeamRow, away: TeamRow, week
           status: 'scheduled'
         }
       ],
-      { onConflict: 'external_game_id,week_id' }
+      { onConflict: 'external_game_id' }
     )
     .select('id')
     .single();

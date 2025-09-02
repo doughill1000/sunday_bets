@@ -375,7 +375,6 @@ export type Database = {
         Row: {
           end_ts: string
           id: number
-          is_active: boolean
           season_id: number
           start_ts: string
           week_number: number
@@ -383,7 +382,6 @@ export type Database = {
         Insert: {
           end_ts: string
           id?: number
-          is_active?: boolean
           season_id: number
           start_ts: string
           week_number: number
@@ -391,7 +389,6 @@ export type Database = {
         Update: {
           end_ts?: string
           id?: number
-          is_active?: boolean
           season_id?: number
           start_ts?: string
           week_number?: number
@@ -427,6 +424,105 @@ export type Database = {
           weight: Database["public"]["Enums"]["weight_enum"] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["picked_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      picks_status_view_admin: {
+        Row: {
+          can_relock_now: boolean | null
+          commence_time: string | null
+          final_locked_at: string | null
+          game_id: string | null
+          game_started: boolean | null
+          has_relock_available: boolean | null
+          initial_locked_at: string | null
+          is_final_locked: boolean | null
+          picked_side: Database["public"]["Enums"]["side_enum"] | null
+          picked_team_id: number | null
+          picked_team_short: string | null
+          relock_used: boolean | null
+          user_display_name: string | null
+          user_id: string | null
+          week_id: number | null
+          weight: Database["public"]["Enums"]["weight_enum"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["picked_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      picks_status_view_user: {
+        Row: {
+          can_relock_now: boolean | null
+          commence_time: string | null
+          final_locked_at: string | null
+          game_id: string | null
+          game_started: boolean | null
+          has_relock_available: boolean | null
+          initial_locked_at: string | null
+          is_final_locked: boolean | null
+          picked_side: Database["public"]["Enums"]["side_enum"] | null
+          picked_team_id: number | null
+          picked_team_short: string | null
+          relock_used: boolean | null
+          user_id: string | null
+          week_id: number | null
+          weight: Database["public"]["Enums"]["weight_enum"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "picks_game_id_fkey"
             columns: ["game_id"]

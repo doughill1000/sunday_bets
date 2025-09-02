@@ -1,10 +1,8 @@
-import { createSupabaseService } from '$lib/supabase/service';
+import { supabaseService } from '$lib/supabase/service';
 import type { TeamSide } from '$lib/types/domain';
 
-const supabase = createSupabaseService();
-
 export async function getGamesWithActiveLines(weekId: number) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseService
     .from('games')
     .select(
       `

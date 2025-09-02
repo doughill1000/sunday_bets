@@ -105,6 +105,7 @@
           <!-- Away -->
           <button
             class="btn btn-neutral btn-accent-outline flex-1"
+            class:selected={isSelected(g.id, 'away')}
             style={teamVars(g.away)}
             aria-pressed={isSelected(g.id, 'away')}
             disabled={!canChange}
@@ -119,6 +120,7 @@
           <!-- Home -->
           <button
             class="btn btn-neutral btn-accent-outline flex-1"
+            class:selected={isSelected(g.id, 'home')}
             style={teamVars(g.home)}
             aria-pressed={isSelected(g.id, 'home')}
             disabled={!canChange}
@@ -214,4 +216,23 @@
     color: var(--btn-fg);
   }
   .check { display: inline-flex; }
+
+  /* selected state: stronger border / outline and ensure icon color */
+  .btn[style].selected {
+    outline: 2px solid var(--btn-fg);
+    outline-offset: 2px;
+    /* preserve visual weight on small buttons */
+  }
+
+  /* ensure check icon uses current color and is visible on gradients */
+  .btn[style].selected .check,
+  .btn[style] .check {
+    color: var(--btn-fg);
+  }
+
+  /* make sure SVG strokes pick up currentColor (Lucide icons use stroke=currentColor) */
+  .btn[style] .check svg {
+    stroke: currentColor;
+    fill: none;
+  }
 </style>

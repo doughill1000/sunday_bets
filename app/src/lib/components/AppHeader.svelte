@@ -17,11 +17,11 @@
     };
     window.addEventListener('beforeinstallprompt', handler);
 
-    // // Run async logic separately
-    // (async () => {
-    //   await supabaseBrowser.auth.signInWithOtp({ email: 'doughill1000@gmail.com' });
-    //   // handle error if needed
-    // })();
+    // Run async logic separately
+    (async () => {
+      await supabaseBrowser.auth.signInWithOtp({ email: 'doughill1000@gmail.com' });
+      // handle error if needed
+    })();
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   });
