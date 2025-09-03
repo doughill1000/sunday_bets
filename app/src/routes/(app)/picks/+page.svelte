@@ -21,6 +21,16 @@
   onMount(() => {
     if (!initialized && data?.picks) {
       setPicks(data.picks);
+
+      // Pre-select home team for games that have no selection and aren't locked
+      for (const g of games) {
+        const entry = data.picks?.[g.id];
+        const hasSelection = entry?.selected || entry?.lockedPick;
+        if (!hasSelection) {
+          selectTeam(g.id, 'home');
+        }
+      }
+
       initialized = true;
     }
   });

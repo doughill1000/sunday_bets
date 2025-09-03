@@ -13,6 +13,17 @@
 :root {
   /* example: shared radius token if you want it */
   --radius-xl: 1.25rem;
+
+  /* tweak dark scheme surface strength */
+  --surface-500: rgba(255,255,255,0.03);
+  --surface-600: rgba(255,255,255,0.06);
+  --muted-50: rgba(255,255,255,0.65);
+}
+
+/* optionally make body text slightly lighter on dark theme */
+.scheme-dark body {
+  background-color: #0b1020; /* darker but not pitch black */
+  color: #dbeafe;
 }
 
 /* Neutral base */
