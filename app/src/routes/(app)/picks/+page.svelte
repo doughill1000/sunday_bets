@@ -2,48 +2,34 @@
   import { Segment } from '@skeletonlabs/skeleton-svelte';
   import { Check } from '@lucide/svelte/icons';
 
-  // UI + domain
-  import { picks, setPicks, selectTeam, setWeight, lockPick } from '$lib/stores/picks';
+  import { picks, setPicks, selectTeam, setWeight } from '$lib/stores/picks';
+  import { lockPick as lockPickApi } from '$lib/api/picks';
   import { TEAM_META, WEIGHTS, type TeamSide, type WeightCode } from '$lib/types/domain';
   import type { UIGame } from '$lib/types/ui';
   import { textOn } from '$lib/ui/color';
   import { kickoffPassed, canUseAce as canUseAceRule } from '$lib/domain/rules';
   import { onMount } from 'svelte';
+  import type { PickEntry } from '$lib/types/server';
 
-  // ----- Props from +page.server.ts -----
-  export let data: {
-    games: UIGame[];
-    picks: Record<string, import('$lib/types/server').PickEntry>;
-  };
+  export let data: { games: UIGame[]; picks: Record<string, PickEntry> };
 
-  // ----- One-time store initialization (client only) -----
   let initialized = false;
   onMount(() => {
     if (!initialized && data?.picks) {
       setPicks(data.picks);
-
-      // Pre-select home team for games that have no selection and aren't locked
       for (const g of games) {
         const entry = data.picks?.[g.id];
         const hasSelection = entry?.selected || entry?.lockedPick;
-        if (!hasSelection) {
-          selectTeam(g.id, 'home');
-        }
+        if (!hasSelection) selectTeam(g.id, 'home');
       }
-
       initialized = true;
     }
   });
 
-  // convenience local
   const games = data.games ?? [];
 
-  // ----- Helpers -----
   function teamVars(abbr: string) {
-    const meta = TEAM_META[abbr] ?? {
-      name: abbr,
-      colors: ['#64748b', '#94a3b8'] as [string, string]
-    };
+    const meta = TEAM_META[abbr] ?? { name: abbr, colors: ['#64748b', '#94a3b8'] as [string, string] };
     const [c1, c2] = meta.colors;
     const fg = textOn(c1, c2);
     return `--c1:${c1};--c2:${c2};--fg:${fg}`;
@@ -56,8 +42,30 @@
   }
 
   async function onLock(g: UIGame) {
-    const { ok, reason } = await lockPick(g.id);
-    if (!ok && reason) alert(reason);
+    const entry = $picks[g.id] ?? {};
+    const team = (entry.selected?.team ?? entry.lockedPick?.team) as TeamSide | undefined;
+    const weight = (entry.selected?.weight ?? entry.lockedPick?.weight) as WeightCode | undefined;
+
+    if (!team || !weight) {
+      alert('Pick a team and weight first.');
+      return;
+    }
+
+    const res = await lockPickApi(g.id, team, weight);
+    if (!res.ok) {
+      alert(res.reason ?? 'Lock failed');
+      return;
+    }
+
+    // minimal optimistic store update
+    picks.update((s) => ({
+      ...s,
+      [g.id]: {
+        ...(s[g.id] ?? {}),
+        lockedPick: { team, weight },
+        unlocksUsed: res.relock_used ? 1 : (s[g.id]?.unlocksUsed ?? 0)
+      }
+    }));
   }
 
   function formatKickoff(iso: string) {
@@ -75,7 +83,6 @@
     return `${favName} -${g.spread}`;
   }
 
-  // wrapper so template can call with current store value
   function canUseAce(gameId: string) {
     return canUseAceRule(gameId, $picks);
   }
@@ -88,22 +95,30 @@
 {:else}
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
     {#each games as g (g.id)}
-      {@const entry = $picks[g.id] ?? {} }
-      {@const started = kickoffPassed(g.kickoff) }
-      {@const locked = !!entry.lockedPick }
-      {@const canChange = !started && !locked }
-      {@const canRelock = !started && locked && (entry.unlocksUsed ?? 0) < 1 }
+      {@const entry = $picks[g.id] ?? {}}
+      {@const started = kickoffPassed(g.kickoff)}
+      {@const locked = !!entry.lockedPick}
+      {@const canChange = !started && !locked}
+      {@const canRelock = !started && locked && (entry.unlocksUsed ?? 0) < 1}
 
-      <article class="rounded-2xl p-4 border border-surface-600/20 bg-surface-500/5" aria-labelledby={`game-${g.id}-title`}>
+      <article
+        class="rounded-2xl p-4 border border-surface-600/20 bg-surface-500/5"
+        aria-labelledby={`game-${g.id}-title`}
+      >
         <header class="flex items-center justify-between mb-2">
           <div class="min-w-0">
             <h2 id={`game-${g.id}-title`} class="font-semibold truncate">{g.away} @ {g.home}</h2>
             <p class="text-xs opacity-70 truncate">{spreadLine(g)}</p>
           </div>
           <div class="flex items-center gap-2">
-            <time class="text-xs opacity-70 whitespace-nowrap" datetime={g.kickoff}>{formatKickoff(g.kickoff)}</time>
+            <time class="text-xs opacity-70 whitespace-nowrap" datetime={g.kickoff}
+              >{formatKickoff(g.kickoff)}</time
+            >
             {#if locked}
-              <span class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-500" aria-label="Locked">
+              <span
+                class="text-xs px-2 py-1 rounded-full bg-green-600/20 text-green-500"
+                aria-label="Locked"
+              >
                 Locked
               </span>
             {/if}
@@ -114,7 +129,7 @@
         <div class="flex gap-2" role="group" aria-label="Pick a team">
           <!-- Away -->
           <button
-            class="btn btn-neutral btn-accent-outline flex-1"
+            class="btn btn-neutral flex-1"
             class:selected={isSelected(g.id, 'away')}
             style={teamVars(g.away)}
             aria-pressed={isSelected(g.id, 'away')}
@@ -122,14 +137,11 @@
             on:click={() => selectTeam(g.id, 'away')}
           >
             <span class="font-semibold tracking-wide">{g.away}</span>
-            {#if isSelected(g.id, 'away')}
-              <span class="check ml-1" aria-hidden="true"><Check size={14} /></span>
-            {/if}
           </button>
 
           <!-- Home -->
           <button
-            class="btn btn-neutral btn-accent-outline flex-1"
+            class="btn btn-neutral flex-1"
             class:selected={isSelected(g.id, 'home')}
             style={teamVars(g.home)}
             aria-pressed={isSelected(g.id, 'home')}
@@ -137,9 +149,6 @@
             on:click={() => selectTeam(g.id, 'home')}
           >
             <span class="font-semibold tracking-wide">{g.home}</span>
-            {#if isSelected(g.id, 'home')}
-              <span class="check ml-1" aria-hidden="true"><Check size={14} /></span>
-            {/if}
           </button>
         </div>
 
@@ -200,7 +209,9 @@
               <button
                 class="w-full h-10 font-semibold bg-success-900 text-white hover:bg-success-800 disabled:bg-surface-400"
                 on:click={() => onLock(g)}
-                disabled={!entry.selected || (entry.selected.weight === 'A' && !canUseAce(g.id)) || started}
+                disabled={!entry.selected ||
+                  (entry.selected.weight === 'A' && !canUseAce(g.id)) ||
+                  started}
               >
                 Lock Pick
               </button>
@@ -225,24 +236,11 @@
     background: linear-gradient(135deg, var(--btn-bg), var(--btn-bg2));
     color: var(--btn-fg);
   }
-  .check { display: inline-flex; }
 
   /* selected state: stronger border / outline and ensure icon color */
   .btn[style].selected {
-    outline: 2px solid var(--btn-fg);
+    outline: 2px solid #ffffff;
     outline-offset: 2px;
     /* preserve visual weight on small buttons */
-  }
-
-  /* ensure check icon uses current color and is visible on gradients */
-  .btn[style].selected .check,
-  .btn[style] .check {
-    color: var(--btn-fg);
-  }
-
-  /* make sure SVG strokes pick up currentColor (Lucide icons use stroke=currentColor) */
-  .btn[style] .check svg {
-    stroke: currentColor;
-    fill: none;
   }
 </style>

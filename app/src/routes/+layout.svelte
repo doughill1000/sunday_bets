@@ -7,7 +7,7 @@
 
   let { children, data } = $props();
 
-  const { supabase, session } = data;
+  const { supabase, session, user } = data;
 
   onMount(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
@@ -21,7 +21,7 @@
 
 <div class="min-h-svh flex flex-col">
   <AppBar>
-    <AppHeader />
+    <AppHeader user={user} />
   </AppBar>
 
   <main class="container mx-auto p-4 flex-1">

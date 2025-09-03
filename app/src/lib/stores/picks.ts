@@ -1,5 +1,5 @@
 // src/lib/stores/picks.ts
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { PickEntry } from '$lib/types/server';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
 import { lockPick as lockPickPost } from '$lib/api/picks';
@@ -27,33 +27,50 @@ export function setWeight(gameId: string, weight: WeightCode) {
 }
 
 export async function lockPick(gameId: string): Promise<{ ok: boolean; reason?: string }> {
-  let snapshot: Record<string, PickEntry>;
-  let next: Record<string, PickEntry>;
+  // snapshot current state
+  const before = get(picks);
+  const entry = before[gameId];
+
+  const team = (entry?.selected?.team ?? entry?.lockedPick?.team) as TeamSide | undefined;
+  const weight = (entry?.selected?.weight ?? entry?.lockedPick?.weight) as WeightCode | undefined;
+
+  if (!team || !weight) {
+    return { ok: false, reason: 'missing team/weight' };
+  }
+
+  // optimistic update
+  const nowIso = new Date().toISOString();
+  picks.update((s) => ({
+    ...s,
+    [gameId]: {
+      ...(s[gameId] ?? {}),
+      lockedPick: { team, weight },
+      lockedAt: nowIso
+    }
+  }));
+
+  // call API with required params
+  const result = await lockPickPost(gameId, team, weight);
+
+  if (!result.ok) {
+    // rollback on failure
+    picks.set(before);
+    return result;
+  }
+
+  // merge authoritative fields from server (if present)
   picks.update((s) => {
-    snapshot = s;
-    const e = s[gameId] ?? {};
-    const now = new Date().toISOString();
-    next = { ...s, [gameId]: { ...e, lockedPick: e.selected, lockedAt: now } };
-    return next;
+    const e = s[gameId]!;
+    return {
+      ...s,
+      [gameId]: {
+        ...e,
+        lockedPick: { team, weight },
+        lockedAt: result.final_locked_at ?? e.lockedAt ?? nowIso,
+        unlocksUsed: result.relock_used ? 1 : e.unlocksUsed ?? 0
+      }
+    };
   });
 
-  const result = await lockPickPost(gameId);
-  if (!result.ok) {
-    // rollback
-    picks.set(snapshot!);
-  } else {
-    // if server returns authoritative flags (relock_used, final_locked_at), merge them
-    picks.update((s) => {
-      const e = s[gameId]!;
-      return {
-        ...s,
-        [gameId]: {
-          ...e,
-          lockedAt: result.final_locked_at ?? e.lockedAt,
-          unlocksUsed: result.relock_used ? 1 : e.unlocksUsed ?? 0
-        }
-      };
-    });
-  }
   return result;
 }

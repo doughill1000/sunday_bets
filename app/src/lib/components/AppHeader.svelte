@@ -1,8 +1,10 @@
 <script lang="ts">
   import { fly, fade } from 'svelte/transition';
   import { onMount } from 'svelte';
-  import { Menu, X, Trophy, User } from '@lucide/svelte/icons';
+  import { Menu, X, Trophy, User as UserIcon } from '@lucide/svelte/icons';
   import { supabaseBrowser } from '$lib/supabase/browser';
+  import { isAdmin } from '$lib/auth/guards';
+  import type { User } from '@supabase/supabase-js'
 
   let open = false;
   let canInstall = false;
@@ -16,12 +18,6 @@
       canInstall = true;
     };
     window.addEventListener('beforeinstallprompt', handler);
-
-    // Run async logic separately
-    (async () => {
-      await supabaseBrowser.auth.signInWithOtp({ email: 'doughill1000@gmail.com' });
-      // handle error if needed
-    })();
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   });
@@ -37,6 +33,9 @@
   function closeOnEsc(e: KeyboardEvent) {
     if (e.key === 'Escape') open = false;
   }
+
+  export let user: User | null = null; // pass from a layout if desired
+  $: canSeeAdmin = isAdmin(user);
 </script>
 
 <!-- Top App Bar -->
@@ -63,7 +62,9 @@
         <Trophy size={16} /> Leaderboard
       </a>
       <a href="/picks" class="opacity-90 hover:opacity-100">My Picks</a>
-      <a href="/admin" class="opacity-90 hover:opacity-100">Admin</a>
+      {#if canSeeAdmin}
+        <a href="/admin" class="opacity-90 hover:opacity-100">Admin</a>
+      {/if}
     </nav>
 
     <!-- Compact icons on mobile -->
@@ -72,7 +73,7 @@
         <Trophy size={18} />
       </a>
       <a href="/account" aria-label="Account" class="p-2 rounded hover:bg-white/5">
-        <User size={18} />
+        <UserIcon size={18} />
       </a>
     </div>
   </div>
@@ -112,7 +113,9 @@
     <a href="/leaderboard" class="block px-3 h-10 rounded flex items-center hover:bg-white/5"
       >Leaderboard</a
     >
-    <a href="/admin" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">Admin</a>
+    {#if canSeeAdmin}
+      <a href="/admin" class="block px-3 h-10 rounded flex items-center hover:bg-white/5">Admin</a>
+    {/if}
     <div class="my-2 h-px bg-white/10"></div>
 
     {#if canInstall}
