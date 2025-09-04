@@ -49,6 +49,7 @@ language plpgsql
 security invoker
 set search_path = public
 as $$
+#variable_conflict use_column
 declare
   v_uid     uuid := auth.uid();
   v_game    public.games%rowtype;
