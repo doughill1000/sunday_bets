@@ -46,14 +46,10 @@
   }
 
   function isSelected(gameId: string, side: TeamSide) {
-    const entry = $picks[gameId];
-    if (entry?.selected) {
-      return entry.selected.team === side;
-    }
-    if (entry?.lockedPick) {
-      return entry.lockedPick.team === side;
-    }
-    return false;
+    const p = $picks[gameId];
+    if (!p) return false;
+    const current = p.selected ?? p.lockedPick;
+    return current?.team === side;
   }
 
   async function onLock(g: UIGame) {
