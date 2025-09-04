@@ -1,18 +1,25 @@
--- Before INSERT/UPDATE on picks:
--- - INSERT (first lock): stamp current active line into initial_* and final_*
--- - UPDATE (relock): allowed only if relock_used=false and game not started;
---   re-stamp final_* and set relock_used=true
+-- Recreate the trigger function without FOR UPDATE
 create or replace function public.fn_picks_lock_guard()
-returns trigger language plpgsql as $$
+returns trigger
+language plpgsql
+security definer               -- so it runs with the function owner’s privileges
+set search_path = public
+as $$
 declare
   line public.game_lines;
-  g public.games;
+  g    public.games;
 begin
-  select * into g from public.games where id = coalesce(new.game_id, old.game_id) for update;
-  if now() >= g.commence_time then
+  -- Read the game row (no row lock)
+  select * into g
+  from public.games
+  where id = coalesce(new.game_id, old.game_id);
+
+  -- Block edits after kickoff (scheduled | in_progress | final)
+  if g.status in ('in_progress','final') then
     raise exception 'Edits are not allowed after kickoff';
   end if;
 
+  -- Require an active line snapshot
   select * into line from public.current_active_line(g.id);
   if line.id is null then
     raise exception 'No active line available for this game';
@@ -31,12 +38,13 @@ begin
     new.final_locked_spread_value   := line.spread_value;
 
     return new;
+
   elsif (tg_op = 'UPDATE') then
     if old.relock_used then
       raise exception 'Relock already used for this game';
     end if;
 
-    -- only count as relock if team or weight actually changes
+    -- Only count as relock if something changed
     if (new.picked_team_id is distinct from old.picked_team_id)
        or (new.weight is distinct from old.weight) then
 
@@ -51,9 +59,11 @@ begin
   end if;
 
   return new;
-end;
+end
 $$;
 
+-- trigger already exists; no need to drop/recreate it if the name is the same,
+-- but if you want to be explicit:
 drop trigger if exists trg_picks_lock_guard on public.picks;
 create trigger trg_picks_lock_guard
 before insert or update on public.picks

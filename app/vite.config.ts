@@ -4,19 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
-  optimizeDeps: {
-    include: [
-      '@lucide/svelte',
-      '@skeletonlabs/skeleton-svelte',
-      '@skeletonlabs/skeleton',
-      '@skeletonlabs/skeleton/themes/cerberus',
-      '@skeletonlabs/skeleton/optional/presets'
-    ]
-  },
-  server: {
-    // helps on Windows to avoid file-watch stalls
-    watch: { usePolling: false }
-  },
+  
   test: {
     expect: { requireAssertions: true },
     projects: [

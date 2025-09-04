@@ -10,7 +10,7 @@ GRANT EXECUTE ON FUNCTIONS TO anon, authenticated;
 
 -- 3) Base table privileges (RLS still applies!):
 -- Read-only tables for all signed-in users
-GRANT SELECT ON public.games, public.game_lines, public.results, public.totals, public.users
+GRANT SELECT ON public.games, public.game_lines, public.results, public.totals, public.users, public.weeks, public.seasons
 TO authenticated;
 
 -- Picks: allow the operations; RLS will enforce *who/when/what*
