@@ -147,6 +147,7 @@
               style={teamVars(g.away)}
               aria-pressed={isSelected(g.id, 'away')}
               disabled={!canChange}
+              data-disabled={!canChange}
               on:click={() => selectTeam(g.id, 'away')}
             >
               <span class="font-semibold tracking-wide">{g.away}</span>
@@ -158,6 +159,7 @@
               style={teamVars(g.home)}
               aria-pressed={isSelected(g.id, 'home')}
               disabled={!canChange}
+              data-disabled={!canChange}
               on:click={() => selectTeam(g.id, 'home')}
             >
               <span class="font-semibold tracking-wide">{g.home}</span>
