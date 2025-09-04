@@ -25,7 +25,7 @@
 
   onMount(() => {
     if (!initialized && data?.picks) {
-      setPicks(data.picks);
+      // setPicks(data.picks);
       for (const g of games) {
         const entry = $picks[g.id];
         const hasSelection = entry?.selected || entry?.lockedPick;
