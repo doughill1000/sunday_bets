@@ -45,14 +45,6 @@
     return `--c1:${c1};--c2:${c2};--fg:${fg}`;
   }
 
-  function isSelected(gameId: string, side: TeamSide) {
-    const p = $picks[gameId];
-    if (!p) return false;
-    const current = p.selected ?? p.lockedPick;
-
-    return current?.team === side;
-  }
-
   async function onLock(g: UIGame) {
     const entry = $picks[g.id] ?? {};
     const team = (entry.selected?.team ?? entry.lockedPick?.team) as TeamSide | undefined;
@@ -103,139 +95,144 @@
 {:else}
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
     {#each games as g (g.id)}
-  {@const entry = $picks[g.id] ?? {}}
-  {@const current = entry.selected ?? entry.lockedPick}
-  {@const started = kickoffPassed(g.kickoff)}
-  {@const locked = !!entry.lockedPick}
-  {@const canChange = !started && !locked}
+      {@const entry = $picks[g.id] ?? {}}
+      {@const current = entry.selected ?? entry.lockedPick}
+      {@const started = kickoffPassed(g.kickoff)}
+      {@const locked = !!entry.lockedPick}
+      {@const canChange = !started && !locked}
+      {@const canUseAce = canUseAceRule(g.id, $picks)}
 
-  <!-- team css vars, memoized -->
-  {@const awayVars = teamCssVars(g.away)}
-  {@const homeVars = teamCssVars(g.home)}
+      <!-- team css vars, memoized -->
+      {@const awayVars = teamVars(g.away)}
+      {@const homeVars = teamVars(g.home)}
 
-  {@const selAway = current?.team === 'away'}
-  {@const selHome = current?.team === 'home'}
-  {@const weightValue = (current?.weight ?? 'L') as WeightCode}
-  {@const lineText = lineLabel(g)}
-  {@const kickoffText = formatKickoff(g.kickoff)}
+      {@const selAway = current?.team === 'away'}
+      {@const selHome = current?.team === 'home'}
+      {@const weightValue = (current?.weight ?? 'L') as WeightCode}
+      {@const lineText = spreadLine(g)}
+      {@const kickoffText = formatKickoff(g.kickoff)}
 
-  <Card class="relative rounded-2xl">
-    {#if locked}
-      <Badge
-        variant="secondary"
-        class="absolute right-3 top-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
-      >
-        <span>Locked</span>
-        <span class="font-normal opacity-80">
-          {#if entry.lockedSpreadValue}
-            {abbrById(entry.lockedSpreadTeamId) ?? 'N/A'} {entry.lockedSpreadValue} @ {entry.lockedPick?.weight}
-          {:else}
-            {entry.lockedPick?.weight}
-          {/if}
-        </span>
-      </Badge>
-    {/if}
-
-    <CardHeader class="flex-row items-center justify-between pb-2">
-      <div class="min-w-0">
-        <h2 class="truncate font-semibold">{g.away} @ {g.home}</h2>
-        <p class="text-muted-foreground truncate text-xs">{lineText}</p>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <time class="text-muted-foreground whitespace-nowrap text-xs" datetime={g.kickoff}>
-          {kickoffText}
-        </time>
-      </div>
-    </CardHeader>
-
-    <CardContent class="space-y-3">
-      <!-- Team pick -->
-      <div class="flex gap-2" role="group" aria-label="Pick a team">
-        <Button
-          variant="secondary"
-          class="team-btn flex-1"
-          class:selected={selAway}
-          style={awayVars}
-          aria-pressed={selAway}
-          disabled={!canChange}
-          on:click={() => selectTeam(g.id, 'away')}
-        >
-          <span class="font-semibold tracking-wide">{g.away}</span>
-        </Button>
-
-        <Button
-          variant="secondary"
-          class="team-btn flex-1"
-          class:selected={selHome}
-          style={homeVars}
-          aria-pressed={selHome}
-          disabled={!canChange}
-          on:click={() => selectTeam(g.id, 'home')}
-        >
-          <span class="font-semibold tracking-wide">{g.home}</span>
-        </Button>
-      </div>
-
-      <!-- Weight + Lock -->
-      <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">
-        <div class="min-w-0">
-          <Label class="mb-1 block text-xs" for={`w_${g.id}`}>Weight</Label>
-
-          <ToggleGroup
-            id={`w_${g.id}`}
-            type="single"
-            value={weightValue}
-            on:change={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
-            class="w-full"
-            disabled={!canChange}
+      <Card class="relative rounded-2xl">
+        {#if locked}
+          <Badge
+            variant="secondary"
+            class="absolute right-3 top-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
           >
-            {#each Object.entries(WEIGHTS) as [code, w]}
-              <ToggleGroupItem
-                value={code}
-                disabled={code === 'A' && !canUseAceRule(g.id, $picks)}
-                class="flex-1 px-3 py-[6px] leading-none"
-              >
-                <div class="flex flex-col items-center">
-                  <span class="text-sm font-semibold">{w.label}</span>
-                  <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
-                </div>
-              </ToggleGroupItem>
-            {/each}
-          </ToggleGroup>
-
-          {#if entry.selected?.weight === 'A' && !canUseAceRule(g.id, $picks)}
-            <p class="text-muted-foreground mt-1 text-[11px]">
-              {WEIGHTS.A.label} has already been used on another game.
-            </p>
-          {/if}
-        </div>
-
-        <div class="mt-1">
-          {#if locked}
-            <Button class="h-10 w-full font-semibold" variant="secondary" on:click={() => onLock(g)}>
-              Unlock
-            </Button>
-          {:else}
-            <Button
-              class="h-10 w-full font-semibold"
-              on:click={() => onLock(g)}
-              disabled={!entry.selected ||
-                (entry.selected.weight === 'A' && !canUseAceRule(g.id, $picks)) ||
-                started}
-            >
-              Lock Pick
-            </Button>
-          {/if}
-        </div>
-
-        {#if started}
-          <p class="text-muted-foreground mt-2 text-xs">Kickoff passed — picks locked.</p>
+            <span>Locked</span>
+            <span class="font-normal opacity-80">
+              {#if entry.lockedSpreadValue}
+                {abbrById(entry.lockedSpreadTeamId) ?? 'N/A'}
+                {entry.lockedSpreadValue} @ {entry.lockedPick?.weight}
+              {:else}
+                {entry.lockedPick?.weight}
+              {/if}
+            </span>
+          </Badge>
         {/if}
-      </div>
-    </CardContent>
-  </Card>
-{/each}
 
+        <CardHeader class="flex-row items-center justify-between pb-2">
+          <div class="min-w-0">
+            <h2 class="truncate font-semibold">{g.away} @ {g.home}</h2>
+            <p class="text-muted-foreground truncate text-xs">{lineText}</p>
+          </div>
+          <div class="flex shrink-0 items-center gap-2">
+            <time class="text-muted-foreground whitespace-nowrap text-xs" datetime={g.kickoff}>
+              {kickoffText}
+            </time>
+          </div>
+        </CardHeader>
+
+        <CardContent class="space-y-3">
+          <!-- Team pick -->
+          <div class="flex gap-2" role="group" aria-label="Pick a team">
+            <Button
+              variant="secondary"
+              class="team-btn flex-1"
+              class:selected={selAway}
+              style={awayVars}
+              aria-pressed={selAway}
+              disabled={!canChange}
+              on:click={() => selectTeam(g.id, 'away')}
+            >
+              <span class="font-semibold tracking-wide">{g.away}</span>
+            </Button>
+
+            <Button
+              variant="secondary"
+              class="team-btn flex-1"
+              class:selected={selHome}
+              style={homeVars}
+              aria-pressed={selHome}
+              disabled={!canChange}
+              on:click={() => selectTeam(g.id, 'home')}
+            >
+              <span class="font-semibold tracking-wide">{g.home}</span>
+            </Button>
+          </div>
+
+          <!-- Weight + Lock -->
+          <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">
+            <div class="min-w-0">
+              <Label class="mb-1 block text-xs" for={`w_${g.id}`}>Weight</Label>
+
+              <ToggleGroup
+                id={`w_${g.id}`}
+                type="single"
+                value={weightValue}
+                on:change={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
+                class="w-full"
+                disabled={!canChange}
+              >
+                {#each Object.entries(WEIGHTS) as [code, w]}
+                  <ToggleGroupItem
+                    value={code}
+                    disabled={code === 'A' && !canUseAceRule(g.id, $picks)}
+                    class="flex-1 px-3 py-[6px] leading-none"
+                  >
+                    <div class="flex flex-col items-center">
+                      <span class="text-sm font-semibold">{w.label}</span>
+                      <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
+                    </div>
+                  </ToggleGroupItem>
+                {/each}
+              </ToggleGroup>
+
+              {#if entry.selected?.weight === 'A' && !canUseAceRule(g.id, $picks)}
+                <p class="text-muted-foreground mt-1 text-[11px]">
+                  {WEIGHTS.A.label} has already been used on another game.
+                </p>
+              {/if}
+            </div>
+
+            <div class="mt-1">
+              {#if locked}
+                <Button
+                  class="h-10 w-full font-semibold"
+                  variant="secondary"
+                  on:click={() => onLock(g)}
+                >
+                  Unlock
+                </Button>
+              {:else}
+                <Button
+                  class="h-10 w-full font-semibold"
+                  on:click={() => onLock(g)}
+                  disabled={!entry.selected ||
+                    (entry.selected.weight === 'A' && !canUseAceRule(g.id, $picks)) ||
+                    started}
+                >
+                  Lock Pick
+                </Button>
+              {/if}
+            </div>
+
+            {#if started}
+              <p class="text-muted-foreground mt-2 text-xs">Kickoff passed — picks locked.</p>
+            {/if}
+          </div>
+        </CardContent>
+      </Card>
+    {/each}
   </div>
 {/if}
 
