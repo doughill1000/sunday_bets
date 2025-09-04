@@ -211,7 +211,7 @@
                   variant="secondary"
                   on:click={() => onLock(g)}
                 >
-                  Unlock
+                  Locked
                 </Button>
               {:else}
                 <Button
