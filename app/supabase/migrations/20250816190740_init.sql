@@ -25,7 +25,6 @@ create table if not exists public.weeks (
   week_number int not null,
   start_ts timestamptz not null,
   end_ts   timestamptz not null,
-  is_active boolean not null default false
 );
 
 -- TEAMS
