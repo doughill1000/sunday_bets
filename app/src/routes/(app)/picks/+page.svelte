@@ -169,35 +169,27 @@
             <div class="min-w-0">
               <Label class="mb-1 block text-xs" for={`w_${g.id}`}>Weight</Label>
 
-              <div
-                on:change={(e) =>
-                  setWeight(
-                    g.id,
-                    ((e as CustomEvent<{ value?: string }>).detail?.value ?? 'L') as WeightCode
-                  )
-                }
+              <ToggleGroup
+                id={`w_${g.id}`}
+                type="single"
+                value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
+                on:change={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
+                class="w-full"
+                disabled={!canChange}
               >
-                <ToggleGroup
-                  id={`w_${g.id}`}
-                  type="single"
-                  value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
-                  class="w-full"
-                  disabled={!canChange}
-                >
-                  {#each Object.entries(WEIGHTS) as [code, w]}
-                    <ToggleGroupItem
-                      value={code}
-                      disabled={code === 'A' && !canUseAce(g.id)}
-                      class="flex-1 px-3 py-[6px] leading-none"
-                    >
-                      <div class="flex flex-col items-center">
-                        <span class="text-sm font-semibold">{w.label}</span>
-                        <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
-                      </div>
-                    </ToggleGroupItem>
-                  {/each}
-                </ToggleGroup>
-              </div>
+                {#each Object.entries(WEIGHTS) as [code, w]}
+                  <ToggleGroupItem
+                    value={code}
+                    disabled={code === 'A' && !canUseAce(g.id)}
+                    class="flex-1 px-3 py-[6px] leading-none"
+                  >
+                    <div class="flex flex-col items-center">
+                      <span class="text-sm font-semibold">{w.label}</span>
+                      <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
+                    </div>
+                  </ToggleGroupItem>
+                {/each}
+              </ToggleGroup>
 
               {#if entry.selected?.weight === 'A' && !canUseAce(g.id)}
                 <p class="text-muted-foreground mt-1 text-[11px]">
