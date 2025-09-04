@@ -70,7 +70,6 @@
       [g.id]: {
         ...(s[g.id] ?? {}),
         lockedPick: { team, weight },
-        unlocksUsed: res.relock_used ? 1 : (s[g.id]?.unlocksUsed ?? 0)
       }
     }));
   }
@@ -106,7 +105,6 @@
       {@const started = kickoffPassed(g.kickoff)}
       {@const locked = !!entry.lockedPick}
       {@const canChange = !started && !locked}
-      {@const canRelock = !started && locked && (entry.unlocksUsed ?? 0) < 1}
 
       <Card class="relative rounded-2xl">
         {#if locked}
@@ -171,27 +169,35 @@
             <div class="min-w-0">
               <Label class="mb-1 block text-xs" for={`w_${g.id}`}>Weight</Label>
 
-              <ToggleGroup
-                id={`w_${g.id}`}
-                type="single"
-                value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
-                on:change={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
-                class="w-full"
-                disabled={!canChange}
+              <div
+                on:change={(e) =>
+                  setWeight(
+                    g.id,
+                    ((e as CustomEvent<{ value?: string }>).detail?.value ?? 'L') as WeightCode
+                  )
+                }
               >
-                {#each Object.entries(WEIGHTS) as [code, w]}
-                  <ToggleGroupItem
-                    value={code}
-                    disabled={code === 'A' && !canUseAce(g.id)}
-                    class="flex-1 px-3 py-[6px] leading-none"
-                  >
-                    <div class="flex flex-col items-center">
-                      <span class="text-sm font-semibold">{w.label}</span>
-                      <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
-                    </div>
-                  </ToggleGroupItem>
-                {/each}
-              </ToggleGroup>
+                <ToggleGroup
+                  id={`w_${g.id}`}
+                  type="single"
+                  value={entry.selected?.weight ?? entry.lockedPick?.weight ?? 'L'}
+                  class="w-full"
+                  disabled={!canChange}
+                >
+                  {#each Object.entries(WEIGHTS) as [code, w]}
+                    <ToggleGroupItem
+                      value={code}
+                      disabled={code === 'A' && !canUseAce(g.id)}
+                      class="flex-1 px-3 py-[6px] leading-none"
+                    >
+                      <div class="flex flex-col items-center">
+                        <span class="text-sm font-semibold">{w.label}</span>
+                        <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
+                      </div>
+                    </ToggleGroupItem>
+                  {/each}
+                </ToggleGroup>
+              </div>
 
               {#if entry.selected?.weight === 'A' && !canUseAce(g.id)}
                 <p class="text-muted-foreground mt-1 text-[11px]">
@@ -204,22 +210,11 @@
               {#if locked}
                 <Button
                   class="h-10 w-full font-semibold"
-                  variant={canRelock ? 'destructive' : 'secondary'}
+                  variant="secondary"
                   on:click={() => onLock(g)}
-                  disabled={!canRelock}
                 >
-                  Relock
+                  Unlock
                 </Button>
-
-                {#if canRelock}
-                  <p class="text-muted-foreground mt-1 text-center text-[11px]">
-                    1 unlock remaining
-                  </p>
-                {:else if (entry.unlocksUsed ?? 0) >= 1}
-                  <p class="text-muted-foreground mt-1 text-center text-[11px]">
-                    0 unlock remaining
-                  </p>
-                {/if}
               {:else}
                 <Button
                   class="h-10 w-full font-semibold"

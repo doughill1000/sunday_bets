@@ -10,8 +10,6 @@ export function isAdmin(user: User | null | undefined): boolean {
     [am.role, um.role, ...(am.roles ?? []), ...(um.roles ?? [])].filter(Boolean)
   );
 
-console.log('roles', roles, { am, um });
-
   if (roles.has('admin')) return true;
   if (am.is_admin === true || um.is_admin === true) return true;
 

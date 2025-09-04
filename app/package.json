@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "db:push:dev": "cross-env SUPABASE_PROJECT_REF=dctszzpkngrxixijdrty supabase db push",
-    "db:push:prod": "cross-env SUPABASE_PROJECT_REF=ftculdngnsjmerasmsnq supabase db push",
+    "db:push:dev": "cross-env SUPABASE_PROJECT_REF=fhjmfpuanzmowmsfmuhi supabase db push",
+    "db:push:prod": "cross-env SUPABASE_PROJECT_REF=anzcshrpfpxajcgrwczv supabase db push",
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
@@ -18,7 +18,7 @@
     "lint": "prettier --check . && eslint .",
     "test:unit": "vitest",
     "test": "npm run test:unit -- --run",
-    "supa:gen": "supabase gen types typescript --project-id dctszzpkngrxixijdrty > src/lib/server/db/types.ts"
+    "supa:gen": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",

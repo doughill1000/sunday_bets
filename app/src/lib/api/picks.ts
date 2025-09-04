@@ -17,6 +17,5 @@ export async function lockPick(gameId: string, team: TeamSide, weight: WeightCod
     ok: boolean;
     reason?: string;
     final_locked_at?: string;
-    relock_used?: boolean;
   };
 }

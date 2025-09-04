@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 // Completes the OTP (magic link) flow and sets auth cookies
 export const GET: RequestHandler = async ({ locals, url }) => {
   const token_hash = url.searchParams.get('token_hash');
-  const type = url.searchParams.get('type') as 'magiclink' | 'recovery' | 'signup' | null;
+  const type = url.searchParams.get('type') as 'magiclink' | 'recovery' | 'signup'| 'email' | null;
   const next = '/picks';
 
   if (!token_hash || !type) {

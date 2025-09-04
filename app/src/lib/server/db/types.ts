@@ -95,7 +95,6 @@ export type Database = {
         Row: {
           away_team_id: number
           commence_time: string
-          espn_event_id: string | null
           external_game_id: string | null
           final_scores: Json | null
           home_team_id: number
@@ -106,7 +105,6 @@ export type Database = {
         Insert: {
           away_team_id: number
           commence_time: string
-          espn_event_id?: string | null
           external_game_id?: string | null
           final_scores?: Json | null
           home_team_id: number
@@ -117,7 +115,6 @@ export type Database = {
         Update: {
           away_team_id?: number
           commence_time?: string
-          espn_event_id?: string | null
           external_game_id?: string | null
           final_scores?: Json | null
           home_team_id?: number
@@ -151,50 +148,35 @@ export type Database = {
       }
       picks: {
         Row: {
-          final_locked_at: string | null
-          final_locked_line_id: number | null
-          final_locked_spread_team_id: number | null
-          final_locked_spread_value: number | null
           game_id: string
-          initial_locked_at: string | null
-          initial_locked_line_id: number | null
-          initial_locked_spread_team_id: number | null
-          initial_locked_spread_value: number | null
+          locked_at: string | null
           locked_by: string
+          locked_line_id: number | null
+          locked_spread_team_id: number | null
+          locked_spread_value: number | null
           picked_team_id: number
-          relock_used: boolean
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
         }
         Insert: {
-          final_locked_at?: string | null
-          final_locked_line_id?: number | null
-          final_locked_spread_team_id?: number | null
-          final_locked_spread_value?: number | null
           game_id: string
-          initial_locked_at?: string | null
-          initial_locked_line_id?: number | null
-          initial_locked_spread_team_id?: number | null
-          initial_locked_spread_value?: number | null
+          locked_at?: string | null
           locked_by?: string
+          locked_line_id?: number | null
+          locked_spread_team_id?: number | null
+          locked_spread_value?: number | null
           picked_team_id: number
-          relock_used?: boolean
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
         }
         Update: {
-          final_locked_at?: string | null
-          final_locked_line_id?: number | null
-          final_locked_spread_team_id?: number | null
-          final_locked_spread_value?: number | null
           game_id?: string
-          initial_locked_at?: string | null
-          initial_locked_line_id?: number | null
-          initial_locked_spread_team_id?: number | null
-          initial_locked_spread_value?: number | null
+          locked_at?: string | null
           locked_by?: string
+          locked_line_id?: number | null
+          locked_spread_team_id?: number | null
+          locked_spread_value?: number | null
           picked_team_id?: number
-          relock_used?: boolean
           user_id?: string
           weight?: Database["public"]["Enums"]["weight_enum"]
         }
@@ -405,63 +387,17 @@ export type Database = {
       }
     }
     Views: {
-      picks_status_view: {
-        Row: {
-          can_relock_now: boolean | null
-          commence_time: string | null
-          final_locked_at: string | null
-          game_id: string | null
-          game_started: boolean | null
-          has_relock_available: boolean | null
-          initial_locked_at: string | null
-          is_final_locked: boolean | null
-          picked_side: Database["public"]["Enums"]["side_enum"] | null
-          picked_team_id: number | null
-          picked_team_short: string | null
-          relock_used: boolean | null
-          user_display_name: string | null
-          user_id: string | null
-          weight: Database["public"]["Enums"]["weight_enum"] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "picks_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "picks_picked_team_id_fkey"
-            columns: ["picked_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "picks_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       picks_status_view_admin: {
         Row: {
-          can_relock_now: boolean | null
           commence_time: string | null
-          final_locked_at: string | null
           game_id: string | null
           game_started: boolean | null
-          has_relock_available: boolean | null
-          initial_locked_at: string | null
-          is_final_locked: boolean | null
+          locked_at: string | null
+          locked_spread_team_id: number | null
+          locked_spread_value: number | null
           picked_side: Database["public"]["Enums"]["side_enum"] | null
           picked_team_id: number | null
           picked_team_short: string | null
-          relock_used: boolean | null
-          spread_value: number | null
           user_display_name: string | null
           user_id: string | null
           week_id: number | null
@@ -500,19 +436,15 @@ export type Database = {
       }
       picks_status_view_user: {
         Row: {
-          can_relock_now: boolean | null
           commence_time: string | null
-          final_locked_at: string | null
           game_id: string | null
           game_started: boolean | null
-          has_relock_available: boolean | null
-          initial_locked_at: string | null
-          is_final_locked: boolean | null
+          locked_at: string | null
+          locked_spread_team_id: number | null
+          locked_spread_value: number | null
           picked_side: Database["public"]["Enums"]["side_enum"] | null
           picked_team_id: number | null
           picked_team_short: string | null
-          relock_used: boolean | null
-          spread_value: number | null
           user_id: string | null
           week_id: number | null
           weight: Database["public"]["Enums"]["weight_enum"] | null
@@ -577,12 +509,11 @@ export type Database = {
           p_weight: Database["public"]["Enums"]["weight_enum"]
         }
         Returns: {
-          final_locked_at: string
+          game_id: string
+          locked_at: string
           ok: boolean
-          out_game_id: string
-          out_user_id: string
           picked_side: string
-          relock_used: boolean
+          user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
         }[]
       }
