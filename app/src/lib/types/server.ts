@@ -50,4 +50,6 @@ export type PickEntry = {
   lockedPick?: PickState;
   lockedAt?: string;
   unlocksUsed?: number;
+  lockedSpreadValue?: number;
+  lockedSpreadTeamId?: number;
 };

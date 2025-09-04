@@ -8,6 +8,8 @@ export function toPickEntries(rows: Array<{
   weight: 'L'|'M'|'H'|'A' | null;
   final_locked_at: string | null;
   relock_used: boolean | null;
+  locked_spread_value?: number | null;
+  locked_spread_team_id?: number | null;
 }>): Record<string, PickEntry> {
   const map: Record<string, PickEntry> = {};
   for (const r of rows) {
@@ -17,7 +19,9 @@ export function toPickEntries(rows: Array<{
         ? { team: r.picked_side as TeamSide, weight: r.weight as WeightCode }
         : undefined,
       lockedAt: r.final_locked_at ?? undefined,
-      unlocksUsed: r.relock_used ? 1 : 0
+      unlocksUsed: r.relock_used ? 1 : 0,
+      lockedSpreadValue: r.locked_spread_value ?? undefined,
+      lockedSpreadTeamId: r.locked_spread_team_id ?? undefined
     };
   }
   return map;

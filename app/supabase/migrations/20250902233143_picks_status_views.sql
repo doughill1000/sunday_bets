@@ -1,4 +1,3 @@
--- Create a user-scoped view for authenticated users (relies on RLS)
 create or replace view public.picks_status_view_user as
 select
   p.game_id,
@@ -11,6 +10,8 @@ select
    end)::public.side_enum as picked_side,
   p.picked_team_id,
   t.short_name as picked_team_short,
+  p.final_locked_spread_value as locked_spread_value,
+  p.final_locked_spread_team_id as locked_spread_team_id,
   p.initial_locked_at,
   p.final_locked_at,
   (p.final_locked_at is not null) as is_final_locked,
@@ -45,6 +46,8 @@ select
    end)::public.side_enum as picked_side,
   p.picked_team_id,
   t.short_name as picked_team_short,
+  p.final_locked_spread_value as locked_spread_value,
+  p.final_locked_spread_team_id as locked_spread_team_id,
   p.initial_locked_at,
   p.final_locked_at,
   (p.final_locked_at is not null) as is_final_locked,

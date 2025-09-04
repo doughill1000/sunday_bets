@@ -461,6 +461,7 @@ export type Database = {
           picked_team_id: number | null
           picked_team_short: string | null
           relock_used: boolean | null
+          spread_value: number | null
           user_display_name: string | null
           user_id: string | null
           week_id: number | null
@@ -511,6 +512,7 @@ export type Database = {
           picked_team_id: number | null
           picked_team_short: string | null
           relock_used: boolean | null
+          spread_value: number | null
           user_id: string | null
           week_id: number | null
           weight: Database["public"]["Enums"]["weight_enum"] | null
@@ -576,11 +578,11 @@ export type Database = {
         }
         Returns: {
           final_locked_at: string
-          game_id: string
           ok: boolean
+          out_game_id: string
+          out_user_id: string
           picked_side: string
           relock_used: boolean
-          user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
         }[]
       }

@@ -54,54 +54,73 @@
 
 <header class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
   <div class="container mx-auto flex h-14 items-center px-4">
-    <!-- Mobile: menu trigger -->
-    <div class="md:hidden">
-      <Sheet>
-        <SheetTrigger>
-          <Button size="icon" variant="ghost" aria-label="Open menu">
-            <Menu class="size-5" />
-          </Button>
-        </SheetTrigger>
-
-        <SheetContent side="left" class="w-72">
-          <div class="mt-2 mb-4 font-semibold tracking-wide">NFL BETS</div>
-
-          <nav class="grid gap-1 text-sm">
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/week">This Week</a>
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/picks">My Picks</a>
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard">Leaderboard</a>
-            {#if canSeeAdmin}
-              <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
-            {/if}
-          </nav>
-
-          <Separator class="my-3" />
-
-          {#if canInstall}
-            <Button class="w-full" onclick={installPwa}>Install App</Button>
+    <!-- Mobile-first: menu trigger always visible -->
+    <Sheet>
+      <SheetTrigger>
+        <Button size="icon" variant="ghost" aria-label="Open menu">
+          <Menu class="size-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" class="w-72 pl-4">
+        <div class="mt-2 mb-4 font-semibold tracking-wide">NFL BETS</div>
+        <nav class="grid gap-1 text-sm">
+          <a class="rounded px-2 py-2 hover:bg-accent" href="/picks">My Picks</a>
+          <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard">Leaderboard</a>
+          {#if canSeeAdmin}
+            <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
           {/if}
-
-          <nav class="mt-2 grid gap-1 text-sm">
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/settings">Settings</a>
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/account">Account</a>
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/auth/signout">Sign out</a>
-          </nav>
-
-          <div class="mt-6 text-xs text-muted-foreground">Season 2025 • Week 1</div>
-        </SheetContent>
-      </Sheet>
-    </div>
+        </nav>
+        <Separator class="my-3" />
+        {#if canInstall}
+          <Button class="w-full" onclick={installPwa}>Install App</Button>
+        {/if}
+        <nav class="mt-2 grid gap-1 text-sm">
+          <a class="rounded px-2 py-2 hover:bg-accent" href="/auth/signout">Sign out</a>
+        </nav>
+        <div class="mt-6 text-xs text-muted-foreground">Season 2025 • Week 1</div>
+      </SheetContent>
+    </Sheet>
 
     <!-- Brand -->
-    <a href="/" class="ml-2 font-semibold tracking-wide md:ml-0">NFL BETS</a>
+    <a href="/" class="ml-2 font-semibold tracking-wide">NFL BETS</a>
 
-    <!-- Desktop nav -->
+    <!-- Spacer -->
+    <div class="flex-1" />
+
+    <!-- User/account dropdown (mobile and desktop) -->
+    {#if user}
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Button variant="ghost" class="gap-2">
+            <Avatar class="h-6 w-6">
+              <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
+              <AvatarFallback>
+                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0,2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span class="hidden sm:inline">
+              {user.user_metadata?.full_name ?? user.email}
+            </span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuLabel>Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {#if canSeeAdmin}
+            <DropdownMenuItem><a href="/admin">Admin</a></DropdownMenuItem>
+          {/if}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    {:else}
+      <Button variant="default"><a href="/auth">Sign in</a></Button>
+    {/if}
+
+    <!-- Desktop nav (hidden on mobile) -->
     <nav class="ml-6 hidden md:flex">
       <NavigationMenuRoot>
         <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuLink href="/week" class="px-3 py-2">This Week</NavigationMenuLink>
-          </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink href="/picks" class="px-3 py-2">My Picks</NavigationMenuLink>
           </NavigationMenuItem>
@@ -118,51 +137,5 @@
         </NavigationMenuList>
       </NavigationMenuRoot>
     </nav>
-
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <!-- Right side: user/account -->
-    {#if user}
-      <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="ghost" class="gap-2">
-            <Avatar class="h-6 w-6">
-              <AvatarImage
-                src={user.user_metadata?.avatar_url}
-                alt="avatar"
-              />
-              <AvatarFallback>
-                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0,2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span class="hidden sm:inline">
-              {user.user_metadata?.full_name ?? user.email}
-            </span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-56">
-          <DropdownMenuLabel>Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem><a href="/account">Profile</a></DropdownMenuItem>
-          <DropdownMenuItem><a href="/settings">Settings</a></DropdownMenuItem>
-          {#if canSeeAdmin}
-            <DropdownMenuItem><a href="/admin">Admin</a></DropdownMenuItem>
-          {/if}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    {:else}
-      <div class="flex items-center gap-2">
-        <a class="hidden md:inline text-sm opacity-80 hover:opacity-100" href="/leaderboard" aria-label="Leaderboard">
-          <Trophy class="inline-block size-4 -mt-0.5" /> Leaderboard
-        </a>
-        <Button variant="default"><a href="/auth">Sign in</a></Button>
-        <a class="md:hidden p-2 rounded hover:bg-accent" href="/account" aria-label="Account">
-          <UserIcon class="size-5" />
-        </a>
-      </div>
-    {/if}
   </div>
 </header>

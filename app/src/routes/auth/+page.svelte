@@ -1,6 +1,21 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
 
+  // shadcn-svelte UI
+  import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+    CardFooter
+  } from '$lib/components/ui/card';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Button } from '$lib/components/ui/button';
+  import { toast } from 'svelte-sonner';
+  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group';
+
   let email = '';
   let password = '';
   let method: 'magic' | 'password' = 'magic';
@@ -9,79 +24,98 @@
 
   async function onSubmit(e: Event) {
     e.preventDefault();
+    error = '';
+    message = '';
     const res = await fetch('/auth', {
       method: 'POST',
       body: new FormData(e.target as HTMLFormElement)
     });
-    const j = await res.json();
-    if (!res.ok) { error = j.error ?? 'Login error'; return; }
-    message = j.message ?? 'Check your email for the link.';
-    if (j.redirect) location.href = j.redirect;
-    else await invalidateAll();
+    const j: { data: string } = await res.json();
+    const data: [{ ok: number; message: number }, boolean, string] = JSON.parse(j.data);
+    if (!data[1]) {
+      toast.error(data[2]);
+      return;
+    }
+    toast.success(data[2]);
+    invalidateAll();
   }
 </script>
 
-<!-- Container -->
-<section class="container mx-auto max-w-md p-6 space-y-6">
-  <header class="space-y-2">
-    <h1 class="text-3xl font-bold">Sign in</h1>
-    <p class="text-muted-50">Use a magic link or your password.</p>
-  </header>
+<!-- Backdrop that makes the card pop -->
+<div
+  class="relative grid place-items-center bg-[radial-gradient(ellipse_at_top,theme(colors.neutral.900),theme(colors.neutral.950))]"
+>
+  <Card
+    class="bg-card/90 border-border/60 relative z-10 w-full max-w-md rounded-2xl border shadow-2xl backdrop-blur-xl"
+  >
+    <CardHeader class="space-y-1">
+      <CardTitle class="text-3xl">Sign in</CardTitle>
+      <CardDescription>Use a magic link or your password.</CardDescription>
+    </CardHeader>
 
-  <form method="POST" on:submit|preventDefault={onSubmit} class="space-y-5">
-    <!-- Email -->
-    <div class="field">
-      <label class="label" for="email">Email</label>
-      <input
-        id="email"
-        name="email"
-        type="email"
-        required
-        bind:value={email}
-        class="input w-full"
-        placeholder="you@example.com"
-      />
-      <small class="helper-text">We’ll send a secure link if you choose magic link.</small>
-    </div>
+    <CardContent>
+      <form method="POST" on:submit|preventDefault={onSubmit} class="space-y-5">
+        <!-- Email -->
+        <div class="grid gap-2">
+          <Label for="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            bind:value={email}
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+          <p class="text-muted-foreground text-xs">
+            We’ll send a secure link if you choose magic link.
+          </p>
+        </div>
 
-    <!-- Method toggle -->
-    <fieldset class="fieldset">
-      <legend class="legend">Method</legend>
-      <div class="flex gap-4">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="method" value="magic" bind:group={method} checked class="radio" />
-          <span>Magic link</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="radio" name="method" value="password" bind:group={method} class="radio" />
-          <span>Email + password</span>
-        </label>
-      </div>
-    </fieldset>
+        <!-- Method toggle -->
+        <fieldset class="grid gap-3">
+          <legend class="sr-only">Sign-in method</legend>
+          <Label class="text-sm font-medium">Method</Label>
+          <RadioGroup bind:value={method} class="grid grid-cols-2 gap-2">
+            <div
+              class="border-border/70 hover:bg-accent/40 flex items-center space-x-2 rounded-lg border p-3 transition"
+            >
+              <RadioGroupItem id="method-magic" value="magic" />
+              <Label for="method-magic" class="cursor-pointer">Magic link</Label>
+            </div>
+            <div
+              class="border-border/70 hover:bg-accent/40 flex items-center space-x-2 rounded-lg border p-3 transition"
+            >
+              <RadioGroupItem id="method-password" value="password" />
+              <Label for="method-password" class="cursor-pointer">Email + password</Label>
+            </div>
+          </RadioGroup>
+        </fieldset>
 
-    {#if method === 'password'}
-      <div class="field">
-        <label class="label" for="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          bind:value={password}
-          class="input w-full"
-          placeholder="••••••••"
-        />
-      </div>
-    {/if}
+        {#if method === 'password'}
+          <div class="grid gap-2">
+            <Label for="password">Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              bind:value={password}
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+          </div>
+        {/if}
 
-    <!-- Submit -->
-    <button type="submit" class="btn variant-filled-primary w-full">Sign in</button>
+        <!-- Submit -->
+        <Button type="submit" class="w-full">Sign in</Button>
+      </form>
+    </CardContent>
 
-    {#if error}<p class="text-error-500 mt-2">{error}</p>{/if}
-    {#if message}<p class="text-success-500 mt-2">{message}</p>{/if}
-  </form>
-
-  <footer class="text-center text-muted-50 text-sm">
-    Having trouble? <a href="/auth/error" class="link">Auth help</a>
-  </footer>
-</section>
+    <CardFooter class="justify-center">
+      <p class="text-muted-foreground text-center text-sm">
+        Having trouble? <a href="/auth/error" class="underline underline-offset-4">Auth help</a>
+      </p>
+    </CardFooter>
+  </Card>
+</div>
