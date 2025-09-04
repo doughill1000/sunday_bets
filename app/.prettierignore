@@ -7,4 +7,17 @@ bun.lockb
 
 # Miscellaneous
 /static/
-/drizzle/
+src/lib/server/db/types.ts
+
+node_modules
+build
+dist
+.next
+.out
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+# Keep SQL migrations exactly as authored:
+supabase/migrations/**
+*.sql
+

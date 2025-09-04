@@ -1,33 +1,35 @@
-import type { TeamSide, WeightCode } from "./domain";
+import type { TeamSide, WeightCode } from './domain';
+
+import type { Database } from '$lib/server/db/types';
+
+export type LockPickArgs = Database['public']['Functions']['lock_pick']['Args'];
 
 // Minimal, DB-agnostic shape your Odds adapter needs
 export type WeekWindow = {
-  startTs: string;     // ISO
-  endTs: string;       // ISO
-  weekNumber: number;  // negative for preseason if you do that
-  id?: number;          // optional, handy in callers
+  startTs: string; // ISO
+  endTs: string; // ISO
+  weekNumber: number; // negative for preseason if you do that
+  id?: number; // optional, handy in callers
 };
 
-
-export type ServerGame = {
-  gameId: string;
-  externalGameId: string | null;
-  kickoff: string; // timestamptz → ISO string
-  homeCode: string;
-  homeName: string;
-  awayCode: string;
-  awayName: string;
-  spreadTeam: 'home' | 'away' | null;
-  spreadValue: string;
-  lineSource: string | null;
+export type DbGameRow = {
+  game_id: string;
+  external_game_id: string | null;
+  kickoff: string;
+  home_code: string;
+  home_name: string;
+  away_code: string;
+  away_name: string;
+  spread_team: 'home' | 'away';
+  spread_value: number | string;
+  line_source: string;
 };
-
 
 export type WeekRow = {
   id: number;
   startTs: string;
   endTs: string;
-  weekNumber: number
+  weekNumber: number;
 };
 
 export type TeamRow = {

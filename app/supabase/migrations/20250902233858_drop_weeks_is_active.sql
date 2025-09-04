@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS public.weeks
+  DROP COLUMN IF EXISTS is_active;

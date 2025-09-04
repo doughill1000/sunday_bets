@@ -25,7 +25,7 @@ function addDays(date: Date, days: number): Date {
   return copy;
 }
 
-export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsGame[]> {
+export async function fetchNFLSpreadsForWeek(week: WeekWindow): Promise<OddsGame[]> {
   const sport = sportKeyForWeek(week);
   const params = new URLSearchParams({
     apiKey: getNextApiKey(),
@@ -34,7 +34,7 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsGam
     oddsFormat: 'american',
     dateFormat: 'iso',
     commenceTimeFrom: isoNoMs(new Date(week.startTs)),
-    commenceTimeTo: isoNoMs(addDays(new Date(week.endTs), 1)),
+    commenceTimeTo: isoNoMs(addDays(new Date(week.endTs), 1))
   });
 
   const url = `${PUBLIC_ODDS_API_BASE}/sports/${sport}/odds?${params}`;
@@ -47,9 +47,9 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow) : Promise<OddsGam
 }
 
 export function extractFanduelSpread(g: OddsGame) {
-  const fanduel = g.bookmakers.find(b => b.key === 'fanduel');
+  const fanduel = g.bookmakers.find((b) => b.key === 'fanduel');
   if (!fanduel) return null;
-  const spreads = fanduel.markets.find(m => m.key === 'spreads');
+  const spreads = fanduel.markets.find((m) => m.key === 'spreads');
   if (!spreads) return null;
 
   // outcomes like [{name:"PHI", point:-1.5}, {name:"DAL", point:1.5}]
@@ -57,7 +57,7 @@ export function extractFanduelSpread(g: OddsGame) {
   if (!a || !b) return null;
 
   // Pick which side is “spread team” by the negative point (favored)
-  const favored = [a, b].find(o => typeof o.point === 'number' && o.point < 0) ?? a;
+  const favored = [a, b].find((o) => typeof o.point === 'number' && o.point < 0) ?? a;
   const spreadTeamName = favored.name;
   const spreadValue = Math.abs(favored.point); // we store +1.5; display team -1.5 later
 

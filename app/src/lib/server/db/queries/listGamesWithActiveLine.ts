@@ -1,45 +1,25 @@
-import { dbClient } from '$lib/server/db/dbClient';
-import {
-  games,
-  weeks,
-  teams,
-  gameLines
-} from '../../../../db/schema';
-import { and, eq } from 'drizzle-orm';
-import { alias } from 'drizzle-orm/pg-core';
+import { supabaseService } from '$lib/supabase/service';
 
-export async function listGamesWithActiveLine(weekId: number | string) {
-  const away = alias(teams, 'away_team');
-  const home = alias(teams, 'home_team');
-
-  return dbClient
-    .select({
-      gameId: games.id,
-      commenceTime: games.commenceTime,
-      status: games.status,
-      homeTeamId: games.homeTeamId,
-      awayTeamId: games.awayTeamId,
-      homeName: home.name,
-      homeShort: home.shortName,
-      awayName: away.name,
-      awayShort: away.shortName,
-      spreadTeamId: gameLines.spreadTeamId,
-      spreadValue: gameLines.spreadValue,
-      fetchedAt: gameLines.fetchedAt
-    })
-    .from(games)
-    .innerJoin(weeks, eq(weeks.id, games.weekId))
-    .innerJoin(home, eq(home.id, games.homeTeamId))
-    .innerJoin(away, eq(away.id, games.awayTeamId))
-    .leftJoin(
-      gameLines,
-      and(
-        eq(gameLines.gameId, games.id),
-        eq(gameLines.isActiveLine, true),
-        eq(gameLines.source, 'fanduel')
-      )
+export async function listGamesWithActiveLine(weekId: number) {
+  const { data, error } = await supabaseService
+    .from('games')
+    .select(
+      `
+      id,
+      week_id,
+      commence_time,
+      status,
+      home_team:teams!home_team_id ( id, name, short_name ),
+      away_team:teams!away_team_id ( id, name, short_name ),
+      game_lines!inner ( id, spread_team_id, spread_value, source, is_active_line, fetched_at )
+    `
     )
-    .where(eq(games.weekId, Number(weekId)))
-    .orderBy(games.commenceTime)
-    .execute();
+    .eq('week_id', weekId)
+    .eq('game_lines.is_active_line', true)
+    // constrain nested relation to one row (still comes back as an array)
+    .limit(1, { foreignTable: 'game_lines' })
+    .order('commence_time', { ascending: true });
+
+  if (error) throw new Error(`listGamesWithActiveLine failed: ${error.message}`);
+  return data ?? [];
 }

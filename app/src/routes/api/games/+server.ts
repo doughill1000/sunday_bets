@@ -1,13 +1,12 @@
 // src/routes/api/games/+server.ts
-import { json, type RequestHandler} from '@sveltejs/kit';
-import { createSupabaseService } from '$lib/supabase/service';
+import { json, type RequestHandler } from '@sveltejs/kit';
+import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
 
 export const GET: RequestHandler = async () => {
-  const supabase = createSupabaseService();
-  const { data, error } = await supabase.rpc('get_active_week_games');
-
-  if (error) return json({ ok: false, reason: error.message }, { status: 500 });
-
-  return json({ games: data ?? [] }, { status: 200 });
+  try {
+    const games = await getActiveWeekGames();
+    return json({ games }, { status: 200 });
+  } catch (error: any) {
+    return json({ ok: false, reason: error.message ?? 'Unknown error' }, { status: 500 });
+  }
 };
-

@@ -1,7 +1,8 @@
-import { dbClient } from '$lib/server/db/dbClient';
-import { weeks } from '../../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { supabaseService } from '$lib/supabase/service';
 
-export async function findWeekById(weekId: number | string) {
-  return dbClient.query.weeks.findFirst({ where: eq(weeks.id, Number(weekId)) });
+export async function findWeekById(weekId: number) {
+  const { data, error } = await supabaseService.from('weeks').select('*').eq('id', weekId).single();
+
+  if (error) throw error;
+  return data ?? null;
 }
