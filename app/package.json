@@ -51,6 +51,7 @@
     "@lucide/svelte": "^0.539.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
+    "@sveltejs/adapter-vercel": "^5.10.2",
     "postgres": "^3.4.5"
   }
 }
