@@ -1,5 +1,6 @@
 -- Player-visible status (RLS controls row visibility)
-create or replace view public.picks_status_view_user as
+create or replace view public.picks_status_view_user
+with (security_invoker = on) as
 select
   p.game_id,
   g.week_id,
@@ -24,7 +25,8 @@ revoke all on public.picks_status_view_user from public;
 grant select on public.picks_status_view_user to authenticated;
 
 -- Admin/status view with user display names (server-side only)
-create or replace view public.picks_status_view_admin as
+create or replace view public.picks_status_view_admin
+with (security_invoker = on) as
 select
   p.game_id,
   g.week_id,

@@ -26,11 +26,11 @@
   onMount(() => {
     if (!initialized && data?.picks) {
       setPicks(data.picks);
-      // for (const g of games) {
-      //   const entry = $picks[g.id];
-      //   const hasSelection = entry?.selected || entry?.lockedPick;
-      //   if (!hasSelection) selectTeam(g.id, 'home');
-      // }
+      for (const g of games) {
+        const entry = $picks[g.id];
+        const hasSelection = entry?.selected || entry?.lockedPick;
+        if (!hasSelection) selectTeam(g.id, 'home');
+      }
       initialized = true;
     }
   });
