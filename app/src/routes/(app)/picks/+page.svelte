@@ -147,8 +147,7 @@
           <div class="flex gap-2" role="group" aria-label="Pick a team">
             <Button
               variant="secondary"
-              class="team-btn flex-1"
-              class:selected={selAway}
+              class={`team-btn flex-1 ${selAway ? 'selected' : ''}`}
               style={awayVars}
               aria-pressed={selAway}
               disabled={!canChange}
@@ -159,8 +158,7 @@
 
             <Button
               variant="secondary"
-              class="team-btn flex-1"
-              class:selected={selHome}
+              class={`team-btn flex-1 ${selHome ? 'selected' : ''}`}
               style={homeVars}
               aria-pressed={selHome}
               disabled={!canChange}
