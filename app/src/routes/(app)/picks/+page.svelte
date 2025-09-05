@@ -88,7 +88,7 @@
   }
 </script>
 
-<h1 class="mb-4 text-2xl font-semibold">This Week’s Games</h1>
+<h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
 
 {#if games.length === 0}
   <p class="opacity-70">No scheduled games for the active week.</p>
