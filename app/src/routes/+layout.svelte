@@ -1,7 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import AppHeader from '$lib/components/AppHeader.svelte';
-  import { Toaster } from "$lib/components/ui/sonner";
+  import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
 
@@ -9,6 +9,10 @@
   const { supabase, session, user } = data;
 
   onMount(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js');
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
         invalidate('supabase:auth');
@@ -20,10 +24,10 @@
 </script>
 
 <!-- Page shell -->
-<div class="flex min-h-svh flex-col bg-background text-foreground">
+<div class="bg-background text-foreground flex min-h-svh flex-col">
   <!-- Header using shadcn styling primitives -->
   <header
-    class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
   >
     <div class="container mx-auto flex h-14 items-center px-4">
       <AppHeader {user} />

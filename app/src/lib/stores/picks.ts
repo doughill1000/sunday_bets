@@ -11,7 +11,6 @@ export function setPicks(data: Record<string, PickEntry>) {
 }
 
 export function selectTeam(gameId: string, team: TeamSide) {
-  console.log('selectTeam', gameId, team);
   picks.update((s) => {
     const e = s[gameId] ?? {};
     const w = e.selected?.weight ?? e.lockedPick?.weight ?? 'L';

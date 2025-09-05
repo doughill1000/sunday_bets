@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import type { User } from '@supabase/supabase-js';
   import { isAdmin } from '$lib/auth/guards';
+  import { registerSW } from 'virtual:pwa-register';
 
   // shadcn components
   import { Button } from '$lib/components/ui/button';
@@ -24,7 +25,7 @@
   import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
 
   // icons
-  import { Menu, Trophy, User as UserIcon } from 'lucide-svelte';
+  import { Menu, Trophy } from 'lucide-svelte';
 
   export let user: User | null = null; // passed from layout
   $: canSeeAdmin = isAdmin(user);
@@ -33,6 +34,21 @@
   let deferredPrompt: any = null;
 
   onMount(() => {
+    const updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        // show your shadcn-svelte toast or a modal
+        // e.g. ask user to refresh now:
+        if (confirm('Update available. Refresh now?')) {
+          updateSW(true);
+        }
+      },
+      onOfflineReady() {
+        // optional: toast 'App is ready to work offline'
+        // console.log('PWA ready for offline use');
+      }
+    });
+
     const handler = (e: any) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -52,7 +68,9 @@
   }
 </script>
 
-<header class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+<header
+  class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
+>
   <div class="container mx-auto flex h-14 items-center px-4">
     <!-- Mobile-first: menu trigger always visible -->
     <Sheet>
@@ -62,12 +80,12 @@
         </Button>
       </SheetTrigger>
       <SheetContent side="left" class="w-72 pl-4">
-        <div class="mt-2 mb-4 font-semibold tracking-wide">NFL BETS</div>
+        <div class="mb-4 mt-2 font-semibold tracking-wide">NFL BETS</div>
         <nav class="grid gap-1 text-sm">
-          <a class="rounded px-2 py-2 hover:bg-accent" href="/picks">My Picks</a>
-          <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard">Leaderboard</a>
+          <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
+          <a class="hover:bg-accent rounded px-2 py-2" href="/leaderboard">Leaderboard</a>
           {#if canSeeAdmin}
-            <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
+            <a class="hover:bg-accent rounded px-2 py-2" href="/admin">Admin</a>
           {/if}
         </nav>
         <Separator class="my-3" />
@@ -75,9 +93,9 @@
           <Button class="w-full" onclick={installPwa}>Install App</Button>
         {/if}
         <nav class="mt-2 grid gap-1 text-sm">
-          <a class="rounded px-2 py-2 hover:bg-accent" href="/auth/signout">Sign out</a>
+          <a class="hover:bg-accent rounded px-2 py-2" href="/auth/signout">Sign out</a>
         </nav>
-        <div class="mt-6 text-xs text-muted-foreground">Season 2025 • Week 1</div>
+        <div class="text-muted-foreground mt-6 text-xs">Season 2025 • Week 1</div>
       </SheetContent>
     </Sheet>
 
@@ -95,7 +113,7 @@
             <Avatar class="h-6 w-6">
               <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
               <AvatarFallback>
-                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0,2).toUpperCase()}
+                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <span class="hidden sm:inline">
@@ -125,7 +143,7 @@
             <NavigationMenuLink href="/picks" class="px-3 py-2">My Picks</NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
-            <NavigationMenuLink href="/leaderboard" class="px-3 py-2 flex items-center gap-1">
+            <NavigationMenuLink href="/leaderboard" class="flex items-center gap-1 px-3 py-2">
               <Trophy class="size-4" /> Leaderboard
             </NavigationMenuLink>
           </NavigationMenuItem>
