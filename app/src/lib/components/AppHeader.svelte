@@ -80,7 +80,7 @@
         </Button>
       </SheetTrigger>
       <SheetContent side="left" class="w-72 pl-4">
-        <div class="mb-4 mt-2 font-semibold tracking-wide">NFL BETS</div>
+        <div class="mb-4 mt-2 font-semibold tracking-wide">SUNDAY BETS</div>
         <nav class="grid gap-1 text-sm">
           <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
           <a class="hover:bg-accent rounded px-2 py-2" href="/leaderboard">Leaderboard</a>
@@ -100,7 +100,7 @@
     </Sheet>
 
     <!-- Brand -->
-    <a href="/" class="ml-2 font-semibold tracking-wide">NFL BETS</a>
+    <a href="/" class="ml-2 font-semibold tracking-wide">SUNDAY BETS</a>
 
     <!-- Spacer -->
     <div class="flex-1" />

@@ -26,8 +26,8 @@ const config = {
           short_name: 'Bets',
           start_url: '/',
           display: 'standalone',
-          background_color: '#ebebeb',
-          theme_color: '#2b2b2b',
+          background_color: '#000000',
+          theme_color: '#004d26',
           icons: [
             {
               src: 'icons/icon-48x48.png',
