@@ -151,7 +151,7 @@
               style={awayVars}
               aria-pressed={selAway}
               disabled={!canChange}
-              on:click={() => selectTeam(g.id, 'away')}
+              onclick={() => selectTeam(g.id, 'away')}
             >
               <span class="font-semibold tracking-wide">{g.away}</span>
             </Button>
@@ -162,7 +162,7 @@
               style={homeVars}
               aria-pressed={selHome}
               disabled={!canChange}
-              on:click={() => selectTeam(g.id, 'home')}
+              onclick={() => selectTeam(g.id, 'home')}
             >
               <span class="font-semibold tracking-wide">{g.home}</span>
             </Button>
@@ -177,7 +177,7 @@
                 id={`w_${g.id}`}
                 type="single"
                 value={weightValue}
-                on:change={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
+                onchange={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
                 class="w-full"
                 disabled={!canChange}
               >
@@ -207,14 +207,14 @@
                 <Button
                   class="h-10 w-full font-semibold"
                   variant="secondary"
-                  on:click={() => onLock(g)}
+                  onclick={() => onLock(g)}
                 >
                   Locked
                 </Button>
               {:else}
                 <Button
                   class="h-10 w-full font-semibold"
-                  on:click={() => onLock(g)}
+                  onclick={() => onLock(g)}
                   disabled={!entry.selected ||
                     (entry.selected.weight === 'A' && !canUseAceRule(g.id, $picks)) ||
                     started}
