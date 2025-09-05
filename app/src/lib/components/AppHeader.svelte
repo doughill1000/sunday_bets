@@ -34,27 +34,18 @@
   let deferredPrompt: any = null;
 
   onMount(() => {
-    const updateSW = registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        // show your shadcn-svelte toast or a modal
-        // e.g. ask user to refresh now:
-        if (confirm('Update available. Refresh now?')) {
-          updateSW(true);
-        }
-      },
-      onOfflineReady() {
-        // optional: toast 'App is ready to work offline'
-        // console.log('PWA ready for offline use');
-      }
-    });
-
     const handler = (e: any) => {
+      console.log('beforeinstallprompt event fired');
       e.preventDefault();
       deferredPrompt = e;
       canInstall = true;
     };
+    console.log('testWindow', window)
     window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => {
+      canInstall = false;
+      deferredPrompt = null;
+    });
     return () => window.removeEventListener('beforeinstallprompt', handler);
   });
 

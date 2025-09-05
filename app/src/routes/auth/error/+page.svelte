@@ -1,7 +1,3 @@
-<script>
-  export let data;
-</script>
-
 <section class="container mx-auto max-w-lg p-6 space-y-4">
   <h1 class="text-2xl font-bold">Authentication Help</h1>
   <div class="card p-4 space-y-2">

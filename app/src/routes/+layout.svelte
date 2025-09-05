@@ -4,14 +4,26 @@
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
+    import { registerSW } from 'virtual:pwa-register';
 
   let { children, data } = $props();
   const { supabase, session, user } = data;
 
   onMount(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js');
-    }
+    const updateSW = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        // show your shadcn-svelte toast or a modal
+        // e.g. ask user to refresh now:
+        if (confirm('Update available. Refresh now?')) {
+          updateSW(true);
+        }
+      },
+      onOfflineReady() {
+        // optional: toast 'App is ready to work offline'
+        // console.log('PWA ready for offline use');
+      }
+    });  
 
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
