@@ -24,7 +24,7 @@ const MIG_DIR = path.resolve(process.cwd(), 'supabase/migrations');
 
 const ORDER = [
   'schemas',
-  'functions/_private', // <-- runs first among functions
+  'functions/_private',
   'functions',
   'policies',
   'triggers',
@@ -150,7 +150,7 @@ function main() {
   }
 
   fs.mkdirSync(MIG_DIR, { recursive: true });
-  const outPath = path.join(MIG_DIR, `${nowStamp()}_functions_patch.sql`);
+  const outPath = path.join(MIG_DIR, `${nowStamp()}_migrations_patch.sql`);
 
   const drops: string[] = [];
   for (const c of changes) {

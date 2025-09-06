@@ -14,9 +14,6 @@
   "schemas/04_constraints.sql": {
     "hash": "18fd23496e0928bd38920477b02d98c08f0a457e5ca841f3c606d5c9ce3db1ee"
   },
-  "schemas/05_policies.sql": {
-    "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
-  },
   "functions/admin/grade_week.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
@@ -43,7 +40,8 @@
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
   "functions/picks/unlock_pick.sql": {
-    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    "hash": "5fe07ad7a386e6c27a9134bf7af7da42a07b44610f248cc8f980feca2947c0dd",
+    "signature": "public.unlock_pick(uuid)"
   },
   "functions/security/current_user_id.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
