@@ -40,7 +40,7 @@
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
   "functions/picks/unlock_pick.sql": {
-    "hash": "5fe07ad7a386e6c27a9134bf7af7da42a07b44610f248cc8f980feca2947c0dd",
+    "hash": "f096e0a563535887a3e59961d607478ab2d8c861415891189e14e7c9c1aafc9c",
     "signature": "public.unlock_pick(uuid)"
   },
   "functions/security/current_user_id.sql": {
@@ -56,7 +56,7 @@
     "hash": "7ada6d12a97f00165249b9cada7ac43ca217840686fa1a09656935c8eeb23d5f"
   },
   "policies/30_policies_users.sql": {
-    "hash": "c41146bbdd369b578938dc363a402281c6afa999d192ffd24ec5490416d21c11"
+    "hash": "f3766fa2027421ecabdb7dfa4e8643b53708bc781929881b25b6a319465f28c6"
   },
   "policies/40_policies_picks.sql": {
     "hash": "efcb65541ce532b092e36900b8667a7be9d98f59e00ea1c5e2ffc5554c3a8f3d"
@@ -65,12 +65,19 @@
     "hash": "45dacd5c90209cfa77bdeac690b54d81b9519e7809b43f2c54665a45013701b7"
   },
   "grants/admin_grants.sql": {
-    "hash": "e36596233e692b6c7237e3b52012527aa25bca6c183d42b300dbfef37e641d69"
+    "hash": "d32de0a3815e2cf37b7a5c991cea467cb670e3e984bab7ca5b6acd6f6d617a5b"
   },
   "grants/misc_grants.sql": {
     "hash": "b5df764682dd942228935d142d4bb6e5dc7e5d520a059f4e54b8a1e1a3d2044a"
   },
   "grants/player_grants.sql": {
-    "hash": "8bf628e529982d948ca0cd35d88e91d735c135ba6c9e87bdc9583ea2f7f76e84"
+    "hash": "9bacd1e44e8e0c2330e5069c21120994b4ad4785361a10e9f29f9edfba31f876"
+  },
+  "functions/_private/audit_log_action.sql": {
+    "hash": "47db4fee67b8ca0f137fea9fc4a29fd0f08ab0492733ee94aa15700b2d9b38b1",
+    "signature": "public.audit_log_action(uuid, text, jsonb)"
+  },
+  "grants/anon_grants.sql": {
+    "hash": "6974af82c9af306376fe995edb143dcbe403a148df03cc86a48f82cf79753bf4"
   }
 }

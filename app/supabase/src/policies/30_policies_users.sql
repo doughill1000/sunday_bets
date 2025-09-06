@@ -12,3 +12,10 @@ create policy upd_users_self
   to authenticated
   using (id = auth.uid())
   with check (id = auth.uid());
+
+drop policy if exists ins_audit_by_actor on public.audit_log;
+create policy ins_audit_by_actor
+on public.audit_log
+for insert
+to authenticated
+with check (actor = auth.uid());
