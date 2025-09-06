@@ -1,0 +1,78 @@
+{
+  "schemas/00_extensions.sql": {
+    "hash": "27decc8ec85439b59efed14948197a3e5a9c17bc5806effd103b6f5c50129c77"
+  },
+  "schemas/01_enums.sql": {
+    "hash": "b99ebde6b2b2d3476785c86f17f6eb30290e6a5ae4a0c7b7fe6d79a6deb4c66a"
+  },
+  "schemas/02_tables.sql": {
+    "hash": "104c72ea64ec4bb302ce588d183e5306ace920df1f7e8a865b2d0ff9bbf175c9"
+  },
+  "schemas/03_rls.sql": {
+    "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
+  },
+  "schemas/04_constraints.sql": {
+    "hash": "18fd23496e0928bd38920477b02d98c08f0a457e5ca841f3c606d5c9ce3db1ee"
+  },
+  "schemas/05_policies.sql": {
+    "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
+  },
+  "functions/admin/grade_week.sql": {
+    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "functions/admin/sync_odds.sql": {
+    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "functions/auth/handle_new_auth_user.sql": {
+    "hash": "f17fd35cac7811eb2380c3fff4465745788be9aa9db31dfa75371d5d67e74f69",
+    "signature": "public.handle_new_auth_user()"
+  },
+  "functions/auth/is_admin.sql": {
+    "hash": "bdf8fc573e6c27deec700e44ddedb4a64352416ac16dcc6979287b693b04fa57",
+    "signature": "public.is_admin()"
+  },
+  "functions/games/game_has_started.sql": {
+    "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
+    "signature": "public.game_has_started(uuid)"
+  },
+  "functions/picks/lock_pick.sql": {
+    "hash": "5535677f6cf7d18663269a943e6f244580dec600bef50f63e041c24840b06575",
+    "signature": "public.lock_pick(uuid, text, -- 'home' | 'away'\r\n  p_weight   public.weight_enum   -- 'L' | 'M' | 'H' | 'A')"
+  },
+  "functions/picks/my_picks.sql": {
+    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "functions/picks/unlock_pick.sql": {
+    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "functions/security/current_user_id.sql": {
+    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "policies/10_rls_enable.sql": {
+    "hash": "344accafbe5eafd90ca53735ea010347aa0928f8625fbea2a7c5ff40fa15a3b6"
+  },
+  "policies/20_policies_read_core.sql": {
+    "hash": "6550d209092ca45f292c647a68c8dd0d24d8f31aa865d8d6873750e133143c07"
+  },
+  "policies/21_policies_read_lookup.sql": {
+    "hash": "7ada6d12a97f00165249b9cada7ac43ca217840686fa1a09656935c8eeb23d5f"
+  },
+  "policies/30_policies_users.sql": {
+    "hash": "c41146bbdd369b578938dc363a402281c6afa999d192ffd24ec5490416d21c11"
+  },
+  "policies/40_policies_picks.sql": {
+    "hash": "efcb65541ce532b092e36900b8667a7be9d98f59e00ea1c5e2ffc5554c3a8f3d"
+  },
+  "policies/50_policies_admin.sql": {
+    "hash": "45dacd5c90209cfa77bdeac690b54d81b9519e7809b43f2c54665a45013701b7"
+  },
+  "grants/admin_grants.sql": {
+    "hash": "e36596233e692b6c7237e3b52012527aa25bca6c183d42b300dbfef37e641d69"
+  },
+  "grants/misc_grants.sql": {
+    "hash": "b5df764682dd942228935d142d4bb6e5dc7e5d520a059f4e54b8a1e1a3d2044a"
+  },
+  "grants/player_grants.sql": {
+    "hash": "8bf628e529982d948ca0cd35d88e91d735c135ba6c9e87bdc9583ea2f7f76e84"
+  }
+}
