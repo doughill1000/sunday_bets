@@ -27,20 +27,20 @@
   // icons
   import { Menu, Trophy } from 'lucide-svelte';
 
-  export let user: User | null = null; // passed from layout
+  export let user: User | null = null;
   $: canSeeAdmin = isAdmin(user);
 
   let canInstall = false;
   let deferredPrompt: any = null;
 
   onMount(() => {
+    try { registerSW({ immediate: true }); } catch {}
+
     const handler = (e: any) => {
-      console.log('beforeinstallprompt event fired');
       e.preventDefault();
       deferredPrompt = e;
       canInstall = true;
     };
-    console.log('testWindow', window)
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => {
       canInstall = false;
@@ -59,18 +59,19 @@
   }
 </script>
 
-<header
-  class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
->
-  <div class="container mx-auto flex h-14 items-center px-4">
-    <!-- Mobile-first: menu trigger always visible -->
-    <Sheet>
-      <SheetTrigger>
-        <Button size="icon" variant="ghost" aria-label="Open menu">
-          <Menu class="size-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" class="w-72 pl-4">
+<header class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <div class="mx-auto max-w-screen-xl px-2 sm:px-4">
+    <!-- RELATIVE FLEX ROW; NO GRID -->
+    <div class="relative flex h-14 items-center">
+      <!-- LEFT: flush-left, never collapses -->
+      <div class="-ml-2 flex items-center shrink-0">
+        <Sheet>
+          <SheetTrigger>
+            <Button size="icon" variant="ghost" aria-label="Open menu" class="rounded-xl">
+              <Menu class="size-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" class="w-72 pl-4">
         <div class="mb-4 mt-2 font-semibold tracking-wide">SUNDAY BETS</div>
         <nav class="grid gap-1 text-sm">
           <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
@@ -88,30 +89,28 @@
         </nav>
         <div class="text-muted-foreground mt-6 text-xs">Season 2025 • Week 1</div>
       </SheetContent>
-    </Sheet>
+        </Sheet>
+      </div>
 
-    <!-- Brand -->
-    <a href="/" class="ml-2 font-semibold tracking-wide">SUNDAY BETS</a>
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <a
+          href="/"
+          class="pointer-events-auto flex min-w-0 items-center font-semibold tracking-wide"
+          aria-label="Sunday Bets home"
+        >
+          <img
+            src="/icons/icon-192x192.png"
+            srcset="/icons/icon-72x72.png 2x, /icons/icon-192x192.png 3x"
+            alt="Sunday Bets logo"
+            class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
+          />
+        </a>
+      </div>
 
-    <!-- Spacer -->
-    <div class="flex-1" />
-
-    <!-- User/account dropdown (mobile and desktop) -->
+      <div class="ml-auto -mr-2 flex items-center gap-2 shrink-0">
+            <!-- User/account dropdown (mobile and desktop) -->
     {#if user}
       <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button variant="ghost" class="gap-2">
-            <Avatar class="h-6 w-6">
-              <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
-              <AvatarFallback>
-                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <span class="hidden sm:inline">
-              {user.user_metadata?.full_name ?? user.email}
-            </span>
-          </Button>
-        </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
           <DropdownMenuLabel>Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -121,30 +120,24 @@
           <DropdownMenuSeparator />
           <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
         </DropdownMenuContent>
+        <DropdownMenuTrigger>
+          <Button variant="ghost" class="gap-2">
+            <Avatar class="h-6 w-6">
+              <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
+              <AvatarFallback>
+                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
       </DropdownMenu>
     {:else}
       <Button variant="default"><a href="/auth">Sign in</a></Button>
     {/if}
-
-    <!-- Desktop nav (hidden on mobile) -->
-    <nav class="ml-6 hidden md:flex">
-      <NavigationMenuRoot>
-        <NavigationMenuList>
-          <NavigationMenuItem>
-            <NavigationMenuLink href="/picks" class="px-3 py-2">My Picks</NavigationMenuLink>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuLink href="/leaderboard" class="flex items-center gap-1 px-3 py-2">
-              <Trophy class="size-4" /> Leaderboard
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-          {#if canSeeAdmin}
-            <NavigationMenuItem>
-              <NavigationMenuLink href="/admin" class="px-3 py-2">Admin</NavigationMenuLink>
-            </NavigationMenuItem>
-          {/if}
-        </NavigationMenuList>
-      </NavigationMenuRoot>
-    </nav>
+        {#if user === null}
+          <Button variant="default" class="rounded-xl"><a href="/auth">Sign in</a></Button>
+        {/if}
+      </div>
+    </div>
   </div>
 </header>
