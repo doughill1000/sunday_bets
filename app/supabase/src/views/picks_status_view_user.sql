@@ -12,7 +12,7 @@ select
   p.picked_team_id,
   t.short_name as picked_team_short,
   p.locked_spread_value as locked_spread_value,
-  p.locked_spread_team_id as locked_spread_team_id,
+  p.locked_spread_team_id,
   p.locked_at,
   g.commence_time,
   (g.commence_time <= now()) as game_started
