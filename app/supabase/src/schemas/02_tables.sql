@@ -1,21 +1,3 @@
--- Enable UUIDs (Supabase typically has this, but make it explicit)
-create extension if not exists pgcrypto;
-
--- ====================
--- ENUMS
--- ====================
-do $$ begin
-  create type public.weight_enum as enum ('L','M','H','A');
-exception when duplicate_object then null; end $$;
-
-do $$ begin
-  create type public.side_enum as enum ('home','away');
-exception when duplicate_object then null; end $$;
-
--- ====================
--- CORE TABLES
--- ====================
-
 -- USERS (profile mirror of auth.users)
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,

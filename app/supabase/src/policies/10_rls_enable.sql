@@ -1,0 +1,12 @@
+-- Enable RLS everywhere (deny by default)
+alter table if exists public.picks       enable row level security;
+alter table if exists public.games       enable row level security;
+alter table if exists public.game_lines  enable row level security;
+alter table if exists public.results     enable row level security;
+alter table if exists public.totals      enable row level security;
+alter table if exists public.users       enable row level security;
+alter table if exists public.settings    enable row level security;
+alter table if exists public.audit_log   enable row level security;
+alter table if exists public.weeks       enable row level security;
+alter table if exists public.seasons     enable row level security;
+alter table if exists public.teams       enable row level security;

@@ -6,6 +6,8 @@
   "scripts": {
     "db:push:dev": "cross-env SUPABASE_PROJECT_REF=fhjmfpuanzmowmsfmuhi supabase db push",
     "db:push:prod": "cross-env SUPABASE_PROJECT_REF=anzcshrpfpxajcgrwczv supabase db push",
+    "db:gen:migration": "tsx supabase/scripts/generate-migration.ts",
+    "db:gen:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
@@ -21,6 +23,7 @@
     "supa:gen": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts"
   },
   "devDependencies": {
+    "ts-node": "^10.0.0",
     "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.18.0",
     "@internationalized/date": "^3.9.0",
@@ -67,6 +70,7 @@
     "@supabase/supabase-js": "^2.55.0",
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
-    "shadcn-svelte": "^1.0.7"
+    "shadcn-svelte": "^1.0.7",
+    "fs-extra": "^10.0.0"
   }
 }

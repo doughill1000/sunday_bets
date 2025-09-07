@@ -1,37 +1,4 @@
--- Helper: is_admin() based on users.role
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-as $$
-  select exists (
-    select 1 from public.users u
-    where u.id = auth.uid() and u.role = 'admin'
-  );
-$$;
-
--- Helper: has the game started?
-create or replace function public.game_has_started(p_game_id uuid)
-returns boolean
-language sql
-stable
-as $$
-  select (now() >= g.commence_time) from public.games g where g.id = p_game_id
-$$;
-
--- Resolve the current active line (single authoritative line per game)
-create or replace function public.current_active_line(p_game_id uuid)
-returns public.game_lines
-language sql
-stable
-as $$
-  select gl.*
-  from public.game_lines gl
-  where gl.game_id = p_game_id and gl.is_active_line = true
-  limit 1
-$$;
-
--- RPC: lock a pick (free edits before kickoff; line snapshot frozen each change)
+ 
 create or replace function public.lock_pick(
   p_game_id  uuid,
   p_side     text,         -- 'home' | 'away'
