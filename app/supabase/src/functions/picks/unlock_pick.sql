@@ -53,10 +53,10 @@ begin
         'game_id', p_game_id,
         'picked_team_id', v_row.picked_team_id,
         'weight', v_row.weight,
-        'final_locked_at', v_row.final_locked_at,
-        'final_locked_line_id', v_row.final_locked_line_id,
-        'final_locked_spread_team_id', v_row.final_locked_spread_team_id,
-        'final_locked_spread_value', v_row.final_locked_spread_value
+        'locked_at', v_row.locked_at,
+        'locked_line_id', v_row.locked_line_id,
+        'locked_spread_team_id', v_row.locked_spread_team_id,
+        'locked_spread_value', v_row.locked_spread_value
       )
     );
 
