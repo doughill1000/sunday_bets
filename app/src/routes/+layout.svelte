@@ -23,7 +23,7 @@
         // optional: toast 'App is ready to work offline'
         // console.log('PWA ready for offline use');
       }
-    });  
+    });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
@@ -36,10 +36,10 @@
 </script>
 
 <!-- Page shell -->
-<div class="bg-background text-foreground flex min-h-svh flex-col">
+<div class="flex min-h-svh flex-col bg-background text-foreground">
   <!-- Header using shadcn styling primitives -->
   <header
-    class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
+    class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
   >
     <div class="container mx-auto flex h-14 items-center px-4">
       <AppHeader {user} />

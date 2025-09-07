@@ -1,4 +1,4 @@
-import { TEAM_META, type TeamMeta } from "$lib/types/domain";
+import { TEAM_META, type TeamMeta } from '$lib/types/domain';
 
 // Reverse index: by numeric id → the meta (plus abbr for convenience)
 export const TEAM_BY_ID: Record<number, TeamMeta & { abbr: string }> = Object.fromEntries(

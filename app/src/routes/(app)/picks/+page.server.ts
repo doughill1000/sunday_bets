@@ -9,10 +9,7 @@ export const load: PageServerLoad = async (event) => {
   const week = await findActiveWeek();
   if (!week) return { week: null, games: [], picks: {} };
 
-  const [dbRows, myPicks] = await Promise.all([
-    getActiveWeekGames(),         
-    getMyPicks(event, week.id)
-  ]);
+  const [dbRows, myPicks] = await Promise.all([getActiveWeekGames(), getMyPicks(event, week.id)]);
 
   const games = toUIGamesFromDb(dbRows);
   const picks = toPickEntries(myPicks);

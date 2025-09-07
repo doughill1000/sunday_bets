@@ -53,7 +53,7 @@
 </script>
 
 <section class="mx-auto max-w-3xl p-4 sm:p-6">
-  <div class="rounded-2xl border border-surface-400/30 bg-surface-900/60 p-5 shadow-lg">
+  <div class="border-surface-400/30 bg-surface-900/60 rounded-2xl border p-5 shadow-lg">
     <header class="mb-4 flex items-center justify-between">
       <h1 class="text-xl font-bold">Admin • Odds Sync</h1>
       {#if data.activeWeek}
@@ -66,7 +66,7 @@
     </header>
 
     <!-- Cap / usage -->
-    <div class="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3 text-center">
+    <div class="mb-5 grid grid-cols-1 gap-4 text-center sm:grid-cols-3">
       <div>
         <div class="text-xs opacity-70">Monthly Cap</div>
         <div class="text-2xl font-semibold">{cap}</div>

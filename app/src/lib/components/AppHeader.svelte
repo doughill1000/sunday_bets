@@ -62,7 +62,7 @@
 </script>
 
 <header
-  class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
+  class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
 >
   <div class="mx-auto max-w-screen-xl px-2 sm:px-4">
     <!-- RELATIVE FLEX ROW; NO GRID -->
@@ -76,12 +76,12 @@
             </Button>
           </SheetTrigger>
           <SheetContent side="left" class="w-72 pl-4">
-            <div class="mb-4 mt-2 font-semibold tracking-wide">SUNDAY BETS</div>
+            <div class="mt-2 mb-4 font-semibold tracking-wide">SUNDAY BETS</div>
             <nav class="grid gap-1 text-sm">
-              <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
-              <a class="hover:bg-accent rounded px-2 py-2" href="/leaderboard">Leaderboard</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/picks">My Picks</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard">Leaderboard</a>
               {#if canSeeAdmin}
-                <a class="hover:bg-accent rounded px-2 py-2" href="/admin">Admin</a>
+                <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
               {/if}
             </nav>
             <Separator class="my-3" />
@@ -89,9 +89,9 @@
               <Button class="w-full" onclick={installPwa}>Install App</Button>
             {/if}
             <nav class="mt-2 grid gap-1 text-sm">
-              <a class="hover:bg-accent rounded px-2 py-2" href="/auth/signout">Sign out</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/auth/signout">Sign out</a>
             </nav>
-            <div class="text-muted-foreground mt-6 text-xs">Season 2025 • Week 1</div>
+            <div class="mt-6 text-xs text-muted-foreground">Season 2025 • Week 1</div>
           </SheetContent>
         </Sheet>
       </div>

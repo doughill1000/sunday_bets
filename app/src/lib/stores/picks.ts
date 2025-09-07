@@ -66,7 +66,7 @@ export async function lockPick(gameId: string): Promise<{ ok: boolean; reason?: 
       [gameId]: {
         ...e,
         lockedPick: { team, weight },
-        lockedAt: result.final_locked_at ?? e.lockedAt ?? nowIso,
+        lockedAt: result.final_locked_at ?? e.lockedAt ?? nowIso
       }
     };
   });

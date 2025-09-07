@@ -35,19 +35,31 @@ const ORDER = [
 const BOOTSTRAP = process.argv.includes('--bootstrap');
 
 // ---------- utils ----------
-function sha(s: string) { return crypto.createHash('sha256').update(s).digest('hex'); }
-function readFileSafe(p: string) { return fs.readFileSync(p, 'utf8'); }
+function sha(s: string) {
+  return crypto.createHash('sha256').update(s).digest('hex');
+}
+function readFileSafe(p: string) {
+  return fs.readFileSync(p, 'utf8');
+}
 function readLedger(): Ledger {
-  try { return JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8')); } catch { return {}; }
+  try {
+    return JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
 }
 function writeLedger(ledger: Ledger) {
   fs.mkdirSync(path.dirname(LEDGER_PATH), { recursive: true });
   fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 2));
 }
-function rel(p: string) { return path.relative(ROOT, p).replaceAll('\\', '/'); }
+function rel(p: string) {
+  return path.relative(ROOT, p).replaceAll('\\', '/');
+}
 function walkDir(dir: string, acc: string[] = []) {
   if (!fs.existsSync(dir)) return acc;
-  const entries = fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+  const entries = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name));
   for (const e of entries) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walkDir(p, acc);
@@ -70,16 +82,21 @@ function collectFiles(): string[] {
  * Falls back to parsing CREATE OR REPLACE FUNCTION if missing.
  */
 function extractSignature(sql: string): string | undefined {
-  const m = sql.match(/^\s*--\s*@signature:\s*([^\r\n]+)\s*$/mi);
+  const m = sql.match(/^\s*--\s*@signature:\s*([^\r\n]+)\s*$/im);
   if (m) return m[1].trim();
   const m2 = sql.match(/create\s+or\s+replace\s+function\s+([a-z0-9_."]+)\s*\(([\s\S]*?)\)/i);
   if (!m2) return undefined;
   const name = m2[1].replace(/\s+/g, '');
   const argsRaw = m2[2]
     .split(',')
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean)
-    .map(s => s.replace(/\b(in|out|inout)\b/gi, '').trim().replace(/^[a-z_][a-z0-9_]*\s+/i, ''))
+    .map((s) =>
+      s
+        .replace(/\b(in|out|inout)\b/gi, '')
+        .trim()
+        .replace(/^[a-z_][a-z0-9_]*\s+/i, '')
+    )
     .join(', ');
   return `${name}(${argsRaw})`;
 }
@@ -105,7 +122,7 @@ function main() {
   if (files.length === 0) {
     console.log(`[gen] No .sql files found.
 [gen] ROOT=${ROOT}
-[gen] Ensure you have folders like ${ORDER.map(f => `'${f}'`).join(', ')} under that root.`);
+[gen] Ensure you have folders like ${ORDER.map((f) => `'${f}'`).join(', ')} under that root.`);
     if (BOOTSTRAP) {
       writeLedger(ledger);
       console.log('Bootstrapped ledger with 0 entries. No migration written.');
@@ -128,7 +145,8 @@ function main() {
     const key = rel(abs);
 
     const prev = ledger[key];
-    const changed = !prev || prev.hash !== hash || (sig && prev.signature && sig !== prev.signature);
+    const changed =
+      !prev || prev.hash !== hash || (sig && prev.signature && sig !== prev.signature);
 
     if (BOOTSTRAP) {
       ledger[key] = { hash, signature: sig };
@@ -140,7 +158,9 @@ function main() {
 
   if (BOOTSTRAP) {
     writeLedger(ledger);
-    console.log(`Bootstrapped ledger with ${Object.keys(ledger).length} entries. No migration written.`);
+    console.log(
+      `Bootstrapped ledger with ${Object.keys(ledger).length} entries. No migration written.`
+    );
     return;
   }
 
@@ -155,14 +175,16 @@ function main() {
   const drops: string[] = [];
   for (const c of changes) {
     if (c.old?.signature && c.signature && c.old.signature !== c.signature) {
-      drops.push(`-- drop for signature change: ${c.key}\ndrop function if exists ${c.old.signature};`);
+      drops.push(
+        `-- drop for signature change: ${c.key}\ndrop function if exists ${c.old.signature};`
+      );
     }
   }
 
   const body = [
     migrationHeader(),
     drops.length ? `-- signature-adjustment drops\n${drops.join('\n')}\n` : '',
-    ...changes.map(c => `-- file: ${c.key}\n${c.content}`)
+    ...changes.map((c) => `-- file: ${c.key}\n${c.content}`)
   ].join('\n');
 
   fs.writeFileSync(outPath, body, 'utf8');

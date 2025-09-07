@@ -46,7 +46,7 @@
   class="relative grid place-items-center bg-[radial-gradient(ellipse_at_top,theme(colors.neutral.900),theme(colors.neutral.950))]"
 >
   <Card
-    class="bg-card/90 border-border/60 relative z-10 w-full max-w-md rounded-2xl border shadow-2xl backdrop-blur-xl"
+    class="relative z-10 w-full max-w-md rounded-2xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl"
   >
     <CardHeader class="space-y-1">
       <CardTitle class="text-3xl">Sign in</CardTitle>
@@ -67,7 +67,7 @@
             placeholder="you@example.com"
             autocomplete="email"
           />
-          <p class="text-muted-foreground text-xs">
+          <p class="text-xs text-muted-foreground">
             We’ll send a secure link if you choose magic link.
           </p>
         </div>
@@ -78,13 +78,13 @@
           <Label class="text-sm font-medium">Method</Label>
           <RadioGroup bind:value={method} class="grid grid-cols-2 gap-2">
             <div
-              class="border-border/70 hover:bg-accent/40 flex items-center space-x-2 rounded-lg border p-3 transition"
+              class="flex items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
             >
               <RadioGroupItem id="method-magic" value="magic" />
               <Label for="method-magic" class="cursor-pointer">Magic link</Label>
             </div>
             <div
-              class="border-border/70 hover:bg-accent/40 flex items-center space-x-2 rounded-lg border p-3 transition"
+              class="flex items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
             >
               <RadioGroupItem id="method-password" value="password" />
               <Label for="method-password" class="cursor-pointer">Email + password</Label>
@@ -113,7 +113,7 @@
     </CardContent>
 
     <CardFooter class="justify-center">
-      <p class="text-muted-foreground text-center text-sm">
+      <p class="text-center text-sm text-muted-foreground">
         Having trouble? <a href="/auth/error" class="underline underline-offset-4">Auth help</a>
       </p>
     </CardFooter>

@@ -1,7 +1,12 @@
 import { supabaseService } from '$lib/supabase/service';
 import type { OddsGame, TeamRow } from '$lib/types/server';
 
-export async function upsertGame(g: OddsGame, home: TeamRow, away: TeamRow, weekId: number): Promise<string> {
+export async function upsertGame(
+  g: OddsGame,
+  home: TeamRow,
+  away: TeamRow,
+  weekId: number
+): Promise<string> {
   // Try to upsert the game by external_game_id and week_id
   const { data, error } = await supabaseService
     .from('games')

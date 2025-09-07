@@ -4,6 +4,6 @@
 
 <h1 class="h3 mb-4">Leaderboard</h1>
 
-<div class="flex items-center justify-center h-32 opacity-70 text-lg font-semibold">
+<div class="flex h-32 items-center justify-center text-lg font-semibold opacity-70">
   COMING SOON
 </div>

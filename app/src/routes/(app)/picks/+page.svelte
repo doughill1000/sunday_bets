@@ -116,7 +116,7 @@
         {#if locked}
           <Badge
             variant="secondary"
-            class="absolute right-3 top-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
+            class="absolute top-3 right-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
           >
             <span>Locked</span>
             <span class="font-normal opacity-80">
@@ -133,10 +133,10 @@
         <CardHeader class="flex-row items-center justify-between pb-2">
           <div class="min-w-0">
             <h2 class="truncate font-semibold">{g.away} @ {g.home}</h2>
-            <p class="text-muted-foreground truncate text-xs">{lineText}</p>
+            <p class="truncate text-xs text-muted-foreground">{lineText}</p>
           </div>
           <div class="flex shrink-0 items-center gap-2">
-            <time class="text-muted-foreground whitespace-nowrap text-xs" datetime={g.kickoff}>
+            <time class="text-xs whitespace-nowrap text-muted-foreground" datetime={g.kickoff}>
               {kickoffText}
             </time>
           </div>
@@ -196,7 +196,7 @@
               </ToggleGroup>
 
               {#if entry.selected?.weight === 'A' && !canUseAceRule(g.id, $picks)}
-                <p class="text-muted-foreground mt-1 text-[11px]">
+                <p class="mt-1 text-[11px] text-muted-foreground">
                   {WEIGHTS.A.label} has already been used on another game.
                 </p>
               {/if}
@@ -225,7 +225,7 @@
             </div>
 
             {#if started}
-              <p class="text-muted-foreground mt-2 text-xs">Kickoff passed — picks locked.</p>
+              <p class="mt-2 text-xs text-muted-foreground">Kickoff passed — picks locked.</p>
             {/if}
           </div>
         </CardContent>

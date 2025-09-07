@@ -5,8 +5,8 @@ import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
-    tailwindcss(),
     sveltekit(),
+    tailwindcss(),
     SvelteKitPWA({
       srcDir: 'src',
       strategies: 'generateSW',

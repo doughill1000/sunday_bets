@@ -45,9 +45,9 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
         const lockedAtRaw = p.final_locked_at ?? null;
 
         return {
-          userId: p.user_id ?? '', 
-          displayName: p.picked_team_short ?? '', 
-          pickedTeamId: p.picked_team_id, 
+          userId: p.user_id ?? '',
+          displayName: p.picked_team_short ?? '',
+          pickedTeamId: p.picked_team_id,
           weight: (p.weight as WeightCode) ?? null,
           lockedAt: lockedAtRaw ? new Date(lockedAtRaw).toISOString() : null,
           isMe: p.user_id === user.id

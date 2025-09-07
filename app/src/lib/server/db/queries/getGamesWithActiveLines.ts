@@ -48,7 +48,7 @@ export async function getGamesWithActiveLines(weekId: number) {
         home_name: g.home_team?.name,
         away_code: g.away_team?.short_name,
         away_name: g.away_team?.name,
-        spread_team: activeLine.spread_team_id === g.home_team?.id ? 'home' : 'away' as TeamSide,
+        spread_team: activeLine.spread_team_id === g.home_team?.id ? 'home' : ('away' as TeamSide),
         spread_value: activeLine.spread_value,
         line_source: activeLine.source
       };
