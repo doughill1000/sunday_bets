@@ -62,7 +62,8 @@ const injectSession: Handle = async ({ event, resolve }) => {
   const { session, user } = await event.locals.safeGetSession();
   event.locals.session = session;
   event.locals.user = user;
-  
+  event.locals.isAdmin = user?.app_metadata?.role === 'admin';
+
   return resolve(event);
 };
 
