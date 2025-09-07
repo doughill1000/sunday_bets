@@ -34,7 +34,9 @@
   let deferredPrompt: any = null;
 
   onMount(() => {
-    try { registerSW({ immediate: true }); } catch {}
+    try {
+      registerSW({ immediate: true });
+    } catch {}
 
     const handler = (e: any) => {
       e.preventDefault();
@@ -59,12 +61,14 @@
   }
 </script>
 
-<header class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+<header
+  class="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 w-full border-b backdrop-blur"
+>
   <div class="mx-auto max-w-screen-xl px-2 sm:px-4">
     <!-- RELATIVE FLEX ROW; NO GRID -->
     <div class="relative flex h-14 items-center">
       <!-- LEFT: flush-left, never collapses -->
-      <div class="-ml-2 flex items-center shrink-0">
+      <div class="-ml-2 flex shrink-0 items-center">
         <Sheet>
           <SheetTrigger>
             <Button size="icon" variant="ghost" aria-label="Open menu" class="rounded-xl">
@@ -72,23 +76,23 @@
             </Button>
           </SheetTrigger>
           <SheetContent side="left" class="w-72 pl-4">
-        <div class="mb-4 mt-2 font-semibold tracking-wide">SUNDAY BETS</div>
-        <nav class="grid gap-1 text-sm">
-          <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
-          <a class="hover:bg-accent rounded px-2 py-2" href="/leaderboard">Leaderboard</a>
-          {#if canSeeAdmin}
-            <a class="hover:bg-accent rounded px-2 py-2" href="/admin">Admin</a>
-          {/if}
-        </nav>
-        <Separator class="my-3" />
-        {#if canInstall}
-          <Button class="w-full" onclick={installPwa}>Install App</Button>
-        {/if}
-        <nav class="mt-2 grid gap-1 text-sm">
-          <a class="hover:bg-accent rounded px-2 py-2" href="/auth/signout">Sign out</a>
-        </nav>
-        <div class="text-muted-foreground mt-6 text-xs">Season 2025 • Week 1</div>
-      </SheetContent>
+            <div class="mb-4 mt-2 font-semibold tracking-wide">SUNDAY BETS</div>
+            <nav class="grid gap-1 text-sm">
+              <a class="hover:bg-accent rounded px-2 py-2" href="/picks">My Picks</a>
+              <a class="hover:bg-accent rounded px-2 py-2" href="/leaderboard">Leaderboard</a>
+              {#if canSeeAdmin}
+                <a class="hover:bg-accent rounded px-2 py-2" href="/admin">Admin</a>
+              {/if}
+            </nav>
+            <Separator class="my-3" />
+            {#if canInstall}
+              <Button class="w-full" onclick={installPwa}>Install App</Button>
+            {/if}
+            <nav class="mt-2 grid gap-1 text-sm">
+              <a class="hover:bg-accent rounded px-2 py-2" href="/auth/signout">Sign out</a>
+            </nav>
+            <div class="text-muted-foreground mt-6 text-xs">Season 2025 • Week 1</div>
+          </SheetContent>
         </Sheet>
       </div>
 
@@ -107,35 +111,32 @@
         </a>
       </div>
 
-      <div class="ml-auto -mr-2 flex items-center gap-2 shrink-0">
-            <!-- User/account dropdown (mobile and desktop) -->
-    {#if user}
-      <DropdownMenu>
-        <DropdownMenuContent align="end" class="w-56">
-          <DropdownMenuLabel>Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {#if canSeeAdmin}
-            <DropdownMenuItem><a href="/admin">Admin</a></DropdownMenuItem>
-          {/if}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
-        </DropdownMenuContent>
-        <DropdownMenuTrigger>
-          <Button variant="ghost" class="gap-2">
-            <Avatar class="h-6 w-6">
-              <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
-              <AvatarFallback>
-                {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-      </DropdownMenu>
-    {:else}
-      <Button variant="default"><a href="/auth">Sign in</a></Button>
-    {/if}
-        {#if user === null}
-          <Button variant="default" class="rounded-xl"><a href="/auth">Sign in</a></Button>
+      <div class="-mr-2 ml-auto flex shrink-0 items-center gap-2">
+        <!-- User/account dropdown (mobile and desktop) -->
+        {#if user}
+          <DropdownMenu>
+            <DropdownMenuContent align="end" class="w-56">
+              <DropdownMenuLabel>Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {#if canSeeAdmin}
+                <DropdownMenuItem><a href="/admin">Admin</a></DropdownMenuItem>
+              {/if}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
+            </DropdownMenuContent>
+            <DropdownMenuTrigger>
+              <Button variant="ghost" class="gap-2">
+                <Avatar class="h-6 w-6">
+                  <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
+                  <AvatarFallback>
+                    {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+          </DropdownMenu>
+        {:else}
+          <Button variant="default"><a href="/auth">Sign in</a></Button>
         {/if}
       </div>
     </div>

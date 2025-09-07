@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
       },
       manifest: {
         name: 'Sunday Bets',
-        short_name: 'SundayBets',
+        short_name: 'Sunday Bets',
         description: 'Track and manage your Sunday football betting picks offline.',
         start_url: '/',
         scope: '/',
