@@ -1,0 +1,26 @@
+# .github/workflows/migrate.yml
+name: Apply Supabase DB migrations (DB URL)
+
+on:
+  push:
+    branches: [ master ]  # or master
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+          | sudo tar -xz -C /usr/local/bin supabase
+          supabase --version
+
+      - name: Apply migrations to remote DB
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # Applies all pending SQL files in supabase/migrations to the DB via connection string
+          supabase db push --db-url "$SUPABASE_DB_URL" --db-schema "public" --migration-dir ./app/supabase/migrations
