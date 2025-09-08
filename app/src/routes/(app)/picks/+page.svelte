@@ -10,7 +10,7 @@
   import { toast } from 'svelte-sonner'; // shadcn-svelte sonner
 
   import { picks, setPicks, selectTeam, setWeight } from '$lib/stores/picks';
-  import { lockPick as lockPickApi } from '$lib/api/picks';
+  import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
   import { TEAM_META, WEIGHTS, type TeamSide, type WeightCode } from '$lib/types/domain';
   import type { UIGame } from '$lib/types/ui';
   import { textOn } from '$lib/ui/color';
@@ -68,6 +68,21 @@
     }));
   }
 
+  async function onUnlock(g: UIGame) {
+    const res = await unlockPickApi(g.id);
+    if (!res.ok) {
+      toast.error('Unlock failed');
+      return;
+    }
+    picks.update((s) => ({
+      ...s,
+      [g.id]: {
+        ...(s[g.id] ?? {}),
+        lockedPick: undefined
+      }
+    }));
+  }
+
   function formatKickoff(iso: string) {
     const d = new Date(iso);
     const dow = d.toLocaleDateString(undefined, { weekday: 'short' });
@@ -120,11 +135,15 @@
           >
             <span>Locked</span>
             <span class="font-normal opacity-80">
-              {#if entry.lockedSpreadValue}
-                {abbrById(entry.lockedSpreadTeamId) ?? 'N/A'}
-                {entry.lockedSpreadValue} @ {entry.lockedPick?.weight}
-              {:else}
-                {entry.lockedPick?.weight}
+              {#if entry.lockedPick}
+                <!-- Team name -->
+                {entry.lockedPick.team === 'home' ? g.home : g.away}
+                <!-- Spread value (if available) -->
+                {#if typeof g.spread === 'number' || (typeof g.spread === 'string' && g.spread !== '0')}
+                  &nbsp;{g.spreadTeam === entry.lockedPick.team ? '-' : ''}{g.spread}
+                {/if}
+                <!-- Weight -->
+                @ {entry.lockedPick.weight}
               {/if}
             </span>
           </Badge>
@@ -202,14 +221,15 @@
               {/if}
             </div>
 
-            <div class="mt-1">
+            <div class="mt-1 flex gap-2">
               {#if locked}
                 <Button
                   class="h-10 w-full font-semibold"
-                  variant="secondary"
-                  onclick={() => onLock(g)}
+                  variant="outline"
+                  onclick={() => onUnlock(g)}
+                  disabled={started}
                 >
-                  Locked
+                  Unlock
                 </Button>
               {:else}
                 <Button

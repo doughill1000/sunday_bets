@@ -2,10 +2,6 @@
 set check_function_bodies = off;
 set client_min_messages = warning;
 
-revoke all on function public.audit_log_action(uuid, text, jsonb) from public;
-grant execute on function public.audit_log_action(uuid, text, jsonb)
-  to authenticated, service_role;
-
 -- file: functions/_private/audit_log_action.sql
 create or replace function public.audit_log_action(
   p_actor  uuid,

@@ -482,6 +482,10 @@ export type Database = {
       }
     }
     Functions: {
+      audit_log_action: {
+        Args: { p_action: string; p_actor: string; p_details: Json }
+        Returns: undefined
+      }
       current_active_line: {
         Args: { p_game_id: string }
         Returns: {
@@ -515,6 +519,15 @@ export type Database = {
           picked_side: string
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
+        }[]
+      }
+      unlock_pick: {
+        Args: { p_game_id: string }
+        Returns: {
+          game_id: string
+          ok: boolean
+          unlocked_at: string
+          user_id: string
         }[]
       }
     }

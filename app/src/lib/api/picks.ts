@@ -19,3 +19,20 @@ export async function lockPick(gameId: string, team: TeamSide, weight: WeightCod
     final_locked_at?: string;
   };
 }
+
+export async function unlockPick(gameId: string) {
+  const res = await fetch(`/api/picks/${gameId}`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' }
+  });
+
+  if (!res.ok) {
+    const reason = await res.text().catch(() => 'request failed');
+    return { ok: false, reason } as { ok: false; reason: string };
+  }
+
+  return (await res.json()) as {
+    ok: boolean;
+    unlocked_at?: string;
+  };
+}
