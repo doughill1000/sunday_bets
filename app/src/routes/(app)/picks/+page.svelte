@@ -50,7 +50,6 @@
     const weight = (entry.selected?.weight ?? entry.lockedPick?.weight) as WeightCode | undefined;
 
     if (!team || !weight) {
-      // was toast.success by mistake
       toast.error('Pick a team and weight first.');
       return;
     }
