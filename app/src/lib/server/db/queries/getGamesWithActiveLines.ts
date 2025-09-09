@@ -8,13 +8,15 @@ type UIGameRow = Database['public']['Views']['ui_games']['Row'];
 export async function getGamesWithActiveLines(weekId: number): Promise<UIGame[]> {
   const { data, error } = await supabaseService
     .from('ui_games')
-    .select('id, week_id, kickoff, home, away, home_team_id, away_team_id, spread_value, favorite_team_id')
+    .select(
+      'id, week_id, kickoff, home, away, home_team_id, away_team_id, spread_value, favorite_team_id'
+    )
     .eq('week_id', weekId)
     .order('kickoff');
 
   if (error) throw error;
-console.log(data)
-  return (data as UIGameRow[] | null ?? []).map((g) => ({
+  console.log(data);
+  return ((data as UIGameRow[] | null) ?? []).map((g) => ({
     id: g.id as string,
     kickoff: g.kickoff as string,
     homeTeamId: g.home_team_id,

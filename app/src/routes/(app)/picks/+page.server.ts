@@ -8,6 +8,5 @@ export const load: PageServerLoad = async (event) => {
 
   const [games, picks] = await Promise.all([getActiveWeekGames(), getMyPicks(event, week.id)]);
 
-
   return { week, games, picks };
 };

@@ -51,7 +51,6 @@ export async function syncOddsForActiveWeek() {
 
     const spreadTeamId = spread.spreadTeamName === home.name ? home.id : away.id;
 
-
     await deactivateActiveLines(gameRowId); // should use supabase service internally
     await upsertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
 
