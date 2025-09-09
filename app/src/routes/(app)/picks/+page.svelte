@@ -7,7 +7,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { Label } from '$lib/components/ui/label';
-  import { toast } from 'svelte-sonner'; // shadcn-svelte sonner
+  import { toast } from 'svelte-sonner';
 
   import { picks, setPicks, selectTeam, setWeight } from '$lib/stores/picks';
   import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
@@ -16,7 +16,6 @@
   import { textOn } from '$lib/ui/color';
   import { kickoffPassed, canUseAce as canUseAceRule } from '$lib/domain/rules';
   import type { PickEntry } from '$lib/types/server';
-  import { abbrById } from '$lib/utils/teams';
 
   export let data: { games: UIGame[]; picks: Record<string, PickEntry> };
 
@@ -51,7 +50,8 @@
     const weight = (entry.selected?.weight ?? entry.lockedPick?.weight) as WeightCode | undefined;
 
     if (!team || !weight) {
-      toast.success('Pick a team and weight first.');
+      // was toast.success by mistake
+      toast.error('Pick a team and weight first.');
       return;
     }
     const res = await lockPickApi(g.id, team, weight);
@@ -92,14 +92,21 @@
   }
 
   function spreadLine(g: UIGame): string {
-    if (!g.spread || !g.spreadTeam) return 'No line';
-    if (g.spread === '0') return 'PK';
-    const favName = g.spreadTeam === 'home' ? g.home : g.away;
-    return `${favName} -${g.spread}`;
+    if (g.spreadValue == null) return 'No line';
+    if (g.spreadValue === 0) return 'PK';
+
+    const favIsHome = g.spreadTeamId === g.homeTeamId;
+    const favName = favIsHome ? g.home : g.away;
+    return `${favName} -${g.spreadValue}`;
   }
 
-  function canUseAce(gameId: string) {
-    return canUseAceRule(gameId, $picks);
+  function signedSpreadForTeam(g: UIGame, team: 'home' | 'away'): string {
+    if (g.spreadValue == null) return '';
+    if (g.spreadValue === 0) return ' PK';
+
+    const favIsHome = g.spreadTeamId === g.homeTeamId;
+    const teamIsFav = (team === 'home') === favIsHome;
+    return ` ${teamIsFav ? '-' : '+'}${g.spreadValue}`;
   }
 </script>
 
@@ -131,18 +138,13 @@
         {#if locked}
           <Badge
             variant="secondary"
-            class="absolute top-3 right-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
+            class="absolute right-3 top-3 z-10 flex flex-col items-end px-2 py-1 text-[11px]"
           >
             <span>Locked</span>
             <span class="font-normal opacity-80">
               {#if entry.lockedPick}
-                <!-- Team name -->
                 {entry.lockedPick.team === 'home' ? g.home : g.away}
-                <!-- Spread value (if available) -->
-                {#if typeof g.spread === 'number' || (typeof g.spread === 'string' && g.spread !== '0')}
-                  &nbsp;{g.spreadTeam === entry.lockedPick.team ? '-' : ''}{g.spread}
-                {/if}
-                <!-- Weight -->
+                {signedSpreadForTeam(g, entry.lockedPick.team)}
                 @ {entry.lockedPick.weight}
               {/if}
             </span>
@@ -152,10 +154,10 @@
         <CardHeader class="flex-row items-center justify-between pb-2">
           <div class="min-w-0">
             <h2 class="truncate font-semibold">{g.away} @ {g.home}</h2>
-            <p class="truncate text-xs text-muted-foreground">{lineText}</p>
+            <p class="text-muted-foreground truncate text-xs">{lineText}</p>
           </div>
           <div class="flex shrink-0 items-center gap-2">
-            <time class="text-xs whitespace-nowrap text-muted-foreground" datetime={g.kickoff}>
+            <time class="text-muted-foreground whitespace-nowrap text-xs" datetime={g.kickoff}>
               {kickoffText}
             </time>
           </div>
@@ -196,14 +198,14 @@
                 id={`w_${g.id}`}
                 type="single"
                 value={weightValue}
-                onchange={(e) => setWeight(g.id, (e.detail?.value ?? 'L') as WeightCode)}
+                onValueChange={(val) => setWeight(g.id, (val ?? 'L') as WeightCode)}
                 class="w-full"
                 disabled={!canChange}
               >
                 {#each Object.entries(WEIGHTS) as [code, w]}
                   <ToggleGroupItem
                     value={code}
-                    disabled={code === 'A' && !canUseAceRule(g.id, $picks)}
+                    disabled={code === 'A' && !canUseAce}
                     class="flex-1 px-3 py-[6px] leading-none"
                   >
                     <div class="flex flex-col items-center">
@@ -214,8 +216,8 @@
                 {/each}
               </ToggleGroup>
 
-              {#if entry.selected?.weight === 'A' && !canUseAceRule(g.id, $picks)}
-                <p class="mt-1 text-[11px] text-muted-foreground">
+              {#if entry.selected?.weight === 'A' && !canUseAce}
+                <p class="text-muted-foreground mt-1 text-[11px]">
                   {WEIGHTS.A.label} has already been used on another game.
                 </p>
               {/if}
@@ -236,7 +238,7 @@
                   class="h-10 w-full font-semibold"
                   onclick={() => onLock(g)}
                   disabled={!entry.selected ||
-                    (entry.selected.weight === 'A' && !canUseAceRule(g.id, $picks)) ||
+                    (entry.selected.weight === 'A' && !canUseAce) ||
                     started}
                 >
                   Lock Pick
@@ -245,7 +247,7 @@
             </div>
 
             {#if started}
-              <p class="mt-2 text-xs text-muted-foreground">Kickoff passed — picks locked.</p>
+              <p class="text-muted-foreground mt-2 text-xs">Kickoff passed — picks locked.</p>
             {/if}
           </div>
         </CardContent>
@@ -256,16 +258,13 @@
 
 <style>
   :global(.team-btn) {
-    /* fallbacks just in case vars aren’t set */
     --c1: #64748b;
     --c2: #94a3b8;
     --fg: #000;
-
     background: linear-gradient(135deg, var(--c1), var(--c2));
     color: var(--fg);
     border: 1px solid hsl(var(--border));
   }
-
   :global(.team-btn.selected) {
     outline: 2px solid white;
     outline-offset: 2px;

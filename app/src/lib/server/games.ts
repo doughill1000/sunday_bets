@@ -42,7 +42,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
       .filter((p) => p.game_id === r.id)
       .filter((p) => started || p.user_id === user.id)
       .map((p) => {
-        const lockedAtRaw = p.final_locked_at ?? null;
+        const lockedAtRaw = p.locked_at ?? null;
 
         return {
           userId: p.user_id ?? '',

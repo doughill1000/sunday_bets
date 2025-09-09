@@ -34,7 +34,7 @@ export type WeekRow = {
 
 export type TeamRow = {
   id: number;
-  short_name: string;
+  name: string;
 };
 
 export type OddsGame = {

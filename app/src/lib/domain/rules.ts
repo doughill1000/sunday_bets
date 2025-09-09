@@ -1,5 +1,4 @@
 // src/lib/domain/rules.ts
-import type { UIGame } from '$lib/types/ui';
 import type { PickEntry } from '$lib/types/server';
 
 export function kickoffPassed(iso: string) {

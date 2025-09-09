@@ -83,6 +83,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "game_lines_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "game_lines_spread_team_id_fkey"
             columns: ["spread_team_id"]
             isOneToOne: false
@@ -189,6 +196,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "picks_picked_team_id_fkey"
             columns: ["picked_team_id"]
             isOneToOne: false
@@ -229,6 +243,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: true
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "results_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "ui_games"
             referencedColumns: ["id"]
           },
         ]
@@ -387,6 +408,59 @@ export type Database = {
       }
     }
     Views: {
+      game_lines_normalized: {
+        Row: {
+          away_team_id: number | null
+          commence_time: string | null
+          favorite_by: number | null
+          favorite_team_id: number | null
+          fetched_at: string | null
+          game_id: string | null
+          game_line_id: number | null
+          home_spread: number | null
+          home_team_id: number | null
+          is_active_line: boolean | null
+          source: string | null
+          week_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_lines_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_lines_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       picks_status_view_admin: {
         Row: {
           commence_time: string | null
@@ -416,6 +490,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
             referencedColumns: ["id"]
           },
           {
@@ -465,6 +546,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "picks_picked_team_id_fkey"
             columns: ["picked_team_id"]
             isOneToOne: false
@@ -476,6 +564,49 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ui_games: {
+        Row: {
+          away: string | null
+          away_team_id: number | null
+          favorite_team_id: number | null
+          home: string | null
+          home_team_id: number | null
+          id: string | null
+          kickoff: string | null
+          spread_value: number | null
+          week_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_lines_spread_team_id_fkey"
+            columns: ["favorite_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_away_team_id_fkey"
+            columns: ["away_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_home_team_id_fkey"
+            columns: ["home_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
             referencedColumns: ["id"]
           },
         ]

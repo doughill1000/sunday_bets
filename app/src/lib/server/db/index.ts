@@ -1,6 +1,6 @@
 // Commands
 export * from './commands/deactivate_lines';
-export * from './commands/insert_active_line';
+export * from './commands/upsert_active_line';
 export * from './commands/upsert_game';
 export * from './commands/lockPick';
 
