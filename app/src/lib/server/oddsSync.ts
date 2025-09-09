@@ -4,7 +4,7 @@ import { findActiveWeek } from './db/queries/findActiveWeek';
 import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGame } from './db/commands/upsert_game';
 import { deactivateActiveLines } from './db/commands/deactivate_lines';
-import { insertActiveLine } from './db/commands/insert_active_line';
+import { upsertActiveLine } from './db/commands/upsert_active_line';
 
 /**
  * Sync fanduel spreads for the active week.
@@ -49,8 +49,9 @@ export async function syncOddsForActiveWeek() {
 
     const spreadTeamId = spread.spreadTeamName === home.short_name ? home.id : away.id;
 
+
     await deactivateActiveLines(gameRowId); // should use supabase service internally
-    await insertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
+    await upsertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
 
     inserted++;
   }
