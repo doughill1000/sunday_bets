@@ -1,0 +1,25 @@
+# .github/workflows/supabase-dry-run.yml
+name: Supabase Migrations (dry run)
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  supabase-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+          | sudo tar -xz -C /usr/local/bin supabase
+          supabase --version
+
+      - name: Dry run migrations against remote DB
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          supabase db push --db-url "$SUPABASE_DB_URL" --workdir ./app --dry-run --yes
