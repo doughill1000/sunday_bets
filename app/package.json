@@ -4,10 +4,10 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "db:push:dev": "cross-env SUPABASE_PROJECT_REF=fhjmfpuanzmowmsfmuhi supabase db push",
-    "db:push:prod": "cross-env SUPABASE_PROJECT_REF=anzcshrpfpxajcgrwczv supabase db push",
+    "db:push:dev": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push && npm run db:gen:types",
     "db:gen:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:gen:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
+    "db:gen:types": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
@@ -19,8 +19,7 @@
     "format:check": "prettier . --check",
     "lint": "prettier --check . && eslint .",
     "test:unit": "vitest",
-    "test": "npm run test:unit -- --run",
-    "supa:gen": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts"
+    "test": "npm run test:unit -- --run"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
@@ -71,6 +70,7 @@
     "fs-extra": "^10.0.0",
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
-    "shadcn-svelte": "^1.0.7"
+    "shadcn-svelte": "^1.0.7",
+    "workbox-window": "^7.3.0"
   }
 }

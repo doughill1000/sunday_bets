@@ -40,7 +40,7 @@
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
   "functions/picks/unlock_pick.sql": {
-    "hash": "f096e0a563535887a3e59961d607478ab2d8c861415891189e14e7c9c1aafc9c",
+    "hash": "bbd6e789f8a20da92c8298152d542f4b0fb7fe4ea4b9852894cdd0b6d8800d89",
     "signature": "public.unlock_pick(uuid)"
   },
   "functions/security/current_user_id.sql": {

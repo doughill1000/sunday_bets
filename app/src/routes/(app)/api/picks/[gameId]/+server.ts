@@ -9,9 +9,16 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
     p_side: team,
     p_weight: weight
   });
-
   if (error) return new Response(error.message, { status: 422 });
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { 'content-type': 'application/json' }
+  return Response.json({ ok: true });
+};
+
+export const DELETE: RequestHandler = async ({ locals, params }) => {
+  if (!locals.user) return new Response('Unauthorized', { status: 401 });
+
+  const { error, data } = await locals.supabase.rpc('unlock_pick', {
+    p_game_id: params.gameId ?? ''
   });
+  if (error) return new Response(error.message, { status: 422 });
+  return Response.json({ ok: true, unlocked_at: data?.unlocked_at });
 };
