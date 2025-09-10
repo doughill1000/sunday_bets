@@ -9,8 +9,8 @@ select
   g.id                as id,
   g.week_id,
   g.commence_time     as kickoff,
-  g.home_team_id      as home_team_id,
-  g.away_team_id      as away_team_id,
+  g.home_team_id,
+  g.away_team_id,
   th.short_name       as home,
   ta.short_name       as away,
   gl.spread_value     as spread_value,        -- positive; 0 => PK; null => no line
