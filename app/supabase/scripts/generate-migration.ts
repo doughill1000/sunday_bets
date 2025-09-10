@@ -24,6 +24,8 @@ const MIG_DIR = path.resolve(process.cwd(), 'supabase/migrations');
 
 const ORDER = [
   'schemas',
+  'indexes',
+  'views',
   'functions/_private',
   'functions',
   'policies',

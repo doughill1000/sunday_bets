@@ -4,7 +4,7 @@ import { findActiveWeek } from './db/queries/findActiveWeek';
 import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGame } from './db/commands/upsert_game';
 import { deactivateActiveLines } from './db/commands/deactivate_lines';
-import { insertActiveLine } from './db/commands/insert_active_line';
+import { upsertActiveLine } from './db/commands/upsert_active_line';
 
 /**
  * Sync fanduel spreads for the active week.
@@ -29,8 +29,8 @@ export async function syncOddsForActiveWeek() {
   // Load all teams once
   const teamsAll = await findTeamsByNames(teamNames);
 
-  const byName = new Map<string, { id: number; short_name: string }>();
-  (teamsAll ?? []).forEach((t) => byName.set(t.name, { id: t.id, short_name: t.short_name }));
+  const byName = new Map<string, { id: number; name: string }>();
+  (teamsAll ?? []).forEach((t) => byName.set(t.name, { id: t.id, name: t.name }));
 
   let inserted = 0;
 
@@ -47,10 +47,12 @@ export async function syncOddsForActiveWeek() {
     const spread = extractFanduelSpread(g);
     if (!spread) continue;
 
-    const spreadTeamId = spread.spreadTeamName === home.short_name ? home.id : away.id;
+    console.log('spread', spread);
+
+    const spreadTeamId = spread.spreadTeamName === home.name ? home.id : away.id;
 
     await deactivateActiveLines(gameRowId); // should use supabase service internally
-    await insertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
+    await upsertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
 
     inserted++;
   }

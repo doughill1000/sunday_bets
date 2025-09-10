@@ -4,7 +4,7 @@ import { listWeekGamesWithPicks } from '$lib/server/games';
 
 export const GET: RequestHandler = async (event) => {
   try {
-    const weekIdParam = event.url.searchParams.get('weekId') ?? event.params.weekId;
+    const weekIdParam = event.url.searchParams.get('weekId');
     if (!weekIdParam) {
       return json({ ok: false, reason: 'weekId required' }, { status: 400 });
     }

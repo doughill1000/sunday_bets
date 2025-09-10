@@ -1,12 +1,14 @@
-import type { WeightCode } from './domain';
+import type { TeamSide, WeightCode } from './domain';
 
 export type UIGame = {
   id: string;
   kickoff: string;
-  away: string;
-  home: string;
-  spreadTeam: 'home' | 'away';
-  spread: string;
+  home: string; // abbrev
+  away: string; // abbrev
+  homeTeamId: number | null;
+  awayTeamId: number | null;
+  spreadTeamId: number | null;
+  spreadValue: number | null; // 0 => PK
 };
 
 export type GameDTO = {

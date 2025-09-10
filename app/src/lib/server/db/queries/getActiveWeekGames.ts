@@ -1,10 +1,11 @@
+// src/lib/server/db/queries/getActiveWeekGames.ts
 import { supabaseService } from '$lib/supabase/service';
 import { getGamesWithActiveLines } from './getGamesWithActiveLines';
 
 export async function getActiveWeekGames() {
   const now = new Date().toISOString();
 
-  // Find the current active week
+  // Try explicit "active window" first…
   let { data: week, error } = await supabaseService
     .from('weeks')
     .select('id, start_ts, end_ts')
@@ -14,8 +15,8 @@ export async function getActiveWeekGames() {
     .limit(1)
     .single();
 
+  // …fallback to latest started week
   if (error || !week) {
-    // Fallback: most recent week that has started
     const fallback = await supabaseService
       .from('weeks')
       .select('id, start_ts, end_ts')
@@ -23,10 +24,9 @@ export async function getActiveWeekGames() {
       .order('start_ts', { ascending: false })
       .limit(1)
       .single();
-    week = fallback.data;
+    week = fallback.data ?? null;
   }
 
   if (!week) return [];
-
   return getGamesWithActiveLines(week.id);
 }

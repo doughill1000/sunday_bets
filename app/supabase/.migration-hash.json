@@ -12,7 +12,7 @@
     "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
   },
   "schemas/04_constraints.sql": {
-    "hash": "18fd23496e0928bd38920477b02d98c08f0a457e5ca841f3c606d5c9ce3db1ee"
+    "hash": "290bc25aad36ec178a80697d78f5c3f2e22a9311cbfe6b5bbce5577a9b4fd475"
   },
   "functions/admin/grade_week.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
@@ -79,5 +79,20 @@
   },
   "grants/anon_grants.sql": {
     "hash": "6974af82c9af306376fe995edb143dcbe403a148df03cc86a48f82cf79753bf4"
+  },
+  "indexes/ux_active_line_per_game.sql": {
+    "hash": "b9a30e072d328031dccfaa667cbdd90b4239d7495c15bf1a244213cf4bf91382"
+  },
+  "views/game_lines_normalized.sql": {
+    "hash": "51963296a8dbfc30ef8682e1cb8a72e410189cf77f5eeddc73444e8ea8ea28a4"
+  },
+  "views/picks_status_view_admin.sql": {
+    "hash": "1aec542857e62bc045478bcabf4d2afafd9d8f17fd0ccb53565c71e32b981af0"
+  },
+  "views/picks_status_view_user.sql": {
+    "hash": "9581874877917b771752fd12c01d4c0cf39ef8403affb3bf01248e9be1ef0bea"
+  },
+  "views/ui_games.sql": {
+    "hash": "894fb1bf6af98715c35bcc1ba9baf9cdefcde0e525134fbe57cde10ba7eabc28"
   }
 }
