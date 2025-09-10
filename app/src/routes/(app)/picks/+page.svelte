@@ -120,7 +120,7 @@
       {@const current = entry.selected ?? entry.lockedPick}
       {@const started = kickoffPassed(g.kickoff)}
       {@const locked = !!entry.lockedPick}
-      {@const canChange = !started && !locked}
+      {@const canChange = initialized && !started && !locked}
       {@const canUseAce = canUseAceRule(g.id, $picks)}
 
       <!-- team css vars, memoized -->
@@ -236,9 +236,12 @@
                 <Button
                   class="h-10 w-full font-semibold"
                   onclick={() => onLock(g)}
-                  disabled={!entry.selected ||
+                  disabled={
+                    !initialized ||
+                    !entry.selected ||
                     (entry.selected.weight === 'A' && !canUseAce) ||
-                    started}
+                    started
+                  }
                 >
                   Lock Pick
                 </Button>

@@ -47,8 +47,6 @@ export async function syncOddsForActiveWeek() {
     const spread = extractFanduelSpread(g);
     if (!spread) continue;
 
-    console.log('spread', spread);
-
     const spreadTeamId = spread.spreadTeamName === home.name ? home.id : away.id;
 
     await deactivateActiveLines(gameRowId); // should use supabase service internally

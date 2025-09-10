@@ -15,7 +15,6 @@ export async function getGamesWithActiveLines(weekId: number): Promise<UIGame[]>
     .order('kickoff');
 
   if (error) throw error;
-  console.log(data);
   return ((data as UIGameRow[] | null) ?? []).map((g) => ({
     id: g.id as string,
     kickoff: g.kickoff as string,
