@@ -5,7 +5,7 @@ import { setPicks } from '../../../stores/picks';
 
 vi.mock('$lib/domain/rules', () => ({
   kickoffPassed: vi.fn(() => false),
-  canUseAllIn: vi.fn(() => true),
+  canUseAllIn: vi.fn(() => true)
 }));
 
 const game = {
@@ -16,7 +16,7 @@ const game = {
   homeTeamId: 'H',
   awayTeamId: 'A',
   spreadTeamId: 'H',
-  spreadValue: 3.5,
+  spreadValue: 3.5
 } as any;
 
 describe('GameCard', () => {

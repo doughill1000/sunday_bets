@@ -60,7 +60,7 @@
     <WeightSelect
       gameId={game.id}
       {canChange}
-      canUseAllIn={canUseAllIn}
+      {canUseAllIn}
       selectedWeight={weightValue}
       showAllInHint={entry.selected?.weight === 'A' && !canUseAllIn}
     />

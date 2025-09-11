@@ -7,7 +7,7 @@ import { get } from 'svelte/store';
 // Mock the API module
 vi.mock('$lib/api/picks', () => ({
   lockPick: vi.fn(async () => ({ ok: true })),
-  unlockPick: vi.fn(async () => ({ ok: true })),
+  unlockPick: vi.fn(async () => ({ ok: true }))
 }));
 
 describe('LockControls', () => {
@@ -15,7 +15,7 @@ describe('LockControls', () => {
 
   beforeEach(() => {
     setPicks({
-      g1: { selected: { team: 'home', weight: 'M' } } as any,
+      g1: { selected: { team: 'home', weight: 'M' } } as any
     });
     vi.clearAllMocks();
   });
@@ -40,7 +40,9 @@ describe('LockControls', () => {
 
   it('disables lock when not initialized or started', async () => {
     const { lockPick } = await import('$lib/api/picks');
-    const { rerender } = render(LockControls, { props: { game, initialized: false, started: false, locked: false } });
+    const { rerender } = render(LockControls, {
+      props: { game, initialized: false, started: false, locked: false }
+    });
     expect(screen.getByText('Lock Pick')).toBeDisabled();
 
     await rerender({ game, initialized: true, started: true, locked: false });

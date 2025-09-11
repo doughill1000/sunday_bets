@@ -4,15 +4,12 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [
-    svelteTesting(),
-    sveltekit(),
-  ],
+  plugins: [svelteTesting(), sveltekit()],
   resolve: {
     alias: {
       $lib: path.resolve(__dirname, 'src/lib'),
-      $components: path.resolve(__dirname, 'src/lib/components'),
-    },
+      $components: path.resolve(__dirname, 'src/lib/components')
+    }
   },
   test: {
     environment: 'jsdom',
@@ -22,7 +19,7 @@ export default defineConfig({
     include: [
       'src/**/__tests__/**/*.{test,spec}.{js,ts}',
       'src/**/*.{test,spec}.{js,ts}',
-      'tests/**/*.{test,spec}.{js,ts}',
+      'tests/**/*.{test,spec}.{js,ts}'
     ]
-  },
+  }
 });
