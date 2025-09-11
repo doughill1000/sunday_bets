@@ -4,6 +4,7 @@
   import { toast } from 'svelte-sonner';
   import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
   import { Button } from '$lib/components/ui/button';
+  import { canUseAllInRule } from '$lib/domain/rules';
 
   export let game: UIGame;
   export let initialized = false;
@@ -59,7 +60,7 @@
       onclick={onLock}
       disabled={!initialized ||
         !$picks[game.id]?.selected ||
-        ($picks[game.id]?.selected?.weight === 'A' && !$picks ? true : false) ||
+        ($picks[game.id]?.selected?.weight === 'A' && !canUseAllInRule(game.id, $picks)) ||
         started}
     >
       Lock Pick
