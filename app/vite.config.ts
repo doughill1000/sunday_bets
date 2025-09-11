@@ -2,11 +2,9 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
-    svelte({ extensions: ['.svelte'] }),
     sveltekit(),
     tailwindcss(),
     SvelteKitPWA({
