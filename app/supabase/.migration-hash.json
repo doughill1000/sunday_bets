@@ -109,5 +109,34 @@
   },
   "schemas/0400_constraints.sql": {
     "hash": "290bc25aad36ec178a80697d78f5c3f2e22a9311cbfe6b5bbce5577a9b4fd475"
+  },
+  "schemas/0101_pick_outcome.sql": {
+    "hash": "3d1f4773752d35c24e7f1502a27679c58bfe49c1efca0969fa01734e6d638e07"
+  },
+  "schemas/0201_pick_settlement.sql": {
+    "hash": "cb30c64bd737fe7aeccda3cc228dd3ec7b8decd162e94ecc6007de0683cdab5a"
+  },
+  "indexes/idx_pick_settlement_game.sql": {
+    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
+  },
+  "functions/grade/grade_game.sql": {
+    "hash": "559c6eced34631b1fd352e7503a9a2444d8202c57e542308b96b85c0066a31cc",
+    "signature": "public.grade_game(uuid)"
+  },
+  "functions/grade/grade_pick.sql": {
+    "hash": "f4406596ec2d06abec7b72bba6147417e6efb1e634da68fe73a48125777124e3",
+    "signature": "public.grade_pick(int, int, uuid, uuid, uuid, uuid, numeric, text)"
+  },
+  "functions/grade/grade_week.sql": {
+    "hash": "ecc3077c22491f307c956576c89b452e02eaba31c9bef218afc4dd859f0f5f44",
+    "signature": "public.grade_week(int)"
+  },
+  "functions/picks/ats_margin_at_lock.sql": {
+    "hash": "3f4160b9a5a0c5385bb3da5ee0d8b058704cd346930dc4b1255105535c31f307",
+    "signature": "public.ats_margin_at_lock(int, int, uuid, uuid, uuid, numeric)"
+  },
+  "functions/weights/weight_points.sql": {
+    "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
+    "signature": "public.weight_points(text)"
   }
 }
