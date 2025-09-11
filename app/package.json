@@ -18,7 +18,7 @@
     "format": "prettier --write .",
     "format:check": "prettier . --check",
     "lint": "prettier --check . && eslint .",
-    "test:unit": "vitest --",
+    "test:unit": "vitest",
     "test": "npm run test:unit -- --run"
   },
   "devDependencies": {

@@ -6,9 +6,9 @@
 
   export let gameId: string;
   export let canChange = false;
-  export let canUseAce = true;
+  export let canUseAllIn = true;
   export let selectedWeight: WeightCode = 'L';
-  export let showAceHint = false;
+  export let showAllInHint = false;
 </script>
 
 <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">
@@ -26,7 +26,7 @@
       {#each Object.entries(WEIGHTS) as [code, w]}
         <ToggleGroupItem
           value={code}
-          disabled={code === 'A' && !canUseAce}
+          disabled={code === 'A' && !canUseAllIn}
           class="flex-1 px-3 py-[6px] leading-none"
         >
           <div class="flex flex-col items-center">
@@ -37,7 +37,7 @@
       {/each}
     </ToggleGroup>
 
-    {#if showAceHint}
+    {#if showAllInHint}
       <p class="mt-1 text-[11px] text-muted-foreground">
         {WEIGHTS.A.label} has already been used on another game.
       </p>

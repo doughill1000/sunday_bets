@@ -9,23 +9,23 @@ import { WEIGHTS } from '$lib/types/domain';
 describe('WeightSelect', () => {
   beforeEach(() => setPicks({}));
 
-  it('renders all weights and disables Ace when not allowed', () => {
+  it('renders all weights and disables all in when not allowed', () => {
     render(WeightSelect, {
-      props: { gameId: 'g1', canChange: true, canUseAce: false, selectedWeight: 'L' }
+      props: { gameId: 'g1', canChange: true, canUseAllIn: false, selectedWeight: 'L' }
     });
 
-    // Find the Ace button by whatever label your app uses
-    const aceLabel = WEIGHTS.A.label; // e.g., "Ace" or "A"
-    const aceBtn = screen.getByRole('radio', {
-      name: (name) => name.toLowerCase().includes(aceLabel.toLowerCase())
+    // Find the all in button by whatever label your app uses
+    const allInLabel = WEIGHTS.A.label; // e.g., "all in" or "A"
+    const allInBtn = screen.getByRole('radio', {
+      name: (name) => name.toLowerCase().includes(allInLabel.toLowerCase())
     });
 
-    expect(aceBtn).toBeDisabled();
+    expect(allInBtn).toBeDisabled();
   });
 
   it('changes weight on click', async () => {
     render(WeightSelect, {
-      props: { gameId: 'g1', canChange: true, canUseAce: true, selectedWeight: 'L' }
+      props: { gameId: 'g1', canChange: true, canUseAllIn: true, selectedWeight: 'L' }
     });
 
     // Click the "High" (or whatever your label is) button

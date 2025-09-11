@@ -358,7 +358,7 @@ begin
 
   v_team_id := case when p_side = 'home' then v_game.home_team_id else v_game.away_team_id end;
 
-  -- Ace rule: one 'A' per week unless last week
+  -- all in rule: one 'A' per week unless last week
   select w.week_number, w.season_id into v_weeknum, v_season from public.weeks w where w.id = v_game.week_id;
   select max(week_number) into v_lastwk from public.weeks where season_id = v_season;
 
@@ -372,7 +372,7 @@ begin
         and p.weight = 'A'
         and p.game_id <> p_game_id
     ) then
-      raise exception 'Ace already used this week' using errcode = 'P0001';
+      raise exception 'all in already used this week' using errcode = 'P0001';
     end if;
   end if;
 

@@ -5,7 +5,7 @@ import { setPicks } from '../../../stores/picks';
 
 vi.mock('$lib/domain/rules', () => ({
   kickoffPassed: vi.fn(() => false),
-  canUseAce: vi.fn(() => true),
+  canUseAllIn: vi.fn(() => true),
 }));
 
 const game = {
