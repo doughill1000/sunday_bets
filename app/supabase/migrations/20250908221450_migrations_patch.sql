@@ -61,22 +61,3 @@ join public.teams t on t.id = p.picked_team_id;
 
 revoke all on public.picks_status_view_user from public;
 grant select on public.picks_status_view_user to authenticated;
-
--- file: views/ui_games.sql
-create or replace view public.ui_games as
-select
-  g.id                      as id,
-  g.week_id,
-  g.commence_time           as kickoff,
-  th.short_name             as home,
-  ta.short_name             as away,
-  case
-    when gln.home_spread < 0 then 'home'
-    when gln.home_spread > 0 then 'away'
-    else null
-  end                       as spread_side,     -- 'home' | 'away' | null
-  abs(gln.home_spread)::numeric as spread_points
-from public.games g
-join public.game_lines_normalized gln on gln.game_id = g.id
-join public.teams th on th.id = g.home_team_id
-join public.teams ta on ta.id = g.away_team_id;

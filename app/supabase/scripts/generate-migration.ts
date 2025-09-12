@@ -12,6 +12,11 @@ function getArg(prefix: string) {
 }
 const SRC_ROOT_DEFAULT = 'supabase/src';
 
+function getMigrationName() {
+  // Allow --name=custom_name or MIGRATION_NAME env var, default to 'migrations_patch'
+  return getArg('--name=') ?? process.env.MIGRATION_NAME ?? 'migrations_patch';
+}
+
 // Default to supabase/src, allow --root=... or SQLSRC_ROOT to override
 const ROOT = path.resolve(
   process.cwd(),
@@ -172,7 +177,8 @@ function main() {
   }
 
   fs.mkdirSync(MIG_DIR, { recursive: true });
-  const outPath = path.join(MIG_DIR, `${nowStamp()}_migrations_patch.sql`);
+  const migrationName = getMigrationName();
+  const outPath = path.join(MIG_DIR, `${nowStamp()}_${migrationName}.sql`);
 
   const drops: string[] = [];
   for (const c of changes) {
