@@ -1,4 +1,3 @@
--- Find the margin against the spread at the time of lock
 create or replace function public.ats_margin_at_lock(
   home_pts int,
   away_pts int,

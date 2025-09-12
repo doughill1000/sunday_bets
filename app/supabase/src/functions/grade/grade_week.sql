@@ -2,12 +2,15 @@ create or replace function public.grade_week(p_week_id int)
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
-  insert into public.pick_settlement (pick_id, game_id, points_delta, outcome, graded_at)
+  -- (1) Upsert settlements for real picks on final games
+  insert into public.pick_settlement (user_id, game_id, pick_id, points_delta, outcome, graded_at)
   select
-    p.id,
+    p.user_id,
     g.id,
+    p.id,
     gp.points_delta,
     gp.outcome,
     now()
@@ -24,9 +27,39 @@ begin
     p.weight
   ) as gp
   where g.week_id = p_week_id
-  on conflict (pick_id)
-  do update set points_delta = excluded.points_delta,
-                outcome      = excluded.outcome,
-                graded_at    = excluded.graded_at;
+    and (g.final_scores->>'home') is not null
+    and (g.final_scores->>'away') is not null
+  on conflict (user_id, game_id)
+  do update set
+    pick_id      = excluded.pick_id,
+    points_delta = excluded.points_delta,
+    outcome      = excluded.outcome,
+    graded_at    = excluded.graded_at;
+
+  -- (2) Penalties for missed picks on final games (resolve per-game penalty inline)
+  insert into public.pick_settlement (user_id, game_id, pick_id, points_delta, outcome, graded_at)
+  select
+    u.id,
+    g.id,
+    null,
+    coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1) as penalty,
+    'missed'::public.pick_outcome,
+    now()
+  from public.games g
+  join public.weeks   w  on w.id = g.week_id
+  join public.seasons s  on s.id = w.season_id
+  cross join public.settings st
+  cross join (select id from public.users where role = 'player') u
+  left join public.picks p on p.game_id = g.id and p.user_id = u.id
+  where g.week_id = p_week_id
+    and (g.final_scores->>'home') is not null
+    and (g.final_scores->>'away') is not null
+    and p.id is null
+  on conflict (user_id, game_id)
+  do update set
+    pick_id      = case when pick_settlement.pick_id is null then excluded.pick_id else pick_settlement.pick_id end,
+    points_delta = case when pick_settlement.pick_id is null then excluded.points_delta else pick_settlement.points_delta end,
+    outcome      = case when pick_settlement.pick_id is null then excluded.outcome else pick_settlement.outcome end,
+    graded_at    = case when pick_settlement.pick_id is null then excluded.graded_at else pick_settlement.graded_at end;
 end;
 $$;

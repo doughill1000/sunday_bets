@@ -26,5 +26,5 @@ as $$
       when margin > 0 then case when picked_team_id = home_id then 'win'::public.pick_outcome else 'loss'::public.pick_outcome end
       else                    case when picked_team_id = away_id then 'win'::public.pick_outcome else 'loss'::public.pick_outcome end
     end as outcome
-  from m;
+  from m
 $$;
