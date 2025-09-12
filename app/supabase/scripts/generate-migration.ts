@@ -7,7 +7,7 @@ type Ledger = Record<string, LedgerEntry>;
 
 // ---------- config: defaults + overrides ----------
 function getArg(prefix: string) {
-  const a = process.argv.find((x) => x.startsWith(prefix));
+  const a = process.argv.find((x: string) => x.startsWith(prefix));
   return a ? a.slice(prefix.length) : undefined;
 }
 const SRC_ROOT_DEFAULT = 'supabase/src';
