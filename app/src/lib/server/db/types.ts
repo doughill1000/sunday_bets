@@ -153,9 +153,59 @@ export type Database = {
           },
         ]
       }
+      pick_settlement: {
+        Row: {
+          game_id: string
+          graded_at: string
+          outcome: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id: string | null
+          points_delta: number | null
+          user_id: string
+        }
+        Insert: {
+          game_id: string
+          graded_at?: string
+          outcome?: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id?: string | null
+          points_delta?: number | null
+          user_id: string
+        }
+        Update: {
+          game_id?: string
+          graded_at?: string
+          outcome?: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id?: string | null
+          points_delta?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pick_settlement_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pick_settlement_pick_id_fkey"
+            columns: ["pick_id"]
+            isOneToOne: false
+            referencedRelation: "picks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       picks: {
         Row: {
           game_id: string
+          id: string
           locked_at: string | null
           locked_by: string
           locked_line_id: number | null
@@ -167,6 +217,7 @@ export type Database = {
         }
         Insert: {
           game_id: string
+          id?: string
           locked_at?: string | null
           locked_by?: string
           locked_line_id?: number | null
@@ -178,6 +229,7 @@ export type Database = {
         }
         Update: {
           game_id?: string
+          id?: string
           locked_at?: string | null
           locked_by?: string
           locked_line_id?: number | null
@@ -613,6 +665,26 @@ export type Database = {
       }
     }
     Functions: {
+      ats_margin_at_lock: {
+        Args:
+          | {
+              away_id: number
+              away_pts: number
+              home_id: number
+              home_pts: number
+              spread_team_id: number
+              spread_value: number
+            }
+          | {
+              away_id: string
+              away_pts: number
+              home_id: string
+              home_pts: number
+              spread_team_id: string
+              spread_value: number
+            }
+        Returns: number
+      }
       audit_log_action: {
         Args: { p_action: string; p_actor: string; p_details: Json }
         Returns: undefined
@@ -633,6 +705,34 @@ export type Database = {
         Args: { p_game_id: string }
         Returns: boolean
       }
+      grade_game: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
+      grade_pick: {
+        Args: {
+          away_id: number
+          away_pts: number
+          home_id: number
+          home_pts: number
+          picked_team_id: number
+          spread_team_id: number
+          spread_value: number
+          weight: string
+        }
+        Returns: {
+          outcome: Database["public"]["Enums"]["pick_outcome"]
+          points_delta: number
+        }[]
+      }
+      grade_season: {
+        Args: { p_season_id: number }
+        Returns: undefined
+      }
+      grade_week: {
+        Args: { p_week_id: number }
+        Returns: undefined
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -652,6 +752,10 @@ export type Database = {
           weight: Database["public"]["Enums"]["weight_enum"]
         }[]
       }
+      resolve_missed_penalty_for_game: {
+        Args: { p_game_id: string }
+        Returns: number
+      }
       unlock_pick: {
         Args: { p_game_id: string }
         Returns: {
@@ -661,8 +765,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      weight_points: {
+        Args: { p_weight: string }
+        Returns: number
+      }
     }
     Enums: {
+      pick_outcome: "win" | "loss" | "push" | "missed"
       side_enum: "home" | "away"
       weight_enum: "L" | "M" | "H" | "A"
     }
@@ -792,6 +901,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      pick_outcome: ["win", "loss", "push", "missed"],
       side_enum: ["home", "away"],
       weight_enum: ["L", "M", "H", "A"],
     },
