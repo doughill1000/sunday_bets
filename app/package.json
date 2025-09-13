@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "db:push": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push --yes && npm run db:gen:types",
+    "db:push": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push --yes && npm run db:types",
     "db:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
     "db:types": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts",
