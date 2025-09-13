@@ -1,9 +1,9 @@
 create or replace function public.ats_margin_at_lock(
   home_pts int,
   away_pts int,
-  home_id uuid,
-  away_id uuid,
-  spread_team_id uuid,
+  home_id int,
+  away_id int,
+  spread_team_id int,
   spread_value numeric
 ) returns numeric
 language sql

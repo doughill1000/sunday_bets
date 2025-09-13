@@ -5,7 +5,7 @@ security definer
 set search_path = public
 as $$
 declare
-  home_pts int; away_pts int; home_id uuid; away_id uuid;
+  home_pts int; away_pts int; home_id int; away_id int;
   v_penalty int;
 begin
   select (final_scores->>'home')::int,

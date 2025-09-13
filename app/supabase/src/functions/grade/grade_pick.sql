@@ -1,10 +1,10 @@
 create or replace function public.grade_pick(
   home_pts int,
   away_pts int,
-  home_id uuid,
-  away_id uuid,
-  picked_team_id uuid,
-  spread_team_id uuid,
+  home_id int,
+  away_id int,
+  picked_team_id int,
+  spread_team_id int,
   spread_value numeric,
   weight text
 ) returns table(points_delta int, outcome public.pick_outcome)

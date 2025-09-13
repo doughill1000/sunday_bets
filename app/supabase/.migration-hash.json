@@ -120,12 +120,12 @@
     "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
   },
   "functions/grade/grade_game.sql": {
-    "hash": "1d19863d05d54a6284df3731096b6900f3f1ec8b0f5a05e5b0eb2a9a0a12b234",
+    "hash": "74cfb2d66173a961e9a38f0f997f307bb9a9a76e0caf705dec2a1d91c1caa944",
     "signature": "public.grade_game(uuid)"
   },
   "functions/grade/grade_pick.sql": {
-    "hash": "bacbca0237aa023176798b534ce0931a8330854ed31475a0c47414b28ad03257",
-    "signature": "public.grade_pick(int, int, uuid, uuid, uuid, uuid, numeric, text)"
+    "hash": "26ee44c0be49356ff495008fbce3b0c99118201f6986f7ce0a2d995fedecc0d5",
+    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
   },
   "functions/grade/grade_week.sql": {
     "hash": "0ef4a89eefe17926c0e464c81cc34a13a96302d968d5ee95dd64a35ecfa52b73",
@@ -146,5 +146,21 @@
   "functions/grade/resolve_missed_penalty.sql": {
     "hash": "d42c12d76efcca88411aeec1980f4d3174d3d48e1728e02645e0ff92ed950d4b",
     "signature": "public.resolve_missed_penalty_for_game(uuid)"
+  },
+  "functions/_private/ats_margin_at_lock.sql": {
+    "hash": "141e696e4e519848fc900be844037ba17fa55ebd7ca64a302e3db212bf752ad2",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
+  },
+  "functions/_private/game_has_started.sql": {
+    "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
+    "signature": "public.game_has_started(uuid)"
+  },
+  "functions/_private/resolve_missed_penalty.sql": {
+    "hash": "d42c12d76efcca88411aeec1980f4d3174d3d48e1728e02645e0ff92ed950d4b",
+    "signature": "public.resolve_missed_penalty_for_game(uuid)"
+  },
+  "functions/_private/weight_points.sql": {
+    "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
+    "signature": "public.weight_points(text)"
   }
 }
