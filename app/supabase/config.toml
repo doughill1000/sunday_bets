@@ -4,3 +4,5 @@ sql_paths = ["./seed/*.sql"]  # files are resolved relative to supabase/
 
 [auth]
 site_url="http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+email.template.magic_link.content_path = "./supabase/magic_link.html"
