@@ -1,0 +1,108 @@
+NFL Bets Project – Summary Context
+
+Purpose:
+A private pick’em game for exactly 6 authenticated users where each picks every NFL game weekly against the spread with a scoring/weight system. Originally tracked in Google Sheets, now being rebuilt as a full PWA with Supabase + SvelteKit 5 + Drizzle + Odds API.
+
+Core Features (MVP)
+
+Users: 6 whitelisted accounts, passwordless auth via Supabase.
+
+Scope: NFL only, current season/week.
+
+Action: Each user locks in a pick for every game with a weight:
+
+L = 1, M = 3, H = 5, A = 10 (one "Ace" per week except final week).
+
+Scoring:
+
+Correct vs spread → +weight
+
+Wrong → –weight
+
+Push → 0
+
+Leaderboard: Running totals (weekly delta + season cumulative).
+
+Visibility: Picks hidden until kickoff, then viewable to all players.
+
+Admin Tools: Sync odds, grade games, override results, manage API usage.
+
+Data Model (leaned-out for MVP)
+
+users – mirror Supabase auth, plus display name & role.
+
+seasons / weeks – structure NFL calendar.
+
+teams – league, name, short_name, external key.
+
+games – week_id, commence_time, home/away team ids, status, final scores.
+
+game_lines – one authoritative line per game (Barstool/FanDuel/etc.), spread value, spread team id, active flag, timestamp.
+
+picks – (user_id, game_id, picked_team_id, weight, locked_at); unique constraint per user/game.
+
+results – graded after games finish, tracks cover_result.
+
+totals – cached weekly delta + season total.
+
+settings – odds API cap, calls used, admin flags.
+
+Odds & Grading Logic
+
+Odds Source: The Odds API (free tier, 500 calls/month).
+
+Fetch plan:
+
+Tue–Sun: 2x daily,
+
+Sunday morning: once (only if under 80% usage).
+
+Line Policy: Single authoritative line per game, frozen at kickoff.
+
+Pushes: Zero points.
+
+Grading: Picks compared against frozen spread; weekly and season totals updated.
+
+Tech Stack
+
+Frontend: shadcn-svelte UI components.
+
+Backend: Serverless API routes on Vercel.
+
+DB: Supabase (Postgres) with supabase migrations and functions
+
+Auth: Supabase magic link (email).
+
+PWA: Offline support, cached static assets + last-fetched data.
+
+CI/CD: GitHub Actions for migrations + tests.
+
+Tests: Vitest + Playwright planned.
+
+Non-Functional Requirements
+
+First load under 2s on 4G.
+
+Accessibility: keyboard nav, ARIA labels, color-contrast friendly.
+
+Timezones: store UTC, display local.
+
+Audit trail for all admin overrides.
+
+UX Flows
+
+Sign-in: Whitelis 
+
+Admin panel: Sync odds, grade week, monitor API usage.
+
+Offline mode: Can still view last-fetched data and cached picks.
+
+Out of Scope (MVP)
+
+Parlays, prop bets, real money.
+
+Multi-league support.
+
+Notifications, streaks/achievements.
+
+Invite links, social feed.
