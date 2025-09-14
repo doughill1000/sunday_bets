@@ -22,3 +22,15 @@ export type OddsGame = {
   away_team: string;
   bookmakers: OddsBookmaker[];
 };
+
+export interface OddsScore {
+  id: string;              
+  sport_key: string;
+  sport_title: string;
+  commence_time: string;
+  completed: boolean;
+  home_team: string;
+  away_team: string;
+  scores?: { name: string; score: number }[];
+  last_update: string;
+}

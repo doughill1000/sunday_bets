@@ -1,30 +1,20 @@
 import type { RequestHandler } from './$types';
-import { supabaseService } from '$lib/supabase/service';
 import { requireAdmin } from '$lib/server/auth';
-import type { RequestEvent } from '@sveltejs/kit';
+import { gradeGame } from '$lib/server/grading';
 
-export const POST: RequestHandler = async (event: RequestEvent) => {
+export const POST: RequestHandler = async (event) => {
   const authErr = await requireAdmin(event);
   if (authErr) return authErr;
 
-  const body = await event.request.json();
-  const { game_id } = body;
+  const { game_id, refreshScores = false, daysFrom = 1 } = await event.request.json();
 
-  // Call the SQL function (SECURITY DEFINER) — returns void
-  const { error } = await supabaseService.rpc('grade_game', { p_game_id: game_id });
-  if (error) {
-    return new Response(JSON.stringify({ ok: false, reason: error.message }), { status: 500 });
+  try {
+    const result = await gradeGame(game_id, { refreshScores, daysFrom });
+    return json200(result);
+  } catch (e: any) {
+    return json500(e.message);
   }
-
-  // Optional: small summary (how many settlements exist for this game now?)
-  const { data: summary, error: sErr } = await supabaseService
-    .from('pick_settlement')
-    .select('outcome', { count: 'exact', head: true })
-    .eq('game_id', game_id);
-
-  return new Response(JSON.stringify({
-    ok: true,
-    game_id,
-    count: summary === null ? null : (summary as unknown as { count: number })?.count ?? null
-  }), { status: 200 });
 };
+
+function json200(data: unknown) { return new Response(JSON.stringify(data), { status: 200 }); }
+function json500(reason: string) { return new Response(JSON.stringify({ ok: false, reason }), { status: 500 }); }
