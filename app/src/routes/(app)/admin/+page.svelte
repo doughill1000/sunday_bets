@@ -14,16 +14,9 @@
 </script>
 
 <section class="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
-  <OddsSyncCard
-    settings={data.settings}
-    activeWeek={data.activeWeek}
-    onNote={handleNote}
-  />
+  <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} onNote={handleNote} />
 
-  <GradingCard
-    activeWeek={data.activeWeek}
-    onNote={handleNote}
-  />
+  <GradingCard activeWeek={data.activeWeek} onNote={handleNote} />
 
   {#if msg}
     <div

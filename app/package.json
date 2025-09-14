@@ -8,6 +8,7 @@
     "db:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
     "db:types": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts",
+    "db:clone:dev": "cd supabase/scripts/ && tsx cloneProdToDev.ts --reset",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
@@ -74,6 +75,7 @@
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
     "shadcn-svelte": "^1.0.7",
-    "workbox-window": "^7.3.0"
+    "workbox-window": "^7.3.0",
+    "execa": "^9.3.0"
   }
 }

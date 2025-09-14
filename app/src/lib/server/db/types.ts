@@ -460,6 +460,12 @@ export type Database = {
       }
     }
     Views: {
+      current_season_year: {
+        Row: {
+          season_year: number | null
+        }
+        Relationships: []
+      }
       game_lines_normalized: {
         Row: {
           away_team_id: number | null
@@ -512,6 +518,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leaderboard_season_totals: {
+        Row: {
+          decisions: number | null
+          display_name: string | null
+          losses: number | null
+          missed: number | null
+          pushes: number | null
+          rank: number | null
+          season_year: number | null
+          total_points: number | null
+          user_id: string | null
+          wins: number | null
+        }
+        Relationships: []
+      }
+      leaderboard_weekly_cumulative: {
+        Row: {
+          cumulative_points: number | null
+          cumulative_rank_this_week: number | null
+          display_name: string | null
+          season_total: number | null
+          season_year: number | null
+          user_id: string | null
+          week_losses: number | null
+          week_missed: number | null
+          week_number: number | null
+          week_points: number | null
+          week_pushes: number | null
+          week_wins: number | null
+        }
+        Relationships: []
       }
       picks_status_view_admin: {
         Row: {

@@ -24,7 +24,7 @@ export type OddsGame = {
 };
 
 export interface OddsScore {
-  id: string;              
+  id: string;
   sport_key: string;
   sport_title: string;
   commence_time: string;

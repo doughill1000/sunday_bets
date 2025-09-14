@@ -16,5 +16,9 @@ export const POST: RequestHandler = async (event) => {
   }
 };
 
-function json200(data: unknown) { return new Response(JSON.stringify(data), { status: 200 }); }
-function json500(reason: string) { return new Response(JSON.stringify({ ok: false, reason }), { status: 500 }); }
+function json200(data: unknown) {
+  return new Response(JSON.stringify(data), { status: 200 });
+}
+function json500(reason: string) {
+  return new Response(JSON.stringify({ ok: false, reason }), { status: 500 });
+}

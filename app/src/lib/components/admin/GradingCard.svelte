@@ -34,7 +34,11 @@
 
   const gradeActiveWeek = () => {
     if (!activeWeek?.id) return note('warn', 'No active week.');
-    call('/api/admin/grade-week', { week_id: activeWeek.id }, `Graded week #${activeWeek.week_number}.`);
+    call(
+      '/api/admin/grade-week',
+      { week_id: activeWeek.id },
+      `Graded week #${activeWeek.week_number}.`
+    );
   };
   const onGradeWeekManual = () => {
     const id = Number(weekIdInput);

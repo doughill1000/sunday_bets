@@ -21,7 +21,79 @@ exception
     end;
 end$$;
 
--- file: schemas/0201_pick_settlement.sql
+-- file: schemas/0201_picks.sql
+-- file: schemas/0201_pick_surrogate_id.sql
+
+-- Ensure UUID generator is available
+create extension if not exists pgcrypto;
+
+-- 1) Add the column (no PK yet)
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'picks'
+      and column_name = 'id'
+  ) then
+    alter table public.picks add column id uuid;
+  end if;
+end$$;
+
+-- 2) Backfill existing rows
+update public.picks
+set id = gen_random_uuid()
+where id is null;
+
+-- 3) Enforce NOT NULL + default for future inserts
+alter table public.picks
+  alter column id set not null;
+
+alter table public.picks
+  alter column id set default gen_random_uuid();
+
+-- 4) Drop the old primary key (usually picks_pkey) if it exists
+do $$
+declare
+  pk_name text;
+begin
+  select conname into pk_name
+  from pg_constraint
+  where conrelid = 'public.picks'::regclass
+    and contype = 'p'
+  limit 1;
+
+  if pk_name is not null then
+    execute format('alter table public.picks drop constraint %I', pk_name);
+  end if;
+end$$;
+
+-- 5) Create the new primary key on (id) if not already present
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.picks'::regclass
+      and contype = 'p'
+  ) then
+    alter table public.picks
+      add constraint picks_pkey primary key (id);
+  end if;
+end$$;
+
+-- 6) Keep uniqueness on (user_id, game_id)
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'picks_user_game_unique'
+  ) then
+    alter table public.picks
+      add constraint picks_user_game_unique unique (user_id, game_id);
+  end if;
+end$$;
+
+-- file: schemas/0202_pick_settlement.sql
 create table if not exists public.pick_settlement (
   user_id      uuid not null,
   game_id      uuid not null references public.games(id) on delete cascade,
@@ -80,6 +152,212 @@ create policy "no client writes (update)"
 create policy "no client writes (delete)"
   on public.pick_settlement for delete to authenticated using (false);
 
+-- file: indexes/idx_pick_settlement_game.sql
+create index if not exists idx_pick_settlement_game on public.pick_settlement(game_id);
+
+-- file: views/current_season_year.sql
+create or replace view public.current_season_year as
+select max(year)::int as season_year from public.seasons;
+
+create index if not exists idx_ps_game on public.pick_settlement (game_id);
+create index if not exists idx_ps_user on public.pick_settlement (user_id);
+create index if not exists idx_games_week on public.games (week_id);
+
+-- file: views/leaderboard_season_totals.sql
+-- One row per user per season with totals + ranks
+create or replace view public.leaderboard_season_totals as
+with season_rows as (
+select
+ps.user_id,
+u.display_name,
+s.year as season_year,
+ps.points_delta,
+ps.outcome
+from public.pick_settlement ps
+join public.games g on g.id = ps.game_id
+join public.weeks w on w.id = g.week_id
+join public.seasons s on s.id = w.season_id
+join public.users u on u.id = ps.user_id
+)
+, totals as (
+select
+user_id,
+display_name,
+season_year,
+sum(points_delta)::int as total_points,
+count(*)::int as decisions,
+count(*) filter (where outcome = 'win')::int as wins,
+count(*) filter (where outcome = 'loss')::int as losses,
+count(*) filter (where outcome = 'push')::int as pushes,
+count(*) filter (where outcome = 'missed')::int as missed
+from season_rows
+group by user_id, display_name, season_year
+)
+select
+t.*,
+dense_rank() over (
+partition by season_year
+order by total_points desc, wins desc, pushes desc
+) as rank
+from totals t;
+
+-- file: views/leaderboard_weekly_cumulative.sql
+-- One row per user per (season, week) with week points and running total
+create or replace view public.leaderboard_weekly_cumulative as
+with week_rows as (
+  select
+    ps.user_id,
+    u.display_name,
+    s.year as season_year,
+    w.week_number,
+    sum(ps.points_delta)::int as week_points,
+    count(*) filter (where ps.outcome = 'win')::int   as week_wins,
+    count(*) filter (where ps.outcome = 'loss')::int  as week_losses,
+    count(*) filter (where ps.outcome = 'push')::int  as week_pushes,
+    count(*) filter (where ps.outcome = 'missed')::int as week_missed
+  from public.pick_settlement ps
+  join public.games   g on g.id = ps.game_id
+  join public.weeks   w on w.id = g.week_id
+  join public.seasons s on s.id = w.season_id
+  join public.users   u on u.id = ps.user_id
+  group by ps.user_id, u.display_name, s.year, w.week_number
+),
+cum as (
+  select
+    week_rows.*,
+    -- running total per (user, season) ordered by week
+    sum(week_points) over (
+      partition by user_id, season_year
+      order by week_number
+      rows between unbounded preceding and current row
+    )::int as cumulative_points
+  from week_rows
+)
+select
+  cum.*,
+  -- season total per (user, season)
+  sum(week_points) over (
+    partition by user_id, season_year
+  )::int as season_total,
+  -- now we can safely rank by the precomputed column
+  dense_rank() over (
+    partition by season_year, week_number
+    order by cum.cumulative_points desc
+  ) as cumulative_rank_this_week
+from cum;
+
+-- file: functions/_private/ats_margin_at_lock.sql
+create or replace function public.ats_margin_at_lock(
+  home_pts int,
+  away_pts int,
+  home_id int,
+  away_id int,
+  spread_team_id int,
+  spread_value numeric
+) returns numeric
+language sql
+immutable
+as $$
+  select (home_pts - away_pts)
+       + case
+           when spread_team_id = home_id then spread_value
+           when spread_team_id = away_id then -spread_value
+           else 0
+         end
+$$;
+
+-- file: functions/_private/game_has_started.sql
+-- Helper: has the game started?
+create or replace function public.game_has_started(p_game_id uuid)
+returns boolean
+language sql
+stable
+as $$
+  select (now() >= g.commence_time) from public.games g where g.id = p_game_id
+$$;
+
+-- file: functions/_private/resolve_missed_penalty.sql
+create or replace function public.resolve_missed_penalty_for_game(p_game_id uuid)
+returns int
+language sql
+stable
+set search_path = public
+as $$
+  select coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1)
+  from public.games g
+  join public.weeks   w  on w.id = g.week_id
+  join public.seasons s  on s.id = w.season_id
+  cross join public.settings st
+  where g.id = p_game_id
+  limit 1
+$$;
+
+-- file: functions/_private/weight_points.sql
+create or replace function public.weight_points(p_weight text)
+returns int
+language sql
+immutable
+as $$
+  select case upper(p_weight)
+    when 'L' then 1 when 'M' then 3 when 'H' then 5 when 'A' then 10 else 0 end
+$$;
+
+-- file: functions/_private/ats_margin_at_lock.sql
+create or replace function public.ats_margin_at_lock(
+  home_pts int,
+  away_pts int,
+  home_id int,
+  away_id int,
+  spread_team_id int,
+  spread_value numeric
+) returns numeric
+language sql
+immutable
+as $$
+  select (home_pts - away_pts)
+       + case
+           when spread_team_id = home_id then spread_value
+           when spread_team_id = away_id then -spread_value
+           else 0
+         end
+$$;
+
+-- file: functions/_private/game_has_started.sql
+-- Helper: has the game started?
+create or replace function public.game_has_started(p_game_id uuid)
+returns boolean
+language sql
+stable
+as $$
+  select (now() >= g.commence_time) from public.games g where g.id = p_game_id
+$$;
+
+-- file: functions/_private/resolve_missed_penalty.sql
+create or replace function public.resolve_missed_penalty_for_game(p_game_id uuid)
+returns int
+language sql
+stable
+set search_path = public
+as $$
+  select coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1)
+  from public.games g
+  join public.weeks   w  on w.id = g.week_id
+  join public.seasons s  on s.id = w.season_id
+  cross join public.settings st
+  where g.id = p_game_id
+  limit 1
+$$;
+
+-- file: functions/_private/weight_points.sql
+create or replace function public.weight_points(p_weight text)
+returns int
+language sql
+immutable
+as $$
+  select case upper(p_weight)
+    when 'L' then 1 when 'M' then 3 when 'H' then 5 when 'A' then 10 else 0 end
+$$;
+
 -- file: functions/grade/grade_game.sql
 create or replace function public.grade_game(p_game_id uuid)
 returns void
@@ -88,7 +366,7 @@ security definer
 set search_path = public
 as $$
 declare
-  home_pts int; away_pts int; home_id uuid; away_id uuid;
+  home_pts int; away_pts int; home_id int; away_id int;
   v_penalty int;
 begin
   select (final_scores->>'home')::int,
@@ -154,10 +432,10 @@ $$;
 create or replace function public.grade_pick(
   home_pts int,
   away_pts int,
-  home_id uuid,
-  away_id uuid,
-  picked_team_id uuid,
-  spread_team_id uuid,
+  home_id int,
+  away_id int,
+  picked_team_id int,
+  spread_team_id int,
   spread_value numeric,
   weight text
 ) returns table(points_delta int, outcome public.pick_outcome)
@@ -315,40 +593,4 @@ begin
     outcome      = case when pick_settlement.pick_id is null then excluded.outcome else pick_settlement.outcome end,
     graded_at    = case when pick_settlement.pick_id is null then excluded.graded_at else pick_settlement.graded_at end;
 end;
-$$;
-
--- file: functions/grade/resolve_missed_penalty.sql
-create or replace function public.resolve_missed_penalty_for_game(p_game_id uuid)
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  select coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1)
-  from public.games g
-  join public.weeks   w  on w.id = g.week_id
-  join public.seasons s  on s.id = w.season_id
-  cross join public.settings st
-  where g.id = p_game_id
-  limit 1
-$$;
-
--- file: functions/picks/ats_margin_at_lock.sql
-create or replace function public.ats_margin_at_lock(
-  home_pts int,
-  away_pts int,
-  home_id uuid,
-  away_id uuid,
-  spread_team_id uuid,
-  spread_value numeric
-) returns numeric
-language sql
-immutable
-as $$
-  select (home_pts - away_pts)
-       + case
-           when spread_team_id = home_id then spread_value
-           when spread_team_id = away_id then -spread_value
-           else 0
-         end
 $$;

@@ -5,10 +5,9 @@ import { supabaseService } from '$lib/supabase/service';
 export async function requireAdmin(event: RequestEvent) {
   const userId = event.locals.user?.id as string | undefined;
   if (!userId) {
-    return new Response(
-      JSON.stringify({ ok: false, reason: 'Not authenticated' }),
-      { status: 401 }
-    );
+    return new Response(JSON.stringify({ ok: false, reason: 'Not authenticated' }), {
+      status: 401
+    });
   }
 
   // Check role from your mirrored `users` table
@@ -23,10 +22,7 @@ export async function requireAdmin(event: RequestEvent) {
   }
 
   if (!data || data.role !== 'admin') {
-    return new Response(
-      JSON.stringify({ ok: false, reason: 'Admin only' }),
-      { status: 403 }
-    );
+    return new Response(JSON.stringify({ ok: false, reason: 'Admin only' }), { status: 403 });
   }
 
   // if admin, return null so caller can continue

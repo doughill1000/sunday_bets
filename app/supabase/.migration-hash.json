@@ -113,39 +113,23 @@
   "schemas/0101_pick_outcome.sql": {
     "hash": "285bcb8a1f7561334e724f47a10cdbaf4285b394c4a006e523a3ccac4526c117"
   },
-  "schemas/0201_pick_settlement.sql": {
+  "schemas/0201_picks.sql": {
+    "hash": "0a9cb51681d17cc8bfa9871e81c8c91696ffa73c88da8f2fe935067199ed9bc7"
+  },
+  "schemas/0202_pick_settlement.sql": {
     "hash": "bab8057a3a0be888e346e1fec863ebe55005a646beefecf007cd981f9331eef0"
   },
   "indexes/idx_pick_settlement_game.sql": {
     "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
   },
-  "functions/grade/grade_game.sql": {
-    "hash": "74cfb2d66173a961e9a38f0f997f307bb9a9a76e0caf705dec2a1d91c1caa944",
-    "signature": "public.grade_game(uuid)"
+  "views/current_season_year.sql": {
+    "hash": "29b901590402e74f44ccec33beb4b850cac50fc961ea3f16aa6236e8c41baa00"
   },
-  "functions/grade/grade_pick.sql": {
-    "hash": "26ee44c0be49356ff495008fbce3b0c99118201f6986f7ce0a2d995fedecc0d5",
-    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
+  "views/leaderboard_season_totals.sql": {
+    "hash": "d69928487ecb2e96ce8fddd778905fd08162cadd4e1e74877dfdd8b5e456dafe"
   },
-  "functions/grade/grade_week.sql": {
-    "hash": "0ef4a89eefe17926c0e464c81cc34a13a96302d968d5ee95dd64a35ecfa52b73",
-    "signature": "public.grade_week(int)"
-  },
-  "functions/picks/ats_margin_at_lock.sql": {
-    "hash": "b79ce4083c95150338716a066c3b7a4dd3974e85f29cfd7f273cffca92338cde",
-    "signature": "public.ats_margin_at_lock(int, int, uuid, uuid, uuid, numeric)"
-  },
-  "functions/weights/weight_points.sql": {
-    "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
-    "signature": "public.weight_points(text)"
-  },
-  "functions/grade/grade_season.sql": {
-    "hash": "38709c2e92cc1ccd0fc0b0dd8f9d0fba1feb4c1dcb77c77301d343646069e4f9",
-    "signature": "public.grade_season(int)"
-  },
-  "functions/grade/resolve_missed_penalty.sql": {
-    "hash": "d42c12d76efcca88411aeec1980f4d3174d3d48e1728e02645e0ff92ed950d4b",
-    "signature": "public.resolve_missed_penalty_for_game(uuid)"
+  "views/leaderboard_weekly_cumulative.sql": {
+    "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
   },
   "functions/_private/ats_margin_at_lock.sql": {
     "hash": "141e696e4e519848fc900be844037ba17fa55ebd7ca64a302e3db212bf752ad2",
@@ -162,5 +146,21 @@
   "functions/_private/weight_points.sql": {
     "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
     "signature": "public.weight_points(text)"
+  },
+  "functions/grade/grade_game.sql": {
+    "hash": "74cfb2d66173a961e9a38f0f997f307bb9a9a76e0caf705dec2a1d91c1caa944",
+    "signature": "public.grade_game(uuid)"
+  },
+  "functions/grade/grade_pick.sql": {
+    "hash": "26ee44c0be49356ff495008fbce3b0c99118201f6986f7ce0a2d995fedecc0d5",
+    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
+  },
+  "functions/grade/grade_season.sql": {
+    "hash": "38709c2e92cc1ccd0fc0b0dd8f9d0fba1feb4c1dcb77c77301d343646069e4f9",
+    "signature": "public.grade_season(int)"
+  },
+  "functions/grade/grade_week.sql": {
+    "hash": "0ef4a89eefe17926c0e464c81cc34a13a96302d968d5ee95dd64a35ecfa52b73",
+    "signature": "public.grade_week(int)"
   }
 }

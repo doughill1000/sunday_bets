@@ -1,3 +1,6 @@
 [db.seed]
 enabled = true
 sql_paths = ["./seed/*.sql"]  # files are resolved relative to supabase/
+
+[auth]
+site_url="http://localhost:5173"

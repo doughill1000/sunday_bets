@@ -1,6 +1,12 @@
 <script lang="ts">
   import { Progress } from '$lib/components/ui/progress';
-  import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
+  import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent
+  } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
 
   export let settings: { cap: number; used: number; remaining: number; usagePct: number };

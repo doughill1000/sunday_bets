@@ -1,0 +1,36 @@
+-- One row per user per season with totals + ranks
+create or replace view public.leaderboard_season_totals as
+with season_rows as (
+select
+ps.user_id,
+u.display_name,
+s.year as season_year,
+ps.points_delta,
+ps.outcome
+from public.pick_settlement ps
+join public.games g on g.id = ps.game_id
+join public.weeks w on w.id = g.week_id
+join public.seasons s on s.id = w.season_id
+join public.users u on u.id = ps.user_id
+)
+, totals as (
+select
+user_id,
+display_name,
+season_year,
+sum(points_delta)::int as total_points,
+count(*)::int as decisions,
+count(*) filter (where outcome = 'win')::int as wins,
+count(*) filter (where outcome = 'loss')::int as losses,
+count(*) filter (where outcome = 'push')::int as pushes,
+count(*) filter (where outcome = 'missed')::int as missed
+from season_rows
+group by user_id, display_name, season_year
+)
+select
+t.*,
+dense_rank() over (
+partition by season_year
+order by total_points desc, wins desc, pushes desc
+) as rank
+from totals t;

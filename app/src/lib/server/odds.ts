@@ -48,7 +48,7 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow): Promise<OddsGame
 export async function fetchNFLScores(daysFrom = 1): Promise<OddsScore[]> {
   const params = new URLSearchParams({
     apiKey: getNextApiKey(),
-    daysFrom: String(daysFrom),
+    daysFrom: String(daysFrom)
   });
 
   const url = `${PUBLIC_ODDS_API_BASE}/sports/americanfootball_nfl/scores?${params}`;
@@ -69,8 +69,7 @@ export function extractFanduelSpread(g: OddsGame) {
   const [a, b] = spreads.outcomes;
   if (!a || !b) return null;
 
-  const favored =
-    [a, b].find((o) => typeof o.point === 'number' && o.point < 0) ?? a;
+  const favored = [a, b].find((o) => typeof o.point === 'number' && o.point < 0) ?? a;
 
   const spreadTeamName = favored.name;
   const spreadValue = Math.abs(favored.point);

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
   export let title = '';
   export let subtitle: string | null = null;
