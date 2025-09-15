@@ -63,14 +63,10 @@ jobs:
             echo "SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
             echo "DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           } >> "$GITHUB_ENV"
-
-          psql "$DB_URL" -c "select version();"
-          psql "$DB_URL" -c "\dt+ public.*"
-          psql "$DB_URL" -c "select count(*) from public.teams;"
       
       - name: Run integration tests
         env:
-          DB_URL: ${{ env.DB_URL }}
+          API_URL: ${{ env.API_URL }}
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: pnpm test:integration  
       - name: Stop Supabase
