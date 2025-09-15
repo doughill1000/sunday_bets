@@ -15,15 +15,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     css: true,
-    exclude: ['tests/integration/**'], // Exclude integration tests
     setupFiles: ['./tests/setup.ts'],
     include: [
       'src/**/__tests__/**/*.{test,spec}.{js,ts}',
       'src/**/*.{test,spec}.{js,ts}',
-      'tests/**/*.{test,spec}.{js,ts}'
-    ],
-    deps: {
-      inline: [/@testing-library\/jest-dom/],
-    },
+    ]
   },
 });

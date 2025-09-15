@@ -1,16 +1,15 @@
 import { defineConfig } from 'vitest/config';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 
 export default defineConfig({
-  plugins: [svelte({ hot: !process.env.VITEST })],
+  plugins: [svelteTesting(), sveltekit()],
   test: {
     globals: true,
+    css: true,
     environment: 'jsdom',
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['src/**/__tests__/**'], // Exclude unit tests
-    setupFiles: ['./tests/setup.ts'],
-    deps: {
-      inline: [/@testing-library\/jest-dom/],
-    },
+    setupFiles: ['./tests/setup.ts']
   },
 });
