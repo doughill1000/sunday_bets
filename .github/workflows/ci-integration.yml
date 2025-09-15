@@ -53,16 +53,15 @@ jobs:
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           supabase status -o env >> "$GITHUB_ENV"
 
-
       # Keep the standard 54321 gateway so supabase-js can find /auth/v1 and /rest/v1
       - name: Export app test env
         run: |
           {
-            echo "API_URL=${API_URL}"
+            echo "API_URL=http://127.0.0.1:54321"
             echo "ANON_KEY=${ANON_KEY}"
             echo "ANON_KEY=${SUPABASE_ANON_KEY}"
             echo "SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
-            echo "DB_URL=${DB_URL}"
+            echo "DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           } >> "$GITHUB_ENV"
       
       - name: Run integration tests
