@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/sveltekit';
 import { createServerClient } from '@supabase/ssr';
 import { type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
@@ -67,4 +68,5 @@ const injectSession: Handle = async ({ event, resolve }) => {
   return resolve(event);
 };
 
-export const handle: Handle = sequence(supabase, injectSession);
+export const handle: Handle = sequence(Sentry.sentryHandle(), sequence(supabase, injectSession));
+export const handleError = Sentry.handleErrorWithSentry();
