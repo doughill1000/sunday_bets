@@ -14,10 +14,23 @@ describe('Grading Integration Flow', () => {
 
   // ARRANGE: Set up all necessary data before running the test.
   beforeAll(async () => {
+    // Debug: Check what's actually in the database
+    const { data: allTeams } = await supabase.from('teams').select('*');
+    const { data: allUsers } = await supabase.from('users').select('*');
+    const { data: allWeeks } = await supabase.from('weeks').select('*');
+    
+    console.log('All teams:', allTeams);
+    console.log('All users:', allUsers);
+    console.log('All weeks:', allWeeks);
+
     // Fetch IDs from pre-seeded data
     const { data: teams } = await supabase.from('teams').select('id, name').in('name', ['Kansas City Chiefs', 'Buffalo Bills']);
     const { data: users } = await supabase.from('users').select('id, email').in('email', ['test1@example.com', 'test2@example.com', 'test3@example.com']);
     const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
+
+    console.log('Found teams:', teams);
+    console.log('Found users:', users);
+    console.log('Found week:', week);
 
     if (!teams || !users || !week || teams.length < 2 || users.length < 3) {
       throw new Error('Seeding failed. Could not find necessary teams, users, or week.');

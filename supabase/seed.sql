@@ -8,6 +8,14 @@ values
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'test2@example.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"display_name":"test2"}', now(), now()),
   ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'test3@example.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"display_name":"test3"}', now(), now());
 
+-- Manually insert into public.users in case the trigger isn't working
+insert into public.users (id, display_name, role) 
+values
+  ('00000000-0000-0000-0000-000000000001', 'test1', 'player'),
+  ('00000000-0000-0000-0000-000000000002', 'test2', 'player'),
+  ('00000000-0000-0000-0000-000000000003', 'test3', 'player')
+on conflict (id) do nothing;
+
 -- Optionally elevate one user to admin
 update public.users set role = 'admin' where id = '00000000-0000-0000-0000-000000000001';
 
