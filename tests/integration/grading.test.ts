@@ -24,6 +24,10 @@ describe('Grading Integration Flow', () => {
     const { data: users } = await supabase.from('users').select('id, display_name').in('display_name', ['test1', 'test2', 'test3']);
     const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
 
+    console.log('Teams:', teams);
+    console.log('Users:', users);
+    console.log('Week:', week);
+
     if (!teams || !users || !week || teams.length < 2 || users.length < 3) {
       throw new Error('Seeding failed. Could not find necessary teams, users, or week.');
     }
