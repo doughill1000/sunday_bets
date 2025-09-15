@@ -1,4 +1,5 @@
 import type { RequestHandler } from './$types';
+import { json } from '@sveltejs/kit';
 import { requireAdmin } from '$lib/server/auth';
 import { gradeSeason } from '$lib/server/grading';
 
@@ -6,19 +7,16 @@ export const POST: RequestHandler = async (event) => {
   const authErr = await requireAdmin(event);
   if (authErr) return authErr;
 
-  const { season_id, refreshScores = false, daysFrom = 3 } = await event.request.json();
-
   try {
+    const { season_id, refreshScores = false, daysFrom = 3 } = await event.request.json();
+
+    if (!season_id) {
+      return json({ ok: false, reason: 'Missing required parameter: season_id' }, { status: 400 });
+    }
+
     const result = await gradeSeason(season_id, { refreshScores, daysFrom });
-    return json200(result);
+    return json(result);
   } catch (e: any) {
-    return json500(e.message);
+    return json({ ok: false, reason: e.message }, { status: 500 });
   }
 };
-
-function json200(data: unknown) {
-  return new Response(JSON.stringify(data), { status: 200 });
-}
-function json500(reason: string) {
-  return new Response(JSON.stringify({ ok: false, reason }), { status: 500 });
-}
