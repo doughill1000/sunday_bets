@@ -1,20 +1,16 @@
 import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
+  plugins: [svelte({ hot: !process.env.VITEST })],
   test: {
-    // Integration tests run in Node.js environment (not browser)
-    environment: 'node',
-    // Only run tests in the integration directory
+    globals: true,
+    environment: 'jsdom',
     include: ['tests/integration/**/*.test.ts'],
-    // Longer timeout for database operations
-    testTimeout: 30000,
-    // Setup file if needed
-    setupFiles: ['tests/integration/setup.ts']
+    exclude: ['src/**/__tests__/**'], // Exclude unit tests
+    setupFiles: ['./tests/setup.ts'],
+    deps: {
+      inline: [/@testing-library\/jest-dom/],
+    },
   },
-  // Resolve path aliases to match your project structure
-  resolve: {
-    alias: {
-      '$lib': './src/lib'
-    }
-  }
 });

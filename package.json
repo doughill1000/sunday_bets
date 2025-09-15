@@ -21,8 +21,8 @@
     "format": "prettier --write .",
     "format:check": "prettier . --check",
     "lint": "prettier --check . && eslint .",
-    "test:unit": "vitest --run --dir src/",
-    "test:integration": "vitest --run --dir tests/integration/ --config vitest.integration.config.ts",
+    "test:unit": "vitest --run",
+    "test:integration": "vitest --run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "test": "pnpm test:unit && pnpm test:integration"
   },
