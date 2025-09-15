@@ -1,5 +1,3 @@
-alter table public.weeks add column missed_pick_penalty int;
-alter table public.seasons add column missed_pick_penalty int;
 alter table public.settings add column missed_pick_penalty int default -1;
 
 create table if not exists public.pick_settlement (
