@@ -53,7 +53,10 @@ jobs:
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           supabase db reset --local
           supabase status -o env >> "$GITHUB_ENV"
-      
+          curl -i \
+            -H "apikey: $SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+  ".        http://127.0.0.1:54321/rest/v1/ui_games?select=*"
       - name: Run integration tests
         env:
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
