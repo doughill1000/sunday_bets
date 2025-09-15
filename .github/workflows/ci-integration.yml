@@ -54,7 +54,7 @@ jobs:
           supabase status -o env >> "$GITHUB_ENV"
 
       - name: Apply migrations + seed
-        run: supabase db reset --force
+        run: supabase db reset
 
       # Keep the standard 54321 gateway so supabase-js can find /auth/v1 and /rest/v1
       - name: Export app test env
@@ -71,5 +71,6 @@ jobs:
       - name: Run integration tests
         run: pnpm test:integration
 
-      - if: always()
-        run: supabase stop
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop || true
