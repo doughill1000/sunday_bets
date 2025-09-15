@@ -1,18 +1,15 @@
-# .github/workflows/migrate.yml
-name: Apply Supabase DB migrations
+# .github/workflows/supabase-dry-run.yml
+name: Supabase Migrations (dry run)
 
 on:
-  push:
-    branches:
-      - master
-      - develop
+  pull_request:
+    branches: [ master, develop ]
 
 jobs:
-  migrate:
+  supabase-dry-run:
     runs-on: ubuntu-latest
-    # Set the environment based on the branch
     environment:
-      name: ${{ github.ref == 'refs/heads/master' && 'production' || 'development' }}
+      name: ${{ github.base_ref == 'master' && 'production' || 'development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,10 +20,10 @@ jobs:
           | sudo tar -xz -C /usr/local/bin supabase
           supabase --version
 
-      - name: Apply migrations
+      - name: Dry run migrations
         env:
           # The secret is automatically selected from the job's environment
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          echo "Applying migrations to ${{ job.environment }} environment..."
-          supabase db push --db-url "$SUPABASE_DB_URL" --yes
+          echo "Dry running migrations against ${{ github.base_ref == 'master' && 'production' || 'development' }} environment..."
+          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run --yes
