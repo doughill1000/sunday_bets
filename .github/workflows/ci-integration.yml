@@ -1,5 +1,4 @@
-# .github/workflows/ci-integration.yml
-name: CI - Integration
+name: CI - Integration (with-auth)
 
 on:
   pull_request:
@@ -18,42 +17,46 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    
     env:
       NODE_ENV: test
-    
+      SUPABASE_CLI_VERSION: "2.40.7"
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-      
-      - name: Install deps
-        run: pnpm install --frozen-lockfile
-      
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Cache Supabase CLI
+        id: cache-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/supabase
+          key: supabase-cli-${{ env.SUPABASE_CLI_VERSION }}
+
       - name: Install Supabase CLI
+        if: steps.cache-cli.outputs.cache-hit != 'true'
         run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-          | sudo tar -xz -C /usr/local/bin supabase
-          supabase --version
-      
-      - name: Start local Supabase
+          mkdir -p ~/.local/bin
+          curl -sL https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_linux_amd64.tar.gz \
+          | tar -xz -C ~/.local/bin supabase
+          ~/.local/bin/supabase --version
+      - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # Exclude everything except Kong + GoTrue + PostgREST + DB
+      - name: Start local Supabase (auth-capable)
         run: |
-          supabase start -x realtime,storage-api,imgproxy,kong,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           supabase status -o env >> "$GITHUB_ENV"
-      
+
       - name: Apply migrations + seed
         run: supabase db reset --force
-      
+
+      # Keep the standard 54321 gateway so supabase-js can find /auth/v1 and /rest/v1
       - name: Export app test env
         run: |
           {
@@ -64,10 +67,9 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
             echo "DATABASE_URL=${SUPABASE_DB_URL}"
           } >> "$GITHUB_ENV"
-      
+
       - name: Run integration tests
         run: pnpm test:integration
-      
-      - name: Stop Supabase
-        if: always()
+
+      - if: always()
         run: supabase stop
