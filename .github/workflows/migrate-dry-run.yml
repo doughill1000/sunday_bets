@@ -26,4 +26,4 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           echo "Dry running migrations against ${{ job.environment }} environment..."
-          supabase db push --db-url "$SUPABASE_DB_URL" --workdir ./app --dry-run --yes
+          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run --yes
