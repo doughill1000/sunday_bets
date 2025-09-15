@@ -76,6 +76,8 @@ async function seed() {
     .select('id')
     .single();
 
+  console.log('Inserted season:', season);
+
   if (season) {
     await supabase.from('weeks').insert({
       season_id: season.id,
