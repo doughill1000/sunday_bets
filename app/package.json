@@ -33,7 +33,7 @@
     "@skeletonlabs/skeleton-svelte": "^1.4.0",
     "@sveltejs/adapter-auto": "^6.0.0",
     "@sveltejs/adapter-vercel": "^5.10.2",
-    "@sveltejs/kit": "^2.22.0",
+    "@sveltejs/kit": "^2.38.1",
     "@sveltejs/vite-plugin-svelte": "^6.0.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.8.0",
@@ -71,6 +71,7 @@
     "vitest-browser-svelte": "^0.1.0"
   },
   "dependencies": {
+    "@sentry/sveltekit": "^10.11.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
     "fs-extra": "^10.0.0",

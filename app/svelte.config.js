@@ -6,7 +6,17 @@ const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
-    prerender: { entries: [] }
+    prerender: { entries: [] },
+
+    experimental: {
+      tracing: {
+        server: true
+      },
+
+      instrumentation: {
+        server: true
+      }
+    }
   }
 };
 

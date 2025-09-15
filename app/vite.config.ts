@@ -2,9 +2,16 @@ import { defineConfig } from 'vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import { sentrySvelteKit } from '@sentry/sveltekit';
 
 export default defineConfig(({ mode }) => ({
   plugins: [
+    sentrySvelteKit({
+      sourceMapsUploadOptions: {
+        org: 'doughill1000',
+        project: 'javascript-sveltekit'
+      }
+    }),
     sveltekit(),
     tailwindcss(),
     SvelteKitPWA({
