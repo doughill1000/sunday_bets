@@ -1,3 +1,4 @@
+import type { Database } from '$lib/server/db/types';
 import { createClient } from '@supabase/supabase-js';
 
 const serviceKey = process.env.SERVICE_ROLE_KEY;
@@ -10,7 +11,7 @@ if (!serviceKey) {
  * A Supabase client instance authenticated with the service_role key.
  * Use this for all integration test interactions with the database.
  */
-export const supabase = createClient("http://127.0.0.1:54321", serviceKey, {
+export const supabase = createClient<Database>("http://127.0.0.1:54321", serviceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false

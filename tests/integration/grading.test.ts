@@ -76,8 +76,6 @@ async function seed() {
     .select('id')
     .single();
 
-  console.log('Inserted season:', season);
-
   if (season) {
     await supabase.from('weeks').insert({
       season_id: season.id,
@@ -122,13 +120,11 @@ describe('Grading Integration Flow', () => {
     // Fetch IDs from pre-seeded data
     const { data: teams } = await supabase
       .from('teams')
-      .select('id, name')
-      .in('name', ['Kansas City Chiefs', 'Buffalo Bills']);
+      .select('id, name');
     const { data: users } = await supabase
       .from('users')
-      .select('id, display_name')
-      .in('display_name', ['test1', 'test2', 'test3']);
-    const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
+      .select('id, display_name');
+    const { data: week } = await supabase.from('weeks').select('id').single();
 
     console.log('Teams:', teams);
     console.log('Users:', users);
