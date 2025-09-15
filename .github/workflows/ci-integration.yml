@@ -48,7 +48,7 @@ jobs:
       
       - name: Start local Supabase
         run: |
-          supabase start -x studio,imgproxy,logflare,vector,realtime
+          supabase start -x realtime,storage-api,imgproxy,kong,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           supabase status -o env >> "$GITHUB_ENV"
       
       - name: Apply migrations + seed
