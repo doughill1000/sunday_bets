@@ -3,8 +3,17 @@ name: CI - Integration
 
 on:
   pull_request:
+    paths:
+      - 'supabase/**'
+      - 'src/**'
+      - 'tests/integration/**'
+      - '.github/workflows/ci-integration.yml'
   push:
     branches: [master]
+    paths:
+      - 'supabase/**'
+      - 'src/**'
+      - 'tests/integration/**'
 
 jobs:
   integration:
@@ -22,7 +31,7 @@ jobs:
         with:
           version: 9
       
-      - name: Setup Node
+      - name: Setup Node and cache pnpm dependencies
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -31,12 +40,20 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
       
-      - name: Install Supabase CLI
+      - name: Cache and install Supabase CLI
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/supabase
+          key: ${{ runner.os }}-supabase-cli-1.187.3
+        id: cache-supabase
+      
+      - name: Install Supabase CLI if not cached
+        if: steps.cache-supabase.outputs.cache-hit != 'true'
         run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+          curl -sL https://github.com/supabase/cli/releases/download/v1.187.3/supabase_linux_amd64.tar.gz \
           | sudo tar -xz -C /usr/local/bin supabase
           supabase --version
-      
+
       - name: Start local Supabase
         run: |
           supabase start -x studio,imgproxy,logflare,vector,realtime,storage
