@@ -23,12 +23,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v4
         with: { version: 9 }
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+
       - run: pnpm install --frozen-lockfile
 
       - name: Cache Supabase CLI
@@ -47,21 +50,28 @@ jobs:
           ~/.local/bin/supabase --version
       - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # Exclude everything except Kong + GoTrue + PostgREST + DB
       - name: Start local Supabase (auth-capable)
         run: |
-          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase start
           supabase db reset --local
+
+      - name: Export Supabase env to later steps
+        run: |
           supabase status -o env >> "$GITHUB_ENV"
-          curl -i \
+          echo "SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+
+      - name: Smoke test PostgREST with service role
+        run: |
+          curl -si \
             -H "apikey: $SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-            "http://127.0.0.1:54321/rest/v1/ui_games?select=*"
+            "http://127.0.0.1:54321/rest/v1/teams?select=id,name&limit=1"
+
       - name: Run integration tests
         env:
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
-        run: pnpm test:integration  
-          
+        run: pnpm test:integration
+
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
