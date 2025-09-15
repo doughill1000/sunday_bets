@@ -77,10 +77,15 @@ define(['./workbox-c6a197bf'], (function (workbox) { 'use strict';
    * requests for URLs in the manifest.
    * See https://goo.gl/S9QRab
    */
-  workbox.precacheAndRoute([{
-    "url": "/",
-    "revision": "0.pvnlea07tgg"
-  }], {});
+  workbox.precacheAndRoute(
+    [
+      {
+        url: '/',
+        revision: '0.2elucg404og'
+      }
+    ],
+    {}
+  );
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/"), {
     allowlist: [/^\/$/]

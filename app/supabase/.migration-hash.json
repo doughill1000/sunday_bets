@@ -109,5 +109,62 @@
   },
   "schemas/0400_constraints.sql": {
     "hash": "290bc25aad36ec178a80697d78f5c3f2e22a9311cbfe6b5bbce5577a9b4fd475"
+  },
+  "schemas/0101_pick_outcome.sql": {
+    "hash": "285bcb8a1f7561334e724f47a10cdbaf4285b394c4a006e523a3ccac4526c117"
+  },
+  "schemas/0201_picks.sql": {
+    "hash": "0a9cb51681d17cc8bfa9871e81c8c91696ffa73c88da8f2fe935067199ed9bc7"
+  },
+  "schemas/0202_pick_settlement.sql": {
+    "hash": "f81cd41d8abce7d6d006c6bc307838ebd3b98c56f63aa0d03d0144b0dcf726d4"
+  },
+  "indexes/idx_pick_settlement_game.sql": {
+    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
+  },
+  "views/current_season_year.sql": {
+    "hash": "29b901590402e74f44ccec33beb4b850cac50fc961ea3f16aa6236e8c41baa00"
+  },
+  "views/leaderboard_season_totals.sql": {
+    "hash": "d69928487ecb2e96ce8fddd778905fd08162cadd4e1e74877dfdd8b5e456dafe"
+  },
+  "views/leaderboard_weekly_cumulative.sql": {
+    "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
+  },
+  "functions/_private/ats_margin_at_lock.sql": {
+    "hash": "141e696e4e519848fc900be844037ba17fa55ebd7ca64a302e3db212bf752ad2",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
+  },
+  "functions/_private/game_has_started.sql": {
+    "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
+    "signature": "public.game_has_started(uuid)"
+  },
+  "functions/_private/resolve_missed_penalty.sql": {
+    "hash": "5d0a05954a1bf9cd16420d4a665c9c4dd16602d1d393e527b54000cd53fcc18c",
+    "signature": "public.resolve_missed_penalty_for_game(uuid)"
+  },
+  "functions/_private/weight_points.sql": {
+    "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
+    "signature": "public.weight_points(text)"
+  },
+  "functions/grade/grade_game.sql": {
+    "hash": "15d4199979c21a133369eeca95f55b30b03dd72c82e3bda25514d71d6e41b14f",
+    "signature": "public.grade_game(uuid)"
+  },
+  "functions/grade/grade_pick.sql": {
+    "hash": "d3cdfcc856d7a2e466a846d8a5f30b338d5553ca8fe82365235dfc9a81724e55",
+    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
+  },
+  "functions/grade/grade_season.sql": {
+    "hash": "57bb36931f641e245047f11adaab3ac8f26f1350fc5cb1f286dd74846f628c7f",
+    "signature": "public.grade_season(int)"
+  },
+  "functions/grade/grade_week.sql": {
+    "hash": "6b45e198823b1a42c38aa80ba25b766b247f289507a06d049899acc4736ba2f3",
+    "signature": "public.grade_week(int)"
+  },
+  "functions/_private/grade_games_by_ids.sql": {
+    "hash": "3641821ad9b585fe9213d9f1b348158cbe43993cbbff9329e59870fb30cf262d",
+    "signature": "public._grade_games_by_ids(uuid[])"
   }
 }

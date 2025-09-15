@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -153,9 +173,59 @@ export type Database = {
           },
         ]
       }
+      pick_settlement: {
+        Row: {
+          game_id: string
+          graded_at: string
+          outcome: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id: string | null
+          points_delta: number | null
+          user_id: string
+        }
+        Insert: {
+          game_id: string
+          graded_at?: string
+          outcome?: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id?: string | null
+          points_delta?: number | null
+          user_id: string
+        }
+        Update: {
+          game_id?: string
+          graded_at?: string
+          outcome?: Database["public"]["Enums"]["pick_outcome"] | null
+          pick_id?: string | null
+          points_delta?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pick_settlement_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pick_settlement_pick_id_fkey"
+            columns: ["pick_id"]
+            isOneToOne: false
+            referencedRelation: "picks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       picks: {
         Row: {
           game_id: string
+          id: string
           locked_at: string | null
           locked_by: string
           locked_line_id: number | null
@@ -167,6 +237,7 @@ export type Database = {
         }
         Insert: {
           game_id: string
+          id?: string
           locked_at?: string | null
           locked_by?: string
           locked_line_id?: number | null
@@ -178,6 +249,7 @@ export type Database = {
         }
         Update: {
           game_id?: string
+          id?: string
           locked_at?: string | null
           locked_by?: string
           locked_line_id?: number | null
@@ -258,16 +330,19 @@ export type Database = {
         Row: {
           id: number
           league: string
+          missed_pick_penalty: number | null
           year: number
         }
         Insert: {
           id?: number
           league?: string
+          missed_pick_penalty?: number | null
           year: number
         }
         Update: {
           id?: number
           league?: string
+          missed_pick_penalty?: number | null
           year?: number
         }
         Relationships: []
@@ -275,18 +350,21 @@ export type Database = {
       settings: {
         Row: {
           id: boolean
+          missed_pick_penalty: number | null
           odds_api_calls_used_current_month: number
           odds_api_monthly_cap: number
           reset_on: string | null
         }
         Insert: {
           id?: boolean
+          missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
           odds_api_monthly_cap?: number
           reset_on?: string | null
         }
         Update: {
           id?: boolean
+          missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
           odds_api_monthly_cap?: number
           reset_on?: string | null
@@ -378,6 +456,7 @@ export type Database = {
         Row: {
           end_ts: string
           id: number
+          missed_pick_penalty: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -385,6 +464,7 @@ export type Database = {
         Insert: {
           end_ts: string
           id?: number
+          missed_pick_penalty?: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -392,6 +472,7 @@ export type Database = {
         Update: {
           end_ts?: string
           id?: number
+          missed_pick_penalty?: number | null
           season_id?: number
           start_ts?: string
           week_number?: number
@@ -408,58 +489,43 @@ export type Database = {
       }
     }
     Views: {
-      game_lines_normalized: {
+      current_season_year: {
         Row: {
-          away_team_id: number | null
-          commence_time: string | null
-          favorite_by: number | null
-          favorite_team_id: number | null
-          fetched_at: string | null
-          game_id: string | null
-          game_line_id: number | null
-          home_spread: number | null
-          home_team_id: number | null
-          is_active_line: boolean | null
-          source: string | null
-          week_id: number | null
+          season_year: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "game_lines_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_lines_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "ui_games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_week_id_fkey"
-            columns: ["week_id"]
-            isOneToOne: false
-            referencedRelation: "weeks"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      leaderboard_season_totals: {
+        Row: {
+          decisions: number | null
+          display_name: string | null
+          losses: number | null
+          missed: number | null
+          pushes: number | null
+          rank: number | null
+          season_year: number | null
+          total_points: number | null
+          user_id: string | null
+          wins: number | null
+        }
+        Relationships: []
+      }
+      leaderboard_weekly_cumulative: {
+        Row: {
+          cumulative_points: number | null
+          cumulative_rank_this_week: number | null
+          display_name: string | null
+          season_total: number | null
+          season_year: number | null
+          user_id: string | null
+          week_losses: number | null
+          week_missed: number | null
+          week_number: number | null
+          week_points: number | null
+          week_pushes: number | null
+          week_wins: number | null
+        }
+        Relationships: []
       }
       picks_status_view_admin: {
         Row: {
@@ -613,25 +679,56 @@ export type Database = {
       }
     }
     Functions: {
+      _grade_games_by_ids: {
+        Args: { p_game_ids: string[] }
+        Returns: undefined
+      }
+      ats_margin_at_lock: {
+        Args: {
+          away_id: number
+          away_pts: number
+          home_id: number
+          home_pts: number
+          spread_team_id: number
+          spread_value: number
+        }
+        Returns: number
+      }
       audit_log_action: {
         Args: { p_action: string; p_actor: string; p_details: Json }
         Returns: undefined
       }
-      current_active_line: {
-        Args: { p_game_id: string }
-        Returns: {
-          fetched_at: string
-          game_id: string
-          id: number
-          is_active_line: boolean
-          source: string
-          spread_team_id: number
-          spread_value: number
-        }
-      }
       game_has_started: {
         Args: { p_game_id: string }
         Returns: boolean
+      }
+      grade_game: {
+        Args: { p_game_id: string }
+        Returns: undefined
+      }
+      grade_pick: {
+        Args: {
+          away_id: number
+          away_pts: number
+          home_id: number
+          home_pts: number
+          picked_team_id: number
+          spread_team_id: number
+          spread_value: number
+          weight: string
+        }
+        Returns: {
+          outcome: Database["public"]["Enums"]["pick_outcome"]
+          points_delta: number
+        }[]
+      }
+      grade_season: {
+        Args: { p_season_id: number }
+        Returns: undefined
+      }
+      grade_week: {
+        Args: { p_week_id: number }
+        Returns: undefined
       }
       is_admin: {
         Args: Record<PropertyKey, never>
@@ -652,6 +749,10 @@ export type Database = {
           weight: Database["public"]["Enums"]["weight_enum"]
         }[]
       }
+      resolve_missed_penalty_for_game: {
+        Args: { p_game_id: string }
+        Returns: number
+      }
       unlock_pick: {
         Args: { p_game_id: string }
         Returns: {
@@ -661,8 +762,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      weight_points: {
+        Args: { p_weight: string }
+        Returns: number
+      }
     }
     Enums: {
+      pick_outcome: "win" | "loss" | "push" | "missed"
       side_enum: "home" | "away"
       weight_enum: "L" | "M" | "H" | "A"
     }
@@ -790,10 +896,15 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
+      pick_outcome: ["win", "loss", "push", "missed"],
       side_enum: ["home", "away"],
       weight_enum: ["L", "M", "H", "A"],
     },
   },
 } as const
+

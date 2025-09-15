@@ -4,10 +4,13 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "db:push": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push --yes && npm run db:gen:types",
-    "db:gen:migration": "tsx supabase/scripts/generate-migration.ts",
-    "db:gen:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
-    "db:gen:types": "supabase gen types typescript --project-id fhjmfpuanzmowmsfmuhi > src/lib/server/db/types.ts",
+    "db:push:dev": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push --yes",
+    "db:push:local": "supabase db push --local --yes && npm run db:types",
+    "db:migration": "tsx supabase/scripts/generate-migration.ts",
+    "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
+    "db:types": "supabase gen types typescript --local > src/lib/server/db/types.ts",
+    "db:clone:dev": "cd supabase/scripts/ && tsx cloneDb.ts --target=dev",
+    "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
@@ -75,6 +78,7 @@
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
     "shadcn-svelte": "^1.0.7",
-    "workbox-window": "^7.3.0"
+    "workbox-window": "^7.3.0",
+    "execa": "^9.3.0"
   }
 }
