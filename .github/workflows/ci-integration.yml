@@ -50,7 +50,7 @@ jobs:
       # Exclude everything except Kong + GoTrue + PostgREST + DB
       - name: Start local Supabase (auth-capable)
         run: |
-          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase start
           supabase status -o env >> "$GITHUB_ENV"
 
       - name: Wait for Supabase services to be ready (optional but recommended)
