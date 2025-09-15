@@ -1,12 +1,10 @@
 <script lang="ts">
+  import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
   import LeaderboardWeekly from '$lib/components/leaderboard/LeaderboardWeekly.svelte';
-  export let data: {
-    seasonYear: number;
-    totals: import('$lib/server/db/queries/leaderboard').SeasonTotalsRow[];
-    weekly: import('$lib/server/db/queries/leaderboard').WeeklyCumulativeRow[];
-  };
+
+  export let data: PageData;
 </script>
 
 <Tabs value="totals" class="w-full space-y-4">
