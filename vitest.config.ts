@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { svelteTesting } from '@testing-library/svelte/vite';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [svelte({ hot: !process.env.VITEST })],
+  plugins: [svelteTesting(), sveltekit()],
   resolve: {
     alias: {
       $lib: path.resolve(__dirname, 'src/lib'),
@@ -11,11 +12,16 @@ export default defineConfig({
     }
   },
   test: {
-    globals: true,
     environment: 'jsdom',
-    include: ['src/**/__tests__/**/*.test.ts'],
+    globals: true,
+    css: true,
     exclude: ['tests/integration/**'], // Exclude integration tests
     setupFiles: ['./tests/setup.ts'],
+    include: [
+      'src/**/__tests__/**/*.{test,spec}.{js,ts}',
+      'src/**/*.{test,spec}.{js,ts}',
+      'tests/**/*.{test,spec}.{js,ts}'
+    ],
     deps: {
       inline: [/@testing-library\/jest-dom/],
     },
