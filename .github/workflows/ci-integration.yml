@@ -57,12 +57,11 @@ jobs:
       - name: Export app test env
         run: |
           {
-            echo "SUPABASE_URL=http://127.0.0.1:54321"
-            echo "PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
-            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-            echo "PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "API_URL=${API_URL}"
+            echo "ANON_KEY=${ANON_KEY}"
+            echo "ANON_KEY=${SUPABASE_ANON_KEY}"
             echo "SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
-            echo "DATABASE_URL=${SUPABASE_DB_URL}"
+            echo "DB_URL=${DB_URL}"
           } >> "$GITHUB_ENV"
       
       - name: Run integration tests
