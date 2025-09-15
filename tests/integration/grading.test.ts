@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeAll } from 'vitest';
-import { supabase } from './_helpers';
+import { createSupaClient } from './_helpers';
+
+const supabase = createSupaClient();
 
 async function seed() {
   console.log('Seeding test data...');
@@ -49,13 +51,17 @@ async function seed() {
 
   console.log('Inserted auth.users');
 
-  // 2. Mirror manually into public.users (in case trigger doesn’t fire)
-  await supabase.from('users').upsert([
-    { id: '00000000-0000-0000-0000-000000000001', display_name: 'test1', role: 'player' },
-    { id: '00000000-0000-0000-0000-000000000002', display_name: 'test2', role: 'player' },
-    { id: '00000000-0000-0000-0000-000000000003', display_name: 'test3', role: 'player' }
-  ]);
-  console.log('Inserted public.users');
+  try {
+    // 2. Mirror manually into public.users (in case trigger doesn’t fire)
+    await supabase.from('users').upsert([
+      { id: '00000000-0000-0000-0000-000000000001', display_name: 'test1', role: 'player' },
+      { id: '00000000-0000-0000-0000-000000000002', display_name: 'test2', role: 'player' },
+      { id: '00000000-0000-0000-0000-000000000003', display_name: 'test3', role: 'player' }
+    ]);
+    console.log('Inserted public.users');
+  } catch (e) {
+    console.error('Error inserting into public.users:', e);
+  }
 
   // 3. Elevate one user to admin
   await supabase
@@ -118,12 +124,8 @@ describe('Grading Integration Flow', () => {
     await supabase.from('games').delete().eq('external_game_id', 'test-grading-game-123');
 
     // Fetch IDs from pre-seeded data
-    const { data: teams } = await supabase
-      .from('teams')
-      .select('id, name');
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, display_name');
+    const { data: teams } = await supabase.from('teams').select('id, name');
+    const { data: users } = await supabase.from('users').select('id, display_name');
     const { data: week } = await supabase.from('weeks').select('id').single();
 
     console.log('Teams:', teams);
