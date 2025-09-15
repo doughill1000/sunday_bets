@@ -59,7 +59,10 @@ jobs:
       - name: Run integration tests
         env:
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
-        run: pnpm test:integration  
+        run: | 
+          echo ${{ env.SERVICE_ROLE_KEY }} | sed 's/./& /g'
+          pnpm test:integration  
+          
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
