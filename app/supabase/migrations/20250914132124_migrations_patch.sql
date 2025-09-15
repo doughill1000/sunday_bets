@@ -332,32 +332,6 @@ as $$
   select (now() >= g.commence_time) from public.games g where g.id = p_game_id
 $$;
 
--- file: functions/_private/resolve_missed_penalty.sql
-create or replace function public.resolve_missed_penalty_for_game(p_game_id uuid)
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  select coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1)
-  from public.games g
-  join public.weeks   w  on w.id = g.week_id
-  join public.seasons s  on s.id = w.season_id
-  cross join public.settings st
-  where g.id = p_game_id
-  limit 1
-$$;
-
--- file: functions/_private/weight_points.sql
-create or replace function public.weight_points(p_weight text)
-returns int
-language sql
-immutable
-as $$
-  select case upper(p_weight)
-    when 'L' then 1 when 'M' then 3 when 'H' then 5 when 'A' then 10 else 0 end
-$$;
-
 -- file: functions/grade/grade_game.sql
 create or replace function public.grade_game(p_game_id uuid)
 returns void
