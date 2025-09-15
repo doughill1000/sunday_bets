@@ -22,4 +22,4 @@ jobs:
         env:
           SUPABASE_DB_URL: "${{ secrets.SUPABASE_DB_URL }}?pgbouncer=true&statement_cache_mode=describe&prefer_simple_protocol=true"
         run: |
-          supabase db push --db-url $SUPABASE_DB_URL --workdir ./app --dry-run --yes
+          supabase db push --db-url $SUPABASE_DB_URL --dry-run --yes

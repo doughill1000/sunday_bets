@@ -1,3 +1,4 @@
+# Dependencies
 node_modules
 
 # Output
@@ -7,6 +8,8 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/dist
+/dev-dist
 
 # OS
 .DS_Store

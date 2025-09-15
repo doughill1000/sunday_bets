@@ -1,94 +1,61 @@
-# # .github/workflows/ci-integration.yml
-# name: CI - Integration
+# .github/workflows/ci-integration.yml
+name: CI - Integration
 
-# on:
-#   pull_request:
-#   push:
-#     branches: [main]
+on:
+  pull_request:
+  push:
+    branches: [master]
 
-# jobs:
-#   integration:
-#     runs-on: ubuntu-latest
-
-#     env:
-#       NODE_ENV: test
-
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v4
-
-#       - name: Setup PNPM
-#         uses: pnpm/action-setup@v4
-#         with:
-#           version: 9
-
-#       - name: Setup Node
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 20
-#           cache: 'pnpm'
-
-#       - name: Install deps
-#         run: pnpm install --frozen-lockfile
-
-#       - name: Install Supabase CLI
-#         run: npm i -g supabase@latest
-
-#       # Optional: speed up by skipping services you don't need in tests
-#       - name: Start local Supabase
-#         run: |
-#           supabase start -x studio,imgproxy,logflare,vector
-#           # Export env vars for this runner (URL, keys, DB URL, etc.)
-#           supabase status -o env >> "$GITHUB_ENV"
-
-#       # Reset DB -> runs all migrations and seed defined in your supabase config
-#       - name: Apply migrations + seed
-#         run: |
-#           # If you keep a separate .env.test for your app, load it here
-#           # set -a; source .env.test; set +a
-#           supabase db reset --force
-
-#       # (Optional) If you use Playwright for E2E
-#       # - name: Install Playwright browsers
-#       #   run: npx playwright install --with-deps
-
-#       - name: Show Supabase ports (debug)
-#         run: supabase status
-
-#       # Map Supabase env to what your app/tests expect
-#       - name: Export app test env
-#         run: |
-#           {
-#             echo "SUPABASE_URL=http://localhost:54321"
-#             echo "PUBLIC_SUPABASE_URL=http://localhost:54321"
-#             echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-#             echo "PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
-#             echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
-#             # If your tests need a direct Postgres URL:
-#             echo "DATABASE_URL=${SUPABASE_DB_URL}"
-#           } >> "$GITHUB_ENV"
-
-#       - name: Run integration tests
-#         run: |
-#           pnpm test:integration
-#           # or for e2e:
-#           # pnpm test:e2e
-
-#       - name: Collect logs on failure
-#         if: failure()
-#         run: |
-#           mkdir -p artifacts
-#           supabase logs api > artifacts/supabase-api.log || true
-#           supabase logs db  > artifacts/supabase-db.log  || true
-#         continue-on-error: true
-
-#       - name: Upload logs
-#         if: failure()
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: supabase-logs
-#           path: artifacts/
-
-#       - name: Stop Supabase
-#         if: always()
-#         run: supabase stop
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    
+    env:
+      NODE_ENV: test
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      
+      - name: Install Supabase CLI
+        run: npm i -g supabase@latest
+      
+      - name: Start local Supabase
+        run: |
+          supabase start -x studio,imgproxy,logflare,vector
+          supabase status -o env >> "$GITHUB_ENV"
+      
+      - name: Apply migrations + seed
+        run: supabase db reset --force
+      
+      - name: Export app test env
+        run: |
+          {
+            echo "SUPABASE_URL=http://localhost:54321"
+            echo "PUBLIC_SUPABASE_URL=http://localhost:54321"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "DATABASE_URL=${SUPABASE_DB_URL}"
+          } >> "$GITHUB_ENV"
+      
+      - name: Run integration tests
+        run: pnpm test:integration
+      
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

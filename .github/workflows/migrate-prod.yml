@@ -3,7 +3,7 @@ name: Apply Supabase DB migrations (DB URL)
 
 on:
   push:
-    branches: [ master ]  # or master
+    branches: [ master ]
 
 jobs:
   migrate:
@@ -23,4 +23,4 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           # Applies all pending SQL files in supabase/migrations to the DB via connection string
-          supabase db push --db-url "$SUPABASE_DB_URL" --workdir ./app --yes
+          supabase db push --db-url "$SUPABASE_DB_URL" --yes

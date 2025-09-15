@@ -10,7 +10,7 @@ function getArg(prefix: string) {
   const a = process.argv.find((x: string) => x.startsWith(prefix));
   return a ? a.slice(prefix.length) : undefined;
 }
-const SRC_ROOT_DEFAULT = 'supabase/src';
+const SRC_ROOT_DEFAULT = 'app/supabase/src';
 
 function getMigrationName() {
   // Allow --name=custom_name or MIGRATION_NAME env var, default to 'migrations_patch'
