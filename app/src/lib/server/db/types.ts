@@ -679,6 +679,10 @@ export type Database = {
       }
     }
     Functions: {
+      _grade_games_by_ids: {
+        Args: { p_game_ids: string[] }
+        Returns: undefined
+      }
       ats_margin_at_lock: {
         Args: {
           away_id: number

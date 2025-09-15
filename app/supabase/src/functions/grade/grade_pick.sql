@@ -11,22 +11,31 @@ create or replace function public.grade_pick(
 language sql
 immutable
 as $$
-  with m as (
-    select public.ats_margin_at_lock(
-             home_pts, away_pts, home_id, away_id, spread_team_id, spread_value
-           ) as margin,
-           public.weight_points(weight) as w
+  with result as (
+    select
+      public.ats_margin_at_lock(
+        home_pts, away_pts, home_id, away_id, spread_team_id, spread_value
+      ) as margin,
+      public.weight_points(weight) as points_value
+  ),
+  outcome_calc as (
+    select
+      (select margin from result) as margin,
+      (select points_value from result) as points_value,
+      case
+        when (select margin from result) = 0 then 'push'
+        when ((select margin from result) > 0 and picked_team_id = home_id)
+          or ((select margin from result) < 0 and picked_team_id = away_id)
+        then 'win'
+        else 'loss'
+      end::public.pick_outcome as final_outcome
   )
   select
     case
-      when margin = 0 then 0
-      when margin > 0 then case when picked_team_id = home_id then w else -w end
-      else                    case when picked_team_id = away_id then w else -w end
+      when final_outcome = 'win' then points_value
+      when final_outcome = 'loss' then -points_value
+      else 0 -- push
     end as points_delta,
-    case
-      when margin = 0 then 'push'::public.pick_outcome
-      when margin > 0 then case when picked_team_id = home_id then 'win'::public.pick_outcome else 'loss'::public.pick_outcome end
-      else                    case when picked_team_id = away_id then 'win'::public.pick_outcome else 'loss'::public.pick_outcome end
-    end as outcome
-  from m
+    final_outcome as outcome
+  from outcome_calc;
 $$;
