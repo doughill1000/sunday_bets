@@ -67,10 +67,12 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
             echo "DATABASE_URL=${SUPABASE_DB_URL}"
           } >> "$GITHUB_ENV"
-
+      
       - name: Run integration tests
-        run: pnpm test:integration
-
+        env:
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+        run: pnpm test:integration  
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
