@@ -26,4 +26,4 @@ jobs:
           SUPABASE_DB_URL:
         run: |
           echo "Dry running migrations against ${{ github.base_ref == 'master' && 'production' || 'development' }} environment..."
-          supabase db push --db-url " ${{ secrets.SUPABASE_DB_URL }}" --dry-run --yes
+          supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}" --dry-run --yes
