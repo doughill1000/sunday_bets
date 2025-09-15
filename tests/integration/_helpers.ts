@@ -1,10 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.API_URL
-console.log('SUPABASE_URL:', supabaseUrl);
 const serviceKey = process.env.SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !serviceKey) {
+if (!serviceKey) {
   throw new Error('Supabase URL or Service Key is missing. Ensure your test environment is configured.');
 }
 
@@ -12,7 +10,7 @@ if (!supabaseUrl || !serviceKey) {
  * A Supabase client instance authenticated with the service_role key.
  * Use this for all integration test interactions with the database.
  */
-export const supabase = createClient(supabaseUrl, serviceKey, {
+export const supabase = createClient("http://127.0.0.1:54321", serviceKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false

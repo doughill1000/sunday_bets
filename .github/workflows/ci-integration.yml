@@ -56,7 +56,6 @@ jobs:
       
       - name: Run integration tests
         env:
-          API_URL: ${{ env.API_URL }}
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
         run: pnpm test:integration  
       - name: Stop Supabase
