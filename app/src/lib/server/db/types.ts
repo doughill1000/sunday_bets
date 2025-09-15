@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -310,16 +330,19 @@ export type Database = {
         Row: {
           id: number
           league: string
+          missed_pick_penalty: number | null
           year: number
         }
         Insert: {
           id?: number
           league?: string
+          missed_pick_penalty?: number | null
           year: number
         }
         Update: {
           id?: number
           league?: string
+          missed_pick_penalty?: number | null
           year?: number
         }
         Relationships: []
@@ -327,18 +350,21 @@ export type Database = {
       settings: {
         Row: {
           id: boolean
+          missed_pick_penalty: number | null
           odds_api_calls_used_current_month: number
           odds_api_monthly_cap: number
           reset_on: string | null
         }
         Insert: {
           id?: boolean
+          missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
           odds_api_monthly_cap?: number
           reset_on?: string | null
         }
         Update: {
           id?: boolean
+          missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
           odds_api_monthly_cap?: number
           reset_on?: string | null
@@ -430,6 +456,7 @@ export type Database = {
         Row: {
           end_ts: string
           id: number
+          missed_pick_penalty: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -437,6 +464,7 @@ export type Database = {
         Insert: {
           end_ts: string
           id?: number
+          missed_pick_penalty?: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -444,6 +472,7 @@ export type Database = {
         Update: {
           end_ts?: string
           id?: number
+          missed_pick_penalty?: number | null
           season_id?: number
           start_ts?: string
           week_number?: number
@@ -465,59 +494,6 @@ export type Database = {
           season_year: number | null
         }
         Relationships: []
-      }
-      game_lines_normalized: {
-        Row: {
-          away_team_id: number | null
-          commence_time: string | null
-          favorite_by: number | null
-          favorite_team_id: number | null
-          fetched_at: string | null
-          game_id: string | null
-          game_line_id: number | null
-          home_spread: number | null
-          home_team_id: number | null
-          is_active_line: boolean | null
-          source: string | null
-          week_id: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "game_lines_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "game_lines_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "ui_games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_away_team_id_fkey"
-            columns: ["away_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_home_team_id_fkey"
-            columns: ["home_team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "games_week_id_fkey"
-            columns: ["week_id"]
-            isOneToOne: false
-            referencedRelation: "weeks"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       leaderboard_season_totals: {
         Row: {
@@ -704,40 +680,19 @@ export type Database = {
     }
     Functions: {
       ats_margin_at_lock: {
-        Args:
-          | {
-              away_id: number
-              away_pts: number
-              home_id: number
-              home_pts: number
-              spread_team_id: number
-              spread_value: number
-            }
-          | {
-              away_id: string
-              away_pts: number
-              home_id: string
-              home_pts: number
-              spread_team_id: string
-              spread_value: number
-            }
+        Args: {
+          away_id: number
+          away_pts: number
+          home_id: number
+          home_pts: number
+          spread_team_id: number
+          spread_value: number
+        }
         Returns: number
       }
       audit_log_action: {
         Args: { p_action: string; p_actor: string; p_details: Json }
         Returns: undefined
-      }
-      current_active_line: {
-        Args: { p_game_id: string }
-        Returns: {
-          fetched_at: string
-          game_id: string
-          id: number
-          is_active_line: boolean
-          source: string
-          spread_team_id: number
-          spread_value: number
-        }
       }
       game_has_started: {
         Args: { p_game_id: string }
@@ -937,6 +892,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       pick_outcome: ["win", "loss", "push", "missed"],
@@ -945,3 +903,4 @@ export const Constants = {
     },
   },
 } as const
+
