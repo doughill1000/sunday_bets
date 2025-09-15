@@ -2,6 +2,7 @@ import { describe, test, expect, beforeAll } from 'vitest';
 import { supabase } from './_helpers';
 
 async function seed() {
+  console.log('Seeding test data...');
   // 1. Insert auth.users rows (triggers will mirror into public.users)
   // NOTE: direct inserts into `auth.users` are only allowed with service role.
   await supabase.from('auth.users' as any).insert([
@@ -46,12 +47,15 @@ async function seed() {
     }
   ]);
 
+  console.log('Inserted auth.users');
+
   // 2. Mirror manually into public.users (in case trigger doesn’t fire)
   await supabase.from('users').upsert([
     { id: '00000000-0000-0000-0000-000000000001', display_name: 'test1', role: 'player' },
     { id: '00000000-0000-0000-0000-000000000002', display_name: 'test2', role: 'player' },
     { id: '00000000-0000-0000-0000-000000000003', display_name: 'test3', role: 'player' }
   ]);
+  console.log('Inserted public.users');
 
   // 3. Elevate one user to admin
   await supabase
@@ -123,14 +127,7 @@ describe('Grading Integration Flow', () => {
       .select('id, display_name')
       .in('display_name', ['test1', 'test2', 'test3']);
     const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
-    const games = await supabase
-      .from('ui_games')
-      .select(
-        'id, week_id, kickoff, home, away, home_team_id, away_team_id, spread_value, favorite_team_id'
-      )
-      .order('kickoff');
 
-    console.log('Games:', games);
     console.log('Teams:', teams);
     console.log('Users:', users);
     console.log('Week:', week);
