@@ -1,7 +1,7 @@
 // src/lib/server/services/grading.ts
 import { supabaseService } from '$lib/supabase/service';
 import { type OddsScore } from '$lib/types/oddsApi';
-import { fetchNFLScores } from '$lib/server/odds';
+import { fetchNFLScores } from '$lib/server/services/odds.service';
 
 /** Grade a single game. Optionally refresh finals from Odds API first. */
 export async function gradeGame(

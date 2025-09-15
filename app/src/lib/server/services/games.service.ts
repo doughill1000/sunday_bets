@@ -1,10 +1,10 @@
 // src/lib/server/games.ts
 import type { RequestEvent } from '@sveltejs/kit';
-import type { WeightCode } from '../types/domain';
+import type { WeightCode } from '../../types/domain';
 import type { GameDTO } from '$lib/types/ui';
-import { findWeekById } from './db/queries/findWeekById';
-import { listGamesWithActiveLine } from './db/queries/listGamesWithActiveLine';
-import { findPicksForGames } from './db/queries/findPicksForGames';
+import { findWeekById } from '../db/queries/findWeekById';
+import { listGamesWithActiveLine } from '../db/queries/listGamesWithActiveLine';
+import { findPicksForGames } from '../db/queries/findPicksForGames';
 
 /**
  * Fetch all games for a week with the active Fanduel line + visible picks.

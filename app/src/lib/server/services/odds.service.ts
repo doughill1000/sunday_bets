@@ -3,7 +3,7 @@ import { ODDS_API_KEY1, ODDS_API_KEY2 } from '$env/static/private';
 import { PUBLIC_ODDS_API_BASE } from '$env/static/public';
 import type { WeekWindow } from '$lib/types/server';
 import { isoNoMs } from '$lib/utils/dates';
-import type { OddsGame, OddsScore } from '../types/oddsApi';
+import type { OddsGame, OddsScore } from '../../types/oddsApi';
 
 const API_KEYS = [ODDS_API_KEY1!, ODDS_API_KEY2!];
 let keyIndex = 0;

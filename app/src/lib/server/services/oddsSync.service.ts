@@ -1,10 +1,10 @@
 // src/lib/server/oddsSync.ts
-import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds';
-import { findActiveWeek } from './db/queries/findActiveWeek';
-import { findTeamsByNames } from './db/queries/findTeamsByNames';
-import { upsertGame } from './db/commands/upsert_game';
-import { deactivateActiveLines } from './db/commands/deactivate_lines';
-import { upsertActiveLine } from './db/commands/upsert_active_line';
+import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds.service';
+import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
+import { findTeamsByNames } from '$lib/server/db/queries/findTeamsByNames';
+import { upsertGame } from '$lib/server/db/commands/upsert_game';
+import { deactivateActiveLines } from '$lib/server/db/commands/deactivate_lines';
+import { upsertActiveLine } from '$lib/server/db/commands/upsert_active_line';
 
 /**
  * Sync fanduel spreads for the active week.

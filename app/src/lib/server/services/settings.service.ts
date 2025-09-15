@@ -1,5 +1,5 @@
 // src/lib/server/settings.ts
-import { supabaseService } from './supabase';
+import { supabaseService } from './supabase.service';
 
 export async function getSettings() {
   const { data, error } = await supabaseService.from('settings').select('*').limit(1).maybeSingle();

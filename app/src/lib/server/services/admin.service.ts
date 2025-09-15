@@ -1,5 +1,5 @@
 // src/lib/server/admin.ts
-import { supabaseService } from './supabase';
+import { supabaseService } from './supabase.service';
 
 export type SettingsSummary = {
   cap: number;

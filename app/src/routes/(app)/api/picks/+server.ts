@@ -1,6 +1,6 @@
 // src/routes/api/picks/+server.ts
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { listWeekGamesWithPicks } from '$lib/server/games';
+import { listWeekGamesWithPicks } from '$lib/server/services/games.service';
 
 export const GET: RequestHandler = async (event) => {
   try {

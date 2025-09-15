@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
-import { requireAdmin } from '$lib/server/auth';
-import { gradeSeason } from '$lib/server/grading';
+import { requireAdmin } from '$lib/server/services/auth.service';
+import { gradeSeason } from '$lib/server/services/grading.service';
 
 export const POST: RequestHandler = async (event) => {
   const authErr = await requireAdmin(event);

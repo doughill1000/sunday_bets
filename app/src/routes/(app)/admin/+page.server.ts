@@ -1,6 +1,6 @@
 // src/routes/admin/+page.server.ts
 import type { PageServerLoad } from './$types';
-import { getActiveWeek, getSettingsSummary } from '$lib/server/admin';
+import { getActiveWeek, getSettingsSummary } from '$lib/server/services/admin.service';
 
 export const load: PageServerLoad = async () => {
   const nowIso = new Date().toISOString();
