@@ -14,23 +14,15 @@ describe('Grading Integration Flow', () => {
 
   // ARRANGE: Set up all necessary data before running the test.
   beforeAll(async () => {
-    // Debug: Check what's actually in the database
-    const { data: allTeams } = await supabase.from('teams').select('*');
-    const { data: allUsers } = await supabase.from('users').select('*');
-    const { data: allWeeks } = await supabase.from('weeks').select('*');
-    
-    console.log('All teams:', allTeams);
-    console.log('All users:', allUsers);
-    console.log('All weeks:', allWeeks);
+    // Clean up any existing test data first
+    await supabase.from('pick_settlement').delete().eq('game_id', 'test-grading-game-123');
+    await supabase.from('picks').delete().eq('game_id', 'test-grading-game-123');
+    await supabase.from('games').delete().eq('external_game_id', 'test-grading-game-123');
 
     // Fetch IDs from pre-seeded data
     const { data: teams } = await supabase.from('teams').select('id, name').in('name', ['Kansas City Chiefs', 'Buffalo Bills']);
-    const { data: users } = await supabase.from('users').select('id, email').in('email', ['test1@example.com', 'test2@example.com', 'test3@example.com']);
+    const { data: users } = await supabase.from('users').select('id, display_name').in('display_name', ['test1', 'test2', 'test3']);
     const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
-
-    console.log('Found teams:', teams);
-    console.log('Found users:', users);
-    console.log('Found week:', week);
 
     if (!teams || !users || !week || teams.length < 2 || users.length < 3) {
       throw new Error('Seeding failed. Could not find necessary teams, users, or week.');
@@ -38,9 +30,9 @@ describe('Grading Integration Flow', () => {
 
     const chiefsId = teams.find(t => t.name === 'Kansas City Chiefs')!.id;
     const billsId = teams.find(t => t.name === 'Buffalo Bills')!.id;
-    const user1Id = users.find(u => u.email === 'test1@example.com')!.id;
-    const user2Id = users.find(u => u.email === 'test2@example.com')!.id;
-    const user3Id = users.find(u => u.email === 'test3@example.com')!.id;
+    const user1Id = users.find(u => u.display_name === 'test1')!.id;
+    const user2Id = users.find(u => u.display_name === 'test2')!.id;
+    const user3Id = users.find(u => u.display_name === 'test3')!.id;
 
     // 1. Create a game for our test
     const { data: game, error: gameErr } = await supabase
@@ -49,7 +41,7 @@ describe('Grading Integration Flow', () => {
         week_id: week.id,
         home_team_id: chiefsId,
         away_team_id: billsId,
-        game_ts: new Date().toISOString(),
+        commence_time: new Date().toISOString(),
         external_game_id: 'test-grading-game-123'
       })
       .select('id')
@@ -61,9 +53,25 @@ describe('Grading Integration Flow', () => {
     // 2. Create picks for the game
     const picksToInsert = [
       // User 1: Winning pick (Chiefs -6.5, they win by 10)
-      { user_id: user1Id, game_id: gameId, picked_team_id: chiefsId, locked_spread_team_id: chiefsId, locked_spread_value: -6.5, weight: 'H' },
+      { 
+        user_id: user1Id, 
+        game_id: gameId, 
+        picked_team_id: chiefsId, 
+        locked_spread_team_id: chiefsId, 
+        locked_spread_value: -6.5, 
+        weight: 'H' as const,
+        locked_by: user1Id // Added this required field
+      },
       // User 2: Losing pick (Bills +6.5, they lose by 10)
-      { user_id: user2Id, game_id: gameId, picked_team_id: billsId, locked_spread_team_id: chiefsId, locked_spread_value: -6.5, weight: 'M' }
+      { 
+        user_id: user2Id, 
+        game_id: gameId, 
+        picked_team_id: billsId, 
+        locked_spread_team_id: chiefsId, 
+        locked_spread_value: -6.5, 
+        weight: 'M' as const,
+        locked_by: user2Id // Added this required field
+      }
       // User 3 makes no pick (missed)
     ];
     const { error: pickErr } = await supabase.from('picks').insert(picksToInsert);

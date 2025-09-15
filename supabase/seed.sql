@@ -31,3 +31,8 @@ with s as (
 )
 insert into public.weeks (season_id, week_number, start_ts, end_ts)
 select id, 1, '2024-09-01'::timestamptz, '2024-09-08'::timestamptz from s;
+
+-- Insert settings with missed pick penalty
+insert into public.settings (id, missed_pick_penalty, odds_api_calls_used_current_month, odds_api_monthly_cap)
+values (true, 1, 0, 500)
+on conflict (id) do update set missed_pick_penalty = 1;
