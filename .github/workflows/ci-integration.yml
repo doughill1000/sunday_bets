@@ -39,7 +39,7 @@ jobs:
       
       - name: Start local Supabase
         run: |
-          supabase start -x studio,imgproxy,logflare,vector
+          supabase start -x studio,imgproxy,logflare,vector,realtime,storage
           supabase status -o env >> "$GITHUB_ENV"
       
       - name: Apply migrations + seed
