@@ -43,17 +43,25 @@
   const onGradeWeekManual = () => {
     const id = Number(weekIdInput);
     if (!Number.isInteger(id) || id <= 0) return note('warn', 'Invalid week id.');
-    call('/api/admin/grade-week', { week_id: id }, `Graded week id ${id}.`);
+    call('/api/admin/grade-week', { week_id: id, refreshScores: true }, `Graded week id ${id}.`);
   };
   const onGradeGame = () => {
     if (!gameId || !/^[0-9a-fA-F-]{36}$/.test(gameId)) return note('warn', 'Invalid game UUID.');
-    call('/api/admin/grade-game', { game_id: gameId }, `Graded game ${gameId}.`);
+    call(
+      '/api/admin/grade-game',
+      { game_id: gameId, refreshScores: true },
+      `Graded game ${gameId}.`
+    );
     gameId = '';
   };
   const onGradeSeason = () => {
     const id = Number(seasonIdInput);
     if (!Number.isInteger(id) || id <= 0) return note('warn', 'Invalid season id.');
-    call('/api/admin/grade-season', { season_id: id }, `Graded season id ${id}.`);
+    call(
+      '/api/admin/grade-season',
+      { season_id: id, refreshScores: true },
+      `Graded season id ${id}.`
+    );
     seasonIdInput = '';
   };
 </script>

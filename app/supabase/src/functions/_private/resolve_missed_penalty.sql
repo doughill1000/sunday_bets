@@ -4,11 +4,8 @@ language sql
 stable
 set search_path = public
 as $$
-  select coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1)
-  from public.games g
-  join public.weeks   w  on w.id = g.week_id
-  join public.seasons s  on s.id = w.season_id
-  cross join public.settings st
-  where g.id = p_game_id
+  -- Single source of truth: global setting
+  select st.missed_pick_penalty
+  from public.settings st
   limit 1
 $$;

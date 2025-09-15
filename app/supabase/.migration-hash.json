@@ -117,7 +117,7 @@
     "hash": "0a9cb51681d17cc8bfa9871e81c8c91696ffa73c88da8f2fe935067199ed9bc7"
   },
   "schemas/0202_pick_settlement.sql": {
-    "hash": "bab8057a3a0be888e346e1fec863ebe55005a646beefecf007cd981f9331eef0"
+    "hash": "edec637750bb9b3d3bd71300f0c8df66e801304d9460a3493df3765929b6b024"
   },
   "indexes/idx_pick_settlement_game.sql": {
     "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
@@ -140,7 +140,7 @@
     "signature": "public.game_has_started(uuid)"
   },
   "functions/_private/resolve_missed_penalty.sql": {
-    "hash": "d42c12d76efcca88411aeec1980f4d3174d3d48e1728e02645e0ff92ed950d4b",
+    "hash": "5d0a05954a1bf9cd16420d4a665c9c4dd16602d1d393e527b54000cd53fcc18c",
     "signature": "public.resolve_missed_penalty_for_game(uuid)"
   },
   "functions/_private/weight_points.sql": {
@@ -148,19 +148,19 @@
     "signature": "public.weight_points(text)"
   },
   "functions/grade/grade_game.sql": {
-    "hash": "74cfb2d66173a961e9a38f0f997f307bb9a9a76e0caf705dec2a1d91c1caa944",
+    "hash": "747b4c51b4041aab7e4e5601e3f25174428b733b0179ee61a1b997505af6208a",
     "signature": "public.grade_game(uuid)"
   },
   "functions/grade/grade_pick.sql": {
-    "hash": "26ee44c0be49356ff495008fbce3b0c99118201f6986f7ce0a2d995fedecc0d5",
+    "hash": "94b9cd2ae455dc17ee3da3623c3444ebb957c48d6aeee434e742e996b522de32",
     "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
   },
   "functions/grade/grade_season.sql": {
-    "hash": "38709c2e92cc1ccd0fc0b0dd8f9d0fba1feb4c1dcb77c77301d343646069e4f9",
+    "hash": "183bd19bce6e0e89619fd8f5ab48e8084faecdbdffce541758d9061c423ccdf4",
     "signature": "public.grade_season(int)"
   },
   "functions/grade/grade_week.sql": {
-    "hash": "0ef4a89eefe17926c0e464c81cc34a13a96302d968d5ee95dd64a35ecfa52b73",
+    "hash": "8165e0f283bbc59b1ab6067f0795acef85cccd807d7523a98b484424cc46445b",
     "signature": "public.grade_week(int)"
   }
 }

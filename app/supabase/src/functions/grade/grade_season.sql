@@ -23,9 +23,9 @@ begin
     g.home_team_id,
     g.away_team_id,
     p.picked_team_id,
-    p.spread_team_id_at_lock,
-    p.spread_value_at_lock,
-    p.weight
+    p.locked_spread_team_id,
+    p.locked_spread_value,
+    p.weight::text
   ) as gp
   where w.season_id = p_season_id
     and (g.final_scores->>'home') is not null
@@ -37,21 +37,19 @@ begin
     outcome      = excluded.outcome,
     graded_at    = excluded.graded_at;
 
-  -- (2) Penalties for missed picks on final games
+  -- (2) Penalties for missed picks on final games (settings-driven)
   insert into public.pick_settlement (user_id, game_id, pick_id, points_delta, outcome, graded_at)
   select
     u.id,
     g.id,
     null,
-    coalesce(w.missed_pick_penalty, s.missed_pick_penalty, st.missed_pick_penalty, -1) as penalty,
+    public.resolve_missed_penalty_for_game(g.id),
     'missed'::public.pick_outcome,
     now()
   from public.weeks   w
   join public.games   g on g.week_id = w.id
   cross join (select id from public.users where role = 'player') u
   left join public.picks p on p.game_id = g.id and p.user_id = u.id
-  join public.seasons s on s.id = w.season_id
-  cross join public.settings st
   where w.season_id = p_season_id
     and (g.final_scores->>'home') is not null
     and (g.final_scores->>'away') is not null

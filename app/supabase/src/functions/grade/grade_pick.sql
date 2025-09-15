@@ -12,7 +12,9 @@ language sql
 immutable
 as $$
   with m as (
-    select public.ats_margin_at_lock(home_pts, away_pts, home_id, away_id, spread_team_id, spread_value) as margin,
+    select public.ats_margin_at_lock(
+             home_pts, away_pts, home_id, away_id, spread_team_id, spread_value
+           ) as margin,
            public.weight_points(weight) as w
   )
   select
