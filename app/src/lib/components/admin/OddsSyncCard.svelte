@@ -8,6 +8,7 @@
     CardContent
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import { syncOdds as syncOddsApi } from '$lib/api/admin/odds'; // Import the new helper
 
   export let settings: { cap: number; used: number; remaining: number; usagePct: number };
   export let activeWeek: { id: number; week_number: number } | null;
@@ -22,19 +23,22 @@
   async function syncOdds() {
     syncing = true;
     try {
-      const res = await fetch('/api/admin/sync-odds', { method: 'POST' });
-      const body = await res.json().catch(() => ({}));
-      if (res.ok) {
-        const count = typeof body.count === 'number' ? body.count : 'unknown';
-        note('success', `Synced odds. Updated ${count} games.`);
-        settings.used += 1;
-        settings.remaining = Math.max(settings.cap - settings.used, 0);
-        settings.usagePct = settings.cap ? Math.min(settings.used / settings.cap, 1) : 1;
-      } else if (res.status === 429) note('warn', body?.reason ?? 'Monthly cap reached.');
-      else if (res.status === 400) note('warn', body?.reason ?? 'No active week.');
-      else note('error', body?.reason ?? `Failed (${res.status}).`);
-    } catch {
-      note('error', 'Network error.');
+      const body = await syncOddsApi();
+      const count = typeof body.count === 'number' ? body.count : 'unknown';
+      note('success', `Synced odds. Updated ${count} games.`);
+      // Optimistically update the UI
+      settings.used += 1;
+      settings.remaining = Math.max(settings.cap - settings.used, 0);
+      settings.usagePct = settings.cap ? Math.min(settings.used / settings.cap, 1) : 1;
+    } catch (err: any) {
+      // The generic helper preserves the status code
+      if (err.status === 429) {
+        note('warn', err.message ?? 'Monthly cap reached.');
+      } else if (err.status === 400) {
+        note('warn', err.message ?? 'No active week.');
+      } else {
+        note('error', err.message ?? 'An unknown error occurred.');
+      }
     } finally {
       syncing = false;
     }

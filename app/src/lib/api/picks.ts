@@ -1,38 +1,30 @@
 // src/lib/api/picks.ts
+import { post, del } from '$lib/api';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
 
-export async function lockPick(gameId: string, team: TeamSide, weight: WeightCode) {
-  const res = await fetch(`/api/picks/${gameId}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ team, weight })
-  });
+// Define clear response types for better type safety
+type LockPickResponse = {
+  ok: boolean;
+  reason?: string;
+  final_locked_at?: string;
+};
 
-  if (!res.ok) {
-    const reason = await res.text().catch(() => 'request failed');
-    return { ok: false, reason } as { ok: false; reason: string };
-  }
+type UnlockPickResponse = {
+  ok: boolean;
+  reason?: string;
+  unlocked_at?: string;
+};
 
-  return (await res.json()) as {
-    ok: boolean;
-    reason?: string;
-    final_locked_at?: string;
-  };
+/**
+ * Locks a user's pick for a specific game.
+ */
+export function lockPick(gameId: string, team: TeamSide, weight: WeightCode) {
+  return post<LockPickResponse>(`/api/picks/${gameId}`, { team, weight });
 }
 
-export async function unlockPick(gameId: string) {
-  const res = await fetch(`/api/picks/${gameId}`, {
-    method: 'DELETE',
-    headers: { 'content-type': 'application/json' }
-  });
-
-  if (!res.ok) {
-    const reason = await res.text().catch(() => 'request failed');
-    return { ok: false, reason } as { ok: false; reason: string };
-  }
-
-  return (await res.json()) as {
-    ok: boolean;
-    unlocked_at?: string;
-  };
+/**
+ * Unlocks a user's pick for a specific game.
+ */
+export function unlockPick(gameId: string) {
+  return del<UnlockPickResponse>(`/api/picks/${gameId}`);
 }
