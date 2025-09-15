@@ -1,6 +1,98 @@
 import { describe, test, expect, beforeAll } from 'vitest';
 import { supabase } from './_helpers';
 
+async function seed() {
+  // 1. Insert auth.users rows (triggers will mirror into public.users)
+  // NOTE: direct inserts into `auth.users` are only allowed with service role.
+  await supabase.from('auth.users' as any).insert([
+    {
+      id: '00000000-0000-0000-0000-000000000001',
+      instance_id: '00000000-0000-0000-0000-000000000000',
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: 'test1@example.com',
+      encrypted_password: 'password123', // Supabase will hash if you use admin api; raw insert expects crypt()
+      email_confirmed_at: new Date().toISOString(),
+      raw_app_meta_data: { provider: 'email', providers: ['email'] },
+      raw_user_meta_data: { display_name: 'test1' },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000002',
+      instance_id: '00000000-0000-0000-0000-000000000000',
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: 'test2@example.com',
+      encrypted_password: 'password123',
+      email_confirmed_at: new Date().toISOString(),
+      raw_app_meta_data: { provider: 'email', providers: ['email'] },
+      raw_user_meta_data: { display_name: 'test2' },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: '00000000-0000-0000-0000-000000000003',
+      instance_id: '00000000-0000-0000-0000-000000000000',
+      aud: 'authenticated',
+      role: 'authenticated',
+      email: 'test3@example.com',
+      encrypted_password: 'password123',
+      email_confirmed_at: new Date().toISOString(),
+      raw_app_meta_data: { provider: 'email', providers: ['email'] },
+      raw_user_meta_data: { display_name: 'test3' },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ]);
+
+  // 2. Mirror manually into public.users (in case trigger doesn’t fire)
+  await supabase.from('users').upsert([
+    { id: '00000000-0000-0000-0000-000000000001', display_name: 'test1', role: 'player' },
+    { id: '00000000-0000-0000-0000-000000000002', display_name: 'test2', role: 'player' },
+    { id: '00000000-0000-0000-0000-000000000003', display_name: 'test3', role: 'player' }
+  ]);
+
+  // 3. Elevate one user to admin
+  await supabase
+    .from('users')
+    .update({ role: 'admin' })
+    .eq('id', '00000000-0000-0000-0000-000000000001');
+
+  // 4. Insert test teams
+  await supabase.from('teams').insert([
+    { name: 'Kansas City Chiefs', short_name: 'KC' },
+    { name: 'Buffalo Bills', short_name: 'BUF' }
+  ]);
+
+  // 5. Insert season + week
+  const { data: season } = await supabase
+    .from('seasons')
+    .insert({ year: 2024 })
+    .select('id')
+    .single();
+
+  if (season) {
+    await supabase.from('weeks').insert({
+      season_id: season.id,
+      week_number: 1,
+      start_ts: '2024-09-01T00:00:00Z',
+      end_ts: '2024-09-08T00:00:00Z'
+    });
+  }
+
+  // 6. Insert settings row (id=true is the single-row PK)
+  await supabase.from('settings').upsert({
+    id: true,
+    odds_api_monthly_cap: 500,
+    odds_api_calls_used_current_month: 0,
+    reset_on: null
+    // missed_pick_penalty is stored in weeks/seasons now; if you still want a default, add column.
+  });
+
+  console.log('Seeding complete');
+}
+
 describe('Grading Integration Flow', () => {
   let testData: {
     gameId: string;
@@ -14,6 +106,8 @@ describe('Grading Integration Flow', () => {
 
   // ARRANGE: Set up all necessary data before running the test.
   beforeAll(async () => {
+    await seed().catch(console.error);
+
     // Clean up any existing test data first
     await supabase.from('pick_settlement').delete().eq('game_id', 'test-grading-game-123');
     await supabase.from('picks').delete().eq('game_id', 'test-grading-game-123');
@@ -35,7 +129,7 @@ describe('Grading Integration Flow', () => {
         'id, week_id, kickoff, home, away, home_team_id, away_team_id, spread_value, favorite_team_id'
       )
       .order('kickoff');
-      
+
     console.log('Games:', games);
     console.log('Teams:', teams);
     console.log('Users:', users);
