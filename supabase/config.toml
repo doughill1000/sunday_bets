@@ -1,3 +1,8 @@
+project_id = "sunday-bets"
+
+[api]
+port = 54321
+
 [db.seed]
 enabled = true
 
