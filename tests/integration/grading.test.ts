@@ -20,10 +20,23 @@ describe('Grading Integration Flow', () => {
     await supabase.from('games').delete().eq('external_game_id', 'test-grading-game-123');
 
     // Fetch IDs from pre-seeded data
-    const { data: teams } = await supabase.from('teams').select('id, name').in('name', ['Kansas City Chiefs', 'Buffalo Bills']);
-    const { data: users } = await supabase.from('users').select('id, display_name').in('display_name', ['test1', 'test2', 'test3']);
+    const { data: teams } = await supabase
+      .from('teams')
+      .select('id, name')
+      .in('name', ['Kansas City Chiefs', 'Buffalo Bills']);
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, display_name')
+      .in('display_name', ['test1', 'test2', 'test3']);
     const { data: week } = await supabase.from('weeks').select('id').eq('week_number', 1).single();
-
+    const games = await supabase
+      .from('ui_games')
+      .select(
+        'id, week_id, kickoff, home, away, home_team_id, away_team_id, spread_value, favorite_team_id'
+      )
+      .order('kickoff');
+      
+    console.log('Games:', games);
     console.log('Teams:', teams);
     console.log('Users:', users);
     console.log('Week:', week);
@@ -32,11 +45,11 @@ describe('Grading Integration Flow', () => {
       throw new Error('Seeding failed. Could not find necessary teams, users, or week.');
     }
 
-    const chiefsId = teams.find(t => t.name === 'Kansas City Chiefs')!.id;
-    const billsId = teams.find(t => t.name === 'Buffalo Bills')!.id;
-    const user1Id = users.find(u => u.display_name === 'test1')!.id;
-    const user2Id = users.find(u => u.display_name === 'test2')!.id;
-    const user3Id = users.find(u => u.display_name === 'test3')!.id;
+    const chiefsId = teams.find((t) => t.name === 'Kansas City Chiefs')!.id;
+    const billsId = teams.find((t) => t.name === 'Buffalo Bills')!.id;
+    const user1Id = users.find((u) => u.display_name === 'test1')!.id;
+    const user2Id = users.find((u) => u.display_name === 'test2')!.id;
+    const user3Id = users.find((u) => u.display_name === 'test3')!.id;
 
     // 1. Create a game for our test
     const { data: game, error: gameErr } = await supabase
@@ -57,22 +70,22 @@ describe('Grading Integration Flow', () => {
     // 2. Create picks for the game
     const picksToInsert = [
       // User 1: Winning pick (Chiefs -6.5, they win by 10)
-      { 
-        user_id: user1Id, 
-        game_id: gameId, 
-        picked_team_id: chiefsId, 
-        locked_spread_team_id: chiefsId, 
-        locked_spread_value: -6.5, 
+      {
+        user_id: user1Id,
+        game_id: gameId,
+        picked_team_id: chiefsId,
+        locked_spread_team_id: chiefsId,
+        locked_spread_value: -6.5,
         weight: 'H' as const,
         locked_by: user1Id // Added this required field
       },
       // User 2: Losing pick (Bills +6.5, they lose by 10)
-      { 
-        user_id: user2Id, 
-        game_id: gameId, 
-        picked_team_id: billsId, 
-        locked_spread_team_id: chiefsId, 
-        locked_spread_value: -6.5, 
+      {
+        user_id: user2Id,
+        game_id: gameId,
+        picked_team_id: billsId,
+        locked_spread_team_id: chiefsId,
+        locked_spread_value: -6.5,
         weight: 'M' as const,
         locked_by: user2Id // Added this required field
       }
@@ -106,19 +119,19 @@ describe('Grading Integration Flow', () => {
     expect(settlements).toHaveLength(3);
 
     // 1. Check the winning pick
-    const winnerSettlement = settlements!.find(s => s.user_id === testData.user1Id);
+    const winnerSettlement = settlements!.find((s) => s.user_id === testData.user1Id);
     expect(winnerSettlement).toBeDefined();
     expect(winnerSettlement!.outcome).toBe('win');
     expect(winnerSettlement!.points_delta).toBe(5); // H weight = 5 points
 
     // 2. Check the losing pick
-    const loserSettlement = settlements!.find(s => s.user_id === testData.user2Id);
+    const loserSettlement = settlements!.find((s) => s.user_id === testData.user2Id);
     expect(loserSettlement).toBeDefined();
     expect(loserSettlement!.outcome).toBe('loss');
     expect(loserSettlement!.points_delta).toBe(-3); // M weight = 3 points
 
     // 3. Check the missed pick
-    const missedSettlement = settlements!.find(s => s.user_id === testData.user3Id);
+    const missedSettlement = settlements!.find((s) => s.user_id === testData.user3Id);
     expect(missedSettlement).toBeDefined();
     expect(missedSettlement!.outcome).toBe('missed');
     expect(missedSettlement!.points_delta).toBe(-1); // Default missed penalty
