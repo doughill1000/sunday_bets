@@ -51,10 +51,8 @@ jobs:
       - name: Start local Supabase (auth-capable)
         run: |
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
-          supabase status -o env >> "$GITHUB_ENV"
           supabase db reset --local
-
-          echo $SERVICE_ROLE_KEY | sed 's/./& /g'
+          supabase status -o env >> "$GITHUB_ENV"
       
       - name: Run integration tests
         env:
