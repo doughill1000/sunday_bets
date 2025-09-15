@@ -53,6 +53,11 @@ jobs:
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           supabase status -o env >> "$GITHUB_ENV"
 
+          docker exec supabase_db_1 psql -U postgres -d postgres -c \
+          "select 'teams' tbl, count(*) from public.teams
+          union all select 'users', count(*) from public.users
+          union all select 'weeks', count(*) from public.weeks;"
+
       # Keep the standard 54321 gateway so supabase-js can find /auth/v1 and /rest/v1
       - name: Export app test env
         run: |
