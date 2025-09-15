@@ -47,16 +47,28 @@ jobs:
           ~/.local/bin/supabase --version
       - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      # Exclude everything except Kong + GoTrue + PostgREST + DB
-      - name: Start local Supabase (auth-capable)
+      - name: Start Supabase (Docker)
         run: |
-          supabase start
-          supabase status -o env >> "$GITHUB_ENV"
+          # exclude services we don't need to speed things up
+          supabase start -x studio,imgproxy,vector,logflare,edge-runtime
 
-      - name: Wait for Supabase services to be ready (optional but recommended)
+      # (Optional) Wait for HTTP health. The CLI usually waits, but this adds a small buffer.
+      - name: Wait for APIs
         run: |
-          # You might need a more robust wait mechanism depending on your setup
-          sleep 30 
+          for i in {1..30}; do
+            if curl -sSf http://localhost:54321/rest/v1/ >/dev/null; then
+              echo "PostgREST is up"; break
+            fi
+            echo "Waiting for Supabase services... ($i/30)"
+            sleep 2
+          done
+
+      # Apply migrations and seed your test DB.
+      # Works with standard Supabase project structure: supabase/migrations, supabase/seed.sql
+      - name: Reset DB (migrations + seed)
+        run: |
+          # Reset applies migrations and seed against the local stack
+          supabase db reset
 
       # Keep the standard 54321 gateway so supabase-js can find /auth/v1 and /rest/v1
       - name: Export app test env
