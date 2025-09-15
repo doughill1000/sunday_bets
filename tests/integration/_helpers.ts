@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const serviceKey = process.env.SERVICE_ROLE_KEY;
 
+console.log("serviceKey", serviceKey);
+
 if (!serviceKey) {
   throw new Error('Supabase URL or Service Key is missing. Ensure your test environment is configured.');
 }
