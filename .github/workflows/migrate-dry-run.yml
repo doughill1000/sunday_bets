@@ -3,11 +3,13 @@ name: Supabase Migrations (dry run)
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
 
 jobs:
   supabase-dry-run:
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.base_ref == 'master' && 'production' || 'development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,8 +20,10 @@ jobs:
           | sudo tar -xz -C /usr/local/bin supabase
           supabase --version
 
-      - name: Dry run migrations against remote DB
+      - name: Dry run migrations
         env:
-          SUPABASE_DB_URL: "${{ secrets.SUPABASE_DB_URL }}?pgbouncer=true&statement_cache_mode=describe&prefer_simple_protocol=true"
+          # The secret is automatically selected from the job's environment
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          supabase db push --db-url $SUPABASE_DB_URL --dry-run --yes
+          echo "Dry running migrations against ${{ job.environment }} environment..."
+          supabase db push --db-url "$SUPABASE_DB_URL" --workdir ./app --dry-run --yes
