@@ -21,14 +21,17 @@
     "format": "prettier --write .",
     "format:check": "prettier . --check",
     "lint": "prettier --check . && eslint .",
-    "test:unit": "vitest",
-    "test": "npm run test:unit -- --run"
+    "test:unit": "vitest --run",
+    "test:integration": "vitest --run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
+    "test": "pnpm test:unit && pnpm test:integration"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.18.0",
     "@internationalized/date": "^3.9.0",
     "@lucide/svelte": "^0.515.0",
+    "@playwright/test": "^1.55.0",
     "@skeletonlabs/skeleton": "^3.1.8",
     "@skeletonlabs/skeleton-svelte": "^1.4.0",
     "@sveltejs/adapter-auto": "^6.0.0",
@@ -74,11 +77,11 @@
     "@sentry/sveltekit": "^10.11.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
+    "execa": "^9.3.0",
     "fs-extra": "^10.0.0",
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
     "shadcn-svelte": "^1.0.7",
-    "workbox-window": "^7.3.0",
-    "execa": "^9.3.0"
+    "workbox-window": "^7.3.0"
   }
 }

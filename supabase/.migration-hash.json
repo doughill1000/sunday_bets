@@ -140,7 +140,7 @@
     "signature": "public.game_has_started(uuid)"
   },
   "functions/_private/resolve_missed_penalty.sql": {
-    "hash": "5d0a05954a1bf9cd16420d4a665c9c4dd16602d1d393e527b54000cd53fcc18c",
+    "hash": "160543fadae9078f83208ad0cad4f6bf88812a66a353390b782873a335a68696",
     "signature": "public.resolve_missed_penalty_for_game(uuid)"
   },
   "functions/_private/weight_points.sql": {
