@@ -52,13 +52,18 @@ jobs:
 
       - name: Start local Supabase (auth-capable)
         run: |
-          supabase start
+          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          # Wait for services to come up cleanly
           supabase db reset --local
+          # optional: small wait to ensure postgrest/auth are ready
+          sleep 5
 
       - name: Export Supabase env to later steps
         run: |
           supabase status -o env >> "$GITHUB_ENV"
+          # Map SUPABASE_SERVICE_ROLE_KEY -> SERVICE_ROLE_KEY for tests and curl
           echo "SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
 
       - name: Smoke test PostgREST with service role
         run: |
@@ -70,6 +75,7 @@ jobs:
       - name: Run integration tests
         env:
           SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ env.SUPABASE_URL }}
         run: pnpm test:integration
 
       - name: Stop Supabase

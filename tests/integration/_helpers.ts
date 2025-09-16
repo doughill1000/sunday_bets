@@ -14,6 +14,6 @@ if (!serviceKey) {
 export const createSupaClient = () => createClient<Database>("http://127.0.0.1:54321", serviceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
