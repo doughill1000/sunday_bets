@@ -1,5 +1,5 @@
 # .github/workflows/supabase-dry-run.yml
-name: Supabase Migrations
+name: Supabase Dry Run Migrations
 
 on:
   pull_request:
