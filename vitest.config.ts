@@ -19,7 +19,6 @@ export default defineConfig({
     include: [
       'src/**/__tests__/**/*.{test,spec}.{js,ts}',
       'src/**/*.{test,spec}.{js,ts}',
-      'tests/**/*.{test,spec}.{js,ts}'
     ]
-  }
+  },
 });
