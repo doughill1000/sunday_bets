@@ -31,7 +31,6 @@ const ORDER = [
   'schemas',
   'indexes',
   'views',
-  'functions/_private',
   'functions',
   'policies',
   'triggers',

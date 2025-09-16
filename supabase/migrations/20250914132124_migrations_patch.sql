@@ -2,7 +2,6 @@
 set check_function_bodies = off;
 set client_min_messages = warning;
 
-
 -- file: schemas/0101_pick_outcome.sql
 do $$
 begin
@@ -51,35 +50,6 @@ alter table public.picks
 
 alter table public.picks
   alter column id set default gen_random_uuid();
-
--- 4) Drop the old primary key (usually picks_pkey) if it exists
-do $$
-declare
-  pk_name text;
-begin
-  select conname into pk_name
-  from pg_constraint
-  where conrelid = 'public.picks'::regclass
-    and contype = 'p'
-  limit 1;
-
-  if pk_name is not null then
-    execute format('alter table public.picks drop constraint %I', pk_name);
-  end if;
-end$$;
-
--- 5) Create the new primary key on (id) if not already present
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conrelid = 'public.picks'::regclass
-      and contype = 'p'
-  ) then
-    alter table public.picks
-      add constraint picks_pkey primary key (id);
-  end if;
-end$$;
 
 -- 6) Keep uniqueness on (user_id, game_id)
 do $$
@@ -300,36 +270,6 @@ immutable
 as $$
   select case upper(p_weight)
     when 'L' then 1 when 'M' then 3 when 'H' then 5 when 'A' then 10 else 0 end
-$$;
-
--- file: functions/_private/ats_margin_at_lock.sql
-create or replace function public.ats_margin_at_lock(
-  home_pts int,
-  away_pts int,
-  home_id int,
-  away_id int,
-  spread_team_id int,
-  spread_value numeric
-) returns numeric
-language sql
-immutable
-as $$
-  select (home_pts - away_pts)
-       + case
-           when spread_team_id = home_id then spread_value
-           when spread_team_id = away_id then -spread_value
-           else 0
-         end
-$$;
-
--- file: functions/_private/game_has_started.sql
--- Helper: has the game started?
-create or replace function public.game_has_started(p_game_id uuid)
-returns boolean
-language sql
-stable
-as $$
-  select (now() >= g.commence_time) from public.games g where g.id = p_game_id
 $$;
 
 -- file: functions/grade/grade_game.sql
