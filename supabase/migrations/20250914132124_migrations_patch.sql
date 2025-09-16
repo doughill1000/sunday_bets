@@ -2,7 +2,6 @@
 set check_function_bodies = off;
 set client_min_messages = warning;
 
-
 -- file: schemas/0101_pick_outcome.sql
 do $$
 begin
