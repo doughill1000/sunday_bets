@@ -9,7 +9,7 @@ jobs:
   supabase-migrate:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref_name == 'master' && 'production' || 'development' }}
+      name: ${{ github.base_ref == 'master' && 'Production' || 'Development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,6 +21,10 @@ jobs:
           supabase --version
 
       - name: Migrate
+        env:
+          # The secret is automatically selected from the job's environment
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          echo "Running migrations against ${{ github.ref_name == 'master' && 'production' || 'development' }} environment..."
-          supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}" --yes
+          echo ${{ github.base_ref}}
+          echo "Running migrations against ${{ github.base_ref == 'master' && 'Production' || 'Development' }} environment..."
+          supabase db push --db-url "$SUPABASE_DB_URL" --yes
