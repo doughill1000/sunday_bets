@@ -9,7 +9,7 @@ jobs:
   supabase-dry-run:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.base_ref == 'master' && 'production' || 'development' }}
+      name: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,9 +21,6 @@ jobs:
           supabase --version
 
       - name: Dry run migrations
-        env:
-          # The secret is automatically selected from the job's environment
-          SUPABASE_DB_URL:
         run: |
-          echo "Dry running migrations against ${{ github.base_ref == 'master' && 'production' || 'development' }} environment..."
+          echo "Dry running migrations against ${{ github.ref_name == 'master' && 'production' || 'development' }} environment..."
           supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}" --yes
