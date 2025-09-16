@@ -51,6 +51,64 @@ alter table public.picks
 alter table public.picks
   alter column id set default gen_random_uuid();
 
+-- 4) Drop the old primary key (usually picks_pkey) if it exists
+do $$
+declare
+  pk_name text;
+begin
+  select conname into pk_name
+  from pg_constraint
+  where conrelid = 'public.picks'::regclass
+    and contype = 'p'
+  limit 1;
+
+  if pk_name is not null then
+    execute format('alter table public.picks drop constraint %I', pk_name);
+  end if;
+end$$;
+
+-- 5) Create the new primary key on (id) if not already present
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.picks'::regclass
+      and contype = 'p'
+  ) then
+    alter table public.picks
+      add constraint picks_pkey primary key (id);
+  end if;
+end$$;
+
+-- 4) Drop the old primary key (usually picks_pkey) if it exists
+do $$
+declare
+  pk_name text;
+begin
+  select conname into pk_name
+  from pg_constraint
+  where conrelid = 'public.picks'::regclass
+    and contype = 'p'
+  limit 1;
+
+  if pk_name is not null then
+    execute format('alter table public.picks drop constraint %I', pk_name);
+  end if;
+end$$;
+
+-- 5) Create the new primary key on (id) if not already present
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.picks'::regclass
+      and contype = 'p'
+  ) then
+    alter table public.picks
+      add constraint picks_pkey primary key (id);
+  end if;
+end$$;
+
 -- 6) Keep uniqueness on (user_id, game_id)
 do $$
 begin
