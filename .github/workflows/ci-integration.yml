@@ -2,17 +2,12 @@ name: CI - Integration (with-auth)
 
 on:
   pull_request:
+    branches: [develop]
     paths:
       - 'supabase/**'
       - 'src/**'
       - 'tests/integration/**'
       - '.github/workflows/ci-integration.yml'
-  push:
-    branches: [master]
-    paths:
-      - 'supabase/**'
-      - 'src/**'
-      - 'tests/integration/**'
 
 jobs:
   integration:
