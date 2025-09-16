@@ -6,7 +6,7 @@ on:
     branches: [ master, develop ]
 
 jobs:
-  supabase-dry-run:
+  supabase-migrate:
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.ref_name == 'master' && 'production' || 'development' }}
@@ -20,7 +20,7 @@ jobs:
           | sudo tar -xz -C /usr/local/bin supabase
           supabase --version
 
-      - name: Dry run migrations
+      - name: Migrate
         run: |
-          echo "Dry running migrations against ${{ github.ref_name == 'master' && 'production' || 'development' }} environment..."
+          echo "Running migrations against ${{ github.ref_name == 'master' && 'production' || 'development' }} environment..."
           supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}" --yes
