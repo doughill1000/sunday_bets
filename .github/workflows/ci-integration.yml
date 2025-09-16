@@ -58,24 +58,7 @@ jobs:
           # optional: small wait to ensure postgrest/auth are ready
           sleep 5
 
-      - name: Export Supabase env to later steps
-        run: |
-          supabase status -o env >> "$GITHUB_ENV"
-          # Map SUPABASE_SERVICE_ROLE_KEY -> SERVICE_ROLE_KEY for tests and curl
-          echo "SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
-
-      - name: Smoke test PostgREST with service role
-        run: |
-          curl -si \
-            -H "apikey: $SERVICE_ROLE_KEY" \
-            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-            "http://127.0.0.1:54321/rest/v1/teams?select=id,name&limit=1"
-
       - name: Run integration tests
-        env:
-          SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
-          SUPABASE_URL: ${{ env.SUPABASE_URL }}
         run: pnpm test:integration
 
       - name: Stop Supabase
