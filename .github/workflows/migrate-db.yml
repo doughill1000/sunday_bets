@@ -48,7 +48,13 @@ jobs:
 
           # upload to OneDrive folder "supabase-backups/"
           rclone about onedrive:
-          rclone about onedrive:supabase-backups/
+          # create folder if missing (idempotent)
+          rclone mkdir onedrive:supabase-backups
+          # sanity check: can we list it?
+          rclone lsd onedrive:supabase-backups || (echo "No access to supabase-backups" && exit 1)
+          # upload a tiny canary file to confirm writes
+          echo ok > canary.txt
+          rclone copy canary.txt onedrive:supabase-backups/ -vv
           rclone copy "$FILE" onedrive:supabase-backups/
 
       # -------- MIGRATIONS --------
