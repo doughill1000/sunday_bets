@@ -95,7 +95,7 @@ async function main() {
       '--data-only',
       '--schema',
       'public',
-      '--exclude-table',
+      '--exclude',
       'public.users'
     ],
     { stdio: 'inherit' }
@@ -119,7 +119,7 @@ async function main() {
         public.weeks,
         public.seasons,
         public.teams,
-        public.settings,
+        public.settings
       RESTART IDENTITY CASCADE;
     `);
   }
