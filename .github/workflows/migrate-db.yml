@@ -1,5 +1,5 @@
 # .github/workflows/migrate-db.yml
-name: Supabase Migrations
+name: Supabase Migrations (OneDrive backup)
 
 on:
   push:
@@ -9,21 +9,47 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.base_ref == 'master' && 'Production' || 'Development' }}
+      name: ${{ github.ref_name == 'master' && 'Production' || 'Development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI
+      - name: Install tools (Supabase CLI, pg_dump, rclone)
         run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client rclone
           curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
           | sudo tar -xz -C /usr/local/bin supabase
           supabase --version
 
-      - name: Migrate
+      # -------- BACKUP (master only) --------
+      - name: Backup DB to OneDrive (rclone)
+        if: ${{ github.ref_name == 'master' }}
         env:
-          # The secret is automatically selected from the job's environment
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}    
+          RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
+        run: |
+          # hydrate rclone config
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONFIG_B64" | base64 -d > ~/.config/rclone/rclone.conf
+
+          TS=$(date -u +'%Y%m%dT%H%M%SZ')
+          FILE="supabase_${TS}_${GITHUB_SHA::7}.dump"
+
+          # create compressed dump
+          pg_dump --dbname="$SUPABASE_DB_URL" \
+                  --format=custom \
+                  --no-owner --no-privileges \
+                  --compress=9 \
+                  --file="$FILE"
+
+          # upload to OneDrive folder "supabase-backups/"
+          rclone copy "$FILE" onedrive:supabase-backups/
+
+      # -------- MIGRATIONS --------
+      - name: Run Supabase migrations
+        env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          echo "Running migrations against ${{ github.ref_name == 'master' && 'production' || 'development' }} environment..."
+          echo "Migrating against ${{ github.ref_name == 'master' && 'Production' || 'Development' }}..."
           supabase db push --db-url "$SUPABASE_DB_URL" --yes
