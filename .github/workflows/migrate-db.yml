@@ -47,6 +47,8 @@ jobs:
             --format=custom --no-owner --no-privileges --compress=9 --file="$FILE"
 
           # upload to OneDrive folder "supabase-backups/"
+          run: rclone about onedrive:
+          run: rclone about onedrive:supabase-backups/
           rclone copy "$FILE" onedrive:supabase-backups/
 
       # -------- MIGRATIONS --------
