@@ -14,13 +14,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install tools (Supabase CLI, pg_dump, rclone)
+      - name: Install tools (Supabase CLI, pg_dump 17, rclone)
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client rclone
+          sudo apt-get install -y wget ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/pgdg.gpg >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17 rclone
           curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-          | sudo tar -xz -C /usr/local/bin supabase
-          supabase --version
+            | sudo tar -xz -C /usr/local/bin supabase
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
       # -------- BACKUP (master only) --------
       - name: Backup DB to OneDrive (rclone)
@@ -37,11 +43,8 @@ jobs:
           FILE="supabase_${TS}_${GITHUB_SHA::7}.dump"
 
           # create compressed dump
-          pg_dump --dbname="$SUPABASE_DB_URL" \
-                  --format=custom \
-                  --no-owner --no-privileges \
-                  --compress=9 \
-                  --file="$FILE"
+          /usr/lib/postgresql/17/bin/pg_dump --dbname="$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges --compress=9 --file="$FILE"
 
           # upload to OneDrive folder "supabase-backups/"
           rclone copy "$FILE" onedrive:supabase-backups/
