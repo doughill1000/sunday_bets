@@ -3,10 +3,10 @@ import { parseISO, isValid as isValidDate } from 'date-fns';
 
 export function makeClient(): SupabaseClient {
   // allow either var name; prefer *_KEY
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE;
+  const url = process.env.PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE
   console.log('Using Supabase URL:', url);
-  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) throw new Error('Missing PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE');
   return createClient(url, key);
 }
 
