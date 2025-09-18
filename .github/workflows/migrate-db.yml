@@ -1,9 +1,12 @@
 # .github/workflows/migrate-db.yml
-name: Supabase Migrations (OneDrive backup)
+name: Supabase Migrations
 
 on:
   push:
     branches: [ master, develop ]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/migrate-db.yml'
 
 jobs:
   migrate:
