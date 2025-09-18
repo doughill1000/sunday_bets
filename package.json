@@ -12,6 +12,7 @@
     "db:types": "supabase gen types typescript --local > src/lib/server/db/types.ts",
     "db:clone:dev": "cd supabase/scripts/ && tsx cloneDb.ts --target=dev",
     "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local --reset",
+    "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
