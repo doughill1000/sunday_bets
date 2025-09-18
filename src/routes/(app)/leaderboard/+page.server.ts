@@ -1,6 +1,10 @@
 import type { PageServerLoad } from './$types';
-import { getCurrentSeasonYear, getSeasonLeaderboard, getWeeklyCumulative } from '$lib/server/db/queries/leaderboard';
-import { getWeeklyLeaderboardMatrix, getWeeklyTable } from '$lib/server/leaderboard';
+import {
+  getCurrentSeasonYear,
+  getSeasonLeaderboard,
+  getWeeklyCumulative
+} from '$lib/server/db/queries/leaderboard';
+import { getWeeklyTable } from '$lib/server/leaderboard';
 
 export const load: PageServerLoad = async () => {
   const seasonYear = await getCurrentSeasonYear();
@@ -16,6 +20,7 @@ export const load: PageServerLoad = async () => {
     weekly,
     players: table.players,
     weeks: table.weeks,
-    tableByWeek: table.tableByWeek
+    tableByWeek: table.tableByWeek,
+    weekTotals: table.weekTotals ?? {}
   };
 };

@@ -4,87 +4,16 @@ import { getPlayers } from './db/queries/getPlayers';
 import { getPicksForWeeks } from './db/queries/getPicksForWeeks';
 import { getSettlementsForGames } from './db/queries/getSettlementsForGames';
 import { supabaseService } from '$lib/supabase/service';
-import type { WeightCode } from '../types/domain';
-import type { PickOutcome } from '$lib/types/server';
-
-type Result = 'W' | 'L' | 'P' | 'M';
-
-export type PickCell = {
-  weight: WeightCode | number | null;
-  team: string | null;
-  result: Result | null;
-  spread: string | null;
-};
-
-export type WeekTable = {
-  games: Array<{
-    game_id: string;
-    label: string;        // e.g. "PHI @ DAL"
-    score: string | null; // e.g. "24–21" (away–home); null if not final
-    isFinal: boolean;
-  }>;
-  cells: Record<string /* game_id */, Record<string /* user_id */, PickCell>>;
-};
-
-const toResult = (o: PickOutcome | null | undefined): Result =>
-  o === 'win' ? 'W' : o === 'loss' ? 'L' : o === 'push' ? 'P' : 'M';
-
-function formatLockedSpread(
-  lockedSpreadValue: number | null | undefined,
-  lockedSpreadTeamId: number | string | null | undefined,
-  pickedTeamId: number | string | null | undefined
-): string | null {
-  if (lockedSpreadValue == null) return null;
-  const v = Number(lockedSpreadValue);
-  if (!Number.isFinite(v)) return null;
-  if (Math.abs(v) < 1e-9) return 'PK';
-  const favoritePicked =
-    lockedSpreadTeamId != null &&
-    pickedTeamId != null &&
-    String(lockedSpreadTeamId) === String(pickedTeamId);
-  const mag = Math.abs(v);
-  return favoritePicked ? `-${mag}` : `+${mag}`;
-}
-
-function gameLabel(awayShort?: string | null, homeShort?: string | null) {
-  return `${awayShort ?? 'AWY'} @ ${homeShort ?? 'HOME'}`;
-}
-function gameScore(finalScores: unknown): string | null {
-  if (!finalScores || typeof finalScores !== 'object') return null;
-  // @ts-expect-error — final_scores is a jsonb; read guardedly
-  const a = Number(finalScores?.away);
-  // @ts-expect-error
-  const h = Number(finalScores?.home);
-  if (!Number.isFinite(a) || !Number.isFinite(h)) return null;
-  return `${a}–${h}`; // away–home
-}
-
-/** Narrowed row shapes so TS stops complaining */
-type PlayerRow = { id: string; display_name: string };
-type WeekRow = { id: number; week_number: number };
-type PickRow = {
-  game_id: string | null;
-  week_id: number | string | null;
-  user_id: string | null;
-  weight: WeightCode | number | null;
-  picked_team_short: string | null;
-  picked_team_id: string | number | null;
-  locked_spread_value: number | null;
-  locked_spread_team_id: string | number | null;
-};
-type SettlementRow = {
-  user_id: string;
-  game_id: string;
-  points_delta: number | null;
-  outcome: PickOutcome | null;
-};
-type GameRow = {
-  id: string;
-  week_id: number | string;
-  final_scores: unknown;
-  home?: { short_name?: string | null } | null;
-  away?: { short_name?: string | null } | null;
-};
+import type { GameResult } from '../types/domain';
+import type {
+  GameRow,
+  PickRow,
+  PlayerRow,
+  SettlementRow,
+  WeekRow,
+  WeekTable
+} from '$lib/types/server/leaderboard';
+import { formatLockedSpread, gameLabel, gameScore, toResult } from '$lib/utils/leaderboard';
 
 export async function getWeeklyTable(seasonYear: number): Promise<{
   seasonYear: number;
@@ -100,7 +29,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   const weekRowsNotNull = weekRows ?? [];
   const weeks: number[] = weekRowsNotNull.map((w: WeekRow) => w.week_number);
   const weekIds: number[] = weekRowsNotNull.map((w: WeekRow) => w.id);
-  const weekNoById = new Map<(number | string), number>(
+  const weekNoById = new Map<number, number>(
     weekRowsNotNull.map((w: WeekRow) => [w.id, w.week_number])
   );
 
@@ -111,7 +40,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
 
   // Picks (must include lock fields & picked team id) — ensure your getPicksForWeeks selects them
   const { data: picksRaw = [] } = await getPicksForWeeks(weekIds as number[]);
-  const picks: PickRow[] = (picksRaw as any[]).map((r) => ({
+  const picks: PickRow[] = (picksRaw as PickRow[]).map((r) => ({
     game_id: r.game_id ?? null,
     week_id: r.week_id ?? null,
     user_id: r.user_id ?? null,
@@ -125,17 +54,19 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   // Games + scores (service role; server-only) — FETCH BEFORE USING THEM
   const { data: gamesRaw = [] } = await supabaseService
     .from('games')
-    .select(`
+    .select(
+      `
       id,
       week_id,
       final_scores,
       home:home_team_id(short_name),
       away:away_team_id(short_name)
-    `)
+    `
+    )
     .in('week_id', weekIds)
     .order('commence_time', { ascending: true });
 
-  const games: GameRow[] = (gamesRaw as any[]).map((g) => ({
+  const games: GameRow[] = (gamesRaw as GameRow[]).map((g) => ({
     id: g.id,
     week_id: g.week_id,
     final_scores: g.final_scores ?? null,
@@ -149,15 +80,15 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   );
   const { data: settlementsRaw = [] } = gameIds.length
     ? await getSettlementsForGames(gameIds)
-    : { data: [] as any[] };
-  const settlements: SettlementRow[] = (settlementsRaw as any[]).map((s) => ({
+    : { data: [] as SettlementRow[] };
+  const settlements: SettlementRow[] = (settlementsRaw as SettlementRow[]).map((s) => ({
     user_id: s.user_id,
     game_id: s.game_id,
     points_delta: s.points_delta ?? 0,
     outcome: s.outcome ?? null
   }));
 
-  const settleByKey = new Map<string, { result: Result; pts: number }>();
+  const settleByKey = new Map<string, { result: GameResult; pts: number }>();
   for (const s of settlements) {
     settleByKey.set(`${s.user_id}|${s.game_id}`, {
       result: toResult(s.outcome),
@@ -176,6 +107,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
     const homeShort = g.home?.short_name ?? null;
     const awayShort = g.away?.short_name ?? null;
     const score = gameScore(g.final_scores);
+
     tableByWeek[wk].games.push({
       game_id: g.id,
       label: gameLabel(awayShort, homeShort),
@@ -197,7 +129,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
 
   // Fill cells from picks/settlements
   for (const r of picks) {
-    const wk = weekNoById.get(r.week_id ?? '') ?? null;
+    const wk = weekNoById.get(r.week_id ?? 0) ?? null;
     if (wk == null) continue;
     const gid = r.game_id;
     const uid = r.user_id;
