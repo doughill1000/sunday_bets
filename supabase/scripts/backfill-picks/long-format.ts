@@ -17,7 +17,7 @@ export async function importLongWeekSheet(params: {
   };
 }) {
   const { supabase, wb, sheetName, weekId, teamMap, userColumns, options } = params;
-
+  const scoreCol = 8;
   const grid: any[][] = xlsxUtils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
   if (!grid.length) return;
 
@@ -96,7 +96,6 @@ export async function importLongWeekSheet(params: {
         dryRun: options.dryRun
       });
 
-      const scoreCol = 8;
       const { error } = await supabase
         .from('games')
         .update({

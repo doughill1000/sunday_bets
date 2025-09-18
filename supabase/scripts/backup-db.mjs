@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 
 const DB_URL = process.env.DATABASE_URL;
 if (!DB_URL) {
-  console.error("❌ Missing SUPABASE_DB_URL (put it in .env.production).");
+  console.error("❌ Missing DATABASE_URL (put it in .env.production).");
   process.exit(1);
 }
 
