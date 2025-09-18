@@ -4,13 +4,15 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "backfill": "tsx supabase/scripts/backfill-picks \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
     "db:push:dev": "supabase link --project-ref fhjmfpuanzmowmsfmuhi && supabase db push --yes",
     "db:push:local": "supabase db push --local --yes && npm run db:types",
     "db:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
     "db:types": "supabase gen types typescript --local > src/lib/server/db/types.ts",
     "db:clone:dev": "cd supabase/scripts/ && tsx cloneDb.ts --target=dev",
-    "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local",
+    "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local --reset",
+    "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production",
     "dev": "vite dev --host --port 5173",
     "build": "vite build",
     "preview": "vite preview",
@@ -77,11 +79,13 @@
     "@sentry/sveltekit": "^10.11.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.55.0",
+    "date-fns": "^4.1.0",
     "execa": "^9.3.0",
     "fs-extra": "^10.0.0",
     "lucide-svelte": "^0.542.0",
     "postgres": "^3.4.5",
     "shadcn-svelte": "^1.0.7",
-    "workbox-window": "^7.3.0"
+    "workbox-window": "^7.3.0",
+    "xlsx": "^0.18.5"
   }
 }
