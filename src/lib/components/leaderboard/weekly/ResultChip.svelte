@@ -16,5 +16,6 @@
 </script>
 
 {#if result}
+<span>test</span>
   <span class={`${base} ${cls(result)}`}>{result}</span>
 {/if}
