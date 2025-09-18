@@ -13,6 +13,16 @@ export type SeasonTotalsRow = {
   rank: number;
 };
 
+type WeekPicksRow = {
+  week_number: number;
+  user_id: string;
+  display_name: string;
+  weight: 'L'|'M'|'H'|'A'|number;
+  team: string;
+  result: 'W'|'L'|'P'|'M';
+  week_points: number;
+};
+
 export type WeeklyCumulativeRow = {
   user_id: string;
   display_name: string;
