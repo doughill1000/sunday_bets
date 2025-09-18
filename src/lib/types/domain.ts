@@ -1,4 +1,6 @@
 export type WeightCode = 'L' | 'M' | 'H' | 'A';
+// Win, Loss, Push, Miss
+export type GameResult = 'W' | 'L' | 'P' | 'M';
 export type Id = string & { readonly brand: unique symbol }; // if you like branded IDs
 export interface Team {
   id: string;

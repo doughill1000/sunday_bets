@@ -1,7 +1,7 @@
 NFL Bets Project – Summary Context
 
 Purpose:
-A private pick’em game for exactly 6 authenticated users where each picks every NFL game weekly against the spread with a scoring/weight system. Originally tracked in Google Sheets, now being rebuilt as a full PWA with Supabase + SvelteKit 5 + Drizzle + Odds API.
+A private pick’em game for exactly 6 authenticated users where each picks every NFL game weekly against the spread with a scoring/weight system. Originally tracked in Google Sheets, now being rebuilt as a full PWA with Supabase + SvelteKit 5 + supabase client + Odds API.
 
 Core Features (MVP)
 

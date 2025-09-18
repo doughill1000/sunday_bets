@@ -2,7 +2,7 @@
   import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
-  import LeaderboardWeekly from '$lib/components/leaderboard/LeaderboardWeekly.svelte';
+  import LeaderboardWeekly from '$lib/components/leaderboard/weekly/LeaderboardWeekly.svelte';
 
   export let data: PageData;
 </script>
@@ -18,6 +18,12 @@
   </TabsContent>
 
   <TabsContent value="weekly">
-    <LeaderboardWeekly rows={data.weekly} seasonYear={data.seasonYear} />
+    <LeaderboardWeekly
+      seasonYear={data.seasonYear}
+      players={data.players}
+      weeks={data.weeks}
+      tableByWeek={data.tableByWeek}  
+      weekTotals={data.weekTotals}
+    />
   </TabsContent>
 </Tabs>
