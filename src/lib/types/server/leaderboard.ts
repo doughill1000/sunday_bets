@@ -48,3 +48,31 @@ export type WeekTableGame = {
   score: string | null; // "24–21" or null if not final
   isFinal: boolean;
 };
+
+export type SeasonTotalsRow = {
+  user_id: string;
+  display_name: string;
+  season_year: number;
+  total_points: number;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  missed: number;
+  rank: number;
+};
+
+export type WeeklyCumulativeRow = {
+  user_id: string;
+  display_name: string;
+  season_year: number;
+  week_number: number;
+  week_points: number;
+  week_wins: number;
+  week_losses: number;
+  week_pushes: number;
+  week_missed: number;
+  cumulative_points: number;
+  season_total: number;
+  cumulative_rank_this_week: number;
+};

@@ -3,7 +3,7 @@ name: Supabase Migrations
 
 on:
   push:
-    branches: [ master, develop ]
+    branches: [master, develop]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-db.yml'
@@ -35,7 +35,7 @@ jobs:
       - name: Backup DB to OneDrive (rclone)
         if: ${{ github.ref_name == 'master' }}
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}    
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
         run: |
           # hydrate rclone config

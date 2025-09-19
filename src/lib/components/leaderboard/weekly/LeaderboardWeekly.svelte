@@ -5,7 +5,7 @@
   import WeekItem from './WeekItem.svelte';
 
   // Domain/server types (adjust path to where you exported these)
-    import type { PlayerRow, WeekTable } from "$lib/types/server/leaderboard";
+  import type { PlayerRow, WeekTable } from '$lib/types/server/leaderboard';
 
   // Props from load
   export let seasonYear: number;
@@ -18,16 +18,16 @@
   let hidden: Set<string> = new Set();
   // If you ever want to support reordering, keep an order array.
   // For now, follow incoming order from props:
-  $: order = players.map(p => p.id);
+  $: order = players.map((p) => p.id);
 
   // Derived view data
-  $: visibleIds = order.filter(id => !hidden.has(id));
+  $: visibleIds = order.filter((id) => !hidden.has(id));
   $: visiblePlayers = visibleIds
-    .map(id => players.find(p => p.id === id))
+    .map((id) => players.find((p) => p.id === id))
     .filter(Boolean) as PlayerRow[];
 
   // Grid template: left "Game" column + one column per visible player
-   $: mobileGridTemplate = `160px repeat(${visiblePlayers.length}, 120px)`;
+  $: mobileGridTemplate = `160px repeat(${visiblePlayers.length}, 120px)`;
   $: desktopGridTemplate = `240px repeat(${visiblePlayers.length}, minmax(180px, 1fr))`;
 
   function togglePlayer(id: string) {
@@ -57,18 +57,18 @@
       {/each}
     </div>
 
-<Accordion type="multiple" class="w-full">
-  {#each weeks as wk (wk)}
-    <WeekItem
-      weekNumber={wk}
-      players={visiblePlayers}
-      weekTotals={weekTotals[wk] ?? {}}
-      games={tableByWeek[wk]?.games ?? []}
-      cells={tableByWeek[wk]?.cells ?? {}}
-      gridTemplate={mobileGridTemplate}
-      gridTemplateLg={desktopGridTemplate} 
-    />
-  {/each}
-</Accordion>
+    <Accordion type="multiple" class="w-full">
+      {#each weeks as wk (wk)}
+        <WeekItem
+          weekNumber={wk}
+          players={visiblePlayers}
+          weekTotals={weekTotals[wk] ?? {}}
+          games={tableByWeek[wk]?.games ?? []}
+          cells={tableByWeek[wk]?.cells ?? {}}
+          gridTemplate={mobileGridTemplate}
+          gridTemplateLg={desktopGridTemplate}
+        />
+      {/each}
+    </Accordion>
   </CardContent>
 </Card>

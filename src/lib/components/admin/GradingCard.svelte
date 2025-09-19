@@ -30,37 +30,25 @@
 
   const gradeActiveWeek = () => {
     if (!activeWeek?.id) return note('warn', 'No active week.');
-    handleApiCall(
-      gradeWeek({ week_id: activeWeek.id }),
-      `Graded week #${activeWeek.week_number}.`
-    );
+    handleApiCall(gradeWeek({ week_id: activeWeek.id }), `Graded week #${activeWeek.week_number}.`);
   };
 
   const onGradeWeekManual = () => {
     const id = Number(weekIdInput);
     if (!Number.isInteger(id) || id <= 0) return note('warn', 'Invalid week id.');
-    handleApiCall(
-      gradeWeek({ week_id: id, refreshScores: true }),
-      `Graded week id ${id}.`
-    );
+    handleApiCall(gradeWeek({ week_id: id, refreshScores: true }), `Graded week id ${id}.`);
   };
 
   const onGradeGame = () => {
     if (!gameId || !/^[0-9a-fA-F-]{36}$/.test(gameId)) return note('warn', 'Invalid game UUID.');
-    handleApiCall(
-      gradeGame({ game_id: gameId, refreshScores: true }),
-      `Graded game ${gameId}.`
-    );
+    handleApiCall(gradeGame({ game_id: gameId, refreshScores: true }), `Graded game ${gameId}.`);
     gameId = '';
   };
 
   const onGradeSeason = () => {
     const id = Number(seasonIdInput);
     if (!Number.isInteger(id) || id <= 0) return note('warn', 'Invalid season id.');
-    handleApiCall(
-      gradeSeason({ season_id: id, refreshScores: true }),
-      `Graded season id ${id}.`
-    );
+    handleApiCall(gradeSeason({ season_id: id, refreshScores: true }), `Graded season id ${id}.`);
     seasonIdInput = '';
   };
 </script>

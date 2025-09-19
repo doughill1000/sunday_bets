@@ -66,7 +66,11 @@ async function run() {
       weekId: weekInfo.id,
       teamMap,
       userColumns: USER_COLUMNS,
-      options: { fallbackKickoff: FALLBACK_KICKOFF, lockAtKickoff: LOCK_AT_KICKOFF, dryRun: DRY_RUN }
+      options: {
+        fallbackKickoff: FALLBACK_KICKOFF,
+        lockAtKickoff: LOCK_AT_KICKOFF,
+        dryRun: DRY_RUN
+      }
     });
   }
 

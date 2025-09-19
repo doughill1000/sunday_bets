@@ -12,16 +12,23 @@ export function makeClient(): SupabaseClient {
 
 export async function getSeasonWeekMap(supabase: SupabaseClient, year: number) {
   const { data: seasons, error: sErr } = await supabase
-    .from('seasons').select('id, year').eq('year', year).limit(1);
+    .from('seasons')
+    .select('id, year')
+    .eq('year', year)
+    .limit(1);
   if (sErr || !seasons?.length) throw new Error(`Season ${year} not found`);
   const seasonId = seasons[0].id;
 
   const { data: weeks, error: wErr } = await supabase
-    .from('weeks').select('id, week_number, start_ts, end_ts').eq('season_id', seasonId);
+    .from('weeks')
+    .select('id, week_number, start_ts, end_ts')
+    .eq('season_id', seasonId);
   if (wErr) throw wErr;
 
   const byNumber = new Map<number, { id: number; start: string; end: string }>();
-  weeks!.forEach((w) => byNumber.set(w.week_number, { id: w.id, start: w.start_ts, end: w.end_ts }));
+  weeks!.forEach((w) =>
+    byNumber.set(w.week_number, { id: w.id, start: w.start_ts, end: w.end_ts })
+  );
   return { seasonId, weekByNumber: byNumber };
 }
 
@@ -73,7 +80,9 @@ export async function findOrCreateGame(opts: {
   if (!commence_time) throw new Error('No kickoff time available; pass --fallback-kickoff');
 
   if (dryRun) {
-    console.log(`[dry] create game week=${weekId} home=${homeTeamId} away=${awayTeamId} kickoff=${commence_time}`);
+    console.log(
+      `[dry] create game week=${weekId} home=${homeTeamId} away=${awayTeamId} kickoff=${commence_time}`
+    );
     return `00000000-0000-0000-0000-${String(homeTeamId).padStart(12, '0')}`;
   }
 
@@ -104,7 +113,18 @@ export async function upsertPick(opts: {
   dryRun?: boolean;
   locked_by: string;
 }) {
-  const { supabase, userId, gameId, pickedTeamId, weight, lockAtKickoff, lineTeamId, lineValue, dryRun, locked_by } = opts;
+  const {
+    supabase,
+    userId,
+    gameId,
+    pickedTeamId,
+    weight,
+    lockAtKickoff,
+    lineTeamId,
+    lineValue,
+    dryRun,
+    locked_by
+  } = opts;
 
   let locked_at: string | null = null;
   if (lockAtKickoff) {
@@ -128,8 +148,6 @@ export async function upsertPick(opts: {
     return;
   }
 
-  const { error } = await supabase
-    .from('picks')
-    .upsert(payload, { onConflict: 'user_id,game_id' });
+  const { error } = await supabase.from('picks').upsert(payload, { onConflict: 'user_id,game_id' });
   if (error) throw error;
 }

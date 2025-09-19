@@ -4,7 +4,7 @@ export function getPicksForWeeks(weekIds: number[]) {
   return supabaseService
     .from('picks_status_view_user')
     .select(
-    `
+      `
     game_id,
     week_id,
     user_id,

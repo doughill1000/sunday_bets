@@ -1,42 +1,5 @@
 import { supabaseService } from '$lib/supabase/service';
-
-export type SeasonTotalsRow = {
-  user_id: string;
-  display_name: string;
-  season_year: number;
-  total_points: number;
-  decisions: number;
-  wins: number;
-  losses: number;
-  pushes: number;
-  missed: number;
-  rank: number;
-};
-
-type WeekPicksRow = {
-  week_number: number;
-  user_id: string;
-  display_name: string;
-  weight: 'L'|'M'|'H'|'A'|number;
-  team: string;
-  result: 'W'|'L'|'P'|'M';
-  week_points: number;
-};
-
-export type WeeklyCumulativeRow = {
-  user_id: string;
-  display_name: string;
-  season_year: number;
-  week_number: number;
-  week_points: number;
-  week_wins: number;
-  week_losses: number;
-  week_pushes: number;
-  week_missed: number;
-  cumulative_points: number;
-  season_total: number;
-  cumulative_rank_this_week: number;
-};
+import type { SeasonTotalsRow, WeeklyCumulativeRow } from '$lib/types/server/leaderboard';
 
 export async function getCurrentSeasonYear(): Promise<number> {
   const { data, error } = await supabaseService

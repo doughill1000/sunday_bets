@@ -22,7 +22,7 @@
       seasonYear={data.seasonYear}
       players={data.players}
       weeks={data.weeks}
-      tableByWeek={data.tableByWeek}  
+      tableByWeek={data.tableByWeek}
       weekTotals={data.weekTotals}
     />
   </TabsContent>

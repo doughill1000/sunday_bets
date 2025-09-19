@@ -3,7 +3,7 @@
   import { AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
   import WeekHeader from './WeekHeader.svelte';
   import GameGrid from './GameGrid.svelte';
-    import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
+  import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
 
   export let weekNumber: number;
   export let players: PlayerRow[] = [];
@@ -16,16 +16,10 @@
 
 <AccordionItem value={`week-${weekNumber}`} class="border-b">
   <AccordionTrigger class="justify-start">
-    <WeekHeader weekNumber={weekNumber} players={players} totals={weekTotals} />
+    <WeekHeader {weekNumber} {players} totals={weekTotals} />
   </AccordionTrigger>
 
   <AccordionContent>
-    <GameGrid
-      players={players}
-      games={games}
-      cells={cells}
-      gridTemplate={gridTemplate}
-      gridTemplateLg={gridTemplateLg}
-    />
+    <GameGrid {players} {games} {cells} {gridTemplate} {gridTemplateLg} />
   </AccordionContent>
 </AccordionItem>
