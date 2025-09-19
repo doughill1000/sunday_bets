@@ -1,3 +1,5 @@
+import type { ApiError } from "$lib/types/server/api";
+
 // A generic base function to handle all API calls
 async function apiCall<T>(path: string, options: RequestInit = {}): Promise<T> {
   const defaultOptions: RequestInit = {
@@ -13,7 +15,7 @@ async function apiCall<T>(path: string, options: RequestInit = {}): Promise<T> {
     const errorBody = await res.json().catch(() => ({ reason: res.statusText }));
     // Create a custom error object to preserve status
     const error = new Error(errorBody.reason ?? 'API request failed');
-    (error as any).status = res.status;
+    (error as ApiError).status = res.status;
     throw error;
   }
 

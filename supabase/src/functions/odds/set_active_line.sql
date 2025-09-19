@@ -1,32 +1,36 @@
 create or replace function public.set_active_line(
-  p_game_id uuid,
-  p_source text,
+  p_game_id        uuid,
   p_spread_team_id int,
-  p_spread_value numeric
-) returns table (id int)
-language plpgsql
+  p_spread_value   numeric,
+  p_source         text default 'fanduel'
+)
+returns jsonb
+language sql
 security definer
-set search_path = public
 as $$
-declare
-  v_id int;
-begin
-  -- Deactivate the current active tick (if any)
-  update public.game_lines
-     set is_active_line = false
-   where game_id = p_game_id
-     and source  = p_source
-     and is_active_line = true;
-
-  -- Insert new active tick (history preserved)
-  insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line)
-  values (p_game_id, p_source, p_spread_team_id, p_spread_value, true)
-  returning game_lines.id into v_id;
-
-  return query select v_id;
-end
+  with deact as (
+    update public.game_lines
+       set is_active_line = false
+     where game_id = p_game_id
+       and source  = p_source
+       and is_active_line = true
+    returning id
+  ),
+  ins as (
+    insert into public.game_lines(
+      game_id, source, spread_team_id, spread_value, is_active_line, fetched_at
+    )
+    values (p_game_id, p_source, p_spread_team_id, p_spread_value, true, now())
+    returning *
+  )
+  -- Exactly one row comes from ins; build one jsonb object from it
+  select jsonb_build_object(
+    'ok',          true,
+    'deactivated', (select count(*) from deact),
+    'line',        to_jsonb(ins.*)
+  )
+  from ins;
 $$;
 
-revoke all on function public.set_active_line(uuid, text, int, numeric) from public;
-grant execute on function public.set_active_line(uuid, text, int, numeric)
+grant execute on function public.set_active_line(uuid, int, numeric, text)
   to authenticated, service_role;

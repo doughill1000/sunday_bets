@@ -226,11 +226,11 @@ export type Database = {
         Row: {
           game_id: string
           id: string
-          locked_at: string | null
+          locked_at: string
           locked_by: string
           locked_line_id: number | null
-          locked_spread_team_id: number | null
-          locked_spread_value: number | null
+          locked_spread_team_id: number
+          locked_spread_value: number
           picked_team_id: number
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
@@ -238,11 +238,11 @@ export type Database = {
         Insert: {
           game_id: string
           id?: string
-          locked_at?: string | null
+          locked_at: string
           locked_by?: string
           locked_line_id?: number | null
-          locked_spread_team_id?: number | null
-          locked_spread_value?: number | null
+          locked_spread_team_id: number
+          locked_spread_value: number
           picked_team_id: number
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
@@ -250,11 +250,11 @@ export type Database = {
         Update: {
           game_id?: string
           id?: string
-          locked_at?: string | null
+          locked_at?: string
           locked_by?: string
           locked_line_id?: number | null
-          locked_spread_team_id?: number | null
-          locked_spread_value?: number | null
+          locked_spread_team_id?: number
+          locked_spread_value?: number
           picked_team_id?: number
           user_id?: string
           weight?: Database["public"]["Enums"]["weight_enum"]
@@ -330,19 +330,16 @@ export type Database = {
         Row: {
           id: number
           league: string
-          missed_pick_penalty: number | null
           year: number
         }
         Insert: {
           id?: number
           league?: string
-          missed_pick_penalty?: number | null
           year: number
         }
         Update: {
           id?: number
           league?: string
-          missed_pick_penalty?: number | null
           year?: number
         }
         Relationships: []
@@ -456,7 +453,6 @@ export type Database = {
         Row: {
           end_ts: string
           id: number
-          missed_pick_penalty: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -464,7 +460,6 @@ export type Database = {
         Insert: {
           end_ts: string
           id?: number
-          missed_pick_penalty?: number | null
           season_id: number
           start_ts: string
           week_number: number
@@ -472,7 +467,6 @@ export type Database = {
         Update: {
           end_ts?: string
           id?: number
-          missed_pick_penalty?: number | null
           season_id?: number
           start_ts?: string
           week_number?: number
@@ -737,7 +731,8 @@ export type Database = {
       lock_pick: {
         Args: {
           p_game_id: string
-          p_side: string
+          p_side: Database["public"]["Enums"]["side_enum"]
+          p_source?: string
           p_weight: Database["public"]["Enums"]["weight_enum"]
         }
         Returns: {
@@ -753,6 +748,15 @@ export type Database = {
         Args: { p_game_id: string }
         Returns: number
       }
+      set_active_line: {
+        Args: {
+          p_game_id: string
+          p_source?: string
+          p_spread_team_id: number
+          p_spread_value: number
+        }
+        Returns: Json
+      }
       unlock_pick: {
         Args: { p_game_id: string }
         Returns: {
@@ -762,12 +766,23 @@ export type Database = {
           user_id: string
         }[]
       }
+      upsert_game_by_external_id: {
+        Args: {
+          p_away_team_id: number
+          p_commence: string
+          p_external_game_id: string
+          p_home_team_id: number
+          p_week_id: number
+        }
+        Returns: string
+      }
       weight_points: {
         Args: { p_weight: string }
         Returns: number
       }
     }
     Enums: {
+      cover_side: "home" | "away" | "push"
       pick_outcome: "win" | "loss" | "push" | "missed"
       side_enum: "home" | "away"
       weight_enum: "L" | "M" | "H" | "A"
@@ -901,6 +916,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      cover_side: ["home", "away", "push"],
       pick_outcome: ["win", "loss", "push", "missed"],
       side_enum: ["home", "away"],
       weight_enum: ["L", "M", "H", "A"],

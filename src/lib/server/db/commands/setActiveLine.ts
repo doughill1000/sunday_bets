@@ -1,27 +1,38 @@
+// src/lib/server/db/commands/setActiveLine.ts
 import { supabaseService } from '$lib/supabase/service';
 
-/**
- * Deactivates the current active tick for (game_id, source) and inserts a new active line.
- * Returns the new game_lines.id
- */
+type SetActiveLineResult = {
+  ok: boolean;
+  deactivated: number;
+  line: {
+    id: number;
+    game_id: string;
+    source: string;
+    spread_team_id: number;
+    spread_value: number;
+    is_active_line: boolean;
+    fetched_at: string;
+  };
+};
+
 export async function setActiveLine(params: {
   gameId: string;
-  source?: string;              // default 'fanduel'
   spreadTeamId: number;
   spreadValue: number;
-}): Promise<number> {
-  const { gameId, spreadTeamId, spreadValue, source = 'fanduel' } = params;
-
+  source: string;
+}): Promise<SetActiveLineResult> {
   const { data, error } = await supabaseService.rpc('set_active_line', {
-    p_game_id: gameId,
-    p_source: source,
-    p_spread_team_id: spreadTeamId,
-    p_spread_value: spreadValue
+    p_game_id: params.gameId,
+    p_spread_team_id: params.spreadTeamId,
+    p_spread_value: params.spreadValue,
+    p_source: params.source
   });
-
   if (error) throw error;
-  // RPC returns table(id int) – normalize to a number
-  const id = Array.isArray(data) ? data[0]?.id : (data as any)?.id;
-  if (!id && id !== 0) throw new Error('set_active_line: RPC returned no id');
-  return id as number;
+
+  const payload = Array.isArray(data) ? data[0] : data;
+  // minimal runtime guard
+  if (!payload || typeof payload !== 'object' || !('ok' in payload)) {
+    throw new Error('set_active_line: unexpected RPC payload');
+  }
+  return payload as SetActiveLineResult;
 }

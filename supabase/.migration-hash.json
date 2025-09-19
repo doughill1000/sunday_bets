@@ -33,8 +33,8 @@
     "signature": "public.game_has_started(uuid)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "563ebacb00d7ebea7e4d17fc4547dedf372d52deb6ccab4a1a9ced9206e4a3df",
-    "signature": "public.lock_pick(uuid, text, -- 'home' | 'away'\r\n  p_weight   public.weight_enum   -- 'L' | 'M' | 'H' | 'A')"
+    "hash": "26852876f0ba80c849f043d9bb18a9548ce93ef527a4f004456fc861764a6a08",
+    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text default 'fanduel')"
   },
   "functions/picks/my_picks.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
@@ -166,5 +166,25 @@
   "functions/_private/grade_games_by_ids.sql": {
     "hash": "3641821ad9b585fe9213d9f1b348158cbe43993cbbff9329e59870fb30cf262d",
     "signature": "public._grade_games_by_ids(uuid[])"
+  },
+  "schemas/0101_cover_side.sql": {
+    "hash": "70e51832bb472fd652b8761e33dac417419503d646c445a9eda6b8f86ec4162e"
+  },
+  "schemas/0203_sync_refactor.sql": {
+    "hash": "1399ff6a1664abbb5635b4abbc057127808cfe2e3f9046654453606b1ba38d73"
+  },
+  "schemas/0204_require_locks.sql": {
+    "hash": "736e8ed691c496801e5e439d9ce3bb9136d92e78753bb65fd7c1db7237f127ea"
+  },
+  "schemas/0401_unique_game_external.sql": {
+    "hash": "ef8366c9d4ec8db6f66812e2df1a8f9aef7808512f9c5c92f7a7a28891f652b5"
+  },
+  "functions/games/upsert_game_by_external_id.sql": {
+    "hash": "5b2939bb4c0341a2f78b196a97c25c88ea5e6fe9e91aa26250c19759581f3c27",
+    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
+  },
+  "functions/odds/set_active_line.sql": {
+    "hash": "255f537bc971046df89c0b8ae71ddc1a44bf8d2c247f3780939e967599a74eea",
+    "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
   }
 }

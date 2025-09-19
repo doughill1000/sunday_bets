@@ -1,13 +1,14 @@
-export type WeightCode = 'L' | 'M' | 'H' | 'A';
-// Win, Loss, Push, Miss
-export type GameResult = 'W' | 'L' | 'P' | 'M';
+import type { Enums } from '$lib/types/supabase';
+
+export type TeamSide =  Enums<'side_enum'>;
+export type WeightCode = Enums<'weight_enum'>;
+export type GameResult = Enums<'pick_outcome'>;
 export type Id = string & { readonly brand: unique symbol }; // if you like branded IDs
 export interface Team {
   id: string;
   name: string;
   shortName: string;
 }
-export type TeamSide = 'away' | 'home';
 export interface Line {
   spreadTeamId: string | null;
   spreadValue: number | null;
