@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS ux_active_line_per_game;

@@ -180,11 +180,14 @@
     "hash": "ef8366c9d4ec8db6f66812e2df1a8f9aef7808512f9c5c92f7a7a28891f652b5"
   },
   "functions/games/upsert_game_by_external_id.sql": {
-    "hash": "5b2939bb4c0341a2f78b196a97c25c88ea5e6fe9e91aa26250c19759581f3c27",
+    "hash": "c1f7425046823d71e6d63af15bcdf3733abe3a994883b053226f901c68da1af0",
     "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "255f537bc971046df89c0b8ae71ddc1a44bf8d2c247f3780939e967599a74eea",
+    "hash": "917b8c5990ff4b4fab177ff4211654734023a3c272bb40e433707e41d2f19bc9",
     "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
+  },
+  "schemas/0402_fix_active_line_uq.sql": {
+    "hash": "1280e8189b0166c56572dba1395ba4bc3d79403b0c3996afb4b08944a98c2e28"
   }
 }

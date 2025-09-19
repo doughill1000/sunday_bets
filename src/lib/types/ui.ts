@@ -1,4 +1,4 @@
-import type { TeamSide, WeightCode } from './domain';
+import type { WeightCode } from './domain';
 
 export type UIGame = {
   id: string;

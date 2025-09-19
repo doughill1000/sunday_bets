@@ -1,9 +1,9 @@
 create or replace function public.upsert_game_by_external_id(
   p_external_game_id text,
-  p_week_id int,
-  p_commence timestamptz,
-  p_home_team_id int,
-  p_away_team_id int
+  p_week_id          int,
+  p_commence         timestamptz,
+  p_home_team_id     int,
+  p_away_team_id     int
 ) returns uuid
 language plpgsql
 security definer
@@ -12,14 +12,18 @@ as $$
 declare
   v_id uuid;
 begin
-  insert into public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id, status)
-  values (p_week_id, p_external_game_id, p_commence, p_home_team_id, p_away_team_id, 'scheduled')
-  on conflict (external_game_id)
+  insert into public.games (
+    week_id, external_game_id, commence_time, home_team_id, away_team_id, status
+  )
+  values (
+    p_week_id, p_external_game_id, p_commence, p_home_team_id, p_away_team_id, 'scheduled'
+  )
+  on conflict on constraint uq_games_external
   do update set
-    week_id = excluded.week_id,
+    week_id       = excluded.week_id,
     commence_time = excluded.commence_time,
-    home_team_id = excluded.home_team_id,
-    away_team_id = excluded.away_team_id
+    home_team_id  = excluded.home_team_id,
+    away_team_id  = excluded.away_team_id
   returning id into v_id;
 
   return v_id;
