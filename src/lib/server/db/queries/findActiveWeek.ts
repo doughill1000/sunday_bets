@@ -1,4 +1,3 @@
-// src/lib/server/oddsSync.ts
 import { supabaseService } from '$lib/supabase/service';
 
 export async function findActiveWeek() {

@@ -1,7 +1,7 @@
 // src/lib/server/db/queries/getGamesWithActiveLines.ts
 import { supabaseService } from '$lib/supabase/service';
 import type { UIGame } from '$lib/types/ui';
-import type { Database } from '../types';
+import type { Database } from '$lib/types/supabase';
 
 type UIGameRow = Database['public']['Views']['ui_games']['Row'];
 

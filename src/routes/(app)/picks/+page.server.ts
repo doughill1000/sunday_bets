@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
-import { findActiveWeek, getMyPicks } from '$lib/server/db';
+import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
+import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 
 export const load: PageServerLoad = async (event) => {
   const week = await findActiveWeek();
