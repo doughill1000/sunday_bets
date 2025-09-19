@@ -3,21 +3,20 @@ name: Supabase Migrations
 
 on:
   push:
-    branches: [master, develop]
+    branches: [ master, develop ]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-db.yml'
 
 jobs:
-  migrate:
+  backup:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ github.ref_name == 'master' && 'Production' || 'Development' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install tools (Supabase CLI, pg_dump 17, rclone)
+      - name: Install tools (pg_dump 17, rclone)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget ca-certificates gnupg
@@ -28,31 +27,39 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
           curl -fsSL https://rclone.org/install.sh | sudo bash
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin supabase
 
-      # -------- BACKUP (master only) --------
       - name: Backup DB to OneDrive (rclone)
-        if: ${{ github.ref_name == 'master' }}
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
         run: |
-          # hydrate rclone config
           mkdir -p ~/.config/rclone
           echo "$RCLONE_CONFIG_B64" | base64 -d > ~/.config/rclone/rclone.conf
 
           TS=$(date -u +'%Y%m%dT%H%M%SZ')
           FILE="supabase_${TS}_${GITHUB_SHA::7}.dump"
 
-          # create compressed dump
           /usr/lib/postgresql/17/bin/pg_dump --dbname="$SUPABASE_DB_URL" \
             --format=custom --no-owner --no-privileges --compress=9 --file="$FILE"
 
-          # upload to OneDrive folder "supabase-backups/"
           rclone copy "$FILE" onedrive:supabase-backups/
 
-      # -------- MIGRATIONS --------
+  migrate:
+    # If master: require successful backup; otherwise run
+    if: ${{ (github.ref == 'refs/heads/master' && needs.backup.result == 'success') || (github.ref != 'refs/heads/master') }}
+    needs: [ backup ]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'master' && 'Production' || 'Development' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        run: |
+          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin supabase
+
       - name: Run Supabase migrations
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
