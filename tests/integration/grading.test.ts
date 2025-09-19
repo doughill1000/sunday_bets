@@ -159,6 +159,7 @@ describe('Grading Integration Flow', () => {
     const gameId = game.id;
 
     // 2. Create picks for the game
+    const lockedAt = new Date().toISOString();
     const picksToInsert = [
       // User 1: Winning pick (Chiefs -6.5, they win by 10)
       {
@@ -168,7 +169,8 @@ describe('Grading Integration Flow', () => {
         locked_spread_team_id: chiefsId,
         locked_spread_value: -6.5,
         weight: 'H' as const,
-        locked_by: user1Id // Added this required field
+        locked_by: user1Id,
+        locked_at: lockedAt
       },
       // User 2: Losing pick (Bills +6.5, they lose by 10)
       {
@@ -178,7 +180,8 @@ describe('Grading Integration Flow', () => {
         locked_spread_team_id: chiefsId,
         locked_spread_value: -6.5,
         weight: 'M' as const,
-        locked_by: user2Id // Added this required field
+        locked_by: user2Id,
+        locked_at: lockedAt
       }
       // User 3 makes no pick (missed)
     ];
