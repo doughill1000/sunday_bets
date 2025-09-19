@@ -3,8 +3,8 @@ import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds';
 import { findActiveWeek } from './db/queries/findActiveWeek';
 import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGame } from './db/commands/upsert_game';
-import { deactivateActiveLines } from './db/commands/deactivate_lines';
-import { upsertActiveLine } from './db/commands/upsert_active_line';
+import { upsertGameByExternalId } from './db/commands/upsertGameByExternalId';
+import { setActiveLine } from './db/commands/setActiveLine';
 
 /**
  * Sync fanduel spreads for the active week.
@@ -47,10 +47,22 @@ export async function syncOddsForActiveWeek() {
     const spread = extractFanduelSpread(g);
     if (!spread) continue;
 
+    const gameId = await upsertGameByExternalId({
+      externalGameId: g.id,
+      weekId: week.id,
+      commenceTime: g.commence_time,
+      homeTeamId: home.id,
+      awayTeamId: away.id
+    });
+
     const spreadTeamId = spread.spreadTeamName === home.name ? home.id : away.id;
 
-    await deactivateActiveLines(gameRowId); // should use supabase service internally
-    await upsertActiveLine(gameRowId, spreadTeamId, spread.spreadValue); // should use supabase service internally
+    await setActiveLine({
+      gameId,
+      spreadTeamId,
+      spreadValue: spread.spreadValue,
+      source: 'fanduel'
+    });
 
     inserted++;
   }
