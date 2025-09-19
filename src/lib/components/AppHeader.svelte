@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import type { User } from '@supabase/supabase-js';
   import { isAdmin } from '$lib/auth/guards';
   import { registerSW } from 'virtual:pwa-register';
@@ -26,10 +27,17 @@
   let canInstall = false;
   let deferredPrompt: any = null;
 
+  let menuOpen = false; // 👈 NEW
+  const closeMenu = () => (menuOpen = false);
+
   onMount(() => {
     try {
       registerSW({ immediate: true });
     } catch {}
+
+    afterNavigate(() => {
+      menuOpen = false;
+    });
 
     const handler = (e: any) => {
       e.preventDefault();
@@ -41,7 +49,9 @@
       canInstall = false;
       deferredPrompt = null;
     });
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   });
 
   async function installPwa(e: MouseEvent) {
@@ -62,7 +72,7 @@
     <div class="relative flex h-14 items-center">
       <!-- LEFT: flush-left, never collapses -->
       <div class="-ml-2 flex shrink-0 items-center">
-        <Sheet>
+        <Sheet bind:open={menuOpen}> 
           <SheetTrigger>
             <Button size="icon" variant="ghost" aria-label="Open menu" class="rounded-xl">
               <Menu class="size-5" />
@@ -71,8 +81,8 @@
           <SheetContent side="left" class="w-72 pl-4">
             <div class="mt-2 mb-4 font-semibold tracking-wide">SUNDAY BETS</div>
             <nav class="grid gap-1 text-sm">
-              <a class="rounded px-2 py-2 hover:bg-accent" href="/picks">My Picks</a>
-              <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard">Leaderboard</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/picks" on:click={closeMenu}>My Picks</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard" on:click={closeMenu}>Leaderboard</a>
               {#if canSeeAdmin}
                 <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
               {/if}
@@ -112,10 +122,10 @@
               <DropdownMenuLabel>Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {#if canSeeAdmin}
-                <DropdownMenuItem><a href="/admin">Admin</a></DropdownMenuItem>
+                <DropdownMenuItem><a href="/admin" on:click={closeMenu}>Admin</a></DropdownMenuItem>
               {/if}
               <DropdownMenuSeparator />
-              <DropdownMenuItem><a href="/auth/signout">Sign out</a></DropdownMenuItem>
+              <DropdownMenuItem><a href="/auth/signout" on:click={closeMenu}>Sign out</a></DropdownMenuItem>
             </DropdownMenuContent>
             <DropdownMenuTrigger>
               <Button variant="ghost" class="gap-2">
