@@ -1,4 +1,4 @@
-import type { TeamSide, WeightCode } from "../domain";
+import type { TeamSide, WeightCode } from '../domain';
 
 // Return shape mirrors the SQL RETURNS TABLE from the RPC
 export type LockPickResult = {

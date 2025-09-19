@@ -32,10 +32,16 @@ export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncSta
   for (const g of games) {
     const home = byName.get(g.home_team);
     const away = byName.get(g.away_team);
-    if (!home || !away) { skippedNoTeams++; continue; }
+    if (!home || !away) {
+      skippedNoTeams++;
+      continue;
+    }
 
     const spread = extractFanduelSpread(g);
-    if (!spread) { skippedNoSpread++; continue; }
+    if (!spread) {
+      skippedNoSpread++;
+      continue;
+    }
 
     const gameId = await upsertGameByExternalId({
       externalGameId: g.id,
@@ -58,7 +64,11 @@ export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncSta
 
     if (activeErr) throw activeErr;
 
-    if (active && active.spread_team_id === spreadTeamId && Number(active.spread_value) === Number(spread.spreadValue)) {
+    if (
+      active &&
+      active.spread_team_id === spreadTeamId &&
+      Number(active.spread_value) === Number(spread.spreadValue)
+    ) {
       unchanged++;
       processed++;
       continue;

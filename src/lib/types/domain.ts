@@ -1,6 +1,6 @@
 import type { Enums } from '$lib/types/supabase';
 
-export type TeamSide =  Enums<'side_enum'>;
+export type TeamSide = Enums<'side_enum'>;
 export type WeightCode = Enums<'weight_enum'>;
 export type GameResult = Enums<'pick_outcome'>;
 export type Id = string & { readonly brand: unique symbol }; // if you like branded IDs

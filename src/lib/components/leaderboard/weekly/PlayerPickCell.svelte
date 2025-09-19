@@ -5,7 +5,6 @@
   import WeightChip from './WeightChip.svelte';
 
   export let cell: PickCell;
-
 </script>
 
 <div class="rounded-md border p-2 md:p-3">

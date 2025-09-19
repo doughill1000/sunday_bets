@@ -59,11 +59,11 @@ describe('syncOddsForActiveWeek', () => {
   it('should process a game and set a new line successfully', async () => {
     (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
     (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' },
+      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
     ]);
     (findTeamsByNames as any).mockResolvedValue([
       { id: 10, name: 'Team A' },
-      { id: 20, name: 'Team B' },
+      { id: 20, name: 'Team B' }
     ]);
     (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -3.5 });
     (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
@@ -75,21 +75,21 @@ describe('syncOddsForActiveWeek', () => {
       gameId: 'game-uuid-1',
       spreadTeamId: 10,
       spreadValue: -3.5,
-      source: 'fanduel',
+      source: 'fanduel'
     });
     expect(result).toEqual(
-      expect.objectContaining({ ok: true, count: 1, unchanged: 0, skippedNoTeams: 0 }),
+      expect.objectContaining({ ok: true, count: 1, unchanged: 0, skippedNoTeams: 0 })
     );
   });
 
   it('should skip a game if a team is not found in the database', async () => {
     (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
     (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team C' },
+      { id: 'ext-1', home_team: 'Team A', away_team: 'Team C' }
     ]);
     (findTeamsByNames as any).mockResolvedValue([
       { id: 10, name: 'Team A' },
-      { id: 20, name: 'Team B' },
+      { id: 20, name: 'Team B' }
     ]);
 
     const result = await syncOddsForActiveWeek();
@@ -102,16 +102,16 @@ describe('syncOddsForActiveWeek', () => {
   it('should skip setting a line if the new spread is identical to the active one', async () => {
     (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
     (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' },
+      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
     ]);
     (findTeamsByNames as any).mockResolvedValue([
       { id: 10, name: 'Team A' },
-      { id: 20, name: 'Team B' },
+      { id: 20, name: 'Team B' }
     ]);
     (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -3.5 });
     (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
-      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 },
+      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
     });
 
     const result = await syncOddsForActiveWeek();
@@ -123,16 +123,16 @@ describe('syncOddsForActiveWeek', () => {
   it('should update the line if the new spread is different from the active one', async () => {
     (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
     (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' },
+      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
     ]);
     (findTeamsByNames as any).mockResolvedValue([
       { id: 10, name: 'Team A' },
-      { id: 20, name: 'Team B' },
+      { id: 20, name: 'Team B' }
     ]);
     (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -4.0 });
     (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
-      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 },
+      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
     });
 
     const result = await syncOddsForActiveWeek();
@@ -141,7 +141,7 @@ describe('syncOddsForActiveWeek', () => {
       gameId: 'game-uuid-1',
       spreadTeamId: 10,
       spreadValue: -4.0,
-      source: 'fanduel',
+      source: 'fanduel'
     });
     expect(result).toEqual(expect.objectContaining({ ok: true, count: 1, unchanged: 0 }));
   });

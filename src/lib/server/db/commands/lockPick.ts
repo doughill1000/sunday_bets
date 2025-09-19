@@ -8,11 +8,11 @@ export async function lockPick(
   event: RequestEvent,
   gameId: string,
   side: TeamSide,
-  weight: WeightCode,
+  weight: WeightCode
 ): Promise<LockPickResult> {
   const supabase = event.locals.supabase;
 
-type LockPickRows = Database['public']['Functions']['lock_pick']['Returns'];
+  type LockPickRows = Database['public']['Functions']['lock_pick']['Returns'];
 
   const { data, error } = await supabase.rpc('lock_pick', {
     p_game_id: gameId,

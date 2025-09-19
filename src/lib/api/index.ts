@@ -1,4 +1,4 @@
-import type { ApiError } from "$lib/types/server/api";
+import type { ApiError } from '$lib/types/server/api';
 
 // A generic base function to handle all API calls
 async function apiCall<T>(path: string, options: RequestInit = {}): Promise<T> {

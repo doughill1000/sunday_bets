@@ -72,7 +72,7 @@
     <div class="relative flex h-14 items-center">
       <!-- LEFT: flush-left, never collapses -->
       <div class="-ml-2 flex shrink-0 items-center">
-        <Sheet bind:open={menuOpen}> 
+        <Sheet bind:open={menuOpen}>
           <SheetTrigger>
             <Button size="icon" variant="ghost" aria-label="Open menu" class="rounded-xl">
               <Menu class="size-5" />
@@ -81,8 +81,12 @@
           <SheetContent side="left" class="w-72 pl-4">
             <div class="mt-2 mb-4 font-semibold tracking-wide">SUNDAY BETS</div>
             <nav class="grid gap-1 text-sm">
-              <a class="rounded px-2 py-2 hover:bg-accent" href="/picks" on:click={closeMenu}>My Picks</a>
-              <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard" on:click={closeMenu}>Leaderboard</a>
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/picks" on:click={closeMenu}
+                >My Picks</a
+              >
+              <a class="rounded px-2 py-2 hover:bg-accent" href="/leaderboard" on:click={closeMenu}
+                >Leaderboard</a
+              >
               {#if canSeeAdmin}
                 <a class="rounded px-2 py-2 hover:bg-accent" href="/admin">Admin</a>
               {/if}
@@ -125,7 +129,9 @@
                 <DropdownMenuItem><a href="/admin" on:click={closeMenu}>Admin</a></DropdownMenuItem>
               {/if}
               <DropdownMenuSeparator />
-              <DropdownMenuItem><a href="/auth/signout" on:click={closeMenu}>Sign out</a></DropdownMenuItem>
+              <DropdownMenuItem
+                ><a href="/auth/signout" on:click={closeMenu}>Sign out</a></DropdownMenuItem
+              >
             </DropdownMenuContent>
             <DropdownMenuTrigger>
               <Button variant="ghost" class="gap-2">

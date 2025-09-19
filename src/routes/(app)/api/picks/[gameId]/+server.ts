@@ -5,8 +5,8 @@ import { error as httpError, json } from '@sveltejs/kit';
 
 // Keep the payload shape your frontend sends
 type Body = {
-  team?: TeamSide   
-  weight?: WeightCode
+  team?: TeamSide;
+  weight?: WeightCode;
 };
 
 // POST /api/picks/:gameId  -> lock_pick
@@ -22,7 +22,7 @@ export const POST: RequestHandler = async (event) => {
   const { data, error } = await supabase.rpc('lock_pick', {
     p_game_id: gameId,
     p_side: body.team,
-    p_weight: body.weight,
+    p_weight: body.weight
     // p_source: 'fanduel', // uncomment if your SQL added this param
   });
 
@@ -30,7 +30,10 @@ export const POST: RequestHandler = async (event) => {
     // Normalize common DB errors to user-friendly reasons
     const msg = error.message ?? '';
     if (/no active line/i.test(msg)) {
-      return json({ ok: false, reason: 'Line unavailable for this game. Try again shortly.' }, { status: 409 });
+      return json(
+        { ok: false, reason: 'Line unavailable for this game. Try again shortly.' },
+        { status: 409 }
+      );
     }
     if (/edits are not allowed after kickoff/i.test(msg)) {
       return json({ ok: false, reason: 'Game already started.' }, { status: 409 });

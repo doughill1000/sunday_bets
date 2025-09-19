@@ -1,9 +1,9 @@
 import { supabaseService } from '$lib/supabase/service';
 
 export async function upsertGameByExternalId(params: {
-  externalGameId: string;   // Odds API game id
+  externalGameId: string; // Odds API game id
   weekId: number;
-  commenceTime: string;     // ISO
+  commenceTime: string; // ISO
   homeTeamId: number;
   awayTeamId: number;
 }): Promise<string> {
