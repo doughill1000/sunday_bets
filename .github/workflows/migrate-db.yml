@@ -46,7 +46,7 @@ jobs:
 
   migrate:
     # If master: require successful backup; otherwise run
-    if: ${{ (github.ref == 'refs/heads/master' && needs.backup.result == 'success') || (github.ref != 'refs/heads/master') }}
+    if: ${{ (github.ref == 'refs/heads/master' && needs.backup.result == 'success') || (github.ref == 'refs/heads/develop') }}
     needs: [ backup ]
     runs-on: ubuntu-latest
     environment:
