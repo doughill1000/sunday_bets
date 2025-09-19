@@ -3,6 +3,7 @@ import type { TeamSide, WeightCode } from './domain';
 import type { Database } from '$lib/server/db/types';
 
 export type LockPickArgs = Database['public']['Functions']['lock_pick']['Args'];
+export type PickOutcome = Database['public']['Enums']['pick_outcome'];
 
 // Minimal, DB-agnostic shape your Odds adapter needs
 export type WeekWindow = {

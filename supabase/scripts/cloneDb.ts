@@ -6,10 +6,8 @@ import fs from 'fs';
 import os from 'os';
 
 // Default to .env, but allow override via ENV_FILE or --env argument
-const envFileArg = process.argv.find(arg => arg.startsWith('--env='));
-const envFile = envFileArg
-  ? envFileArg.replace('--env=', '')
-  : process.env.ENV_FILE || '.env';
+const envFileArg = process.argv.find((arg) => arg.startsWith('--env='));
+const envFile = envFileArg ? envFileArg.replace('--env=', '') : process.env.ENV_FILE || '.env';
 
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 

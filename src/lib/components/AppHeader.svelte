@@ -16,16 +16,9 @@
     DropdownMenuLabel,
     DropdownMenuSeparator
   } from '$lib/components/ui/dropdown-menu';
-  import {
-    NavigationMenuRoot,
-    NavigationMenuList,
-    NavigationMenuItem,
-    NavigationMenuLink
-  } from '$lib/components/ui/navigation-menu';
   import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
-
-  // icons
-  import { Menu, Trophy } from 'lucide-svelte';
+  import { Menu } from 'lucide-svelte';
+  import { userNameShort } from '$lib/utils/user';
 
   export let user: User | null = null;
   $: canSeeAdmin = isAdmin(user);
@@ -129,7 +122,7 @@
                 <Avatar class="h-6 w-6">
                   <AvatarImage src={user.user_metadata?.avatar_url} alt="avatar" />
                   <AvatarFallback>
-                    {(user.user_metadata?.full_name ?? user.email ?? 'U').slice(0, 2).toUpperCase()}
+                    {userNameShort(user)}
                   </AvatarFallback>
                 </Avatar>
               </Button>

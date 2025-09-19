@@ -3,7 +3,7 @@ name: Supabase Dry Run Migrations
 
 on:
   pull_request:
-    branches: [ master, develop ]
+    branches: [master, develop]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-dry-run.yml'

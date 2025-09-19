@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-      SUPABASE_CLI_VERSION: "2.40.7"
+      SUPABASE_CLI_VERSION: '2.40.7'
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +44,6 @@ jobs:
           | tar -xz -C ~/.local/bin supabase
           ~/.local/bin/supabase --version
       - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       - name: Start local Supabase (auth-capable)
         run: |
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor

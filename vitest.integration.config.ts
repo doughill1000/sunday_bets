@@ -10,6 +10,6 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['src/**/__tests__/**'], // Exclude unit tests
-    setupFiles: ['./tests/setup.ts', 'dotenv/config'], // This loads .env variables
-  },
+    setupFiles: ['./tests/setup.ts', 'dotenv/config'] // This loads .env variables
+  }
 });

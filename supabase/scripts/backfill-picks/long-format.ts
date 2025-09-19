@@ -106,7 +106,12 @@ export async function importLongWeekSheet(params: {
 
       if (error) throw error;
 
-      console.log('Found or created game', gameId, `${awayCode}@${homeCode}`, `(${awayLine}, ${homeLine})`);
+      console.log(
+        'Found or created game',
+        gameId,
+        `${awayCode}@${homeCode}`,
+        `(${awayLine}, ${homeLine})`
+      );
     } catch (e) {
       console.log(`Skipping game ${awayCode}@${homeCode}: ${(e as Error).message}`);
       continue;
