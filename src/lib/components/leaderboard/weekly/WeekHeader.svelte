@@ -13,8 +13,7 @@
         class="text-[11px] text-muted-foreground md:text-xs"
         title={`${p.display_name}: ${totals[p.id] ?? 0}`}
       >
-        <span class="md:hidden">{shortName(p.display_name)}</span>
-        <span class="hidden md:inline">{p.display_name}</span>:
+        <span>{shortName(p.display_name)}</span>
         <span class="font-medium">{totals[p.id] ?? 0}</span>
       </span>
     {/each}
