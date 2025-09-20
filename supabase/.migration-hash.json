@@ -132,8 +132,8 @@
     "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
   },
   "functions/_private/ats_margin_at_lock.sql": {
-    "hash": "141e696e4e519848fc900be844037ba17fa55ebd7ca64a302e3db212bf752ad2",
-    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
+    "hash": "e703e2cb2f4c1e1327a5b9c3ba3d71f8e512ae22f4ac0da3355334b0ab7a8484",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, -- the favorite\r\n  spread_value numeric -- positive magnitude of the line (e.g. 2.5)"
   },
   "functions/_private/game_has_started.sql": {
     "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
@@ -152,7 +152,7 @@
     "signature": "public.grade_game(uuid)"
   },
   "functions/grade/grade_pick.sql": {
-    "hash": "d3cdfcc856d7a2e466a846d8a5f30b338d5553ca8fe82365235dfc9a81724e55",
+    "hash": "a402a54ce0b8d5c8062f5248935fdc75b1e62274e23dffacba4ec328fe8ac750",
     "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
   },
   "functions/grade/grade_season.sql": {
@@ -184,7 +184,7 @@
     "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "2fe6a6c3199ae05293cdbd3e7ef8ab763c1afb3080c4558e3b83cff1e7a14d77",
+    "hash": "0313c0d421ea2232d3b1804db67566d231d0d63b21585d0c9c71d7b978c62a28",
     "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
   },
   "schemas/0402_fix_active_line_uq.sql": {
