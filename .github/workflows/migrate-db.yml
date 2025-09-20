@@ -12,6 +12,8 @@ jobs:
   backup:
     if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
+    environment:
+      name: Production
     steps:
       - uses: actions/checkout@v4
       - name: Install tools (pg_dump 17, rclone)
