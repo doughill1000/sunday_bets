@@ -1,6 +1,6 @@
 import type { TeamSide, WeightCode } from './domain';
 
-import type { Database } from '$lib/server/db/types';
+import type { Database } from '$lib/types/supabase';
 
 export type LockPickArgs = Database['public']['Functions']['lock_pick']['Args'];
 export type PickOutcome = Database['public']['Enums']['pick_outcome'];

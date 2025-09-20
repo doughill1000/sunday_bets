@@ -27,7 +27,6 @@ export function setWeight(gameId: string, weight: WeightCode) {
 }
 
 export async function lockPick(gameId: string): Promise<{ ok: boolean; reason?: string }> {
-  // snapshot current state
   const before = get(picks);
   const entry = before[gameId];
 
@@ -38,27 +37,26 @@ export async function lockPick(gameId: string): Promise<{ ok: boolean; reason?: 
     return { ok: false, reason: 'missing team/weight' };
   }
 
-  // optimistic update
-  const nowIso = new Date().toISOString();
+  // optimistic UI
+  const optimisticAt = new Date().toISOString();
   picks.update((s) => ({
     ...s,
     [gameId]: {
       ...(s[gameId] ?? {}),
       lockedPick: { team, weight },
-      lockedAt: nowIso
+      lockedAt: optimisticAt
     }
   }));
 
-  // call API with required params
   const result = await lockPickPost(gameId, team, weight);
 
   if (!result.ok) {
-    // rollback on failure
+    // rollback
     picks.set(before);
-    return result;
+    return { ok: false, reason: result.reason ?? 'Lock failed' };
   }
 
-  // merge authoritative fields from server (if present)
+  // authoritative timestamp from server if provided
   picks.update((s) => {
     const e = s[gameId]!;
     return {
@@ -66,10 +64,10 @@ export async function lockPick(gameId: string): Promise<{ ok: boolean; reason?: 
       [gameId]: {
         ...e,
         lockedPick: { team, weight },
-        lockedAt: result.final_locked_at ?? e.lockedAt ?? nowIso
+        lockedAt: result.final_locked_at ?? e.lockedAt ?? optimisticAt
       }
     };
   });
 
-  return result;
+  return { ok: true };
 }

@@ -1,4 +1,4 @@
-import type { Database } from '$lib/server/db/types';
+import type { Database } from '$lib/types/supabase';
 import { createClient } from '@supabase/supabase-js';
 
 /**

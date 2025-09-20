@@ -1,8 +1,8 @@
- 
 create or replace function public.lock_pick(
   p_game_id  uuid,
-  p_side     text,         -- 'home' | 'away'
-  p_weight   public.weight_enum   -- 'L' | 'M' | 'H' | 'A'
+  p_side     public.side_enum,
+  p_weight   public.weight_enum,  
+  p_source   text default 'fanduel'
 )
 returns table (
   ok boolean,
@@ -24,6 +24,10 @@ declare
   v_weeknum int;
   v_season  int;
   v_lastwk  int;
+  v_line_id int;
+  v_spread_team_id int;
+  v_spread_value numeric;
+  v_now     timestamptz := now();
   v_row     public.picks%rowtype;
 begin
   if v_uid is null then
@@ -34,18 +38,18 @@ begin
     raise exception 'invalid side' using errcode = 'P0001';
   end if;
 
-  select * into v_game from public.games where id = p_game_id;
+  select * into v_game from public.games where id = p_game_id for update;
   if not found then
     raise exception 'game not found' using errcode = 'P0001';
   end if;
 
-  if now() >= v_game.commence_time then
+  if v_now >= v_game.commence_time then
     raise exception 'edits are not allowed after kickoff' using errcode = 'P0001';
   end if;
 
   v_team_id := case when p_side = 'home' then v_game.home_team_id else v_game.away_team_id end;
 
-  -- all in rule: one 'A' per week unless last week
+  -- "A" once per week unless final week
   select w.week_number, w.season_id into v_weeknum, v_season from public.weeks w where w.id = v_game.week_id;
   select max(week_number) into v_lastwk from public.weeks where season_id = v_season;
 
@@ -63,13 +67,38 @@ begin
     end if;
   end if;
 
-  -- Upsert; BEFORE trigger stamps snapshot
+  -- Active line snapshot (require one; flip to IF NOT FOUND THEN allow NULLs if desired)
+  select gl.id, gl.spread_team_id, gl.spread_value
+    into v_line_id, v_spread_team_id, v_spread_value
+  from public.game_lines gl
+  where gl.game_id = v_game.id
+    and gl.source  = p_source
+    and gl.is_active_line = true
+  order by gl.fetched_at desc, gl.id desc
+  limit 1;
+
+  if not found then
+    raise exception 'no active line for game % (source=%)', p_game_id, p_source using errcode = 'P0001';
+  end if;
+
+  -- Upsert with snapshot stamped atomically
   with upsert as (
-    insert into public.picks (user_id, game_id, picked_team_id, weight)
-    values (v_uid, v_game.id, v_team_id, p_weight)
+    insert into public.picks (
+      user_id, game_id, picked_team_id, weight,
+      locked_at, locked_by, locked_line_id, locked_spread_team_id, locked_spread_value
+    )
+    values (
+      v_uid, v_game.id, v_team_id, p_weight,
+      v_now, v_uid, v_line_id, v_spread_team_id, v_spread_value
+    )
     on conflict (user_id, game_id) do update
-      set picked_team_id = excluded.picked_team_id,
-          weight         = excluded.weight
+      set picked_team_id         = excluded.picked_team_id,
+          weight                 = excluded.weight,
+          locked_at              = excluded.locked_at,
+          locked_by              = excluded.locked_by,
+          locked_line_id         = excluded.locked_line_id,
+          locked_spread_team_id  = excluded.locked_spread_team_id,
+          locked_spread_value    = excluded.locked_spread_value
     returning *
   )
   select * into v_row from upsert;
@@ -85,5 +114,5 @@ begin
 end
 $$;
 
-grant execute on function public.lock_pick(uuid, text, public.weight_enum)
+grant execute on function public.lock_pick(uuid, side_enum, public.weight_enum, text)
   to authenticated, service_role;

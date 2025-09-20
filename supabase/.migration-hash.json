@@ -33,8 +33,8 @@
     "signature": "public.game_has_started(uuid)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "563ebacb00d7ebea7e4d17fc4547dedf372d52deb6ccab4a1a9ced9206e4a3df",
-    "signature": "public.lock_pick(uuid, text, -- 'home' | 'away'\r\n  p_weight   public.weight_enum   -- 'L' | 'M' | 'H' | 'A')"
+    "hash": "26852876f0ba80c849f043d9bb18a9548ce93ef527a4f004456fc861764a6a08",
+    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text default 'fanduel')"
   },
   "functions/picks/my_picks.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
@@ -132,8 +132,8 @@
     "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
   },
   "functions/_private/ats_margin_at_lock.sql": {
-    "hash": "141e696e4e519848fc900be844037ba17fa55ebd7ca64a302e3db212bf752ad2",
-    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
+    "hash": "e703e2cb2f4c1e1327a5b9c3ba3d71f8e512ae22f4ac0da3355334b0ab7a8484",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, -- the favorite\r\n  spread_value numeric -- positive magnitude of the line (e.g. 2.5)"
   },
   "functions/_private/game_has_started.sql": {
     "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
@@ -152,7 +152,7 @@
     "signature": "public.grade_game(uuid)"
   },
   "functions/grade/grade_pick.sql": {
-    "hash": "d3cdfcc856d7a2e466a846d8a5f30b338d5553ca8fe82365235dfc9a81724e55",
+    "hash": "a402a54ce0b8d5c8062f5248935fdc75b1e62274e23dffacba4ec328fe8ac750",
     "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
   },
   "functions/grade/grade_season.sql": {
@@ -166,5 +166,28 @@
   "functions/_private/grade_games_by_ids.sql": {
     "hash": "3641821ad9b585fe9213d9f1b348158cbe43993cbbff9329e59870fb30cf262d",
     "signature": "public._grade_games_by_ids(uuid[])"
+  },
+  "schemas/0101_cover_side.sql": {
+    "hash": "70e51832bb472fd652b8761e33dac417419503d646c445a9eda6b8f86ec4162e"
+  },
+  "schemas/0203_sync_refactor.sql": {
+    "hash": "1399ff6a1664abbb5635b4abbc057127808cfe2e3f9046654453606b1ba38d73"
+  },
+  "schemas/0204_require_locks.sql": {
+    "hash": "736e8ed691c496801e5e439d9ce3bb9136d92e78753bb65fd7c1db7237f127ea"
+  },
+  "schemas/0401_unique_game_external.sql": {
+    "hash": "ef8366c9d4ec8db6f66812e2df1a8f9aef7808512f9c5c92f7a7a28891f652b5"
+  },
+  "functions/games/upsert_game_by_external_id.sql": {
+    "hash": "c1f7425046823d71e6d63af15bcdf3733abe3a994883b053226f901c68da1af0",
+    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
+  },
+  "functions/odds/set_active_line.sql": {
+    "hash": "0313c0d421ea2232d3b1804db67566d231d0d63b21585d0c9c71d7b978c62a28",
+    "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
+  },
+  "schemas/0402_fix_active_line_uq.sql": {
+    "hash": "1280e8189b0166c56572dba1395ba4bc3d79403b0c3996afb4b08944a98c2e28"
   }
 }

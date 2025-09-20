@@ -67,7 +67,7 @@ const p = (s: string) => s.replace(/\\/g, '/');
 async function main() {
   console.log(`Temp dir: ${tmpDir}`);
   console.log(`Source: PROD`);
-  console.log(`Destination: ${explicitDest ? 'CUSTOM' : target.toUpperCase()} (${DEST})`);
+  console.log(`Destination: (${DEST})`);
   if (RESET) console.log('Mode: RESET destination before load');
 
   if (!(await hasBin('supabase'))) {

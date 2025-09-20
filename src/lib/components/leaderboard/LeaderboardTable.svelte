@@ -8,7 +8,8 @@
     TableHeader,
     TableRow
   } from '$lib/components/ui/table';
-  import { type SeasonTotalsRow } from '$lib/server/db/queries/leaderboard';
+  import { type SeasonTotalsRow } from '$lib/types/server/leaderboard';
+
   export let rows: SeasonTotalsRow[] = [];
   export let seasonYear: number;
 </script>
