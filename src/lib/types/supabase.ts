@@ -739,7 +739,7 @@ export type Database = {
           game_id: string
           locked_at: string
           ok: boolean
-          picked_side: string
+          picked_side: Database["public"]["Enums"]["side_enum"]
           user_id: string
           weight: Database["public"]["Enums"]["weight_enum"]
         }[]
