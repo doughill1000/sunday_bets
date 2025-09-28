@@ -1,6 +1,7 @@
+// long-format.ts
 import { utils as xlsxUtils } from 'xlsx';
 import { normalizeTeamCode, parseWeightCell, toNum, Weight } from './parsers.js';
-import { findOrCreateGame, upsertPick } from './db.ts';
+import { findOrCreateGame, insertGameLineAndDeactivate, upsertPick } from './db.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export async function importLongWeekSheet(params: {
@@ -59,7 +60,7 @@ export async function importLongWeekSheet(params: {
 
   const kickoffCol = header.findIndex((h) => /^(kickoff|date|start|time)$/i.test(h));
 
-  // Consume two rows at a time: [AwayRow, HomeRow]
+  // Consume two rows at a time: [AwayRow, HomeRow] (with occasional spacer row)
   for (let r = 2; r < grid.length; r += 3) {
     const awayRow = grid[r] || [];
     const homeRow = grid[r + 1] || [];
@@ -96,14 +97,15 @@ export async function importLongWeekSheet(params: {
         dryRun: options.dryRun
       });
 
+      // (Optional) update final score when backfilling historical sheets
       const { error } = await supabase
+
         .from('games')
         .update({
           final_scores: { home: homeRow[scoreCol], away: awayRow[scoreCol] },
           status: 'final'
         })
         .eq('id', gameId);
-
       if (error) throw error;
 
       console.log(
@@ -129,9 +131,25 @@ export async function importLongWeekSheet(params: {
     } else {
       favTeamId = homeId;
       spreadValue = 0;
-    } // PK or both positive
+    }
 
-    // Each player's pick is the row they marked with a weight
+    if (spreadValue === undefined) {
+      console.warn('Unexpected undefined spreadValue for', `${awayCode}@${homeCode}`);
+      continue;
+    }
+
+    const absSpread = Math.abs(spreadValue);
+
+    // Insert an immutable game_lines row and deactivate prior actives
+    const lockedLineId = await insertGameLineAndDeactivate({
+      supabase,
+      gameId,
+      spreadTeamId: favTeamId!,
+      spreadValue: absSpread,
+      dryRun: options.dryRun
+    });
+
+    // ➋ Each player's pick is the row they marked with a weight
     for (const { name, col } of playerCols) {
       const wAway = parseWeightCell(awayRow[col]);
       const wHome = parseWeightCell(homeRow[col]);
@@ -155,12 +173,11 @@ export async function importLongWeekSheet(params: {
         weight,
         lockAtKickoff: options.lockAtKickoff,
         lineTeamId: favTeamId,
-        lineValue: spreadValue,
+        lineValue: absSpread,
+        lockedLineId,
         dryRun: options.dryRun,
         locked_by: userColumns[name]
       });
-
-      // console.log(`${name} picks ${wAway ? awayCode : homeCode} (${weight})`);
     }
   }
 }

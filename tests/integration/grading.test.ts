@@ -167,7 +167,7 @@ describe('Grading Integration Flow', () => {
         game_id: gameId,
         picked_team_id: chiefsId,
         locked_spread_team_id: chiefsId,
-        locked_spread_value: -6.5,
+        locked_spread_value: 6.5,
         weight: 'H' as const,
         locked_by: user1Id,
         locked_at: lockedAt
@@ -178,7 +178,7 @@ describe('Grading Integration Flow', () => {
         game_id: gameId,
         picked_team_id: billsId,
         locked_spread_team_id: chiefsId,
-        locked_spread_value: -6.5,
+        locked_spread_value: 6.5,
         weight: 'M' as const,
         locked_by: user2Id,
         locked_at: lockedAt
