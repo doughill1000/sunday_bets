@@ -17,7 +17,8 @@ values
 on conflict (id) do nothing;
 
 -- Optionally elevate one user to admin
-update public.users set role = 'admin' where id = '00000000-0000-0000-0000-000000000001';
+-- update public.users set role = 'admin' where id = '9ea5bb60-c146-40fd-8d19-3b26a317e87c';
+-- update auth.users set raw_app_meta_data = raw_app_meta_data || '{"app_role": "admin"}'::jsonb where id = '9ea5bb60-c146-40fd-8d19-3b26a317e87c';
 
 -- Insert test teams (league defaults to 'NFL')
 insert into public.teams (name, short_name)

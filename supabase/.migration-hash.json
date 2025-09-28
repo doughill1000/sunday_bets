@@ -132,8 +132,8 @@
     "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
   },
   "functions/_private/ats_margin_at_lock.sql": {
-    "hash": "e703e2cb2f4c1e1327a5b9c3ba3d71f8e512ae22f4ac0da3355334b0ab7a8484",
-    "signature": "public.ats_margin_at_lock(int, int, int, int, int, -- the favorite\r\n  spread_value numeric -- positive magnitude of the line (e.g. 2.5)"
+    "hash": "7dc1c720f0079f656dffcef255b0a6e0c49da18a89941965eccba748fc7efb07",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
   },
   "functions/_private/game_has_started.sql": {
     "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
@@ -184,7 +184,7 @@
     "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "0313c0d421ea2232d3b1804db67566d231d0d63b21585d0c9c71d7b978c62a28",
+    "hash": "0e3914ef475bfb9a0f4d60fd57ce8af3c280d2fd9892a814fa132121dbfdc469",
     "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
   },
   "schemas/0402_fix_active_line_uq.sql": {

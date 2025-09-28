@@ -1,8 +1,8 @@
+// db.ts
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { parseISO, isValid as isValidDate } from 'date-fns';
 
 export function makeClient(): SupabaseClient {
-  // allow either var name; prefer *_KEY
   const url = process.env.PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE;
   console.log('Using Supabase URL:', url);
@@ -101,6 +101,60 @@ export async function findOrCreateGame(opts: {
   return ins![0].id as string;
 }
 
+/**
+ * Insert a new immutable game_lines row, deactivate previous active lines for the same game,
+ * and return the new line id. This is INSERT-only (no upserts).
+ */
+export async function insertGameLineAndDeactivate(opts: {
+  supabase: SupabaseClient;
+  gameId: string;
+  spreadTeamId: number; // favorite team id (or team the spread applies to)
+  spreadValue: number; // negative for favorite, positive for dog, 0 for PK
+  fetchedAt?: string; // ISO timestamp; defaults to now()
+  dryRun?: boolean;
+}) {
+  const { supabase, gameId, spreadTeamId, spreadValue, fetchedAt, dryRun } = opts;
+  const source = 'fanduel';
+  const ts = fetchedAt ?? new Date().toISOString();
+
+  if (dryRun) {
+    console.log('[dry] insert game_line', {
+      gameId,
+      spreadTeamId,
+      spreadValue,
+      source,
+      fetched_at: ts
+    });
+    console.log('[dry] deactivate prior active lines for game', gameId);
+    return '00000000-0000-0000-0000-000000000000';
+  }
+
+  await supabase
+  .from('game_lines')
+  .update({ is_active_line: false })
+  .eq('game_id', gameId)
+  .eq('is_active_line', true);
+
+
+// 2) Insert new active
+const { data: ins, error: insErr } = await supabase
+  .from('game_lines')
+  .insert({ game_id: gameId, spread_team_id: spreadTeamId, spread_value: spreadValue, source, fetched_at: ts, is_active_line: true })
+  .select('id')
+  .limit(1);
+
+  console.log('Inserted new game_line', ins?.[0]?.id, `(${spreadTeamId}, ${spreadValue}) for game ${gameId}`);
+
+  if (insErr) throw insErr;
+  const lineId = ins![0].id as string;
+
+  return lineId;
+}
+
+/**
+ * Upsert a pick and attach the line snapshot + locked_line_id.
+ * NOTE: we keep upsert here ONLY for (user_id, game_id) to avoid dup picks; lines are INSERT-only.
+ */
 export async function upsertPick(opts: {
   supabase: SupabaseClient;
   userId: string;
@@ -108,8 +162,9 @@ export async function upsertPick(opts: {
   pickedTeamId: number;
   weight: 'L' | 'M' | 'H' | 'A';
   lockAtKickoff: boolean;
-  lineTeamId?: number;
-  lineValue?: number;
+  lineTeamId: number;
+  lineValue: number;
+  lockedLineId?: string | null;
   dryRun?: boolean;
   locked_by: string;
 }) {
@@ -122,6 +177,7 @@ export async function upsertPick(opts: {
     lockAtKickoff,
     lineTeamId,
     lineValue,
+    lockedLineId,
     dryRun,
     locked_by
   } = opts;
@@ -139,7 +195,8 @@ export async function upsertPick(opts: {
     weight,
     locked_at,
     locked_spread_team_id: lineTeamId ?? null,
-    locked_spread_value: lineValue ?? null,
+    locked_spread_value: lineValue != null ? Math.abs(lineValue) : null,
+    locked_line_id: lockedLineId ?? null,
     locked_by
   };
 

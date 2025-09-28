@@ -5,7 +5,7 @@ import type { TeamSide, WeightCode } from '$lib/types/domain';
 export type LockPickResponse = {
   ok: boolean;
   reason?: string;
-  final_locked_at?: string | null;
+  locked_at?: string | null;
 };
 
 export type UnlockPickResponse = {

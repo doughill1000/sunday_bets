@@ -34,6 +34,13 @@ export async function lockPick(
   const row = Array.isArray(rows) ? rows[0] : rows;
   if (!row) return null;
 
-  // If your SQL still returns picked_side as text, cast it here for TS:
-  return row;
+  // Map the database result to the expected API response shape.
+  return {
+    ok: row.ok,
+    user_id: row.user_id,
+    game_id: row.game_id,
+    picked_side: row.picked_side as TeamSide,
+    weight: row.weight as WeightCode,
+    locked_at: row.locked_at
+  };
 }
