@@ -11,9 +11,8 @@ jobs:
   db-tests:
     runs-on: ubuntu-latest
     env:
-      NODE_ENV: test
       SUPABASE_CLI_VERSION: '2.40.7'
-      # pg_prove / psql connection defaults
+      # Default Supabase local connection
       PGHOST: 127.0.0.1
       PGPORT: "54322"
       PGUSER: postgres
@@ -39,28 +38,62 @@ jobs:
           ~/.local/bin/supabase --version
       - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Start local Supabase (auth-capable)
+      - name: Start local Supabase
         run: |
           supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          # Recreate DB from migrations
           supabase db reset --local
-          # slight settle
           sleep 5
 
-      - name: Install pgTAP + Postgres client
+      # ---------- Install pg_prove on the RUNNER (client) ----------
+      - name: Add PostgreSQL APT repo (PGDG) & install pgtap client
         run: |
+          # Add PGDG repo so 'pgtap' package (pg_prove) is available
+          echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
-          # Try 15, then fall back to 14 (runner images vary)
-          sudo apt-get install -y postgresql-client postgresql-15-pgtap || sudo apt-get install -y postgresql-14-pgtap
+          # 'pgtap' here provides pg_prove (no server files)
+          sudo apt-get install -y pgtap postgresql-client
 
-      # --- Option A: enable via psql in CI (simple & explicit)
-      - name: Enable pgTAP extension
+      # ---------- Install pgTAP *inside* the Supabase Postgres container ----------
+      - name: Install pgTAP server extension inside DB container
         run: |
-          psql -v ON_ERROR_STOP=1 -c "create extension if not exists pgtap;"
+          # Find the db container (works for supabase-db or supabase_db)
+          DB_CID=$(docker ps -q --filter "name=supabase-db")
+          if [ -z "$DB_CID" ]; then
+            DB_CID=$(docker ps -q --filter "name=supabase_db")
+          fi
+          if [ -z "$DB_CID" ]; then
+            echo "Could not find Supabase DB container"; exit 1
+          fi
 
+          # Determine Postgres major version running in the container (15 or 16)
+          PG_MAJOR=$(docker exec "$DB_CID" psql -U postgres -tAc "show server_version_num" | awk '{print int($1/10000) }')
+          echo "Detected Postgres major version: $PG_MAJOR"
+
+          # Install pgTAP server package inside the container
+          docker exec -u root "$DB_CID" bash -lc "apt-get update && apt-get install -y gnupg wget ca-certificates"
+          docker exec -u root "$DB_CID" bash -lc 'echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          docker exec -u root "$DB_CID" bash -lc "wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /usr/share/keyrings/postgresql.gpg"
+          docker exec -u root "$DB_CID" bash -lc 'echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          docker exec -u root "$DB_CID" bash -lc "apt-get update && apt-get install -y postgresql-${PG_MAJOR}-pgtap || (echo 'pgTAP server pkg not found for PG '${PG_MAJOR} && exit 1)"
+
+      # ---------- Enable extension programmatically (idempotent) ----------
+      - name: Enable pgTAP extension (idempotent)
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "DO $$
+          BEGIN
+            IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name='pgtap') THEN
+              EXECUTE 'CREATE EXTENSION IF NOT EXISTS pgtap';
+            ELSE
+              RAISE EXCEPTION 'pgTAP not installed on server';
+            END IF;
+          END$$;"
+
+      # ---------- Run your pgTAP test files ----------
       - name: Run pgTAP tests
         run: |
-          # Keep your tests in supabase/tests/pgtap/*.sql
-          # Add --verbose for detailed TAP output
+          # verbose for TAP output; adjust the glob to your layout
           pg_prove --verbose supabase/tests/pgtap/*.sql
 
       - name: Stop Supabase
