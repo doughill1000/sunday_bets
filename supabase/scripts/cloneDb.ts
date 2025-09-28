@@ -101,8 +101,6 @@ async function main() {
       '--data-only',
       '--schema',
       'public',
-      '--exclude',
-      'public.users'
     ],
     { stdio: 'inherit' }
   );
