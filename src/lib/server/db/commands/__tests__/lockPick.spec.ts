@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
-import { lockPick } from './lockPick';
+import { lockPick } from '../lockPick';
 
 function mockEvent(row: any) {
   return {
