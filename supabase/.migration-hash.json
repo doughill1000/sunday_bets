@@ -184,7 +184,7 @@
     "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "0e3914ef475bfb9a0f4d60fd57ce8af3c280d2fd9892a814fa132121dbfdc469",
+    "hash": "1886b223b4f4c2aac6548892b0be4ea86c8618e92c80c4aa91b2acc7f5e3bf8d",
     "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
   },
   "schemas/0402_fix_active_line_uq.sql": {
