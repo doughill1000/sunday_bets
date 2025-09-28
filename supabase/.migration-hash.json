@@ -33,7 +33,7 @@
     "signature": "public.game_has_started(uuid)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "13a7a4f5ce360252ca92a6c39127a027a7336f97ca3e7012e9b6ff7c7a8bb907",
+    "hash": "33f95937813cb8565e25ab11f6d39f4401e8f1fec353494f8ae1ff89635605f8",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text default 'fanduel')"
   },
   "functions/picks/my_picks.sql": {
