@@ -8,6 +8,7 @@ create or replace function public.set_active_line(
 returns jsonb
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_home int;

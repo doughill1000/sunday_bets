@@ -37,6 +37,7 @@ create or replace function public.set_active_line(
 )
 returns jsonb
 language plpgsql
+set search_path = public
 security definer
 as $$
 declare
