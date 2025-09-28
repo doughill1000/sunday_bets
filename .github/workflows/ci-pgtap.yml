@@ -1,0 +1,68 @@
+name: CI - pgTAP (DB tests)
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/ci-pgtap.yml'
+
+jobs:
+  db-tests:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      SUPABASE_CLI_VERSION: '2.40.7'
+      # pg_prove / psql connection defaults
+      PGHOST: 127.0.0.1
+      PGPORT: "54322"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Supabase CLI
+        id: cache-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/supabase
+          key: supabase-cli-${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Install Supabase CLI
+        if: steps.cache-cli.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/bin
+          curl -sL https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_linux_amd64.tar.gz \
+          | tar -xz -C ~/.local/bin supabase
+          ~/.local/bin/supabase --version
+      - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Start local Supabase (auth-capable)
+        run: |
+          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          supabase db reset --local
+          # slight settle
+          sleep 5
+
+      - name: Install pgTAP + Postgres client
+        run: |
+          sudo apt-get update
+          # Try 15, then fall back to 14 (runner images vary)
+          sudo apt-get install -y postgresql-client postgresql-15-pgtap || sudo apt-get install -y postgresql-14-pgtap
+
+      # --- Option A: enable via psql in CI (simple & explicit)
+      - name: Enable pgTAP extension
+        run: |
+          psql -v ON_ERROR_STOP=1 -c "create extension if not exists pgtap;"
+
+      - name: Run pgTAP tests
+        run: |
+          # Keep your tests in supabase/tests/pgtap/*.sql
+          # Add --verbose for detailed TAP output
+          pg_prove --verbose supabase/tests/pgtap/*.sql
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop || true

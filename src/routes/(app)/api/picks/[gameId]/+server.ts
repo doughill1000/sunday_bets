@@ -48,7 +48,7 @@ export const POST: RequestHandler = async (event) => {
   const row = Array.isArray(data) ? data[0] : data;
   return json({
     ok: true,
-    final_locked_at: row?.locked_at ?? null
+    locked_at: row?.locked_at ?? null
   });
 };
 
