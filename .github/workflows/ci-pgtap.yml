@@ -1,101 +1,16 @@
-name: CI - pgTAP (DB tests)
-
+name: PGTap Tests
 on:
   pull_request:
-    branches: [develop]
-    paths:
-      - 'supabase/**'
-      - '.github/workflows/ci-pgtap.yml'
-
-# Auto-cancel older runs for the same PR/branch
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
+    branches: [ develop ]
 jobs:
-  db-tests:
+  build:
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_CLI_VERSION: '2.40.7'
-      # Supabase local connection (runner -> container)
-      PGHOST: 127.0.0.1
-      PGPORT: "54322"
-      PGUSER: postgres
-      PGPASSWORD: postgres
-      PGDATABASE: postgres
-
     steps:
-      - uses: actions/checkout@v4
-
-      # Cache the Supabase CLI binary for faster starts
-      - name: Cache Supabase CLI
-        id: cache-cli
-        uses: actions/cache@v4
+      - uses: actions/checkout@v3
+      - uses: supabase/setup-cli@v1
         with:
-          path: ~/.local/bin/supabase
-          key: supabase-cli-${{ env.SUPABASE_CLI_VERSION }}
-
-      - name: Install Supabase CLI
-        if: steps.cache-cli.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.local/bin
-          curl -sL https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_linux_amd64.tar.gz \
-          | tar -xz -C ~/.local/bin supabase
-          ~/.local/bin/supabase --version
-      - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Start local Supabase
-        run: |
-          # Start everything except optional services we don't need
-          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
-          # Recreate DB from migrations
-          supabase db reset --local
-          # Small settle to ensure auth/postgrest are ready
-          sleep 5
-
-      # --- Install the pgTAP *server extension* inside the DB container (Debian-based) ---
-      - name: Install pgTAP in DB container
-        run: |
-          set -euo pipefail
-          DB_CID=$(docker ps -q --filter "name=supabase-db")
-          if [ -z "$DB_CID" ]; then DB_CID=$(docker ps -q --filter "name=supabase_db"); fi
-          if [ -z "$DB_CID" ]; then echo "Could not find Supabase DB container"; exit 1; fi
-
-          # Detect Postgres major (e.g., 15 or 16)
-          PG_MAJOR=$(docker exec "$DB_CID" psql -U postgres -tAc "show server_version_num" | awk '{print int($1/10000)}')
-          echo "Detected Postgres major version: $PG_MAJOR"
-
-          # Add PGDG repo & install the server extension package
-          docker exec -u root "$DB_CID" bash -lc 'set -e
-            apt-get update && apt-get install -y gnupg wget ca-certificates
-            echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-            wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /usr/share/keyrings/postgresql.gpg
-            apt-get update && apt-get install -y postgresql-'$PG_MAJOR'-pgtap
-          '
-
-      # --- Enable extension (idempotent) on the running DB ---
-      - name: Enable pgTAP extension
-        run: |
-          psql -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
-
-      # --- Run pgTAP tests via Docker, sharing the DB container's network namespace ---
-      - name: Run pgTAP tests
-        run: |
-          set -euo pipefail
-          # Ensure you actually have test files (fail fast if none found)
-          ls supabase/tests/pgtap/*.sql >/dev/null 2>&1 || { echo "No pgTAP tests found in supabase/tests/pgtap"; exit 2; }
-
-          DB_CID=$(docker ps -q --filter "name=supabase-db")
-          if [ -z "$DB_CID" ]; then DB_CID=$(docker ps -q --filter "name=supabase_db"); fi
-          if [ -z "$DB_CID" ]; then echo "DB container not found"; exit 1; fi
-
-          # Run pg_prove from theory/pgtap image; use DB container's network (DB is at 127.0.0.1:5432 inside that ns)
-          docker run --rm \
-            --network container:$DB_CID \
-            -v "$PWD:/workspace" -w /workspace \
-            theory/pgtap:latest \
-            pg_prove -h 127.0.0.1 -p 5432 -U postgres -d postgres --verbose supabase/tests/pgtap/*.sql
-
-      - name: Stop Supabase
-        if: always()
-        run: supabase stop || true
+          version: 1.11.4
+      - name: Supabase Start
+        run: supabase start
+      - name: Run Tests
+        run: supabase test db

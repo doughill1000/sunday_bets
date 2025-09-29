@@ -14,45 +14,39 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-      SUPABASE_CLI_VERSION: '2.40.7'
+      SUPABASE_CLI_VERSION: 2.40.7
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with: { version: 9 }
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
 
-      - name: Cache Supabase CLI
-        id: cache-cli
-        uses: actions/cache@v4
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
         with:
-          path: ~/.local/bin/supabase
-          key: supabase-cli-${{ env.SUPABASE_CLI_VERSION }}
+            version: ${{ env.SUPABASE_CLI_VERSION }}
 
-      - name: Install Supabase CLI
-        if: steps.cache-cli.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/.local/bin
-          curl -sL https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_linux_amd64.tar.gz \
-          | tar -xz -C ~/.local/bin supabase
-          ~/.local/bin/supabase --version
-      - run: echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Start local Supabase (auth-capable)
         run: |
-          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
-          # Wait for services to come up cleanly
+          # Exclude unneeded services for faster startup (adjust as needed)
+            supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          # Fresh schema & seed
           supabase db reset --local
-          # optional: small wait to ensure postgrest/auth are ready
-          sleep 5
 
-      - name: Run integration tests
+      - name: Run integration (Playwright / Vitest, etc.)
         run: pnpm test:integration
 
       - name: Stop Supabase
