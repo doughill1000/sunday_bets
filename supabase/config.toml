@@ -7,16 +7,3 @@ enabled = true
 site_url="http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173/auth/callback"]
 email.template.magic_link.content_path = "./supabase/magic_link.html"
-
-[db]
-port = 54322
-# Postgres major version required by Supabase CLI (matches current platform default)
-major_version = 15
-# Optional: separate shadow database port (uncomment if needed for migration diffing)
-# shadow_port = 54323
-
-[api]
-port = 54321
-schemas = ["public"]
-extra_search_path = ["public", "extensions"]
-max_rows = 1000
