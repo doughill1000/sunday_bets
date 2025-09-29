@@ -1,5 +1,5 @@
--- -- Enable pgcrypto for crypt() in case you need passwords
--- create extension if not exists pgcrypto;
+-- Enable pgcrypto for crypt() in case you need passwords
+create extension if not exists pgcrypto;
 
 -- -- Insert auth users (triggers will mirror into public.users with display_name)
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
