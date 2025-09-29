@@ -8,7 +8,9 @@ site_url="http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173/auth/callback"]
 email.template.magic_link.content_path = "./supabase/magic_link.html"
 
-# Added for CI: Supabase CLI requires api.port (was missing and caused start failure)
+[db]
+port = 54322
+
 [api]
 port = 54321
 schemas = ["public"]
