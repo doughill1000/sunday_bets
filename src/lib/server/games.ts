@@ -65,9 +65,9 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
       away: { id: r.away_team.id, name: r.away_team.name, shortName: r.away_team.short_name },
       line: {
         // if your GameDTO insists on non-null here, ensure your query always returns an active line
-        spreadTeamId: line?.spread_team_id as number,
-        spreadValue: line?.spread_value as number,
-        source: line?.source as string,
+        spreadTeamId: line?.spread_team_id as number | null,
+        spreadValue: line?.spread_value as number | null,
+        source: line?.source as string | null,
         fetchedAt: line?.fetched_at ? new Date(line.fetched_at).toISOString() : null
       },
       started,

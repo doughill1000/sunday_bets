@@ -26,11 +26,11 @@
     "format": "prettier --write .",
     "format:check": "prettier . --check",
     "serve": "vite build && vite preview",
-    "test:unit": "vitest --run --coverage",
-    "test:integration": "vitest --run --config vitest.integration.config.ts --coverage",
-    "test:coverage": "pnpm test:unit && pnpm test:integration",
-    "test:e2e": "playwright test",
-    "test": "pnpm test:unit && pnpm test:integration"
+    "test": "pnpm test:unit && pnpm test:integration",
+    "test:unit": "vitest --run",
+    "test:integration": "vitest --run --config vitest.integration.config.ts",
+    "test:coverage": "pnpm test:unit --coverage && pnpm test:integration --coverage",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",
@@ -47,6 +47,7 @@
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/svelte": "^5.2.8",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.18.1",
     "@vite-pwa/sveltekit": "^1.0.0",
     "@vitest/browser": "^3.2.3",
@@ -84,7 +85,8 @@
     "vite-plugin-pwa": "^1.0.3",
     "vitest": "^3.2.3",
     "vitest-browser-svelte": "^0.1.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "jsonwebtoken": "^9.0.2"
   },
   "dependencies": {
     "@sentry/sveltekit": "^10.11.0",
