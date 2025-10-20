@@ -32,6 +32,7 @@ export const load: PageServerLoad = async (event) => {
     weekly,
     players: table.players,
     weeks: weeksOrdered,
+    activeWeekNumber,
     tableByWeek: table.tableByWeek,
     weekTotals: table.weekTotals ?? {},
     currentUserId: auth?.user?.id ?? null

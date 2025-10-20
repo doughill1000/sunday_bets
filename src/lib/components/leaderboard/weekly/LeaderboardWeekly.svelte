@@ -14,6 +14,7 @@
   export let tableByWeek: Record<number, WeekTable> = {};
   export let weekTotals: Record<number, Record<string, number>> = {};
   export let currentUserId: string | null = null;
+  export let activeWeekNumber: number | null = null;
 
   // Local state (no external store)
   let hidden: Set<string> = new Set();
@@ -74,6 +75,7 @@
           cells={tableByWeek[wk]?.cells ?? {}}
           gridTemplate={mobileGridTemplate}
           gridTemplateLg={desktopGridTemplate}
+          activeWeekNumber={activeWeekNumber}
         />
       {/each}
     </Accordion>
