@@ -20,6 +20,7 @@ export type GameDTO = {
   line: {
     spreadTeamId: number | null; // teams.id (bigint -> number)
     spreadValue: number | null;
+    source: string | null;
     fetchedAt: string | null;
   };
   started: boolean;

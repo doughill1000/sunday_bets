@@ -10,59 +10,33 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare
-  v_home int;
-  v_away int;
-  v_fav  int;
-  v_val  numeric;
-begin
-  -- Fetch home/away
-  select home_team_id, away_team_id
-    into v_home, v_away
-  from public.games
-  where id = p_game_id;
-
-  if not found then
-    raise exception 'game not found' using errcode = 'P0001';
-  end if;
-
-  if p_spread_team_id not in (v_home, v_away) then
-    raise exception 'spread team id must be one of the game teams' using errcode = 'P0001';
-  end if;
-
-  if p_spread_value <= 0 then
-    -- We treat negative provided value as "other team is favorite"; zero is invalid
-    if p_spread_value = 0 then
-      raise exception 'spread value must be non-zero' using errcode = 'P0001';
-    end if;
-    v_val := abs(p_spread_value);
-    if p_spread_team_id = v_home then
-      v_fav := v_away;
-    else
-      v_fav := v_home;
-    end if;
-  else
-    v_val := p_spread_value;
-    v_fav := p_spread_team_id;
-  end if;
-
-  -- Deactivate existing active line for same (game, source)
-  update public.game_lines
-     set is_active_line = false
-   where game_id = p_game_id
-     and source = p_source
-     and is_active_line = true;
-
-  -- Insert new canonical line
-  insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
-  values (p_game_id, p_source, v_fav, v_val, true, now());
-
-  return jsonb_build_object(
-    'ok', true,
-    'game_id', p_game_id,
-    'source', p_source,
-    'spread_team_id', v_fav,
-    'spread_value', v_val
-  );
-end
+  with deact as (
+    -- Turn off any existing active line for this (game, source)
+    update public.game_lines
+       set is_active_line = false
+     where game_id = p_game_id
+       and source  = p_source
+       and is_active_line = true
+    returning 1
+  ),
+  upsert as (
+    insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+    values (p_game_id, p_source, p_spread_team_id, p_spread_value, true, now())
+    on conflict (game_id, source) where is_active_line = true
+    do update set
+      spread_team_id = excluded.spread_team_id,
+      spread_value   = excluded.spread_value,
+      fetched_at     = excluded.fetched_at,
+      is_active_line = true
+    returning *
+  )
+  select jsonb_build_object(
+    'ok',          true,
+    'deactivated', coalesce((select count(*) from deact), 0),
+    'line',        to_jsonb(upsert.*)
+  )
+  from upsert;
 $$;
+
+grant execute on function public.set_active_line(uuid, int, numeric, text)
+  to authenticated, service_role;

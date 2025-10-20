@@ -9,7 +9,34 @@ export default defineConfig({
     css: true,
     environment: 'jsdom',
     include: ['tests/integration/**/*.test.ts'],
-    exclude: ['src/**/__tests__/**'], // Exclude unit tests
-    setupFiles: ['./tests/setup.ts', 'dotenv/config'] // This loads .env variables
+  exclude: ['src/**/__tests__/**', 'src/lib/components/ui/**'], // Exclude unit tests & ui components
+    setupFiles: ['./tests/setup.ts', 'dotenv/config'], // This loads .env variables
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage/integration',
+      reporter: ['text', 'text-summary'],
+      exclude: [ '.svelte-kit/**',
+        '.vercel/**',
+        'dev-dist/**',
+        'dist/**',
+        'build/**',
+        'coverage/**',
+        '**/*.d.ts',
+        '**/*.config.{js,ts,mjs,cjs}',
+        'eslint.config.js',
+        'playwright.config.*',
+        'svelte.config.*',
+        'vite.config.*',
+        'vitest*.config.*',
+  'tests/**',
+  'src/lib/components/ui/**',
+  ],
+      thresholds: {
+        lines: 50,
+        functions: 50,
+        branches: 40,
+        statements: 50
+      }
+    }
   }
 });
