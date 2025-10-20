@@ -23,7 +23,12 @@
   weekTotals.set(data.weekTotals);
   tableByWeek.set(data.tableByWeek);
   seasonYearStore.set(data.seasonYear);
-  seasonTotalsStore.set(data.totals); // assuming data.totals = season totals rows
+  // Validate that data.totals is an array of season totals rows before setting the store
+  if (Array.isArray(data.totals)) {
+    seasonTotalsStore.set(data.totals); // data.totals is season totals rows
+  } else {
+    console.error("Expected data.totals to be an array of season totals rows, but got:", data.totals);
+  }
 </script>
 
 <Tabs value="weekly" class="w-full space-y-4">
