@@ -41,22 +41,18 @@
       <span
         class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] md:text-xs
           bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-700"
-        class:outline={topIds.has(p.id)}
-        class:outline-1={topIds.has(p.id)}
-        class:outline-amber-400={topIds.has(p.id)}
-        class:dark:outline-amber-300={topIds.has(p.id)}
-        title={`${p.display_name}: ${totals[p.id] ?? 0}${topIds.has(p.id) ? ' (Top)' : ''}`}
+        data-player-id={p.id}
       >
         <span class="opacity-70">{shortName(p.display_name)}</span>
         {#if (totals[p.id] ?? 0) > 0}
-          <span class="font-semibold tabular-nums text-green-600">+{totals[p.id]}</span>
+          <span class="font-semibold tabular-nums text-green-600" data-total-val>+{totals[p.id]}</span>
         {:else if (totals[p.id] ?? 0) < 0}
-          <span class="font-semibold tabular-nums text-red-600">{totals[p.id]}</span>
+          <span class="font-semibold tabular-nums text-red-600" data-total-val>{totals[p.id]}</span>
         {:else}
-          <span class="font-semibold tabular-nums text-neutral-600 dark:text-neutral-400">0</span>
+          <span class="font-semibold tabular-nums text-neutral-600 dark:text-neutral-400" data-total-val>0</span>
         {/if}
         {#if topIds.has(p.id)}
-          <span class="ml-[1px] text-amber-500" aria-hidden="true">🏆</span>
+          <span class="ml-[1px] text-amber-500" aria-hidden="true" data-trophy>🏆</span>
         {/if}
       </span>
     {/each}
