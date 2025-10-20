@@ -15,6 +15,5 @@ let _client: SupabaseClient<Database> | undefined;
 export const supabaseService =
   _client ??
   (_client = createClient<Database>(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
     global: { headers: { 'x-app-role': 'service' } }
   }));
