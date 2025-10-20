@@ -2,26 +2,6 @@ import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/supabase';
 
-type Storage = {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-};
-
-// super tiny in-memory storage (per client) so instances never collide
-function makeMemoryStorage(): Storage {
-  const m = new Map<string, string>();
-  return {
-    getItem: (k) => (m.has(k) ? m.get(k)! : null),
-    setItem: (k, v) => {
-      m.set(k, v);
-    },
-    removeItem: (k) => {
-      m.delete(k);
-    }
-  };
-}
-
 const SUPABASE_URL = 'http://127.0.0.1:54321';
 const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
