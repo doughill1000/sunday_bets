@@ -5,7 +5,7 @@ import {
   getWeeklyCumulative
 } from '$lib/server/db/queries/leaderboard';
 import { getWeeklyTable } from '$lib/server/leaderboard';
-import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek'; // added
+import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 
 export const load: PageServerLoad = async (event) => {
   const seasonYear = await getCurrentSeasonYear();
