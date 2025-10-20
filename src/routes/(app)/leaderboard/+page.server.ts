@@ -19,12 +19,28 @@ export const load: PageServerLoad = async (event) => {
 
   const activeWeekNumber = activeWeekRow?.week_number ?? null;
 
-  let weeksOrdered = table.weeks;
+  const nonPreseasonWeeks = table.weeks.filter((w) => w >= 0);
+
+  // Show only active + prior weeks (hide future weeks)
+  let weeksOrdered: number[];
   if (activeWeekNumber != null) {
-    const future = weeksOrdered.filter((w) => w > activeWeekNumber).sort((a, b) => a - b);
-    const past = weeksOrdered.filter((w) => w < activeWeekNumber).sort((a, b) => a - b);
-    weeksOrdered = [activeWeekNumber, ...future, ...past];
+    const prior = nonPreseasonWeeks
+      .filter((w) => w < activeWeekNumber)
+      .sort((a, b) => b - a); // descending prior weeks
+    weeksOrdered = [activeWeekNumber, ...prior];
+  } else {
+    // If no active week, just show all non-preseason weeks descending
+    weeksOrdered = [...nonPreseasonWeeks].sort((a, b) => b - a);
   }
+
+  // Restrict tableByWeek and weekTotals to visible weeks
+  const visibleWeekSet = new Set(weeksOrdered);
+  const filteredTableByWeek = Object.fromEntries(
+    Object.entries(table.tableByWeek).filter(([wk]) => visibleWeekSet.has(Number(wk)))
+  );
+  const filteredWeekTotals = Object.fromEntries(
+    Object.entries(table.weekTotals ?? {}).filter(([wk]) => visibleWeekSet.has(Number(wk)))
+  );
 
   return {
     seasonYear,
@@ -33,8 +49,8 @@ export const load: PageServerLoad = async (event) => {
     players: table.players,
     weeks: weeksOrdered,
     activeWeekNumber,
-    tableByWeek: table.tableByWeek,
-    weekTotals: table.weekTotals ?? {},
+    tableByWeek: filteredTableByWeek,
+    weekTotals: filteredWeekTotals,
     currentUserId: auth?.user?.id ?? null
   };
 };

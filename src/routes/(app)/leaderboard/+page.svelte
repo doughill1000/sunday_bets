@@ -23,9 +23,8 @@
   weekTotals.set(data.weekTotals);
   tableByWeek.set(data.tableByWeek);
   seasonYearStore.set(data.seasonYear);
-  // Validate that data.totals is an array of season totals rows before setting the store
   if (Array.isArray(data.totals)) {
-    seasonTotalsStore.set(data.totals); // data.totals is season totals rows
+    seasonTotalsStore.set(data.totals);
   } else {
     console.error("Expected data.totals to be an array of season totals rows, but got:", data.totals);
   }
