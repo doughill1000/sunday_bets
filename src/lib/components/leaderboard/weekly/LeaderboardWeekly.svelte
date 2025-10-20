@@ -13,6 +13,7 @@
   export let weeks: number[] = [];
   export let tableByWeek: Record<number, WeekTable> = {};
   export let weekTotals: Record<number, Record<string, number>> = {};
+  export let currentUserId: string | null = null;
 
   // Local state (no external store)
   let hidden: Set<string> = new Set();
@@ -22,9 +23,15 @@
 
   // Derived view data
   $: visibleIds = order.filter((id) => !hidden.has(id));
-  $: visiblePlayers = visibleIds
+  $: visiblePlayersRaw = visibleIds
     .map((id) => players.find((p) => p.id === id))
     .filter(Boolean) as PlayerRow[];
+  // move current user to front
+  $: visiblePlayers = currentUserId
+    ? [...visiblePlayersRaw].sort((a, b) =>
+        a.id === currentUserId ? -1 : b.id === currentUserId ? 1 : 0
+      )
+    : visiblePlayersRaw;
 
   // Grid template: left "Game" column + one column per visible player
   $: mobileGridTemplate = `160px repeat(${visiblePlayers.length}, 120px)`;

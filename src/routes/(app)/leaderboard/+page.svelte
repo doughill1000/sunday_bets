@@ -3,7 +3,6 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
   import LeaderboardWeekly from '$lib/components/leaderboard/weekly/LeaderboardWeekly.svelte';
-
   export let data: PageData;
 </script>
 
@@ -24,6 +23,6 @@
       weeks={data.weeks}
       tableByWeek={data.tableByWeek}
       weekTotals={data.weekTotals}
-    />
+      currentUserId={data.currentUserId} />
   </TabsContent>
 </Tabs>
