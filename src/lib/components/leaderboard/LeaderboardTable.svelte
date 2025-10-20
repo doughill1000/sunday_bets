@@ -8,15 +8,12 @@
     TableHeader,
     TableRow
   } from '$lib/components/ui/table';
-  import { type SeasonTotalsRow } from '$lib/types/server/leaderboard';
-
-  export let rows: SeasonTotalsRow[] = [];
-  export let seasonYear: number;
+  import { seasonYearStore, seasonTotalsStore } from '$lib/stores/leaderboard';
 </script>
 
 <Card class="mx-auto w-full shadow-sm">
   <CardHeader>
-    <CardTitle class="text-xl">Season {seasonYear} Leaderboard</CardTitle>
+    <CardTitle class="text-xl">Season {$seasonYearStore} Leaderboard</CardTitle>
   </CardHeader>
   <CardContent>
     <Table>
@@ -32,7 +29,7 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        {#each rows as r}
+        {#each $seasonTotalsStore as r}
           <TableRow>
             <TableCell class="text-center font-semibold">{r.rank}</TableCell>
             <TableCell class="font-medium">{r.display_name}</TableCell>

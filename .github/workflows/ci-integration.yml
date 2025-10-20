@@ -12,10 +12,15 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
+    environment:
+      name: Development
     env:
       NODE_ENV: test
       SUPABASE_CLI_VERSION: 2.40.7
-
+      PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+      PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

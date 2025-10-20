@@ -1,29 +1,47 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
   import LeaderboardWeekly from '$lib/components/leaderboard/weekly/LeaderboardWeekly.svelte';
+  import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
+  import {
+    players,
+    weeks,
+    activeWeekNumber,
+    currentUserId,
+    weekTotals,
+    tableByWeek,
+    seasonYearStore,
+    seasonTotalsStore
+  } from '$lib/stores/leaderboard';
 
   export let data: PageData;
+
+  players.set(data.players);
+  weeks.set(data.weeks);
+  activeWeekNumber.set(data.activeWeekNumber);
+  currentUserId.set(data.currentUserId);
+  weekTotals.set(data.weekTotals);
+  tableByWeek.set(data.tableByWeek);
+  seasonYearStore.set(data.seasonYear);
+  // Validate that data.totals is an array of season totals rows before setting the store
+  if (Array.isArray(data.totals)) {
+    seasonTotalsStore.set(data.totals); // data.totals is season totals rows
+  } else {
+    console.error("Expected data.totals to be an array of season totals rows, but got:", data.totals);
+  }
 </script>
 
-<Tabs value="totals" class="w-full space-y-4">
+<Tabs value="weekly" class="w-full space-y-4">
   <TabsList>
-    <TabsTrigger value="totals">Season Totals</TabsTrigger>
-    <TabsTrigger value="weekly">Weekly View</TabsTrigger>
+    <TabsTrigger value="weekly">Weekly</TabsTrigger>
+    <TabsTrigger value="totals">Totals</TabsTrigger>
   </TabsList>
 
-  <TabsContent value="totals">
-    <LeaderboardTable rows={data.totals} seasonYear={data.seasonYear} />
+  <TabsContent value="weekly">
+    <LeaderboardWeekly />
   </TabsContent>
 
-  <TabsContent value="weekly">
-    <LeaderboardWeekly
-      seasonYear={data.seasonYear}
-      players={data.players}
-      weeks={data.weeks}
-      tableByWeek={data.tableByWeek}
-      weekTotals={data.weekTotals}
-    />
+  <TabsContent value="totals">
+    <LeaderboardTable />
   </TabsContent>
 </Tabs>
