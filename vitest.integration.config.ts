@@ -29,7 +29,8 @@ export default defineConfig({
         'vite.config.*',
         'vitest*.config.*',
   'tests/**',
-  'src/lib/components/ui/**',],
+  'src/lib/components/ui/**',
+  ],
       thresholds: {
         lines: 50,
         functions: 50,
