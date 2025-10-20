@@ -23,8 +23,8 @@
           {/if}
         </div>
       </div>
-      {#if chipResult}
-        <ResultChip result={chipResult} />
+      {#if cell.result}
+        <ResultChip result={cell.result} />
       {/if}
     </div>
   {:else}
