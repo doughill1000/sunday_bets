@@ -22,7 +22,6 @@
 
   // derive visible ordered players
   $: visiblePlayersRaw = $orderedPlayers.filter((p) => !hidden.has(p.id));
-  // grid templates
   $: mobileGridTemplate = `160px repeat(${visiblePlayersRaw.length}, 120px)`;
   $: desktopGridTemplate = `240px repeat(${visiblePlayersRaw.length}, minmax(180px, 1fr))`;
 </script>
