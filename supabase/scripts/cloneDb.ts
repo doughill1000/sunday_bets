@@ -5,7 +5,6 @@ import { execa } from 'execa';
 import fs from 'fs';
 import os from 'os';
 
-// Default to .env, but allow override via ENV_FILE or --env argument
 const envFileArg = process.argv.find((arg) => arg.startsWith('--env='));
 const envFile = envFileArg ? envFileArg.replace('--env=', '') : process.env.ENV_FILE || '.env';
 
@@ -20,10 +19,8 @@ const must = (k: string) => {
   return v;
 };
 
-// Required source
 const PROD = must('SUPABASE_DB_URL_PROD');
 
-// Resolve destination (precedence: --dest > env CLONE_DEST_URL > --target / CLONE_TARGET)
 function cliVal(prefix: string) {
   return process.argv.find((a) => a.startsWith(prefix))?.split('=')[1];
 }
@@ -40,18 +37,15 @@ if (explicitDest) {
   DEST = must('SUPABASE_DB_URL_DEV');
 }
 
-// Toggles
 const CLEAN_SESSIONS = (process.env.DEV_CLEAR_SESSIONS ?? 'true') === 'true';
 const DUMP_ROLES = (process.env.CLONE_DUMP_ROLES ?? 'false') === 'true';
 const RESET =
   (process.env.DEV_RESET ?? (process.argv.includes('--reset') ? 'true' : 'false')) === 'true';
 
-// Temp dir
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sb-clone-'));
 const rolesSql = path.join(tmpDir, 'roles.sql');
 const dataPublic = path.join(tmpDir, 'data_public.sql');
 
-// Helper: check binary
 async function hasBin(cmd: string) {
   try {
     await execa(process.platform === 'win32' ? 'where' : 'which', [cmd]);
@@ -61,7 +55,6 @@ async function hasBin(cmd: string) {
   }
 }
 
-// Normalize for psql \i on Windows
 const p = (s: string) => s.replace(/\\/g, '/');
 
 async function main() {
@@ -79,7 +72,6 @@ async function main() {
     process.exit(1);
   }
 
-  // 1) Optional roles
   if (DUMP_ROLES) {
     console.log('Dumping roles…');
     await execa('supabase', ['db', 'dump', '--db-url', PROD, '-f', rolesSql, '--role-only'], {
@@ -87,25 +79,28 @@ async function main() {
     });
   }
 
-  // 2) Data dump (public schema only)
-  console.log('Dumping public data…');
-  await execa(
-    'supabase',
-    [
-      'db',
-      'dump',
-      '--db-url',
-      PROD,
-      '-f',
-      dataPublic,
-      '--data-only',
-      '--schema',
-      'public',
-    ],
-    { stdio: 'inherit' }
+  // Exclude public.users when cloning into dev (to keep existing dev users)
+  const excludeUsers = target === 'dev';
+  console.log(
+    `Dumping public data…${excludeUsers ? ' (excluding public.users for target=dev)' : ''}`
   );
+  const dumpArgs = [
+    'db',
+    'dump',
+    '--db-url',
+    PROD,
+    '-f',
+    dataPublic,
+    '--data-only',
+    '--schema',
+    'public'
+  ];
+  if (excludeUsers) {
+    // supabase CLI passes through to pg_dump; --exclude-table should work
+    dumpArgs.push('--exclude', 'public.users');
+  }
+  await execa('supabase', dumpArgs, { stdio: 'inherit' });
 
-  // 3) Restore
   console.log(`Restoring into destination…`);
   const chunks: string[] = ['\\set ON_ERROR_STOP on', 'BEGIN;'];
 
@@ -143,9 +138,6 @@ async function main() {
   });
 
   console.log('Clone complete ✅');
-  if (RESET) console.log('Destination reset before import.');
-  if (CLEAN_SESSIONS)
-    console.log('Session tokens should be considered invalid; users may need to re-auth.');
   console.log(`Temp artifacts: ${tmpDir}`);
   console.log('Done.');
 }

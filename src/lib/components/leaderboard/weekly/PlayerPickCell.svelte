@@ -3,8 +3,10 @@
   import type { PickCell } from '$lib/types/server/leaderboard';
   import ResultChip from './ResultChip.svelte';
   import WeightChip from './WeightChip.svelte';
+  import { RESULT_MAP } from '$lib/constants/picks';
 
   export let cell: PickCell;
+  $: chipResult = (cell?.result && RESULT_MAP[cell.result]) || null;
 </script>
 
 <div class="rounded-md border p-2 md:p-3">
@@ -21,8 +23,8 @@
           {/if}
         </div>
       </div>
-      {#if cell.result}
-        <ResultChip result={cell.result} />
+      {#if chipResult}
+        <ResultChip result={chipResult} />
       {/if}
     </div>
   {:else}
