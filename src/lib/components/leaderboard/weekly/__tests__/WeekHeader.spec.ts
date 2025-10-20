@@ -10,91 +10,65 @@ const players = [
 
 describe('WeekHeader', () => {
   it('renders week number', () => {
-    const { getByText } = render(WeekHeader, {
-      weekNumber: 3,
-      players,
-      totals: {},
-      activeWeekNumber: null
-    });
+    const { getByText } = render(WeekHeader, { weekNumber: 3, players, totals: {}, activeWeekNumber: null });
     expect(getByText('Week 3')).toBeTruthy();
   });
 
-  it('marks active week and shows ACTIVE badge', () => {
-    const { getByText } = render(WeekHeader, {
+  it('marks active week', () => {
+    const { getByText, getByLabelText, container } = render(WeekHeader, {
       weekNumber: 5,
       players,
       totals: {},
       activeWeekNumber: 5
     });
-    const badge = getByText('ACTIVE');
-    expect(badge).toBeTruthy();
-    const weekSpan = getByText('Week 5').parentElement;
-    expect(weekSpan?.getAttribute('aria-current')).toBe('true');
-    // class checks (tailwind utilities present)
-    expect(weekSpan?.className).toMatch(/ring-2/);
-    expect(weekSpan?.className).toMatch(/ring-blue-500/);
+    expect(getByLabelText('Active week')).toBeTruthy();
+    const header = container.querySelector('[data-week-header]');
+    expect(header?.getAttribute('data-active')).toBe('true');
+    expect(header?.getAttribute('aria-current')).toBe('true');
   });
 
-  it('highlights top scorer with trophy and outline when positive', () => {
-    const { getByText } = render(WeekHeader, {
+  it('highlights top scorer when positive', () => {
+    const { container, getByText } = render(WeekHeader, {
       weekNumber: 2,
       players,
       totals: { p1: 4, p2: -1, p3: 0 },
       activeWeekNumber: null
     });
-    // Trophy near Alice
-    const trophy = getByText('🏆');
-    expect(trophy).toBeTruthy();
-    // Alice total should have +4 and green
-    const plusFour = getByText('+4');
-    expect(plusFour.className).toMatch(/text-green-600/);
+    expect(getByText('+4')).toBeTruthy();
+    const aliceEl = container.querySelector('[data-player-id="p1"]');
+    expect(aliceEl?.getAttribute('data-top')).toBe('true');
+    expect(aliceEl?.querySelector('[data-trophy]')).toBeTruthy();
   });
 
-  it('does not show trophy if all totals are zero', () => {
-    const { queryByText } = render(WeekHeader, {
+  it('no trophies if all totals zero', () => {
+    const { container } = render(WeekHeader, {
       weekNumber: 1,
       players,
       totals: { p1: 0, p2: 0, p3: 0 },
       activeWeekNumber: null
     });
-    expect(queryByText('🏆')).toBeNull();
+    expect(container.querySelector('[data-trophy]')).toBeNull();
   });
 
-  it('shows multiple trophies on tie with non-zero totals', () => {
-    const { getAllByText } = render(WeekHeader, {
+  it('ties show multiple trophies', () => {
+    const { container } = render(WeekHeader, {
       weekNumber: 7,
       players,
       totals: { p1: 3, p2: 3, p3: 1 },
       activeWeekNumber: null
     });
-    const trophies = getAllByText('🏆');
-    expect(trophies.length).toBe(2);
+    expect(container.querySelectorAll('[data-trophy]').length).toBe(2);
   });
 
-  it('formats negative totals red and without plus sign', () => {
+  it('negative totals red, positives green, zero neutral', () => {
     const { getByText } = render(WeekHeader, {
       weekNumber: 4,
       players,
       totals: { p1: -2, p2: 0, p3: 5 },
       activeWeekNumber: null
     });
-    const neg = getByText('-2');
-    expect(neg.className).toMatch(/text-red-600/);
-    // Positive has plus sign
-    const pos = getByText('+5');
-    expect(pos.className).toMatch(/text-green-600/);
-  });
-
-  it('shows zero in neutral styling', () => {
-    const { container } = render(WeekHeader, {
-      weekNumber: 8,
-      players,
-      totals: { p1: 0, p2: 1, p3: -1 },
-      activeWeekNumber: null
-    });
-    const zeroEl = container.querySelector('[data-player-id="p1"] [data-total-val]');
-    expect(zeroEl).toBeTruthy();
-    expect(zeroEl?.textContent).toBe('0');
-    expect(zeroEl?.className).toMatch(/text-neutral-600/);
+    expect(getByText('-2').className).toMatch(/text-red-600/);
+    expect(getByText('+5').className).toMatch(/text-green-600/);
+    expect(getByText('0').className).toMatch(/text-neutral-600/);
   });
 });
