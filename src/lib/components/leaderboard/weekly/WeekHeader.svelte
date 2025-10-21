@@ -36,7 +36,7 @@
     {/if}
   </span>
 
-  <div class="flex flex-1 flex-wrap items-center gap-2" data-week-totals>
+  <div class="flex flex-1 flex-wrap items-center gap-1" data-week-totals>
     {#each players as p}
       <span
         class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] md:text-xs
