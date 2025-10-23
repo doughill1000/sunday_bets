@@ -16,7 +16,7 @@ jobs:
       name: Development
     env:
       NODE_ENV: test
-      SUPABASE_CLI_VERSION: 2.40.7
+      SUPABASE_CLI_VERSION: 2.53.6
       PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
       PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
