@@ -2,7 +2,7 @@ import { supabaseService } from '$lib/supabase/service';
 
 export function getPicksForWeeks(weekIds: number[]) {
   return supabaseService
-    .from('picks_status_view_user')
+    .from('picks_status_view_admin')
     .select(
       `
     game_id,
