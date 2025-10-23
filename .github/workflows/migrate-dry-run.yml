@@ -13,15 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.base_ref == 'master' && 'Production' || 'Development' }}
+    env:  
+      SUPABASE_CLI_VERSION: 2.53.6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install Supabase CLI
-        run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-          | sudo tar -xz -C /usr/local/bin supabase
-          supabase --version
+        
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+            version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Dry run migrations
         env:

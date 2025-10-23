@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-      SUPABASE_CLI_VERSION: 2.40.7
+      SUPABASE_CLI_VERSION: 2.53.6
     steps:
       - uses: actions/checkout@v3
       - name: Setup Supabase CLI
