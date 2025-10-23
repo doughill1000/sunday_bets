@@ -692,14 +692,8 @@ export type Database = {
         Args: { p_action: string; p_actor: string; p_details: Json }
         Returns: undefined
       }
-      game_has_started: {
-        Args: { p_game_id: string }
-        Returns: boolean
-      }
-      grade_game: {
-        Args: { p_game_id: string }
-        Returns: undefined
-      }
+      game_has_started: { Args: { p_game_id: string }; Returns: boolean }
+      grade_game: { Args: { p_game_id: string }; Returns: undefined }
       grade_pick: {
         Args: {
           away_id: number
@@ -716,18 +710,9 @@ export type Database = {
           points_delta: number
         }[]
       }
-      grade_season: {
-        Args: { p_season_id: number }
-        Returns: undefined
-      }
-      grade_week: {
-        Args: { p_week_id: number }
-        Returns: undefined
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      grade_season: { Args: { p_season_id: number }; Returns: undefined }
+      grade_week: { Args: { p_week_id: number }; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
       lock_pick: {
         Args: {
           p_game_id: string
@@ -776,10 +761,7 @@ export type Database = {
         }
         Returns: string
       }
-      weight_points: {
-        Args: { p_weight: string }
-        Returns: number
-      }
+      weight_points: { Args: { p_weight: string }; Returns: number }
     }
     Enums: {
       cover_side: "home" | "away" | "push"

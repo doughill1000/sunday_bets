@@ -19,7 +19,7 @@ select
 from public.picks p
 join public.games g on g.id = p.game_id
 join public.teams t on t.id = p.picked_team_id
-where p.user_id = auth.uid()
+where p.user_id = auth.uid();
 
-revoke all on public.picks_status_view_user from public;
+revoke all on public.picks_status_view_user from public, anon;
 grant select on public.picks_status_view_user to authenticated;
