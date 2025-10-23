@@ -10,43 +10,114 @@ vi.mock('$lib/api/picks', () => ({
   unlockPick: vi.fn(async () => ({ ok: true }))
 }));
 
-describe('LockControls', () => {
-  const game = { id: 'g1' } as any;
+vi.mock('$lib/domain/rules', () => ({
+  canUseAllInRule: vi.fn(() => true)
+}));
 
+const game = { id: 'g1' } as any;
+
+describe('LockControls', () => {
   beforeEach(() => {
-    setPicks({
-      g1: { selected: { team: 'home', weight: 'M' } } as any
-    });
+    setPicks({});
     vi.clearAllMocks();
   });
 
   it('locks a pick (calls API and updates store)', async () => {
+    setPicks({
+      g1: { selected: { team: 'home', weight: 'M' } } as any
+    });
     const { lockPick } = await import('$lib/api/picks');
-    render(LockControls, { props: { game, initialized: true, started: false, locked: false } });
-    await fireEvent.click(screen.getByText('Lock Pick'));
+
+    render(LockControls, {
+      props: { game, initialized: true, started: false, locked: false }
+    });
+
+    const btn = screen.getByRole('button', { name: /Lock Pick/i });
+    expect(btn).toBeEnabled();
+
+    await fireEvent.click(btn);
+
     expect(lockPick).toHaveBeenCalledWith('g1', 'home', 'M');
     expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' });
   });
 
-  it('unlocks a pick (calls API and clears lockedPick)', async () => {
+  it('unlocks a pick (calls API and clears lockedPick) - fixed text match', async () => {
+    setPicks({
+      g1: { lockedPick: { team: 'home', weight: 'M' } } as any
+    });
     const { unlockPick } = await import('$lib/api/picks');
-    // Start as locked
-    setPicks({ g1: { lockedPick: { team: 'home', weight: 'M' } } as any });
-    render(LockControls, { props: { game, initialized: true, started: false, locked: true } });
-    await fireEvent.click(screen.getByText('Unlock'));
+
+    render(LockControls, {
+      props: { game, initialized: true, started: false, locked: true }
+    });
+
+    // Match button with emoji prefix using accessible name
+    const btn = screen.getByRole('button', { name: /Unlock/i });
+    expect(btn).toBeEnabled();
+
+    await fireEvent.click(btn);
+
     expect(unlockPick).toHaveBeenCalledWith('g1');
     expect(get(picks).g1.lockedPick).toBeUndefined();
   });
 
-  it('disables lock when not initialized or started', async () => {
+  it('does not unlock when started (button disabled)', async () => {
+    setPicks({
+      g1: { lockedPick: { team: 'home', weight: 'M' } } as any
+    });
+    const { unlockPick } = await import('$lib/api/picks');
+
+    render(LockControls, {
+      props: { game, initialized: true, started: true, locked: true }
+    });
+
+    const btn = screen.getByRole('button', { name: /Unlock/i });
+    expect(btn).toBeDisabled();
+
+    await fireEvent.click(btn);
+    expect(unlockPick).not.toHaveBeenCalled();
+    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' });
+  });
+
+  it('disables lock when not initialized', async () => {
     const { lockPick } = await import('$lib/api/picks');
-    const { rerender } = render(LockControls, {
+
+    render(LockControls, {
       props: { game, initialized: false, started: false, locked: false }
     });
-    expect(screen.getByText('Lock Pick')).toBeDisabled();
 
-    await rerender({ game, initialized: true, started: true, locked: false });
-    expect(screen.getByText('Lock Pick')).toBeDisabled();
+    const btn = screen.getByRole('button', { name: /Lock Pick/i });
+    expect(btn).toBeDisabled();
+    await fireEvent.click(btn);
     expect(lockPick).not.toHaveBeenCalled();
+  });
+
+  it('handles All-In rule disabling/enabling', async () => {
+    const { lockPick } = await import('$lib/api/picks');
+    const { canUseAllInRule } = await import('$lib/domain/rules');
+
+    setPicks({
+      g1: { selected: { team: 'home', weight: 'A' } } as any
+    });
+
+    (canUseAllInRule as any).mockReturnValue(false);
+
+    const { rerender } = render(LockControls, {
+      props: { game, initialized: true, started: false, locked: false }
+    });
+
+    let btn = screen.getByRole('button', { name: /Lock Pick/i });
+    expect(btn).toBeDisabled();
+
+    (canUseAllInRule as any).mockReturnValue(true);
+
+    await rerender({ game, initialized: true, started: false, locked: false });
+
+    btn = screen.getByRole('button', { name: /Lock Pick/i });
+    expect(btn).toBeEnabled();
+
+    await fireEvent.click(btn);
+    expect(lockPick).toHaveBeenCalledWith('g1', 'home', 'A');
+    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'A' });
   });
 });

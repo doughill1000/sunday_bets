@@ -32,6 +32,8 @@
   }
 
   async function onUnlock() {
+    // Prevent calling API if game already started; button should be disabled but guard adds safety
+    if (started) return;
     const res = await unlockPickApi(game.id);
     if (!res.ok) {
       toast.error('Unlock failed');
