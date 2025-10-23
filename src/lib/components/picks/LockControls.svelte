@@ -32,6 +32,8 @@
   }
 
   async function onUnlock() {
+    // Prevent calling API if game already started; button should be disabled but guard adds safety
+    if (started) return;
     const res = await unlockPickApi(game.id);
     if (!res.ok) {
       toast.error('Unlock failed');
@@ -47,12 +49,15 @@
 <div class="mt-1 flex gap-2">
   {#if locked}
     <Button
-      class="h-10 w-full font-semibold"
+      class="h-10 w-full font-semibold
+              border-4 border-white/80 dark:border-white/60    
+             shadow-sm hover:shadow border-2 transition
+             focus-visible:ring-2"
       variant="outline"
       onclick={onUnlock}
       disabled={started}
     >
-      Unlock
+      🔓 Unlock
     </Button>
   {:else}
     <Button

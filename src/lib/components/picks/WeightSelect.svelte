@@ -20,14 +20,19 @@
       type="single"
       value={selectedWeight}
       onValueChange={(val) => setWeight(gameId, (val ?? 'L') as WeightCode)}
-      class="w-full"
+      class="w-full flex gap-1"
       disabled={!canChange}
     >
       {#each Object.entries(WEIGHTS) as [code, w]}
         <ToggleGroupItem
           value={code}
           disabled={code === 'A' && !canUseAllIn}
-          class="flex-1 px-3 py-[6px] leading-none"
+          class="flex-1 px-3 py-[6px] leading-none border rounded-md transition
+                 bg-muted/40 hover:bg-muted/60
+                 data-[state=on]:border-primary data-[state=on]:text-primary
+                 data-[state=on]:shadow-sm
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+                 disabled:opacity-70 disabled:pointer-events-none"
         >
           <div class="flex flex-col items-center">
             <span class="text-sm font-semibold">{w.label}</span>
