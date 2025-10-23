@@ -90,7 +90,7 @@
     "hash": "1aec542857e62bc045478bcabf4d2afafd9d8f17fd0ccb53565c71e32b981af0"
   },
   "views/picks_status_view_user.sql": {
-    "hash": "9581874877917b771752fd12c01d4c0cf39ef8403affb3bf01248e9be1ef0bea"
+    "hash": "85ad2056e2943fd0a65d9aa07766952db3ad7ae673e35b025492191d5b0ef3e7"
   },
   "views/ui_games.sql": {
     "hash": "ce7440a0574e3e40b7ba25f6fd6bf0048df314f65b15a11f4905990987dcca26"
@@ -184,7 +184,7 @@
     "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "1886b223b4f4c2aac6548892b0be4ea86c8618e92c80c4aa91b2acc7f5e3bf8d",
+    "hash": "03d6126c7b4970e079d59ae92de3f88fd953c045e6f4a5855303146eab11c2f9",
     "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
   },
   "schemas/0402_fix_active_line_uq.sql": {
