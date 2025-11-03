@@ -7,25 +7,24 @@
   export let games: WeekTableGame[] = [];
   export let cells: Record<string, Record<string, PickCell>> = {};
 
-  // pass both templates from parent
   export let gridTemplate: string; // mobile
   export let gridTemplateLg: string; // md+
 </script>
 
-<div class="overflow-x-auto">
+<div class="overflow-auto max-h-[70vh] w-full">
   <div
     class="weekly-grid grid items-start gap-2 md:gap-3"
     style={`--gtc:${gridTemplate}; --gtc-lg:${gridTemplateLg};`}
   >
     <!-- header -->
     <div
-      class="pr-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase md:text-xs"
+      class="sticky-col sticky top-0 left-0 z-30 pr-1 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase md:text-xs bg-background"
     >
       Game
     </div>
     {#each players as p}
       <div
-        class="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase md:text-xs"
+        class="sticky top-0 z-20 text-[10px] font-semibold tracking-wide text-muted-foreground uppercase md:text-xs bg-background"
       >
         <span class="md:hidden" title={p.display_name}>{shortName(p.display_name)}</span>
         <span class="hidden md:inline">{p.display_name}</span>
@@ -34,7 +33,7 @@
 
     <!-- rows -->
     {#each games as g}
-      <div class="rounded-md border p-2 md:p-3">
+      <div class="sticky-col sticky left-0 z-10 rounded-md border bg-background p-2 md:p-3">
         <div class="truncate text-sm font-medium md:text-base">{g.label}</div>
         <div class="text-xs text-muted-foreground md:text-sm">{g.score ?? '—'}</div>
       </div>
@@ -47,14 +46,21 @@
 </div>
 
 <style>
-  /* mobile-first */
   .weekly-grid {
     grid-template-columns: var(--gtc);
+    width: max-content;       /* allow horizontal overflow */
+    min-width: 100%;          /* at least fill container */
   }
-  /* md+ (768px) */
   @media (min-width: 768px) {
     .weekly-grid {
       grid-template-columns: var(--gtc-lg);
     }
+  }
+  .sticky-col {
+    background-clip: padding-box;
+  }
+  /* Optional: ensure sticky cells cover gap behind them when scrolled */
+  .sticky-col {
+    box-shadow: 2px 0 0 var(--background), 3px 0 4px -2px rgba(0,0,0,0.15);
   }
 </style>
