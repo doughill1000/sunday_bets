@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../app.css';
-  import AppHeader from '$lib/components/AppHeader.svelte';
+  import AppHeader from '$lib/components/app-header/AppHeader.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
