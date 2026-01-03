@@ -65,7 +65,7 @@
       onclick={onLock}
       disabled={!initialized ||
         !$picks[game.id]?.selected ||
-        ($picks[game.id]?.selected?.weight === 'A' && !canUseAllInRule(game.id, $picks)) ||
+        // ($picks[game.id]?.selected?.weight === 'A' && !canUseAllInRule(game.id, $picks)) ||
         started}
     >
       Lock Pick
