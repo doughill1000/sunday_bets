@@ -26,7 +26,6 @@
       {#each Object.entries(WEIGHTS) as [code, w]}
         <ToggleGroupItem
           value={code}
-          disabled={code === 'A' && !canUseAllIn}
           class="flex-1 px-3 py-[6px] leading-none border rounded-md transition
                  bg-muted/40 hover:bg-muted/60
                  data-[state=on]:border-primary data-[state=on]:text-primary
