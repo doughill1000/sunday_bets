@@ -6,9 +6,9 @@
 
   export let gameId: string;
   export let canChange = false;
-  export let canUseAllIn = true;
+  // export let canUseAllIn = true;
   export let selectedWeight: WeightCode = 'L';
-  export let showAllInHint = false;
+  // export let showAllInHint = false;
 </script>
 
 <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">
@@ -41,10 +41,10 @@
       {/each}
     </ToggleGroup>
 
-    {#if showAllInHint}
+    <!-- {#if showAllInHint}
       <p class="mt-1 text-[11px] text-muted-foreground">
         {WEIGHTS.A.label} has already been used on another game.
       </p>
-    {/if}
+    {/if} -->
   </div>
 </div>
