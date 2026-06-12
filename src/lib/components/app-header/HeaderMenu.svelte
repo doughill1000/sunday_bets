@@ -1,20 +1,14 @@
 <script lang="ts">
-  import type { User } from '@supabase/supabase-js';
-  import { isAdmin } from '$lib/auth/guards';
-
   import { Button } from '$lib/components/ui/button';
   import { Sheet, SheetContent, SheetTrigger } from '$lib/components/ui/sheet';
   import { Separator } from '$lib/components/ui/separator';
-  import { Menu } from 'lucide-svelte';
+  import Menu from '@lucide/svelte/icons/menu';
 
-  export let user: User | null = null;
+  export let canSeeAdmin = false;
   export let canInstall = false;
   export let installPwa: (e: MouseEvent) => void;
   export let open = false;
   export let onNavigate: () => void = () => {};
-
-  $: canSeeAdmin = isAdmin(user);
-
 </script>
 
 <div class="-mr-2 ml-auto flex shrink-0 items-center gap-2">
@@ -64,8 +58,6 @@
           >Sign out</a
         >
       </nav>
-
-      <div class="mt-6 text-xs text-muted-foreground">Season 2025 • Week 1</div>
     </SheetContent>
   </Sheet>
 </div>

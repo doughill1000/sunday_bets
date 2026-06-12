@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { User } from '@supabase/supabase-js';
-  import { isAdmin } from '$lib/auth/guards';
   import { userNameShort } from '$lib/utils/user';
 
   import { Button } from '$lib/components/ui/button';
@@ -15,9 +14,8 @@
   import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
 
   export let user: User | null = null;
+  export let canSeeAdmin = false;
   export let onNavigate: () => void = () => {};
-
-  $: canSeeAdmin = isAdmin(user);
 </script>
 
 <div class="-ml-2 flex shrink-0 items-center">

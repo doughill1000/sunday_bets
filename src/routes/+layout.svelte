@@ -7,7 +7,7 @@
   import { registerSW } from 'virtual:pwa-register';
 
   let { children, data } = $props();
-  const { supabase, session, user } = data;
+  const { supabase, session, user, isAdmin } = data;
 
   onMount(() => {
     const updateSW = registerSW({
@@ -42,7 +42,7 @@
     class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
   >
     <div class="container mx-auto flex h-14 items-center px-4">
-      <AppHeader {user} />
+      <AppHeader {user} canSeeAdmin={isAdmin} />
     </div>
   </header>
 
