@@ -3,6 +3,14 @@
     "Sentry": {
       "url": "https://mcp.sentry.dev/mcp/doughill1000/javascript-sveltekit",
       "type": "http"
+    },
+    "supabase-staging": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=eoncckeqqogezoftooix"
+    },
+    "supabase-prod": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=anzcshrpfpxajcgrwczv"
     }
   }
 }

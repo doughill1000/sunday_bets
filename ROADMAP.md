@@ -4,7 +4,22 @@ Phase 1 (bug fixes, dead code, dep cleanup, admin-auth unification, Odds API
 quota tracking, docs) shipped in June 2026. What follows is the plan for the
 rest of the offseason, in order. Each phase is independently shippable.
 
-## Phase 2 — E2E safety net + finish the Svelte 5 migration (July)
+## Versioning
+
+Each phase ships as a minor version bump. Phase 6 (season launch) is the v2.0
+milestone. Hotfixes within a phase use patch versions (e.g. v1.3.1).
+
+| Version | Milestone |
+|---------|-----------|
+| v1.1    | Pre-roadmap baseline |
+| v1.2    | Phase 1 — shipped June 2026 |
+| v1.3    | Phase 2 — E2E + Svelte 5 migration |
+| v1.4    | Phase 3 — Automation (crons) |
+| v1.5    | Phase 4 — Push notifications |
+| v1.6    | Phase 5 — Stats & history |
+| v2.0    | Phase 6 — Social + Week 1 launch |
+
+## Phase 2 — E2E safety net + finish the Svelte 5 migration (July) — v1.3
 
 E2E tests come **first** so the component migration has a regression net.
 
@@ -22,7 +37,7 @@ E2E tests come **first** so the component migration has a regression net.
   (prettier passes; CI never ran lint). Decide per area: fix in `src/`,
   disable the rule for test files where `as any` mocks are idiomatic.
 
-## Phase 3 — Automation: the app runs itself (late July–August)
+## Phase 3 — Automation: the app runs itself (late July–August) — v1.4
 
 **Architecture: `CRON_SECRET`-protected SvelteKit endpoints, scheduled by
 GitHub Actions cron workflows** (already-used infra, free, flexible cadence;
@@ -43,7 +58,7 @@ Pro, only the scheduler changes.
   caught errors. Show recent runs on the admin page.
 - Monthly reset function for `settings.odds_api_calls_used_current_month`.
 
-## Phase 4 — Push notifications (August)
+## Phase 4 — Push notifications (August) — v1.5
 
 - Keep the `generateSW` PWA strategy; add push/notificationclick handlers via
   `workbox.importScripts` → `static/push-handler.js`.
@@ -56,7 +71,7 @@ Pro, only the scheduler changes.
   games <48h out), results summary after a successful grade run. Admin "send
   test notification" button.
 
-## Phase 5 — Stats & history (August)
+## Phase 5 — Stats & history (August) — v1.6
 
 - Four SQL views over `pick_settlement` in `supabase/src/views/`:
   `stats_head_to_head`, `stats_accuracy_by_team`, `stats_accuracy_by_weight`
@@ -65,7 +80,7 @@ Pro, only the scheduler changes.
   queries the existing weekly view and is waiting for a consumer).
 - New `/(app)/stats` route; charts via LayerChart.
 
-## Phase 6 — Social + pre-season polish (late August → Week 1)
+## Phase 6 — Social + pre-season polish (late August → Week 1) — v2.0
 
 - Game-scoped `comments` table (≤500 chars; RLS: write own anytime, **read only
   after `game_has_started(game_id)`** → sealed-envelope trash talk revealed at
