@@ -153,6 +153,22 @@ describe('grading service', () => {
     expect(updates.some((u) => u.values.final_scores)).toBe(true);
   });
 
+  it('gradeWeek with refresh throws when the games query fails', async () => {
+    from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'games') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: null, error: { message: 'games fetch failed' } })
+          })
+        };
+      }
+      return {};
+    });
+    await expect(gradeWeek(12, { refreshScores: true })).rejects.toThrow('games fetch failed');
+    expect(fetchScoresImpl).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it('gradeSeason with refresh pulls weeks, scores, and updates then rpc', async () => {
     fetchScoresImpl = vi.fn().mockResolvedValue([
       {
