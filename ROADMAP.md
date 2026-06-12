@@ -36,6 +36,18 @@ E2E tests come **first** so the component migration has a regression net.
 - ESLint: 181 pre-existing `@typescript-eslint/no-explicit-any` errors
   (prettier passes; CI never ran lint). Decide per area: fix in `src/`,
   disable the rule for test files where `as any` mocks are idiomatic.
+- **Supabase API key migration** — Supabase has replaced legacy JWT-based
+  `anon` / `service_role` keys with new `sb_publishable_*` / `sb_secret_*`
+  keys (legacy deprecated end of 2026). Steps:
+  1. Generate new keys in Supabase dashboard → Settings → API Keys for both
+     staging and production projects.
+  2. Update `.env.staging` and `.env.production` values (env var names
+     `PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE` can stay; only the
+     key values change). Update `.env.example` comment to note new format.
+  3. Rotate the matching Vercel env vars and GitHub Actions secrets for both
+     environments.
+  4. The `supabase-js` SDK accepts the new key format transparently — no code
+     changes needed in `src/hooks.server.ts` or `src/lib/supabase/service.ts`.
 
 ## Phase 3 — Automation: the app runs itself (late July–August) — v1.4
 
@@ -91,6 +103,24 @@ Pro, only the scheduler changes.
 - Season-start checklist: seed 2026 season/weeks (seeding is manual;
   `seed/002_season_and_weeks.sql` is commented out), verify crons, check Odds
   API quota, full Playwright suite green.
+
+## Cross-cutting: new tables and the Data API
+
+Supabase no longer auto-exposes new `public` schema tables to the Data (REST)
+and GraphQL APIs. Every new table added in Phase 3+ must include explicit
+grants and RLS before the app can query it through the client:
+
+```sql
+-- required alongside CREATE TABLE for any Data API-accessible table
+grant select, insert, update, delete on <table> to authenticated;
+alter table <table> enable row level security;
+-- then add policies as appropriate
+```
+
+Affected tables by phase: `cron_run_log` (Phase 3), `push_subscriptions` /
+`notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6). Tables
+only accessed server-side via the secret key (service role) bypass RLS anyway,
+but the grant is still needed for the Data API path.
 
 ## Parked
 
