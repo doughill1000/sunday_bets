@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Select-String *)",
+      "Bash(git -C * ls-files *)",
+      "Bash(git -C * log *)"
+    ]
+  }
+}
