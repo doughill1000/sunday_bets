@@ -1,7 +1,7 @@
-import type { GameResult } from '../types/domain';
+import type { ShortResult } from '$lib/constants/picks';
 import type { PickOutcome } from '$lib/types/server';
 
-export const toResult = (o: PickOutcome | null | undefined): GameResult =>
+export const toResult = (o: PickOutcome | null | undefined): ShortResult =>
   o === 'win' ? 'W' : o === 'loss' ? 'L' : o === 'push' ? 'P' : 'M';
 
 export function formatLockedSpread(

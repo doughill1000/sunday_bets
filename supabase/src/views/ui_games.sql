@@ -10,6 +10,6 @@ select
   gl.spread_value     as spread_value,        -- positive; 0 => PK; null => no line
   gl.spread_team_id   as favorite_team_id     -- UUID of favored team
 from public.games g
-join public.game_lines gl on gl.game_id = g.id and gl.is_active_line = true
+left join public.game_lines gl on gl.game_id = g.id and gl.is_active_line = true
 join public.teams th on th.id = g.home_team_id
 join public.teams ta on ta.id = g.away_team_id;

@@ -2,7 +2,7 @@
   import { picks } from '$lib/stores/picks';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { kickoffPassed, canUseAllInRule } from '$lib/domain/rules';
+  import { kickoffPassed } from '$lib/domain/rules';
   import { formatKickoff } from '$lib/ui/format';
   import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
   import TeamSelect from './TeamSelect.svelte';
@@ -18,7 +18,6 @@
   $: started = kickoffPassed(game.kickoff);
   $: locked = !!entry.lockedPick;
   $: canChange = initialized && !started && !locked;
-  $: canUseAllIn = canUseAllInRule(game.id, $picks);
 
   $: weightValue = current?.weight ?? 'L';
   $: lineText = spreadLine(game);
@@ -57,13 +56,7 @@
   <CardContent class="space-y-3">
     <TeamSelect {game} {canChange} />
 
-    <WeightSelect
-      gameId={game.id}
-      {canChange}
-      {canUseAllIn}
-      selectedWeight={weightValue}
-      showAllInHint={entry.selected?.weight === 'A' && !canUseAllIn}
-    />
+    <WeightSelect gameId={game.id} {canChange} selectedWeight={weightValue} />
 
     <LockControls {game} {initialized} {started} {locked} />
 

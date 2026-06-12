@@ -4,7 +4,7 @@ import { getPlayers } from './db/queries/getPlayers';
 import { getPicksForWeeks } from './db/queries/getPicksForWeeks';
 import { getSettlementsForGames } from './db/queries/getSettlementsForGames';
 import { supabaseService } from '$lib/supabase/service';
-import type { GameResult } from '../types/domain';
+import type { ShortResult } from '$lib/constants/picks';
 import type {
   GameRow,
   PickRow,
@@ -88,7 +88,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
     outcome: s.outcome ?? null
   }));
 
-  const settleByKey = new Map<string, { result: GameResult; pts: number }>();
+  const settleByKey = new Map<string, { result: ShortResult; pts: number }>();
   for (const s of settlements) {
     settleByKey.set(`${s.user_id}|${s.game_id}`, {
       result: toResult(s.outcome),

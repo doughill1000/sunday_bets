@@ -28,5 +28,5 @@ export function textOn(c1: string, c2?: string) {
   // Contrast vs black ~ (L+0.05)/(0.05); vs white ~ (1.05)/(L+0.05)
   const contrastBlack = (L + 0.05) / 0.05;
   const contrastWhite = 1.05 / (L + 0.05);
-  return contrastWhite; // contrastWhite >= contrastBlack ? '#FFFFFF' : '#000000';
+  return contrastWhite >= contrastBlack ? '#FFFFFF' : '#000000';
 }
