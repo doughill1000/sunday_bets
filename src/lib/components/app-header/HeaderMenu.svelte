@@ -12,7 +12,7 @@
 </script>
 
 <div class="-mr-2 ml-auto flex shrink-0 items-center gap-2">
-  <Sheet bind:open={open}>
+  <Sheet bind:open>
     <SheetTrigger>
       <Button size="icon" variant="ghost" aria-label="Open menu" class="rounded-xl">
         <Menu class="size-5" />
@@ -25,21 +25,18 @@
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/picks"
-          on:click={onNavigate}
-          >My Picks</a
+          on:click={onNavigate}>My Picks</a
         >
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/leaderboard"
-          on:click={onNavigate}
-          >Leaderboard</a
+          on:click={onNavigate}>Leaderboard</a
         >
         {#if canSeeAdmin}
           <a
             class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
             href="/admin"
-            on:click={onNavigate}
-            >Admin</a
+            on:click={onNavigate}>Admin</a
           >
         {/if}
       </nav>
@@ -54,8 +51,7 @@
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/auth/signout"
-          on:click={onNavigate}
-          >Sign out</a
+          on:click={onNavigate}>Sign out</a
         >
       </nav>
     </SheetContent>

@@ -17,15 +17,13 @@ export default defineConfig({
     css: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/__tests__/**/*.{test,spec}.{js,ts}', 'src/**/*.{test,spec}.{js,ts}'],
-    exclude: [
-      'src/lib/components/ui/**'
-    ],
+    exclude: ['src/lib/components/ui/**'],
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage/unit',
       reporter: ['text', 'text-summary'],
       exclude: [
-// generated/build
+        // generated/build
         '.svelte-kit/**',
         '.vercel/**',
         'dev-dist/**',
@@ -51,8 +49,8 @@ export default defineConfig({
         // 'src/routes/**/+page.svelte',
 
         // (optional) scripts you don’t want in unit coverage
-  'supabase/scripts/**',
-  'src/lib/components/ui/**'
+        'supabase/scripts/**',
+        'src/lib/components/ui/**'
       ],
       thresholds: {
         lines: 70,

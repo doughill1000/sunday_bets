@@ -123,7 +123,9 @@ describe('grading service', () => {
     const res = await gradeGame('gX', { refreshScores: true, daysFrom: 2 });
     expect(fetchScoresImpl).toHaveBeenCalledWith(2);
     // update for gX should occur
-    expect(updates.find(u => u.id === 'gX')?.values).toEqual({ final_scores: { home: 21, away: 17 } });
+    expect(updates.find((u) => u.id === 'gX')?.values).toEqual({
+      final_scores: { home: 21, away: 17 }
+    });
     expect(res.ok).toBe(true);
   });
 
@@ -148,7 +150,7 @@ describe('grading service', () => {
     ]);
     await gradeWeek(11, { refreshScores: true });
     expect(fetchScoresImpl).toHaveBeenCalled();
-    expect(updates.some(u => u.values.final_scores)).toBe(true);
+    expect(updates.some((u) => u.values.final_scores)).toBe(true);
   });
 
   it('gradeSeason with refresh pulls weeks, scores, and updates then rpc', async () => {
@@ -165,15 +167,20 @@ describe('grading service', () => {
     ]);
     const res = await gradeSeason(2024, { refreshScores: true, daysFrom: 3 });
     expect(fetchScoresImpl).toHaveBeenCalledWith(3);
-    expect(updates.find(u => u.id === 'gS1')?.values.final_scores).toEqual({ home: 30, away: 27 });
+    expect(updates.find((u) => u.id === 'gS1')?.values.final_scores).toEqual({
+      home: 30,
+      away: 27
+    });
     expect(rpc).toHaveBeenCalledWith('grade_season', { p_season_id: 2024 });
     expect(res).toEqual({ ok: true, season_id: 2024 });
   });
 
   it('does not update when no completed events', async () => {
-    fetchScoresImpl = vi.fn().mockResolvedValue([
-      { id: 'ext-x', completed: false, scores: [], commence_time: '2099-01-01T00:00:00Z' }
-    ]);
+    fetchScoresImpl = vi
+      .fn()
+      .mockResolvedValue([
+        { id: 'ext-x', completed: false, scores: [], commence_time: '2099-01-01T00:00:00Z' }
+      ]);
     await gradeGame('gX', { refreshScores: true });
     expect(updates.length).toBe(0);
   });

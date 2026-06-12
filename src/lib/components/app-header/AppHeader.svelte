@@ -51,7 +51,7 @@
 >
   <div class="mx-auto max-w-screen-xl px-2 sm:px-4">
     <div class="relative flex h-14 items-center">
-      <HeaderAccount user={user} {canSeeAdmin} onNavigate={closeMenu} />
+      <HeaderAccount {user} {canSeeAdmin} onNavigate={closeMenu} />
 
       <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
         <a
@@ -70,7 +70,7 @@
 
       <HeaderMenu
         {canSeeAdmin}
-        canInstall={canInstall}
+        {canInstall}
         {installPwa}
         bind:open={menuOpen}
         onNavigate={closeMenu}

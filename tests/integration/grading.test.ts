@@ -1,6 +1,12 @@
 import { describe, test, expect, beforeAll } from 'vitest';
 import { createSupaClient } from './_helpers';
-import { TEST_USERS, ensureCoreTestUsers, ensureTeams, ensureSeasonAndWeek, ensureSettings } from './fixtures/db';
+import {
+  TEST_USERS,
+  ensureCoreTestUsers,
+  ensureTeams,
+  ensureSeasonAndWeek,
+  ensureSettings
+} from './fixtures/db';
 
 const supabase = createSupaClient();
 

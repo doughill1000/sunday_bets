@@ -9,7 +9,7 @@ describe('leaderboard utils', () => {
       expect(toResult('push')).toBe('P');
       expect(toResult(undefined)).toBe('M');
       expect(toResult(null)).toBe('M');
-  expect(toResult('other' as any)).toBe('M');
+      expect(toResult('other' as any)).toBe('M');
     });
   });
 
@@ -19,7 +19,7 @@ describe('leaderboard utils', () => {
       expect(formatLockedSpread(undefined, 1, 1)).toBeNull();
     });
     it('returns null for NaN', () => {
-  expect(formatLockedSpread({} as any, 1, 1)).toBeNull();
+      expect(formatLockedSpread({} as any, 1, 1)).toBeNull();
     });
     it('renders PK for ~0 value', () => {
       expect(formatLockedSpread(0, 1, 1)).toBe('PK');
@@ -35,7 +35,7 @@ describe('leaderboard utils', () => {
       expect(formatLockedSpread(-3.5, 8, 9)).toBe('+3.5');
     });
     it('coerces string values', () => {
-  expect(formatLockedSpread('6.5' as any, '10' as any, '10' as any)).toBe('-6.5');
+      expect(formatLockedSpread('6.5' as any, '10' as any, '10' as any)).toBe('-6.5');
     });
   });
 

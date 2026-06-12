@@ -26,7 +26,10 @@
   if (Array.isArray(data.totals)) {
     seasonTotalsStore.set(data.totals);
   } else {
-    console.error("Expected data.totals to be an array of season totals rows, but got:", data.totals);
+    console.error(
+      'Expected data.totals to be an array of season totals rows, but got:',
+      data.totals
+    );
   }
 </script>
 

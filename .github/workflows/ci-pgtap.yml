@@ -1,7 +1,7 @@
 name: PGTap Tests
 on:
   pull_request:
-    branches: [ develop ]
+    branches: [develop]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-            version: ${{ env.SUPABASE_CLI_VERSION }}
+          version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Supabase Start
         run: supabase start
       - name: Run Tests

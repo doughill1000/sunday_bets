@@ -42,7 +42,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-            version: ${{ env.SUPABASE_CLI_VERSION }}
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Start local Supabase (auth-capable)
         run: |

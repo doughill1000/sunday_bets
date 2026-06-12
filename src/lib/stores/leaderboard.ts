@@ -11,12 +11,8 @@ export const tableByWeek = writable<Record<number, any>>({});
 export const seasonYearStore = writable<number | null>(null);
 export const seasonTotalsStore = writable<SeasonTotalsRow[]>([]);
 
-export const orderedPlayers = derived(
-  [players, currentUserId],
-  ([$players, $currentUserId]) =>
-    $currentUserId
-      ? [...$players].sort((a, b) =>
-          a.id === $currentUserId ? -1 : b.id === $currentUserId ? 1 : 0
-        )
-      : $players
+export const orderedPlayers = derived([players, currentUserId], ([$players, $currentUserId]) =>
+  $currentUserId
+    ? [...$players].sort((a, b) => (a.id === $currentUserId ? -1 : b.id === $currentUserId ? 1 : 0))
+    : $players
 );

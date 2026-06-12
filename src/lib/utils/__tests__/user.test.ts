@@ -3,25 +3,29 @@ import { userNameShort, shortName } from '../user';
 import type { User } from '@supabase/supabase-js';
 
 describe('user utils', () => {
-  const baseUser = (overrides: Partial<User> = {}): User => ({
-    id: 'id',
-    app_metadata: {},
-    aud: 'authenticated',
-    created_at: new Date().toISOString(),
-    user_metadata: {},
-    factors: [],
-    identities: [],
-    role: 'authenticated',
-    updated_at: new Date().toISOString(),
-    ...overrides
-  } as any);
+  const baseUser = (overrides: Partial<User> = {}): User =>
+    ({
+      id: 'id',
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+      user_metadata: {},
+      factors: [],
+      identities: [],
+      role: 'authenticated',
+      updated_at: new Date().toISOString(),
+      ...overrides
+    }) as any;
 
   describe('userNameShort', () => {
     it('returns U for null', () => {
       expect(userNameShort(null)).toBe('U');
     });
     it('uses initials of full name', () => {
-      const u = baseUser({ user_metadata: { full_name: 'Patrick Mahomes' }, email: 'pm@example.com' });
+      const u = baseUser({
+        user_metadata: { full_name: 'Patrick Mahomes' },
+        email: 'pm@example.com'
+      });
       expect(userNameShort(u)).toBe('PM');
     });
     it('falls back to email when no name', () => {
