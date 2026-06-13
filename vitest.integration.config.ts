@@ -9,13 +9,14 @@ export default defineConfig({
     css: true,
     environment: 'jsdom',
     include: ['tests/integration/**/*.test.ts'],
-  exclude: ['src/**/__tests__/**', 'src/lib/components/ui/**'], // Exclude unit tests & ui components
+    exclude: ['src/**/__tests__/**', 'src/lib/components/ui/**'], // Exclude unit tests & ui components
     setupFiles: ['./tests/setup.ts', 'dotenv/config'], // This loads .env variables
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage/integration',
       reporter: ['text', 'text-summary'],
-      exclude: [ '.svelte-kit/**',
+      exclude: [
+        '.svelte-kit/**',
         '.vercel/**',
         'dev-dist/**',
         'dist/**',
@@ -28,9 +29,9 @@ export default defineConfig({
         'svelte.config.*',
         'vite.config.*',
         'vitest*.config.*',
-  'tests/**',
-  'src/lib/components/ui/**',
-  ],
+        'tests/**',
+        'src/lib/components/ui/**'
+      ],
       thresholds: {
         lines: 50,
         functions: 50,

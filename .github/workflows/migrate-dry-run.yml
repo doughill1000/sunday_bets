@@ -13,16 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ${{ github.base_ref == 'master' && 'Production' || 'Development' }}
-    env:  
+    env:
       SUPABASE_CLI_VERSION: 2.53.6
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-            version: ${{ env.SUPABASE_CLI_VERSION }}
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Dry run migrations
         env:

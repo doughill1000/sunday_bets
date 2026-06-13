@@ -1,5 +1,6 @@
 # Dependencies
 /node_modules
+package-lock.json
 
 # Output
 .output
@@ -37,3 +38,11 @@ vite.config.ts.timestamp-*
 # Supabase
 /supabase/.temp
 /data/*
+
+# DB backups and one-off migration scripts
+db_cluster*/
+migrate_public.sql
+build_migration.ps1
+
+# Claude Code local settings
+.claude/settings.local.json

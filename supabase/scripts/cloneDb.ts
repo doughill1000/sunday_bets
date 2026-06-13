@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 import dotenv from 'dotenv';
 import path from 'path';
 import { execa } from 'execa';

@@ -13,7 +13,6 @@
   export let gridTemplate: string;
   export let gridTemplateLg: string;
   export let activeWeekNumber: number | null = null;
-
 </script>
 
 <AccordionItem value={`week-${weekNumber}`} class="border-b">
@@ -22,6 +21,6 @@
   </AccordionTrigger>
 
   <AccordionContent>
-    <GameGrid {players} {games} {cells} {gridTemplate} {gridTemplateLg}  />
+    <GameGrid {players} {games} {cells} {gridTemplate} {gridTemplateLg} />
   </AccordionContent>
 </AccordionItem>

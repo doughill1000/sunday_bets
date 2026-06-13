@@ -87,7 +87,20 @@ describe('leaderboard stores', () => {
     weeks.set([3, 4, 1, 2]);
     activeWeekNumber.set(3);
     seasonYearStore.set(2025);
-    seasonTotalsStore.set([{ id: 'p1', display_name: 'A', wins: 1 }]);
+    seasonTotalsStore.set([
+      {
+        user_id: 'p1',
+        display_name: 'A',
+        season_year: 2025,
+        total_points: 5,
+        decisions: 1,
+        wins: 1,
+        losses: 0,
+        pushes: 0,
+        missed: 0,
+        rank: 1
+      }
+    ]);
     expect(getValue(weeks)).toEqual([3, 4, 1, 2]);
     expect(getValue(activeWeekNumber)).toBe(3);
     expect(getValue(seasonYearStore)).toBe(2025);

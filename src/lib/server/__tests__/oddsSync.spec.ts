@@ -29,6 +29,10 @@ vi.mock('../db/commands/setActiveLine', () => ({
   setActiveLine: vi.fn()
 }));
 
+vi.mock('../settings', () => ({
+  canSyncNow: vi.fn().mockResolvedValue(true)
+}));
+
 vi.mock('$lib/supabase/service', () => {
   const mockSupabase = {
     from: vi.fn().mockReturnThis(),
@@ -54,6 +58,16 @@ describe('syncOddsForActiveWeek', () => {
     const result = await syncOddsForActiveWeek();
 
     expect(result).toEqual({ ok: false, reason: 'No active week' });
+  });
+
+  it('should refuse to sync once the monthly API cap is reached', async () => {
+    const { canSyncNow } = await import('../settings');
+    (canSyncNow as any).mockResolvedValueOnce(false);
+
+    const result = await syncOddsForActiveWeek();
+
+    expect(result).toEqual({ ok: false, reason: 'Odds API monthly call cap reached' });
+    expect(fetchNFLSpreadsForWeek).not.toHaveBeenCalled();
   });
 
   it('should process a game and set a new line successfully', async () => {

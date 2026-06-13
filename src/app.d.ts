@@ -1,7 +1,7 @@
 /// <reference types="vite-plugin-pwa/client" />
 
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
-import type { Database } from './database.types.ts'; // import generated types
+import type { Database } from '$lib/types/supabase'; // import generated types
 
 declare global {
   namespace App {

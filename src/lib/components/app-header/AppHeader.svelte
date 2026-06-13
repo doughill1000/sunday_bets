@@ -2,12 +2,12 @@
   import { onMount } from 'svelte';
   import { afterNavigate } from '$app/navigation';
   import type { User } from '@supabase/supabase-js';
-  import { registerSW } from 'virtual:pwa-register';
 
   import HeaderAccount from '$lib/components/app-header/HeaderAccount.svelte';
   import HeaderMenu from '$lib/components/app-header/HeaderMenu.svelte';
 
   export let user: User | null = null;
+  export let canSeeAdmin = false;
 
   let canInstall = false;
   let deferredPrompt: any = null;
@@ -16,10 +16,6 @@
   const closeMenu = () => (menuOpen = false);
 
   onMount(() => {
-    try {
-      registerSW({ immediate: true });
-    } catch {}
-
     afterNavigate(() => {
       menuOpen = false;
     });
@@ -55,7 +51,7 @@
 >
   <div class="mx-auto max-w-screen-xl px-2 sm:px-4">
     <div class="relative flex h-14 items-center">
-      <HeaderAccount user={user} onNavigate={closeMenu} />
+      <HeaderAccount {user} {canSeeAdmin} onNavigate={closeMenu} />
 
       <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
         <a
@@ -73,8 +69,8 @@
       </div>
 
       <HeaderMenu
-        user={user}
-        canInstall={canInstall}
+        {canSeeAdmin}
+        {canInstall}
         {installPwa}
         bind:open={menuOpen}
         onNavigate={closeMenu}

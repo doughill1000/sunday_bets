@@ -13,6 +13,19 @@ function getNextApiKey() {
   return key;
 }
 
+// Usage telemetry must never break a sync: tolerate missing headers
+// (mocked fetches) and an unreachable settings table.
+async function recordUsage(res: Response) {
+  try {
+    const raw = Number(res.headers?.get('x-requests-last') ?? '1');
+    const cost = Number.isFinite(raw) && raw > 0 ? raw : 1;
+    const { recordOddsApiUsage } = await import('./settings');
+    await recordOddsApiUsage(cost);
+  } catch {
+    // ignore
+  }
+}
+
 function sportKeyForWeek(week: WeekWindow) {
   return week.weekNumber < 0 ? 'americanfootball_nfl_preseason' : 'americanfootball_nfl';
 }
@@ -41,6 +54,7 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow): Promise<OddsGame
     const text = await res.text();
     throw new Error(`Odds API ${res.status}: ${text}`);
   }
+  await recordUsage(res);
   return res.json();
 }
 
@@ -57,6 +71,7 @@ export async function fetchNFLScores(daysFrom = 1): Promise<OddsScore[]> {
     const text = await res.text();
     throw new Error(`Odds API scores ${res.status}: ${text}`);
   }
+  await recordUsage(res);
   return res.json();
 }
 

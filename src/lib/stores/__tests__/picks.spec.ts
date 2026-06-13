@@ -42,9 +42,9 @@ describe('picks store', () => {
     expect(res).toEqual({ ok: true });
     const state = get(picks).g4;
     expect(state.lockedPick).toEqual({ team: 'home', weight: 'H' });
-  // Accept either millisecond-trimmed or .000Z variant when comparing same instant
-  const iso = new Date(state.lockedAt!).toISOString();
-  expect(iso.startsWith('2024-01-01T00:00:00')).toBe(true);
+    // Accept either millisecond-trimmed or .000Z variant when comparing same instant
+    const iso = new Date(state.lockedAt!).toISOString();
+    expect(iso.startsWith('2024-01-01T00:00:00')).toBe(true);
     expect(Date.parse(state.lockedAt!)).toBeGreaterThanOrEqual(Date.parse('2024-01-01T00:00:00Z'));
     expect(mockLockPick.lockPick).toHaveBeenCalledWith('g4', 'home', 'H');
   });

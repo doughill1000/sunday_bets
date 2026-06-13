@@ -7,10 +7,10 @@
 
   const isActive = activeWeekNumber === weekNumber;
 
-  $: validTotals = players.map(p => ({ id: p.id, v: totals[p.id] ?? 0 }));
-  $: maxTotal = validTotals.length ? Math.max(...validTotals.map(t => t.v)) : 0;
-  $: anyNonZero = validTotals.some(t => t.v !== 0);
-  $: topIds = new Set(validTotals.filter(t => anyNonZero && t.v === maxTotal).map(t => t.id));
+  $: validTotals = players.map((p) => ({ id: p.id, v: totals[p.id] ?? 0 }));
+  $: maxTotal = validTotals.length ? Math.max(...validTotals.map((t) => t.v)) : 0;
+  $: anyNonZero = validTotals.some((t) => t.v !== 0);
+  $: topIds = new Set(validTotals.filter((t) => anyNonZero && t.v === maxTotal).map((t) => t.id));
 </script>
 
 <div class="flex w-full items-center gap-3">
@@ -31,8 +31,8 @@
       <span
         class="absolute -top-1 -right-1 rounded bg-blue-600 text-white text-[10px] px-1 py-[2px] leading-none shadow"
         aria-label="Active week"
-        data-active-badge
-      >ACTIVE</span>
+        data-active-badge>ACTIVE</span
+      >
     {/if}
   </span>
 
@@ -52,11 +52,16 @@
       >
         <span class="opacity-70" data-player-name>{shortName(p.display_name)}</span>
         {#if (totals[p.id] ?? 0) > 0}
-          <span class="font-semibold tabular-nums text-green-600" data-total-val>+{totals[p.id]}</span>
+          <span class="font-semibold tabular-nums text-green-600" data-total-val
+            >+{totals[p.id]}</span
+          >
         {:else if (totals[p.id] ?? 0) < 0}
           <span class="font-semibold tabular-nums text-red-600" data-total-val>{totals[p.id]}</span>
         {:else}
-          <span class="font-semibold tabular-nums text-neutral-600 dark:text-neutral-400" data-total-val>0</span>
+          <span
+            class="font-semibold tabular-nums text-neutral-600 dark:text-neutral-400"
+            data-total-val>0</span
+          >
         {/if}
         {#if topIds.has(p.id)}
           <span class="ml-[1px] text-amber-500" aria-hidden="true" data-trophy>🏆</span>

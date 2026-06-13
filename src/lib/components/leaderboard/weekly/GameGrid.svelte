@@ -26,7 +26,9 @@
       <div
         class="player-header sticky top-0 z-20 flex items-center justify-center px-1 py-1 text-[11px] md:text-sm font-semibold tracking-wide uppercase bg-background text-white w-full text-center"
       >
-        <span class="md:hidden block truncate" title={p.display_name}>{shortName(p.display_name)}</span>
+        <span class="md:hidden block truncate" title={p.display_name}
+          >{shortName(p.display_name)}</span
+        >
         <span class="hidden md:block truncate">{p.display_name}</span>
       </div>
     {/each}
@@ -60,6 +62,8 @@
     background-clip: padding-box;
   }
   .sticky-col {
-    box-shadow: 2px 0 0 var(--background), 3px 0 4px -2px rgba(0,0,0,0.15);
+    box-shadow:
+      2px 0 0 var(--background),
+      3px 0 4px -2px rgba(0, 0, 0, 0.15);
   }
 </style>

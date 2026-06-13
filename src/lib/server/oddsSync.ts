@@ -5,9 +5,14 @@ import { findTeamsByNames } from './db/queries/findTeamsByNames';
 import { upsertGameByExternalId } from './db/commands/upsertGameByExternalId';
 import { setActiveLine } from './db/commands/setActiveLine';
 import { supabaseService } from '$lib/supabase/service';
+import { canSyncNow } from './settings';
 import type { SyncError, SyncStats } from '$lib/types/server/odds';
 
 export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncStats | SyncError> {
+  if (!(await canSyncNow())) {
+    return { ok: false, reason: 'Odds API monthly call cap reached' };
+  }
+
   const week = await findActiveWeek();
   if (!week) return { ok: false, reason: 'No active week' };
 
