@@ -15,7 +15,7 @@ jobs:
     environment:
       name: Production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install tools (pg_dump 17, rclone)
         run: |
           sudo apt-get update
@@ -47,7 +47,7 @@ jobs:
     environment:
       name: Production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Supabase CLI
         run: |
           curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
@@ -64,7 +64,7 @@ jobs:
     environment:
       name: Development
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Supabase CLI
         run: |
           curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
