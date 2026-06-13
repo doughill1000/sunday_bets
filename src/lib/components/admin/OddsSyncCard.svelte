@@ -30,14 +30,15 @@
       settings.used += 1;
       settings.remaining = Math.max(settings.cap - settings.used, 0);
       settings.usagePct = settings.cap ? Math.min(settings.used / settings.cap, 1) : 1;
-    } catch (err: any) {
-      // The generic helper preserves the status code
-      if (err.status === 429) {
-        note('warn', err.message ?? 'Monthly cap reached.');
-      } else if (err.status === 400) {
-        note('warn', err.message ?? 'No active week.');
+    } catch (err) {
+      // The generic helper preserves the status code on the thrown Error
+      const e = err as { status?: number; message?: string };
+      if (e.status === 429) {
+        note('warn', e.message ?? 'Monthly cap reached.');
+      } else if (e.status === 400) {
+        note('warn', e.message ?? 'No active week.');
       } else {
-        note('error', err.message ?? 'An unknown error occurred.');
+        note('error', e.message ?? 'An unknown error occurred.');
       }
     } finally {
       syncing = false;
