@@ -12,15 +12,16 @@ on:
 jobs:
   integration:
     runs-on: ubuntu-latest
-    environment:
-      name: Development
     env:
       NODE_ENV: test
       SUPABASE_CLI_VERSION: 2.53.6
-      PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
-      PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      # Integration tests run against the LOCAL Supabase stack started below.
+      # These are the Supabase CLI's static local-dev keys — public constants,
+      # identical on every machine (also committed in .env.test), NOT secrets.
+      PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,7 +43,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-            version: ${{ env.SUPABASE_CLI_VERSION }}
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Start local Supabase (auth-capable)
         run: |

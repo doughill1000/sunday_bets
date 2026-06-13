@@ -1,11 +1,11 @@
 // src/routes/api/admin/sync-odds/+server.ts
 import type { RequestHandler } from './$types';
 import { syncOddsForActiveWeek } from '$lib/server/oddsSync';
+import { requireAdmin } from '$lib/server/auth';
 
 export const POST: RequestHandler = async (event) => {
-  if (event.locals.isAdmin !== true) {
-    return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), { status: 401 });
-  }
+  const guard = await requireAdmin(event);
+  if (guard) return guard;
   try {
     const res = await syncOddsForActiveWeek();
     if (!res.ok) {

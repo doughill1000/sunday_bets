@@ -11,10 +11,5 @@
     "strict": true,
     "moduleResolution": "bundler"
   },
-  "webworker": {
-    "lib": ["WebWorker", "ESNext"]
-  },
-  "exclude": [
-    "src/lib/components/ui"
-  ]
+  "exclude": ["src/lib/components/ui"]
 }

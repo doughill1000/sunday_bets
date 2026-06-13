@@ -1,4 +1,5 @@
-import type { GameResult, WeightCode } from '../../types/domain';
+import type { WeightCode } from '../../types/domain';
+import type { ShortResult } from '$lib/constants/picks';
 import type { PickOutcome } from '$lib/types/server';
 
 export type PlayerRow = { id: string; display_name: string };
@@ -33,7 +34,7 @@ export type GameRow = {
 export type PickCell = {
   weight: WeightCode | null;
   team: string | null;
-  result: GameResult | null;
+  result: ShortResult | null;
   spread: string | null;
 };
 

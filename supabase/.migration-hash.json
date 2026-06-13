@@ -17,9 +17,6 @@
   "functions/admin/grade_week.sql": {
     "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
-  "functions/admin/sync_odds.sql": {
-    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-  },
   "functions/auth/handle_new_auth_user.sql": {
     "hash": "f17fd35cac7811eb2380c3fff4465745788be9aa9db31dfa75371d5d67e74f69",
     "signature": "public.handle_new_auth_user()"
@@ -36,15 +33,9 @@
     "hash": "33f95937813cb8565e25ab11f6d39f4401e8f1fec353494f8ae1ff89635605f8",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text default 'fanduel')"
   },
-  "functions/picks/my_picks.sql": {
-    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-  },
   "functions/picks/unlock_pick.sql": {
     "hash": "bbd6e789f8a20da92c8298152d542f4b0fb7fe4ea4b9852894cdd0b6d8800d89",
     "signature": "public.unlock_pick(uuid)"
-  },
-  "functions/security/current_user_id.sql": {
-    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
   },
   "policies/10_rls_enable.sql": {
     "hash": "344accafbe5eafd90ca53735ea010347aa0928f8625fbea2a7c5ff40fa15a3b6"
@@ -90,10 +81,10 @@
     "hash": "1aec542857e62bc045478bcabf4d2afafd9d8f17fd0ccb53565c71e32b981af0"
   },
   "views/picks_status_view_user.sql": {
-    "hash": "ed81dea0207b283079618d612399a3f1a3f7b2fd7f81610a7245715a72cc01fa"
+    "hash": "53109fb2a5577f3dc5e85474fb489ef53a4c70f3cce31b1eaee84f6ca4b8e0b5"
   },
   "views/ui_games.sql": {
-    "hash": "ce7440a0574e3e40b7ba25f6fd6bf0048df314f65b15a11f4905990987dcca26"
+    "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4"
   },
   "schemas/0000_extensions.sql": {
     "hash": "27decc8ec85439b59efed14948197a3e5a9c17bc5806effd103b6f5c50129c77"

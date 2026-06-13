@@ -92,28 +92,18 @@ describe('LockControls', () => {
     expect(lockPick).not.toHaveBeenCalled();
   });
 
-  it('handles All-In rule disabling/enabling', async () => {
+  it('allows locking an All-In pick from the UI (lock_pick enforces the weekly rule server-side)', async () => {
     const { lockPick } = await import('$lib/api/picks');
-    const { canUseAllInRule } = await import('$lib/domain/rules');
 
     setPicks({
       g1: { selected: { team: 'home', weight: 'A' } } as any
     });
 
-    (canUseAllInRule as any).mockReturnValue(false);
-
-    const { rerender } = render(LockControls, {
+    render(LockControls, {
       props: { game, initialized: true, started: false, locked: false }
     });
 
-    let btn = screen.getByRole('button', { name: /Lock Pick/i });
-    expect(btn).toBeDisabled();
-
-    (canUseAllInRule as any).mockReturnValue(true);
-
-    await rerender({ game, initialized: true, started: false, locked: false });
-
-    btn = screen.getByRole('button', { name: /Lock Pick/i });
+    const btn = screen.getByRole('button', { name: /Lock Pick/i });
     expect(btn).toBeEnabled();
 
     await fireEvent.click(btn);

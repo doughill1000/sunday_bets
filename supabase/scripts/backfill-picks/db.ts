@@ -130,20 +130,30 @@ export async function insertGameLineAndDeactivate(opts: {
   }
 
   await supabase
-  .from('game_lines')
-  .update({ is_active_line: false })
-  .eq('game_id', gameId)
-  .eq('is_active_line', true);
+    .from('game_lines')
+    .update({ is_active_line: false })
+    .eq('game_id', gameId)
+    .eq('is_active_line', true);
 
+  // 2) Insert new active
+  const { data: ins, error: insErr } = await supabase
+    .from('game_lines')
+    .insert({
+      game_id: gameId,
+      spread_team_id: spreadTeamId,
+      spread_value: spreadValue,
+      source,
+      fetched_at: ts,
+      is_active_line: true
+    })
+    .select('id')
+    .limit(1);
 
-// 2) Insert new active
-const { data: ins, error: insErr } = await supabase
-  .from('game_lines')
-  .insert({ game_id: gameId, spread_team_id: spreadTeamId, spread_value: spreadValue, source, fetched_at: ts, is_active_line: true })
-  .select('id')
-  .limit(1);
-
-  console.log('Inserted new game_line', ins?.[0]?.id, `(${spreadTeamId}, ${spreadValue}) for game ${gameId}`);
+  console.log(
+    'Inserted new game_line',
+    ins?.[0]?.id,
+    `(${spreadTeamId}, ${spreadValue}) for game ${gameId}`
+  );
 
   if (insErr) throw insErr;
   const lineId = ins![0].id as string;

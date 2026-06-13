@@ -9,13 +9,12 @@ import { WEIGHTS } from '$lib/types/domain';
 describe('WeightSelect', () => {
   beforeEach(() => setPicks({}));
 
-  it('renders all weights and disables all in when not allowed', () => {
+  it('disables all weights when the pick cannot change', () => {
     render(WeightSelect, {
-      props: { gameId: 'g1', canChange: true, canUseAllIn: false, selectedWeight: 'L' }
+      props: { gameId: 'g1', canChange: false, selectedWeight: 'L' }
     });
 
-    // Find the all in button by whatever label your app uses
-    const allInLabel = WEIGHTS.A.label; // e.g., "all in" or "A"
+    const allInLabel = WEIGHTS.A.label;
     const allInBtn = screen.getByRole('radio', {
       name: (name) => name.toLowerCase().includes(allInLabel.toLowerCase())
     });
@@ -25,7 +24,7 @@ describe('WeightSelect', () => {
 
   it('changes weight on click', async () => {
     render(WeightSelect, {
-      props: { gameId: 'g1', canChange: true, canUseAllIn: true, selectedWeight: 'L' }
+      props: { gameId: 'g1', canChange: true, selectedWeight: 'L' }
     });
 
     // Click the "High" (or whatever your label is) button

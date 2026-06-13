@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { buttonVariants } from '$lib/components/ui/button';
+</script>
+
 <section class="container mx-auto max-w-lg space-y-4 p-6">
   <h1 class="text-2xl font-bold">Authentication Help</h1>
   <div class="card space-y-2 p-4">
@@ -8,5 +12,5 @@
       <li>Ensure your project URL and redirect are correct in the Supabase settings.</li>
     </ul>
   </div>
-  <a href="/auth" class="btn variant-filled-primary">Back to Login</a>
+  <a href="/auth" class={buttonVariants({ variant: 'default' })}>Back to Login</a>
 </section>

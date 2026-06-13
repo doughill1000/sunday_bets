@@ -10,7 +10,12 @@ const players = [
 
 describe('WeekHeader', () => {
   it('renders week number', () => {
-    const { getByText } = render(WeekHeader, { weekNumber: 3, players, totals: {}, activeWeekNumber: null });
+    const { getByText } = render(WeekHeader, {
+      weekNumber: 3,
+      players,
+      totals: {},
+      activeWeekNumber: null
+    });
     expect(getByText('Week 3')).toBeTruthy();
   });
 
