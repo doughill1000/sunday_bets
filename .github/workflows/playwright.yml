@@ -8,17 +8,66 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      SUPABASE_CLI_VERSION: 2.53.6
+      # E2E runs against the LOCAL Supabase stack started below. These are the
+      # CLI's static local-dev keys — public constants, identical on every
+      # machine (also in .env.test), NOT secrets.
+      PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      SUPABASE_SERVICE_ROLE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+      JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      # Odds API isn't exercised by these flows, but the vars must be defined so
+      # $env/static/private resolves when the dev server boots.
+      PUBLIC_ODDS_API_BASE: https://api.the-odds-api.com/v4
+      ODDS_API_KEY1: e2e-unused
+      ODDS_API_KEY2: e2e-unused
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
         with:
-          node-version: lts/*
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: ./pnpm-lock.yaml
+
       - name: Install dependencies
-        run: npm install -g pnpm && pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Start local Supabase (auth-capable)
+        run: |
+          supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+          # Fresh schema + seed.sql (creates the auth users the tests sign in as)
+          supabase db reset --local
+
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install --with-deps
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Fail if no E2E tests are collected
+        run: |
+          LIST=$(pnpm exec playwright test --list 2>&1) || true
+          echo "$LIST"
+          echo "$LIST" | grep -qE "Total: [1-9][0-9]* test" || { echo '::error::No E2E tests were collected'; exit 1; }
+
       - name: Run Playwright tests
         run: pnpm exec playwright test
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop || true
+
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
