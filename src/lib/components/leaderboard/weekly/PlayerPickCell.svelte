@@ -2,17 +2,22 @@
 <script lang="ts">
   import type { PickCell } from '$lib/types/server/leaderboard';
   import WeightChip from './WeightChip.svelte';
-  export let cell: PickCell;
+
+  interface Props {
+    cell: PickCell;
+  }
+  let { cell }: Props = $props();
 
   // derive border tone by result
-  $: borderTone =
+  const borderTone = $derived(
     cell?.result === 'W'
       ? 'border-emerald-500'
       : cell?.result === 'L'
         ? 'border-rose-500'
         : cell?.result === 'P'
           ? 'border-amber-500'
-          : 'border-zinc-200';
+          : 'border-zinc-200'
+  );
 </script>
 
 <div class={`rounded-md border ${borderTone} p-2 md:p-3`}>

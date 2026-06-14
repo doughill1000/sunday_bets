@@ -1,16 +1,22 @@
 <script lang="ts">
   import { shortName } from '$lib/utils/user';
-  export let weekNumber: number;
-  export let players: { id: string; display_name: string }[] = [];
-  export let totals: Record<string, number> = {};
-  export let activeWeekNumber: number | null = null;
 
-  const isActive = activeWeekNumber === weekNumber;
+  interface Props {
+    weekNumber: number;
+    players?: { id: string; display_name: string }[];
+    totals?: Record<string, number>;
+    activeWeekNumber?: number | null;
+  }
+  let { weekNumber, players = [], totals = {}, activeWeekNumber = null }: Props = $props();
 
-  $: validTotals = players.map((p) => ({ id: p.id, v: totals[p.id] ?? 0 }));
-  $: maxTotal = validTotals.length ? Math.max(...validTotals.map((t) => t.v)) : 0;
-  $: anyNonZero = validTotals.some((t) => t.v !== 0);
-  $: topIds = new Set(validTotals.filter((t) => anyNonZero && t.v === maxTotal).map((t) => t.id));
+  const isActive = $derived(activeWeekNumber === weekNumber);
+
+  const validTotals = $derived(players.map((p) => ({ id: p.id, v: totals[p.id] ?? 0 })));
+  const maxTotal = $derived(validTotals.length ? Math.max(...validTotals.map((t) => t.v)) : 0);
+  const anyNonZero = $derived(validTotals.some((t) => t.v !== 0));
+  const topIds = $derived(
+    new Set(validTotals.filter((t) => anyNonZero && t.v === maxTotal).map((t) => t.id))
+  );
 </script>
 
 <div class="flex w-full items-center gap-3">

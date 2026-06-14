@@ -3,13 +3,16 @@
   import { Button } from '$lib/components/ui/button';
   import { gradeWeek, gradeGame, gradeSeason } from '$lib/api/admin/grading';
 
-  export let activeWeek: { id: number; week_number: number } | null;
-  export let onNote: ((kind: 'success' | 'warn' | 'error', text: string) => void) | undefined;
+  interface Props {
+    activeWeek: { id: number; week_number: number } | null;
+    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
+  }
+  let { activeWeek, onNote }: Props = $props();
 
-  let grading = false;
-  let gameId = '';
-  let weekIdInput: number | '' = activeWeek?.id ?? '';
-  let seasonIdInput: number | '' = '';
+  let grading = $state(false);
+  let gameId = $state('');
+  let weekIdInput = $state<number | ''>(activeWeek?.id ?? '');
+  let seasonIdInput = $state<number | ''>('');
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
     onNote?.(kind, text);

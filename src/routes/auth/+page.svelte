@@ -16,11 +16,11 @@
   import { toast } from 'svelte-sonner';
   import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group';
 
-  let email = '';
-  let password = '';
-  let method: 'magic' | 'password' = 'magic';
-  let error = '';
-  let message = '';
+  let email = $state('');
+  let password = $state('');
+  let method: 'magic' | 'password' = $state('magic');
+  let error = $state('');
+  let message = $state('');
 
   async function onSubmit(e: Event) {
     e.preventDefault();
@@ -54,7 +54,14 @@
     </CardHeader>
 
     <CardContent>
-      <form method="POST" on:submit|preventDefault={onSubmit} class="space-y-5">
+      <form
+        method="POST"
+        onsubmit={(e) => {
+          e.preventDefault();
+          onSubmit(e);
+        }}
+        class="space-y-5"
+      >
         <!-- Email -->
         <div class="grid gap-2">
           <Label for="email">Email</Label>

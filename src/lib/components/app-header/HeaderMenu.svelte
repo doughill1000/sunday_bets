@@ -4,11 +4,21 @@
   import { Separator } from '$lib/components/ui/separator';
   import Menu from '@lucide/svelte/icons/menu';
 
-  export let canSeeAdmin = false;
-  export let canInstall = false;
-  export let installPwa: (e: MouseEvent) => void;
-  export let open = false;
-  export let onNavigate: () => void = () => {};
+  interface Props {
+    canSeeAdmin?: boolean;
+    canInstall?: boolean;
+    installPwa: (e: MouseEvent) => void;
+    open?: boolean;
+    onNavigate?: () => void;
+  }
+
+  let {
+    canSeeAdmin = false,
+    canInstall = false,
+    installPwa,
+    open = $bindable(false),
+    onNavigate = () => {}
+  }: Props = $props();
 </script>
 
 <div class="-mr-2 ml-auto flex shrink-0 items-center gap-2">
@@ -25,18 +35,18 @@
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/picks"
-          on:click={onNavigate}>My Picks</a
+          onclick={onNavigate}>My Picks</a
         >
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/leaderboard"
-          on:click={onNavigate}>Leaderboard</a
+          onclick={onNavigate}>Leaderboard</a
         >
         {#if canSeeAdmin}
           <a
             class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
             href="/admin"
-            on:click={onNavigate}>Admin</a
+            onclick={onNavigate}>Admin</a
           >
         {/if}
       </nav>
@@ -51,7 +61,7 @@
         <a
           class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
           href="/auth/signout"
-          on:click={onNavigate}>Sign out</a
+          onclick={onNavigate}>Sign out</a
         >
       </nav>
     </SheetContent>

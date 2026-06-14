@@ -3,10 +3,10 @@
   import OddsSyncCard from '$lib/components/admin/OddsSyncCard.svelte';
   import GradingCard from '$lib/components/admin/GradingCard.svelte';
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
 
   // shared notification state
-  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = null;
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   function handleNote(kind: 'success' | 'warn' | 'error', text: string) {
     msg = { kind, text };

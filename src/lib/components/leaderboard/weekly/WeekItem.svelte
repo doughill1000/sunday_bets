@@ -5,14 +5,26 @@
   import GameGrid from './GameGrid.svelte';
   import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
 
-  export let weekNumber: number;
-  export let players: PlayerRow[] = [];
-  export let weekTotals: Record<string, number> = {}; // per user
-  export let games: WeekTableGame[] = [];
-  export let cells: Record<string, Record<string, PickCell>> = {};
-  export let gridTemplate: string;
-  export let gridTemplateLg: string;
-  export let activeWeekNumber: number | null = null;
+  interface Props {
+    weekNumber: number;
+    players?: PlayerRow[];
+    weekTotals?: Record<string, number>; // per user
+    games?: WeekTableGame[];
+    cells?: Record<string, Record<string, PickCell>>;
+    gridTemplate: string;
+    gridTemplateLg: string;
+    activeWeekNumber?: number | null;
+  }
+  let {
+    weekNumber,
+    players = [],
+    weekTotals = {},
+    games = [],
+    cells = {},
+    gridTemplate,
+    gridTemplateLg,
+    activeWeekNumber = null
+  }: Props = $props();
 </script>
 
 <AccordionItem value={`week-${weekNumber}`} class="border-b">

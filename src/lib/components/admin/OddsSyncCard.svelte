@@ -10,11 +10,14 @@
   import { Button } from '$lib/components/ui/button';
   import { syncOdds as syncOddsApi } from '$lib/api/admin/odds'; // Import the new helper
 
-  export let settings: { cap: number; used: number; remaining: number; usagePct: number };
-  export let activeWeek: { id: number; week_number: number } | null;
-  export let onNote: ((kind: 'success' | 'warn' | 'error', text: string) => void) | undefined;
+  interface Props {
+    settings: { cap: number; used: number; remaining: number; usagePct: number };
+    activeWeek: { id: number; week_number: number } | null;
+    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
+  }
+  let { settings, activeWeek, onNote }: Props = $props();
 
-  let syncing = false;
+  let syncing = $state(false);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
     onNote?.(kind, text);
@@ -45,8 +48,8 @@
     }
   }
 
-  $: usage80 = settings.usagePct >= 0.8;
-  $: capReached = settings.remaining <= 0;
+  const usage80 = $derived(settings.usagePct >= 0.8);
+  const capReached = $derived(settings.remaining <= 0);
 </script>
 
 <Card class="p-6">

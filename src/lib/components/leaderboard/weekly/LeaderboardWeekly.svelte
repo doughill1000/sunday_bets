@@ -12,7 +12,7 @@
     orderedPlayers
   } from '$lib/stores/leaderboard';
 
-  let hidden: Set<string> = new Set();
+  let hidden: Set<string> = $state(new Set());
 
   function togglePlayer(id: string) {
     if (hidden.has(id)) hidden.delete(id);
@@ -21,9 +21,11 @@
   }
 
   // derive visible ordered players
-  $: visiblePlayersRaw = $orderedPlayers.filter((p) => !hidden.has(p.id));
-  $: mobileGridTemplate = `100px repeat(${visiblePlayersRaw.length}, 80px)`;
-  $: desktopGridTemplate = `240px repeat(${visiblePlayersRaw.length}, minmax(180px, 1fr))`;
+  const visiblePlayersRaw = $derived($orderedPlayers.filter((p) => !hidden.has(p.id)));
+  const mobileGridTemplate = $derived(`100px repeat(${visiblePlayersRaw.length}, 80px)`);
+  const desktopGridTemplate = $derived(
+    `240px repeat(${visiblePlayersRaw.length}, minmax(180px, 1fr))`
+  );
 </script>
 
 <Card class="mx-auto w-full shadow-sm">
@@ -36,7 +38,7 @@
       {#each $players as p}
         <button
           class="rounded border px-2 py-1 text-xs"
-          on:click={() => togglePlayer(p.id)}
+          onclick={() => togglePlayer(p.id)}
           class:opacity-50={hidden.has(p.id)}
         >
           {p.display_name}

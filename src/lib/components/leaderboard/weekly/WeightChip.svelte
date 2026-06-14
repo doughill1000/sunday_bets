@@ -1,6 +1,10 @@
 <!-- src/lib/components/leaderboard/weekly/WeightChip.svelte -->
 <script lang="ts">
-  export let weight: string;
+  interface Props {
+    weight: string;
+  }
+
+  let { weight }: Props = $props();
   const base = 'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium';
 </script>
 

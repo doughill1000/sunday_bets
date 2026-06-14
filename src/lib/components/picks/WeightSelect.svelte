@@ -4,11 +4,15 @@
   import { WEIGHTS, type WeightCode } from '$lib/types/domain';
   import { setWeight } from '$lib/stores/picks';
 
-  export let gameId: string;
-  export let canChange = false;
-  // export let canUseAllIn = true;
-  export let selectedWeight: WeightCode = 'L';
-  // export let showAllInHint = false;
+  interface Props {
+    gameId: string;
+    canChange?: boolean;
+    // export let canUseAllIn = true;
+    selectedWeight?: WeightCode;
+    // export let showAllInHint = false;
+  }
+
+  let { gameId, canChange = false, selectedWeight = 'L' }: Props = $props();
 </script>
 
 <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">

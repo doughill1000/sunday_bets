@@ -13,9 +13,13 @@
   } from '$lib/components/ui/dropdown-menu';
   import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
 
-  export let user: User | null = null;
-  export let canSeeAdmin = false;
-  export let onNavigate: () => void = () => {};
+  interface Props {
+    user?: User | null;
+    canSeeAdmin?: boolean;
+    onNavigate?: () => void;
+  }
+
+  let { user = null, canSeeAdmin = false, onNavigate = () => {} }: Props = $props();
 </script>
 
 <div class="-ml-2 flex shrink-0 items-center">
@@ -26,12 +30,12 @@
         <DropdownMenuSeparator />
         {#if canSeeAdmin}
           <DropdownMenuItem>
-            <a href="/admin" on:click={onNavigate}>Admin</a>
+            <a href="/admin" onclick={onNavigate}>Admin</a>
           </DropdownMenuItem>
         {/if}
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <a href="/auth/signout" on:click={onNavigate}>Sign out</a>
+          <a href="/auth/signout" onclick={onNavigate}>Sign out</a>
         </DropdownMenuItem>
       </DropdownMenuContent>
       <DropdownMenuTrigger>
