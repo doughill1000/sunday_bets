@@ -24,7 +24,7 @@ jobs:
       ODDS_API_KEY1: e2e-unused
       ODDS_API_KEY2: e2e-unused
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
