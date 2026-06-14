@@ -5,10 +5,13 @@
   import type { PickEntry } from '$lib/types/server';
   import GameCard from './GameCard.svelte';
 
-  export let games: UIGame[] = [];
-  export let initialPicks: Record<string, PickEntry> = {};
+  interface Props {
+    games?: UIGame[];
+    initialPicks?: Record<string, PickEntry>;
+  }
+  let { games = [], initialPicks = {} }: Props = $props();
 
-  let initialized = false;
+  let initialized = $state(false);
 
   onMount(() => {
     if (!initialized && initialPicks) {

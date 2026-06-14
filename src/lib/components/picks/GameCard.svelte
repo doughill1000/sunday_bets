@@ -10,18 +10,21 @@
   import LockControls from './LockControls.svelte';
   import type { UIGame } from '$lib/types/ui';
 
-  export let game: UIGame;
-  export let initialized = false;
+  interface Props {
+    game: UIGame;
+    initialized?: boolean;
+  }
+  let { game, initialized = false }: Props = $props();
 
-  $: entry = $picks[game.id] ?? {};
-  $: current = entry.selected ?? entry.lockedPick;
-  $: started = kickoffPassed(game.kickoff);
-  $: locked = !!entry.lockedPick;
-  $: canChange = initialized && !started && !locked;
+  const entry = $derived($picks[game.id] ?? {});
+  const current = $derived(entry.selected ?? entry.lockedPick);
+  const started = $derived(kickoffPassed(game.kickoff));
+  const locked = $derived(!!entry.lockedPick);
+  const canChange = $derived(initialized && !started && !locked);
 
-  $: weightValue = current?.weight ?? 'L';
-  $: lineText = spreadLine(game);
-  $: kickoffText = formatKickoff(game.kickoff);
+  const weightValue = $derived(current?.weight ?? 'L');
+  const lineText = $derived(spreadLine(game));
+  const kickoffText = $derived(formatKickoff(game.kickoff));
 </script>
 
 <Card class="relative rounded-2xl">

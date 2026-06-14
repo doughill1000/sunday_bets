@@ -6,18 +6,22 @@
   import HeaderAccount from '$lib/components/app-header/HeaderAccount.svelte';
   import HeaderMenu from '$lib/components/app-header/HeaderMenu.svelte';
 
-  export let user: User | null = null;
-  export let canSeeAdmin = false;
+  interface Props {
+    user?: User | null;
+    canSeeAdmin?: boolean;
+  }
+
+  let { user = null, canSeeAdmin = false }: Props = $props();
 
   interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
     userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
   }
 
-  let canInstall = false;
-  let deferredPrompt: BeforeInstallPromptEvent | null = null;
+  let canInstall = $state(false);
+  let deferredPrompt = $state<BeforeInstallPromptEvent | null>(null);
 
-  let menuOpen = false;
+  let menuOpen = $state(false);
   const closeMenu = () => (menuOpen = false);
 
   onMount(() => {

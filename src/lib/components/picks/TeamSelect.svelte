@@ -5,8 +5,12 @@
   import { picks, selectTeam } from '$lib/stores/picks';
   import type { UIGame } from '$lib/types/ui';
 
-  export let game: UIGame;
-  export let canChange = false;
+  interface Props {
+    game: UIGame;
+    canChange?: boolean;
+  }
+
+  let { game, canChange = false }: Props = $props();
 
   function teamVars(abbr: string) {
     const meta = TEAM_META[abbr] ?? {
@@ -18,13 +22,13 @@
     return `--c1:${c1};--c2:${c2};--fg:${fg}`;
   }
 
-  $: entry = $picks[game.id] ?? {};
-  $: current = entry.selected ?? entry.lockedPick;
-  $: selAway = current?.team === 'away';
-  $: selHome = current?.team === 'home';
+  const entry = $derived($picks[game.id] ?? {});
+  const current = $derived(entry.selected ?? entry.lockedPick);
+  const selAway = $derived(current?.team === 'away');
+  const selHome = $derived(current?.team === 'home');
 
-  $: awayVars = teamVars(game.away);
-  $: homeVars = teamVars(game.home);
+  const awayVars = $derived(teamVars(game.away));
+  const homeVars = $derived(teamVars(game.home));
 </script>
 
 <div class="flex gap-2" role="group" aria-label="Pick a team">
