@@ -1,8 +1,14 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 
-  export let title = '';
-  export let subtitle: string | null = null;
+  interface Props {
+    title?: string;
+    subtitle?: string | null;
+    children?: Snippet;
+  }
+
+  let { title = '', subtitle = null, children }: Props = $props();
 </script>
 
 <!-- Uses shadcn-svelte Card primitives -->
@@ -14,6 +20,6 @@
     {/if}
   </CardHeader>
   <CardContent>
-    <slot />
+    {@render children?.()}
   </CardContent>
 </Card>

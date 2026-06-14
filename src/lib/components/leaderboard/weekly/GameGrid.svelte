@@ -3,12 +3,14 @@
   import { shortName } from '$lib/utils/user';
   import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
 
-  export let players: PlayerRow[] = [];
-  export let games: WeekTableGame[] = [];
-  export let cells: Record<string, Record<string, PickCell>> = {};
-
-  export let gridTemplate: string; // mobile
-  export let gridTemplateLg: string; // md+
+  interface Props {
+    players?: PlayerRow[];
+    games?: WeekTableGame[];
+    cells?: Record<string, Record<string, PickCell>>;
+    gridTemplate: string; // mobile
+    gridTemplateLg: string; // md+
+  }
+  let { players = [], games = [], cells = {}, gridTemplate, gridTemplateLg }: Props = $props();
 </script>
 
 <div class="overflow-auto max-h-[70vh] w-full">

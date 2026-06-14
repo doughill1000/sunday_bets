@@ -2,7 +2,7 @@
   import type { PageData } from './$types';
   import PicksBoard from '$lib/components/picks/PicksBoard.svelte';
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
 </script>
 
 <svelte:head>

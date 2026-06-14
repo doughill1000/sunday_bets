@@ -14,7 +14,7 @@
     seasonTotalsStore
   } from '$lib/stores/leaderboard';
 
-  export let data: PageData;
+  let { data }: { data: PageData } = $props();
 
   players.set(data.players);
   weeks.set(data.weeks);

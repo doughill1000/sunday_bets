@@ -6,10 +6,13 @@
   import { Button } from '$lib/components/ui/button';
   import { canUseAllInRule } from '$lib/domain/rules';
 
-  export let game: UIGame;
-  export let initialized = false;
-  export let started = false;
-  export let locked = false;
+  interface Props {
+    game: UIGame;
+    initialized?: boolean;
+    started?: boolean;
+    locked?: boolean;
+  }
+  let { game, initialized = false, started = false, locked = false }: Props = $props();
 
   async function onLock() {
     const entry = $picks[game.id] ?? {};
@@ -50,7 +53,7 @@
   {#if locked}
     <Button
       class="h-10 w-full font-semibold
-              border-4 border-white/80 dark:border-white/60    
+              border-4 border-white/80 dark:border-white/60
              shadow-sm hover:shadow border-2 transition
              focus-visible:ring-2"
       variant="outline"
