@@ -16,13 +16,13 @@
   }
 
   // Generic wrapper to handle loading state and errors for any API call
-  async function handleApiCall(promise: Promise<any>, successMsg: string) {
+  async function handleApiCall(promise: Promise<unknown>, successMsg: string) {
     grading = true;
     try {
       await promise;
       note('success', successMsg);
-    } catch (err: any) {
-      note('error', err.message ?? 'An unknown error occurred.');
+    } catch (err) {
+      note('error', err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {
       grading = false;
     }

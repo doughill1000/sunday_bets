@@ -113,10 +113,13 @@ describe('leaderboard stores', () => {
       3: { p1: 5, p2: -1 }
     });
     tableByWeek.set({
-      3: { games: [{ game_id: 10 }], cells: { '10': { p1: { result: 'win' } } } }
+      3: {
+        games: [{ game_id: '10', label: 'AWY @ HOM', score: null, isFinal: false }],
+        cells: { '10': { p1: { weight: null, team: null, result: 'W', spread: null } } }
+      }
     });
     expect(getValue(weekTotals)).toEqual({ 3: { p1: 5, p2: -1 } });
-    expect(getValue(tableByWeek)['3'].games[0].game_id).toBe(10);
+    expect(getValue(tableByWeek)['3'].games[0].game_id).toBe('10');
   });
 
   it('orderedPlayers handles empty players gracefully', () => {

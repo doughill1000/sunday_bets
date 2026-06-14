@@ -35,7 +35,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
 
   const { data: players = [] } = await getPlayers();
   const playersTyped: PlayerRow[] = (players ?? []).filter(
-    (p: any): p is PlayerRow => !!p && typeof p.id === 'string'
+    (p: unknown): p is PlayerRow => !!p && typeof (p as { id?: unknown }).id === 'string'
   );
 
   // Picks (must include lock fields & picked team id) — ensure your getPicksForWeeks selects them

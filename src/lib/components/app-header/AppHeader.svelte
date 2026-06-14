@@ -9,8 +9,13 @@
   export let user: User | null = null;
   export let canSeeAdmin = false;
 
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  }
+
   let canInstall = false;
-  let deferredPrompt: any = null;
+  let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
   let menuOpen = false;
   const closeMenu = () => (menuOpen = false);
@@ -20,19 +25,19 @@
       menuOpen = false;
     });
 
-    const handler = (e: any) => {
+    const handler = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       deferredPrompt = e;
       canInstall = true;
     };
-    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
     window.addEventListener('appinstalled', () => {
       canInstall = false;
       deferredPrompt = null;
     });
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('beforeinstallprompt', handler as EventListener);
     };
   });
 

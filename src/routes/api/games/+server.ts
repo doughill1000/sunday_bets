@@ -6,7 +6,10 @@ export const GET: RequestHandler = async () => {
   try {
     const games = await getActiveWeekGames();
     return json({ games }, { status: 200 });
-  } catch (error: any) {
-    return json({ ok: false, reason: error.message ?? 'Unknown error' }, { status: 500 });
+  } catch (error) {
+    return json(
+      { ok: false, reason: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 };

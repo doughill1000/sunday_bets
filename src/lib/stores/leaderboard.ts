@@ -1,4 +1,4 @@
-import type { SeasonTotalsRow } from '$lib/types/server/leaderboard';
+import type { SeasonTotalsRow, WeekTable } from '$lib/types/server/leaderboard';
 import { writable, derived } from 'svelte/store';
 
 export const players = writable<{ id: string; display_name: string }[]>([]);
@@ -6,7 +6,7 @@ export const weeks = writable<number[]>([]);
 export const activeWeekNumber = writable<number | null>(null);
 export const currentUserId = writable<string | null>(null);
 export const weekTotals = writable<Record<number, Record<string, number>>>({});
-export const tableByWeek = writable<Record<number, any>>({});
+export const tableByWeek = writable<Record<number, WeekTable>>({});
 
 export const seasonYearStore = writable<number | null>(null);
 export const seasonTotalsStore = writable<SeasonTotalsRow[]>([]);

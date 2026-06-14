@@ -11,6 +11,7 @@ const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
 export default ts.config(
   includeIgnoreFile(gitignorePath),
+  { ignores: ['src/lib/components/ui/**'] },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...svelte.configs.recommended,
@@ -35,6 +36,12 @@ export default ts.config(
         parser: ts.parser,
         svelteConfig
       }
+    }
+  },
+  {
+    files: ['**/*.{test,spec}.{js,ts}', '**/__tests__/**', 'tests/**', 'supabase/scripts/**'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off'
     }
   }
 );

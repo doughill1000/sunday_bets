@@ -36,6 +36,20 @@ E2E tests come **first** so the component migration has a regression net.
 - ESLint: 181 pre-existing `@typescript-eslint/no-explicit-any` errors
   (prettier passes; CI never ran lint). Decide per area: fix in `src/`,
   disable the rule for test files where `as any` mocks are idiomatic.
+- **Bug: iPhone PWA auth state lost on relaunch — ✅ audited, no code fix
+  needed.** Symptom: installed as a PWA on iOS and launched from the home
+  screen, the session was reported lost and the user had to log in every time.
+  Root cause: WebKit's partitioned storage in standalone PWA mode discards
+  localStorage between launches, so a localStorage-backed session is dropped;
+  the session must live in cookies so `src/hooks.server.ts` can restore it on
+  the next server-side request. Audit outcome: every Supabase client already
+  uses `@supabase/ssr` cookie storage — no call site passes `storage:
+  localStorage`, `createBrowserClient` defaults to a 400-day persistent cookie,
+  and all auth mutations run server-side through `locals.supabase` so the cookie
+  is set via `hooks.server.ts`'s `setAll`. Added regression coverage in
+  `tests/e2e/session-persistence.spec.ts` (persistent-cookie-not-localStorage
+  assertion + a simulated iOS PWA cold-relaunch using a fresh context seeded
+  with persistent cookies only).
 - **Supabase API key migration** — Supabase has replaced legacy JWT-based
   `anon` / `service_role` keys with new `sb_publishable_*` / `sb_secret_*`
   keys (legacy deprecated end of 2026). Steps:
@@ -100,6 +114,15 @@ Pro, only the scheduler changes.
   visible game card.
 - Surface other players' picks in the game UI post-kickoff (RLS already
   permits it via `sel_picks_owner_or_started`).
+- **Username + password auth** — add email/password as an auth method alongside
+  the existing magic-link flow. Supabase Auth already supports it; steps:
+  1. Enable "Email provider → Password sign-in" in Supabase Auth settings.
+  2. Add a password sign-up/sign-in form to the login page (toggle or tabs).
+  3. Password reset via "Forgot password" → `supabase.auth.resetPasswordForEmail`
+     → redirect to a `/auth/reset` route that calls `updateUser`.
+  4. Add to e2e smoke suite: sign-up, sign-in, reset flow.
+  5. Existing magic-link users can set a password via the same reset flow; no
+     migration needed (Supabase links by email).
 - Season-start checklist: seed 2026 season/weeks (seeding is manual;
   `seed/002_season_and_weeks.sql` is commented out), verify crons, check Odds
   API quota, full Playwright suite green.

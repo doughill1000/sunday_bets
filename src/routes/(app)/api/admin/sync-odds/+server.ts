@@ -15,10 +15,11 @@ export const POST: RequestHandler = async (event) => {
     }
 
     return new Response(JSON.stringify({ ok: true, count: res.count }), { status: 200 });
-  } catch (e: any) {
+  } catch (e) {
     console.error('sync-odds failed', e);
-    return new Response(JSON.stringify({ ok: false, reason: e.message ?? 'Unknown error' }), {
-      status: 500
-    });
+    return new Response(
+      JSON.stringify({ ok: false, reason: e instanceof Error ? e.message : 'Unknown error' }),
+      { status: 500 }
+    );
   }
 };

@@ -16,7 +16,10 @@ export const POST: RequestHandler = async (event) => {
 
     const result = await gradeSeason(season_id, { refreshScores, daysFrom });
     return json(result);
-  } catch (e: any) {
-    return json({ ok: false, reason: e.message }, { status: 500 });
+  } catch (e) {
+    return json(
+      { ok: false, reason: e instanceof Error ? e.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 };
