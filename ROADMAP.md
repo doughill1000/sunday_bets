@@ -13,13 +13,13 @@ milestone. Hotfixes within a phase use patch versions (e.g. v1.3.1).
 |---------|-----------|
 | v1.1    | Pre-roadmap baseline |
 | v1.2    | Phase 1 — shipped June 2026 |
-| v1.3    | Phase 2 — E2E + Svelte 5 migration |
+| v1.3    | Phase 2 — shipped June 2026 |
 | v1.4    | Phase 3 — Automation (crons) |
 | v1.5    | Phase 4 — Push notifications |
 | v1.6    | Phase 5 — Stats & history |
 | v2.0    | Phase 6 — Social + Week 1 launch |
 
-## Phase 2 — E2E safety net + finish the Svelte 5 migration (July) — v1.3
+## Phase 2 — E2E safety net + finish the Svelte 5 migration — v1.3 ✅ shipped June 2026
 
 E2E tests come **first** so the component migration has a regression net.
 
@@ -97,8 +97,13 @@ Pro, only the scheduler changes.
   games <48h out), results summary after a successful grade run. Admin "send
   test notification" button.
 
-## Phase 5 — Stats & history (August) — v1.6
+## Phase 5 — Stats & history + DevOps cleanup (August) — v1.6
 
+- **Branching strategy migration** — drop the long-lived `develop` branch; PRs
+  target `main` directly, using Vercel preview deployments for per-PR staging.
+  Steps: update `ci-tests.yml` branch targets, update branch protection rules,
+  repurpose or remove the staging Vercel project, update `CLAUDE.md` branching
+  convention. Low-medium LoE (~1h), no user-facing impact.
 - Four SQL views over `pick_settlement` in `supabase/src/views/`:
   `stats_head_to_head`, `stats_accuracy_by_team`, `stats_accuracy_by_weight`
   (All-In record), `stats_season_trend` (cumulative points/week —
