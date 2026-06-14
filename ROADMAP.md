@@ -18,6 +18,7 @@ milestone. Hotfixes within a phase use patch versions (e.g. v1.3.1).
 | v1.5    | Phase 4 — Push notifications |
 | v1.6    | Phase 5 — Stats & history |
 | v2.0    | Phase 6 — Social + Week 1 launch |
+| v2.1    | Phase 7 — Gameplay rules & engagement |
 
 ## Phase 2 — E2E safety net + finish the Svelte 5 migration — v1.3 ✅ shipped June 2026
 
@@ -132,6 +133,93 @@ Pro, only the scheduler changes.
   `seed/002_season_and_weeks.sql` is commented out), verify crons, check Odds
   API quota, full Playwright suite green.
 
+## Phase 7 — Gameplay rules & engagement — v2.1
+
+Brainstormed June 2026. Goal: keep the game fresh (catch-up for trailing players,
+variety beyond the Week-18 All-In) and make line-locking consistent and fair.
+Theme: **rules become league config** so a commissioner can tune the vibe.
+Sequenced cheapest/safest first; the first item ships independently of everything
+else, the rest layer in.
+
+### Drop your worst week — *near-term, ships independently*
+
+Leaderboard-only change; no dependency on other phases. Season standings ignore each
+player's single lowest-scoring week, so one blowup or a missed week doesn't sink
+someone.
+- Extend `supabase/src/views/leaderboard_season_totals.sql`: add `week_number` to the
+  base CTE, compute per-`(user, season, week)` `week_points`, flag each user's worst
+  week via `row_number() over (… order by week_points asc)`, and expose **both** raw
+  and adjusted figures — `total_points_adjusted`, `dropped_week_number`,
+  `rank_adjusted` — **appended after** the existing columns (`create or replace view`
+  is additive-at-end; grants unchanged).
+- Config on the single-row `settings`: `drop_worst_weeks` (default 1, `0` disables) +
+  `drop_worst_min_weeks` (default 4, so the drop only kicks in once a player has
+  enough graded weeks). Guardrail: never drop a player's only week.
+- Wire-through: `SeasonTotalsRow` in `src/lib/types/server/leaderboard.ts` (+3 fields);
+  `getSeasonLeaderboard()` order by `rank_adjusted`;
+  `src/lib/components/leaderboard/LeaderboardTable.svelte` shows the adjusted total +
+  a "Wk N dropped" note (keep raw total visible secondarily).
+- pgTAP: a user with weeks `[+5, −8, +3]` → raw 0, adjusted +8, dropped = the −8 week;
+  1-week user not dropped; `drop_worst_weeks=0` → adjusted == raw.
+
+### Line & lock system — *depends on Phase 3 cron (and Phase 4 push for alerts)*
+
+Fixes the original "consistency" complaint: today each pick freezes the spread at the
+instant that player locks it (`lock_pick.sql` snapshots into
+`picks.locked_spread_value`), so players on the same side of the same game can be
+graded on different numbers, and a missed sync leaves stale lines.
+- **Pick anytime per game; picks lock per-game at kickoff** — no "slate" rules
+  (per-game auto-handles Thu/Sat/London 9:30am/1pm/4pm/SNF/MNF/playoffs). Set your
+  whole lineup in one sitting.
+- **Two presets** (league-wide, on `settings`): **House** (default) = graded on the
+  closing line at `kickoff − X`, same number for everyone; **Gamer** = graded on the
+  line you locked (today's behavior — line-shopping). Config =
+  `line_grading_preset` + `line_freeze_offset (X)`. Closing-line resolution needs the
+  near-kickoff sync from Phase 3.
+- Grading change: for House, resolve the reference line from `game_lines` history at
+  `kickoff − X`; Gamer keeps reading `picks.locked_spread_value`. The `picks.locked_*`
+  snapshot is still recorded either way.
+- **Opt-in line-movement notification** (Phase 4 push): "your Chiefs line moved
+  −3 → −1, tap to revisit." **Info only — never changes your grade**; toggled via
+  `notification_prefs`. Useful in Gamer (relock to capture it) and House (reconsider
+  side/weight/All-In).
+- A "Casual"/​big-jump-shift *grading* mode was considered and cut — House already
+  removes the "punished for locking early" fear (your number is the closing line
+  regardless of when you picked), and per-player adjustment re-introduces the
+  inconsistency this overhaul exists to kill. Survives only via Advanced/Custom.
+
+### More catch-up — *after drop-worst-week*
+
+- **Trailing-player boost** — give the genuinely-far-back (gap-based, > X points
+  behind the leader) a **second All-In** from a configurable late week; reuses the
+  All-In special-case in `lock_pick.sql` (the final-week unlock). Needs a
+  start-of-week standings snapshot so "trailing" is fixed for the week. On/off toggle
+  (some leagues hate rubber-banding). Medium-high LoE; touchy fairness.
+- **Mulligan tokens** — N/season (2–3); **post-result, manual** void of a losing pick
+  (`−weight → 0`, can't make it a win), All-In eligible. New `mulligan_uses` table
+  (audit) + a `void` outcome value + RLS (own losing pick, tokens remain) + a "use
+  mulligan" UI + read-time leaderboard adjustment (never mutate `pick_settlement`).
+  Highest LoE.
+- Note: drop-worst-week and mulligans are both *forgiveness* mechanics; only the boost
+  helps you gain ground. Any bonus/multiplier widens the `pick_settlement` guard
+  (`points_delta between -20 and 10`).
+
+### Special weeks — *per-week rule overrides*
+
+A `mode` / `point_multiplier` column on the `weeks` row (same "rules overridable per
+week" hook as the line presets). "Special week" = "this week's rules differ."
+- **Multiplier / "playoff push" weeks** (1.5–2×) — cheapest, doubles as a catch-up
+  lever; best value/effort here.
+- **Lock of the Week** — flag one pick weekly for a small ±~3 modifier on top of its
+  weight (kept a *modifier*, not another 10-pointer, to stay distinct from All-In).
+- **Underdog week** — winning on the dog (+points side, detectable via
+  `locked_spread_team_id`) pays ×1.5 / a bonus.
+- **Perfect-week bonus** — clean on ≥ N picks → flat bonus.
+- **Confidence-ranking week** — rank picks 1..N (win +rank / loss −rank); most build
+  (a separate scoring model for one week).
+- Stretch (separate features, not week-overrides): **Survivor side-game**, **playoff
+  bracket bonus**.
+
 ## Cross-cutting: new tables and the Data API
 
 Supabase no longer auto-exposes new `public` schema tables to the Data (REST)
@@ -146,7 +234,8 @@ alter table <table> enable row level security;
 ```
 
 Affected tables by phase: `cron_run_log` (Phase 3), `push_subscriptions` /
-`notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6). Tables
+`notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6),
+`mulligan_uses` (Phase 7). Tables
 only accessed server-side via the secret key (service role) bypass RLS anyway,
 but the grant is still needed for the Data API path.
 
