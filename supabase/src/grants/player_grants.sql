@@ -32,6 +32,9 @@ grant select, insert, update on public.picks to authenticated;
 -- Do NOT grant write widely; writes happen via SECURITY DEFINER admin RPCs.
 grant select on public.settings, public.audit_log to authenticated;
 
+-- cron_run_log: admin-only reads via RLS (is_admin()); writes come from service role.
+grant select on public.cron_run_log to authenticated;
+
 -- NOTE: Do not grant EXECUTE here. Each RPC file should append its own:
 --   - public get-only RPCs (e.g., get_active_week_games): GRANT to anon, authenticated
 --   - player RPCs (lock_pick, unlock_pick): GRANT to authenticated
