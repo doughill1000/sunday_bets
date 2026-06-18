@@ -2,7 +2,7 @@ name: CI - Integration (with-auth)
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [master]
     paths:
       - 'supabase/**'
       - 'src/**'
