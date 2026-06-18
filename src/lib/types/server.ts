@@ -1,9 +1,6 @@
-import type { TeamSide, WeightCode } from './domain';
-
 import type { Database } from '$lib/types/supabase';
 
 export type LockPickArgs = Database['public']['Functions']['lock_pick']['Args'];
-export type PickOutcome = Database['public']['Enums']['pick_outcome'];
 
 // Minimal, DB-agnostic shape your Odds adapter needs
 export type WeekWindow = {
@@ -43,14 +40,4 @@ export type OddsGame = {
   commence_time: string;
   home_team: string;
   away_team: string;
-};
-
-export type PickState = { team: TeamSide; weight: WeightCode };
-export type PickEntry = {
-  selected?: PickState;
-  lockedPick?: PickState;
-  lockedAt?: string;
-  unlocksUsed?: number;
-  lockedSpreadValue?: number;
-  lockedSpreadTeamId?: number;
 };

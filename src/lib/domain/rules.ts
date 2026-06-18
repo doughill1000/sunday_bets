@@ -1,5 +1,5 @@
 // src/lib/domain/rules.ts
-import type { PickEntry } from '$lib/types/server';
+import type { PickEntry } from '$lib/types/picks';
 
 export function kickoffPassed(iso: string) {
   return new Date(iso).getTime() <= Date.now();

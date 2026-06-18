@@ -3,14 +3,18 @@
   import { AccordionItem, AccordionTrigger, AccordionContent } from '$lib/components/ui/accordion';
   import WeekHeader from './WeekHeader.svelte';
   import GameGrid from './GameGrid.svelte';
-  import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
+  import type {
+    LeaderboardPickCell,
+    LeaderboardPlayer,
+    WeeklyLeaderboardGame
+  } from '$lib/types/leaderboard';
 
   interface Props {
     weekNumber: number;
-    players?: PlayerRow[];
+    players?: LeaderboardPlayer[];
     weekTotals?: Record<string, number>; // per user
-    games?: WeekTableGame[];
-    cells?: Record<string, Record<string, PickCell>>;
+    games?: WeeklyLeaderboardGame[];
+    cells?: Record<string, Record<string, LeaderboardPickCell>>;
     gridTemplate: string;
     gridTemplateLg: string;
     activeWeekNumber?: number | null;

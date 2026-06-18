@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { picks, setPicks, selectTeam } from '$lib/stores/picks';
-  import type { UIGame } from '$lib/types/ui';
-  import type { PickEntry } from '$lib/types/server';
+  import type { PickGame } from '$lib/types/games';
+  import type { PickEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import GameCard from './GameCard.svelte';
@@ -11,7 +11,7 @@
 
   interface Props {
     week?: Week | null;
-    games?: UIGame[];
+    games?: PickGame[];
     initialPicks?: Record<string, PickEntry>;
   }
   let { week = null, games = [], initialPicks = {} }: Props = $props();

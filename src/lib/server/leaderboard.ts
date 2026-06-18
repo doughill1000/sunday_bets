@@ -5,21 +5,19 @@ import { getPicksForWeeks } from './db/queries/getPicksForWeeks';
 import { getSettlementsForGames } from './db/queries/getSettlementsForGames';
 import { supabaseService } from '$lib/supabase/service';
 import type { ShortResult } from '$lib/constants/picks';
+import type { GameRow, PickRow, WeekRow } from '$lib/types/server/leaderboard';
 import type {
-  GameRow,
-  PickRow,
-  PlayerRow,
-  SettlementRow,
-  WeekRow,
-  WeekTable
-} from '$lib/types/server/leaderboard';
+  LeaderboardPlayer,
+  Settlement,
+  WeeklyLeaderboard
+} from '$lib/types/leaderboard';
 import { formatLockedSpread, gameLabel, gameScore, toResult } from '$lib/utils/leaderboard';
 
 export async function getWeeklyTable(seasonYear: number): Promise<{
   seasonYear: number;
-  players: PlayerRow[];
+  players: LeaderboardPlayer[];
   weeks: number[];
-  tableByWeek: Record<number, WeekTable>;
+  tableByWeek: Record<number, WeeklyLeaderboard>;
   weekTotals: Record<number, Record<string, number>>;
 }> {
   const { data: season } = await getSeasonByYear(seasonYear);
@@ -34,8 +32,8 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   );
 
   const { data: players = [] } = await getPlayers();
-  const playersTyped: PlayerRow[] = (players ?? []).filter(
-    (p: unknown): p is PlayerRow => !!p && typeof (p as { id?: unknown }).id === 'string'
+  const playersTyped: LeaderboardPlayer[] = (players ?? []).filter(
+    (p: unknown): p is LeaderboardPlayer => !!p && typeof (p as { id?: unknown }).id === 'string'
   );
 
   // Picks (must include lock fields & picked team id) — ensure your getPicksForWeeks selects them
@@ -80,8 +78,8 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   );
   const { data: settlementsRaw = [] } = gameIds.length
     ? await getSettlementsForGames(gameIds)
-    : { data: [] as SettlementRow[] };
-  const settlements: SettlementRow[] = (settlementsRaw as SettlementRow[]).map((s) => ({
+    : { data: [] as Settlement[] };
+  const settlements: Settlement[] = (settlementsRaw as Settlement[]).map((s) => ({
     user_id: s.user_id,
     game_id: s.game_id,
     points_delta: s.points_delta ?? 0,
@@ -97,7 +95,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
   }
 
   // Build tables
-  const tableByWeek: Record<number, WeekTable> = {};
+  const tableByWeek: Record<number, WeeklyLeaderboard> = {};
   for (const w of weeks) tableByWeek[w] = { games: [], cells: {} };
 
   // Add game rows per week

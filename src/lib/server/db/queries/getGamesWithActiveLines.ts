@@ -1,11 +1,11 @@
 // src/lib/server/db/queries/getGamesWithActiveLines.ts
 import { supabaseService } from '$lib/supabase/service';
-import type { UIGame } from '$lib/types/ui';
-import type { Database } from '$lib/types/supabase';
+import type { PickGame } from '$lib/types/games';
+import type { Tables } from '$lib/types/supabase';
 
-type UIGameRow = Database['public']['Views']['ui_games']['Row'];
+type UIGameRow = Tables<'ui_games'>;
 
-export async function getGamesWithActiveLines(weekId: number): Promise<UIGame[]> {
+export async function getGamesWithActiveLines(weekId: number): Promise<PickGame[]> {
   const { data, error } = await supabaseService
     .from('ui_games')
     .select(

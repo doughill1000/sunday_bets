@@ -1,6 +1,6 @@
-import type { UIGame } from '$lib/types/ui';
+import type { PickGame } from '$lib/types/games';
 
-export function spreadLine(g: UIGame): string {
+export function spreadLine(g: PickGame): string {
   if (g.spreadValue == null) return 'No line';
   if (g.spreadValue === 0) return 'PK';
   const favIsHome = g.spreadTeamId === g.homeTeamId;
@@ -8,7 +8,7 @@ export function spreadLine(g: UIGame): string {
   return `${favName} -${g.spreadValue}`;
 }
 
-export function signedSpreadForTeam(g: UIGame, team: 'home' | 'away'): string {
+export function signedSpreadForTeam(g: PickGame, team: 'home' | 'away'): string {
   if (g.spreadValue == null) return '';
   if (g.spreadValue === 0) return ' PK';
   const favIsHome = g.spreadTeamId === g.homeTeamId;
