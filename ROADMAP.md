@@ -133,6 +133,10 @@ Pro, only the scheduler changes.
 - Season-start checklist: seed 2026 season/weeks (seeding is manual;
   `seed/002_season_and_weeks.sql` is commented out), verify crons, check Odds
   API quota, full Playwright suite green.
+- **Rotate production/staging secrets** before launch — Supabase service-role
+  key + DB password and both Odds API keys were exposed in an AI agent transcript
+  during Phase 3 setup (`.env.production` / `.env.staging`). Rotate, then update
+  Vercel env vars and GitHub Actions secrets for both environments.
 
 ## Phase 7 — Gameplay rules & engagement — v2.1
 

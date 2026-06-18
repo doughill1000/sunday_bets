@@ -13,6 +13,13 @@ import type { Json } from '$lib/types/supabase';
 // ---------------------------------------------------------------------------
 export function requireCronSecret(event: RequestEvent): Response | null {
   const authHeader = event.request.headers.get('Authorization') ?? '';
+
+  // Fail closed if the secret is unset/blank — otherwise `expected` collapses to
+  // "Bearer " (or "Bearer undefined") and a matching header would authenticate.
+  if (!CRON_SECRET || CRON_SECRET.trim().length === 0) {
+    return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), { status: 401 });
+  }
+
   const expected = `Bearer ${CRON_SECRET}`;
 
   const expectedBuf = Buffer.from(expected, 'utf8');
