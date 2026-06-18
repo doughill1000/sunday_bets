@@ -707,6 +707,7 @@ export type Database = {
         Args: { p_game_ids: string[] }
         Returns: undefined
       }
+      advance_week_if_complete: { Args: never; Returns: Json }
       ats_margin_at_lock: {
         Args: {
           away_id: number
