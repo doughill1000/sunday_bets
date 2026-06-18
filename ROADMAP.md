@@ -84,6 +84,7 @@ Pro, only the scheduler changes.
   new `cron_run_log` table (admin-only RLS), `Sentry.captureException` on
   caught errors. Show recent runs on the admin page.
 - Monthly reset function for `settings.odds_api_calls_used_current_month`.
+- **Secrets to set before going live:** `CRON_SECRET` + `DEPLOY_URL` in Vercel (both environments) and GitHub Actions environments (Production/Development).
 
 ## Phase 4 — Push notifications (August) — v1.5
 
@@ -132,6 +133,10 @@ Pro, only the scheduler changes.
 - Season-start checklist: seed 2026 season/weeks (seeding is manual;
   `seed/002_season_and_weeks.sql` is commented out), verify crons, check Odds
   API quota, full Playwright suite green.
+- **Rotate production/staging secrets** before launch — Supabase service-role
+  key + DB password and both Odds API keys were exposed in an AI agent transcript
+  during Phase 3 setup (`.env.production` / `.env.staging`). Rotate, then update
+  Vercel env vars and GitHub Actions secrets for both environments.
 
 ## Phase 7 — Gameplay rules & engagement — v2.1
 
@@ -228,10 +233,16 @@ grants and RLS before the app can query it through the client:
 
 ```sql
 -- required alongside CREATE TABLE for any Data API-accessible table
+revoke all on <table> from public, anon;  -- drop Supabase's default-ACL grant to anon
 grant select, insert, update, delete on <table> to authenticated;
 alter table <table> enable row level security;
 -- then add policies as appropriate
 ```
+
+The `revoke` matters: Supabase's default ACL auto-grants `ALL` on every new
+`public` table to `anon`/`authenticated`, so a `CREATE TABLE` alone leaves anon
+holding full privileges (blocked only by RLS). Strip it explicitly, mirroring
+`public.picks_status_view_user`. See the grant-hygiene item under Parked.
 
 Affected tables by phase: `cron_run_log` (Phase 3), `push_subscriptions` /
 `notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6),
@@ -250,3 +261,11 @@ but the grant is still needed for the Data API path.
   "don't rename SQL sources" rule in README.
 - CI: `ci-tests.yml` only runs unit tests on PRs to `develop`; widen when
   touching workflows in Phase 3.
+- Grant hygiene (anon default-ACL revoke): Supabase's default ACL auto-grants
+  `ALL` on every new `public` table to `anon`/`authenticated`. Only
+  `picks_status_view_user` and `cron_run_log` actually revoke anon; every other
+  object (`audit_log`, `settings`, `users`, `picks`, …) relies solely on RLS to
+  block anon — correct today but no defense in depth. Sweep
+  `revoke all … from public, anon` onto the admin-only/server-only tables
+  (`audit_log`, `settings`) and fix `picks_status_view_admin` (it revokes
+  `public` but not `anon`). Low urgency: RLS already denies anon everywhere.

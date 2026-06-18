@@ -26,3 +26,16 @@ export async function recordOddsApiUsage(cost: number) {
     .eq('id', st.id);
   if (error) throw error;
 }
+
+export async function resetOddsApiUsage() {
+  const st = await getSettings();
+  if (!st) return;
+  const { error } = await supabaseService
+    .from('settings')
+    .update({
+      odds_api_calls_used_current_month: 0,
+      reset_on: new Date().toISOString().split('T')[0]
+    })
+    .eq('id', st.id);
+  if (error) throw error;
+}

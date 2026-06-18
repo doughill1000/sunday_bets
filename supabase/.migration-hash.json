@@ -53,7 +53,7 @@
     "hash": "efcb65541ce532b092e36900b8667a7be9d98f59e00ea1c5e2ffc5554c3a8f3d"
   },
   "policies/50_policies_admin.sql": {
-    "hash": "45dacd5c90209cfa77bdeac690b54d81b9519e7809b43f2c54665a45013701b7"
+    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a"
   },
   "grants/admin_grants.sql": {
     "hash": "d32de0a3815e2cf37b7a5c991cea467cb670e3e984bab7ca5b6acd6f6d617a5b"
@@ -62,7 +62,7 @@
     "hash": "b5df764682dd942228935d142d4bb6e5dc7e5d520a059f4e54b8a1e1a3d2044a"
   },
   "grants/player_grants.sql": {
-    "hash": "9bacd1e44e8e0c2330e5069c21120994b4ad4785361a10e9f29f9edfba31f876"
+    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
   },
   "functions/_private/audit_log_action.sql": {
     "hash": "47db4fee67b8ca0f137fea9fc4a29fd0f08ab0492733ee94aa15700b2d9b38b1",
@@ -93,7 +93,7 @@
     "hash": "b99ebde6b2b2d3476785c86f17f6eb30290e6a5ae4a0c7b7fe6d79a6deb4c66a"
   },
   "schemas/0200_tables.sql": {
-    "hash": "104c72ea64ec4bb302ce588d183e5306ace920df1f7e8a865b2d0ff9bbf175c9"
+    "hash": "17f2219cdbd12fbd7b55e25e422be6554fd06c3aca444e4e4642a2a47bf0d101"
   },
   "schemas/0300_rls.sql": {
     "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
