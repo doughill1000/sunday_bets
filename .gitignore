@@ -45,6 +45,8 @@ vite.config.ts.timestamp-*
 # Supabase
 /supabase/.temp
 /data/*
+# Real account list for provision-users.ts (emails/passwords) — keep the .example
+/supabase/scripts/users.json
 
 # DB backups and one-off migration scripts
 db_cluster*/
