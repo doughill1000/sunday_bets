@@ -74,11 +74,12 @@ export function requireCronSecret(event: RequestEvent): Response | null {
   // avoid branching on content — pad actual to match expected length so the
   // call doesn't throw on mismatched buffer sizes.
   const lengthMatches = expectedBuf.length === actualBuf.length;
-  const padded = lengthMatches
-    ? actualBuf
-    : Buffer.concat([actualBuf, Buffer.alloc(Math.max(0, expectedBuf.length - actualBuf.length))]);
+  // Pad both to maxLen so timingSafeEqual never throws on mismatched sizes.
+  const maxLen = Math.max(expectedBuf.length, actualBuf.length);
+  const paddedExpected = Buffer.concat([expectedBuf, Buffer.alloc(maxLen - expectedBuf.length)]);
+  const paddedActual = Buffer.concat([actualBuf, Buffer.alloc(maxLen - actualBuf.length)]);
 
-  const contentMatches = timingSafeEqual(expectedBuf, padded);
+  const contentMatches = timingSafeEqual(paddedExpected, paddedActual);
 
   if (!lengthMatches || !contentMatches) {
     return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), { status: 401 });
