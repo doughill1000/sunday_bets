@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { UIGame } from '$lib/types/ui';
+  import type { PickGame } from '$lib/types/games';
   import { picks } from '$lib/stores/picks';
   import { toast } from 'svelte-sonner';
   import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
   import { Button } from '$lib/components/ui/button';
 
   interface Props {
-    game: UIGame;
+    game: PickGame;
     initialized?: boolean;
     started?: boolean;
     locked?: boolean;

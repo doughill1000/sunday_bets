@@ -1,9 +1,9 @@
 // tests/domain/spread.test.ts
 import { describe, it, expect } from 'vitest';
 import { spreadLine, signedSpreadForTeam } from '../../domain/spread';
-import type { UIGame } from '../../types/ui';
+import type { PickGame } from '../../types/games';
 
-const g = (overrides: Partial<UIGame> = {}): UIGame => ({
+const g = (overrides: Partial<PickGame> = {}): PickGame => ({
   id: 'g1',
   kickoff: '2025-09-14T17:00:00Z',
   home: 'CIN',

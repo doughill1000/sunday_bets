@@ -1,12 +1,16 @@
 <script lang="ts">
   import PlayerPickCell from './PlayerPickCell.svelte';
   import { shortName } from '$lib/utils/user';
-  import type { PickCell, PlayerRow, WeekTableGame } from '$lib/types/server/leaderboard';
+  import type {
+    LeaderboardPickCell,
+    LeaderboardPlayer,
+    WeeklyLeaderboardGame
+  } from '$lib/types/leaderboard';
 
   interface Props {
-    players?: PlayerRow[];
-    games?: WeekTableGame[];
-    cells?: Record<string, Record<string, PickCell>>;
+    players?: LeaderboardPlayer[];
+    games?: WeeklyLeaderboardGame[];
+    cells?: Record<string, Record<string, LeaderboardPickCell>>;
     gridTemplate: string; // mobile
     gridTemplateLg: string; // md+
   }

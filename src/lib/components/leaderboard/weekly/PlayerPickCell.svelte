@@ -1,10 +1,10 @@
 <!-- src/lib/components/leaderboard/weekly/PlayerPickCell.svelte -->
 <script lang="ts">
-  import type { PickCell } from '$lib/types/server/leaderboard';
+  import type { LeaderboardPickCell } from '$lib/types/leaderboard';
   import WeightChip from './WeightChip.svelte';
 
   interface Props {
-    cell: PickCell;
+    cell: LeaderboardPickCell | null;
   }
   let { cell }: Props = $props();
 

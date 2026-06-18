@@ -8,10 +8,10 @@
   import TeamSelect from './TeamSelect.svelte';
   import WeightSelect from './WeightSelect.svelte';
   import LockControls from './LockControls.svelte';
-  import type { UIGame } from '$lib/types/ui';
+  import type { PickGame } from '$lib/types/games';
 
   interface Props {
-    game: UIGame;
+    game: PickGame;
     initialized?: boolean;
   }
   let { game, initialized = false }: Props = $props();
