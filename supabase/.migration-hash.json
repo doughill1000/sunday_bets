@@ -62,7 +62,7 @@
     "hash": "b5df764682dd942228935d142d4bb6e5dc7e5d520a059f4e54b8a1e1a3d2044a"
   },
   "grants/player_grants.sql": {
-    "hash": "398366134d2da4ed6a53f645624490ac49321086c19aeee28ca1ced79ff38e66"
+    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
   },
   "functions/_private/audit_log_action.sql": {
     "hash": "47db4fee67b8ca0f137fea9fc4a29fd0f08ab0492733ee94aa15700b2d9b38b1",
