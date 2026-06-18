@@ -230,10 +230,16 @@ grants and RLS before the app can query it through the client:
 
 ```sql
 -- required alongside CREATE TABLE for any Data API-accessible table
+revoke all on <table> from public, anon;  -- drop Supabase's default-ACL grant to anon
 grant select, insert, update, delete on <table> to authenticated;
 alter table <table> enable row level security;
 -- then add policies as appropriate
 ```
+
+The `revoke` matters: Supabase's default ACL auto-grants `ALL` on every new
+`public` table to `anon`/`authenticated`, so a `CREATE TABLE` alone leaves anon
+holding full privileges (blocked only by RLS). Strip it explicitly, mirroring
+`public.picks_status_view_user`. See the grant-hygiene item under Parked.
 
 Affected tables by phase: `cron_run_log` (Phase 3), `push_subscriptions` /
 `notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6),
@@ -252,3 +258,11 @@ but the grant is still needed for the Data API path.
   "don't rename SQL sources" rule in README.
 - CI: `ci-tests.yml` only runs unit tests on PRs to `develop`; widen when
   touching workflows in Phase 3.
+- Grant hygiene (anon default-ACL revoke): Supabase's default ACL auto-grants
+  `ALL` on every new `public` table to `anon`/`authenticated`. Only
+  `picks_status_view_user` and `cron_run_log` actually revoke anon; every other
+  object (`audit_log`, `settings`, `users`, `picks`, …) relies solely on RLS to
+  block anon — correct today but no defense in depth. Sweep
+  `revoke all … from public, anon` onto the admin-only/server-only tables
+  (`audit_log`, `settings`) and fix `picks_status_view_admin` (it revokes
+  `public` but not `anon`). Low urgency: RLS already denies anon everywhere.
