@@ -117,6 +117,24 @@ describe('requireCronSecret', () => {
     const res = requireCronSecret(makeEvent('Bearer test-secret'));
     expect(res).toBeNull();
   });
+
+  it('fails closed (401) when CRON_SECRET is blank', async () => {
+    // A blank secret makes `expected` collapse to "Bearer "; a request sending
+    // exactly that must still be rejected, not authenticated.
+    vi.resetModules();
+    vi.doMock('$env/static/private', () => ({ CRON_SECRET: '' }));
+    try {
+      const { requireCronSecret: guard } = await import('../cron');
+      const res = guard(makeEvent('Bearer '));
+      expect(res).not.toBeNull();
+      expect(res!.status).toBe(401);
+      const body = await res!.json();
+      expect(body).toEqual({ ok: false, reason: 'Unauthorized' });
+    } finally {
+      vi.doUnmock('$env/static/private');
+      vi.resetModules();
+    }
+  });
 });
 
 describe('withCronLog', () => {
