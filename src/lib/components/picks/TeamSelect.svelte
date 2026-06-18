@@ -3,10 +3,10 @@
   import { TEAM_META } from '$lib/types/domain';
   import { textOn } from '$lib/ui/color';
   import { picks, selectTeam } from '$lib/stores/picks';
-  import type { UIGame } from '$lib/types/ui';
+  import type { PickGame } from '$lib/types/games';
 
   interface Props {
-    game: UIGame;
+    game: PickGame;
     canChange?: boolean;
   }
 

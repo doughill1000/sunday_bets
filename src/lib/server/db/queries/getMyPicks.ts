@@ -1,18 +1,9 @@
 // src/lib/server/db/getMyPicks.ts
 import type { RequestEvent } from '@sveltejs/kit';
-import type { PickEntry } from '$lib/types/server';
-import type { TeamSide, WeightCode } from '$lib/types/domain';
+import type { PickEntry } from '$lib/types/picks';
+import type { Tables } from '$lib/types/supabase';
 
-type Row = {
-  game_id: string | null;
-  picked_side: 'home' | 'away' | null;
-  weight: 'L' | 'M' | 'H' | 'A' | null;
-  locked_at: string | null;
-  locked_spread_value: number | null;
-  locked_spread_team_id: number | null;
-  // extra fields available if you ever want them:
-  // week_id: number; commence_time: string; game_started: boolean; picked_team_short: string | null;
-};
+type PickStatusRow = Tables<'picks_status_view_user'>;
 
 export async function getMyPicks(
   event: RequestEvent,
@@ -28,13 +19,13 @@ export async function getMyPicks(
   if (error) throw error;
 
   const byGame: Record<string, PickEntry> = {};
-  for (const r of (data ?? []) as Row[]) {
+  for (const r of (data ?? []) as PickStatusRow[]) {
     if (!r.game_id) continue;
 
     byGame[r.game_id] = {
       lockedPick:
         r.picked_side && r.weight
-          ? { team: r.picked_side as TeamSide, weight: r.weight as WeightCode }
+          ? { team: r.picked_side, weight: r.weight }
           : undefined,
       lockedAt: r.locked_at ?? undefined,
       lockedSpreadValue: r.locked_spread_value ?? undefined,

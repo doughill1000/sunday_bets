@@ -1,7 +1,7 @@
 // src/lib/server/games.ts
 import type { RequestEvent } from '@sveltejs/kit';
 import type { WeightCode } from '../types/domain';
-import type { GameDTO } from '$lib/types/ui';
+import type { WeekGame } from '$lib/types/games';
 import { findWeekById } from './db/queries/findWeekById';
 import { listGamesWithActiveLine } from './db/queries/listGamesWithActiveLine';
 import { findPicksForGames } from './db/queries/findPicksForGames';
@@ -34,7 +34,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
   const now = new Date();
 
   // 5) Shape into DTO with visibility rules
-  const data: GameDTO[] = rows.map((r) => {
+  const data: WeekGame[] = rows.map((r) => {
     const kickoff = new Date(r.commence_time);
     const started = kickoff <= now;
 
@@ -64,7 +64,7 @@ export async function listWeekGamesWithPicks(event: RequestEvent, weekId: number
       home: { id: r.home_team.id, name: r.home_team.name, shortName: r.home_team.short_name },
       away: { id: r.away_team.id, name: r.away_team.name, shortName: r.away_team.short_name },
       line: {
-        // if your GameDTO insists on non-null here, ensure your query always returns an active line
+        // The query is expected to return an active line for every game.
         spreadTeamId: line?.spread_team_id as number | null,
         spreadValue: line?.spread_value as number | null,
         source: line?.source as string | null,

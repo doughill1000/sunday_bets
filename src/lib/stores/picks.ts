@@ -1,6 +1,6 @@
 // src/lib/stores/picks.ts
 import { writable, get } from 'svelte/store';
-import type { PickEntry } from '$lib/types/server';
+import type { PickEntry } from '$lib/types/picks';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
 import { lockPick as lockPickPost } from '$lib/api/picks';
 
