@@ -1,0 +1,123 @@
+# .github/workflows/clone-to-staging.yml
+name: Clone Production → Staging
+
+on:
+  push:
+    branches: [master]
+
+concurrency:
+  group: supabase-staging-clone
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI_VERSION: 2.64.2
+  PG_VERSION: 17
+
+permissions:
+  actions: read
+
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pg client ${{ env.PG_VERSION }}
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y wget ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/pgdg.gpg >/dev/null
+          sudo apt-get update -q
+          sudo apt-get install -y postgresql-client-${{ env.PG_VERSION }}
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      # If supabase/** changed, migrate-db.yml is also running on this SHA.
+      # Wait for it to finish so staging gets the post-migration schema.
+      - name: Wait for production migration (if triggered)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 20); do
+            PENDING=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow=migrate-db.yml \
+              --commit "$GITHUB_SHA" \
+              --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            [ "$PENDING" = "0" ] && { echo "No pending migration runs."; break; }
+            echo "Waiting for migrate-db ($i/20, ${PENDING} pending)..."
+            sleep 30
+          done
+
+      - name: Abort if production migration failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FAILED=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow=migrate-db.yml \
+            --commit "$GITHUB_SHA" \
+            --json conclusion \
+            --jq '[.[] | select(.conclusion == "failure")] | length')
+          if [ "$FAILED" != "0" ]; then
+            echo "::error::Production migration failed — aborting staging clone."
+            exit 1
+          fi
+
+      - name: Push migrations to staging
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_STAGING_DB_URL" --yes
+
+      - name: Dump public schema data from production
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_dump "$SUPABASE_DB_URL" \
+            --schema=public \
+            --data-only \
+            --disable-triggers \
+            --no-acl \
+            --no-owner \
+            --format=custom \
+            --file=/tmp/prod_data.dump
+          echo "Dump size: $(du -sh /tmp/prod_data.dump | cut -f1)"
+
+      - name: Clear staging public schema data
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/psql "$SUPABASE_STAGING_DB_URL" << 'EOSQL'
+          DO $$
+          DECLARE r record;
+          BEGIN
+            FOR r IN
+              SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+            LOOP
+              EXECUTE 'TRUNCATE public.' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE';
+            END LOOP;
+          END $$;
+          EOSQL
+
+      - name: Restore production data to staging
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_restore \
+            --dbname="$SUPABASE_STAGING_DB_URL" \
+            --data-only \
+            --disable-triggers \
+            --no-acl \
+            --no-owner \
+            --single-transaction \
+            /tmp/prod_data.dump
+          echo "Staging clone complete."
