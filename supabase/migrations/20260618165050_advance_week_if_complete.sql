@@ -2,6 +2,7 @@
 set check_function_bodies = off;
 set client_min_messages = warning;
 
+
 -- file: functions/grade/advance_week_if_complete.sql
 create or replace function public.advance_week_if_complete()
 returns jsonb
