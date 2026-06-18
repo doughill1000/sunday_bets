@@ -84,7 +84,6 @@ Pro, only the scheduler changes.
   new `cron_run_log` table (admin-only RLS), `Sentry.captureException` on
   caught errors. Show recent runs on the admin page.
 - Monthly reset function for `settings.odds_api_calls_used_current_month`.
-- **Follow-up after supabase types are regenerated:** remove the local `CronRunLogDatabase` type casts in `cron.ts` and `getRecentCronRuns.ts`.
 - **Secrets to set before going live:** `CRON_SECRET` + `DEPLOY_URL` in Vercel (both environments) and GitHub Actions environments (Production/Development).
 
 ## Phase 4 — Push notifications (August) — v1.5
