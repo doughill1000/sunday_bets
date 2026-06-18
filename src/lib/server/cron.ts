@@ -4,58 +4,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { CRON_SECRET } from '$env/static/private';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Json } from '$lib/types/supabase';
-
-// ---------------------------------------------------------------------------
-// Minimal local type for cron_run_log rows.
-// Remove this (and the cast below) after running `pnpm db:types` once the
-// cron_run_log table migration has been applied.
-// ---------------------------------------------------------------------------
-type CronRunLogDatabase = {
-  public: {
-    Tables: {
-      cron_run_log: {
-        Row: {
-          id: number;
-          job: string;
-          started_at: string;
-          finished_at: string | null;
-          ok: boolean | null;
-          summary: Json | null;
-          error: string | null;
-        };
-        Insert: {
-          id?: number;
-          job: string;
-          started_at?: string;
-          finished_at?: string | null;
-          ok?: boolean | null;
-          summary?: Json | null;
-          error?: string | null;
-        };
-        Update: {
-          id?: number;
-          job?: string;
-          started_at?: string;
-          finished_at?: string | null;
-          ok?: boolean | null;
-          summary?: Json | null;
-          error?: string | null;
-        };
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
-
-// Cast only for cron_run_log operations; the real supabaseService type is
-// Database-typed which doesn't include this table yet.
-const cronDb = supabaseService as unknown as SupabaseClient<CronRunLogDatabase>;
 
 // ---------------------------------------------------------------------------
 // requireCronSecret
@@ -97,7 +46,7 @@ export async function withCronLog<T>(
   fn: () => Promise<T>
 ): Promise<{ ok: true; result: T } | { ok: false; error: string }> {
   // 1. Insert a start row and capture its id
-  const { data: startRow, error: insertError } = await cronDb
+  const { data: startRow, error: insertError } = await supabaseService
     .from('cron_run_log')
     .insert({ job, started_at: new Date().toISOString() })
     .select('id')
@@ -119,7 +68,7 @@ export async function withCronLog<T>(
     error?: string;
   }) {
     if (logId === null) return;
-    await cronDb.from('cron_run_log').update(patch).eq('id', logId);
+    await supabaseService.from('cron_run_log').update(patch).eq('id', logId);
   }
 
   // 2. Run the job
