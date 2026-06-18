@@ -22,7 +22,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            "${{ secrets.DEPLOY_URL }}/api/cron/grade")
+            "${{ vars.DEPLOY_URL }}/api/cron/grade")
           http_code=$(echo "$response" | tail -1)
           body=$(echo "$response" | head -n -1)
           echo "Response: $body"
@@ -42,7 +42,7 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
-            "${{ secrets.DEPLOY_URL }}/api/cron/grade")
+            "${{ vars.DEPLOY_URL }}/api/cron/grade")
           http_code=$(echo "$response" | tail -1)
           body=$(echo "$response" | head -n -1)
           echo "Response: $body"
