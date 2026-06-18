@@ -37,7 +37,6 @@ describe('picks store', () => {
   it('lockPick optimistic success path updates then confirms', async () => {
     setPicks({ g4: { selected: { team: 'home', weight: 'H' } } as any });
     mockLockPick.lockPick.mockResolvedValueOnce({ ok: true, locked_at: '2024-01-01T00:00:00Z' });
-    const beforeCall = Date.now();
     const res = await lockPick('g4');
     expect(res).toEqual({ ok: true });
     const state = get(picks).g4;

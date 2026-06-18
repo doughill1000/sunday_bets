@@ -1,5 +1,5 @@
 import type { LayoutServerLoad } from './$types';
-import { error, redirect, type RequestEvent } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
   const { user, isAdmin } = locals;

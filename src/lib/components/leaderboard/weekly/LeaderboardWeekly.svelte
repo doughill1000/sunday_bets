@@ -12,12 +12,13 @@
     orderedPlayers
   } from '$lib/stores/leaderboard';
 
-  let hidden: Set<string> = $state(new Set());
+  import { SvelteSet } from 'svelte/reactivity';
+
+  const hidden = new SvelteSet<string>();
 
   function togglePlayer(id: string) {
     if (hidden.has(id)) hidden.delete(id);
     else hidden.add(id);
-    hidden = new Set(hidden);
   }
 
   // derive visible ordered players
@@ -35,7 +36,7 @@
 
   <CardContent class="space-y-2">
     <div class="flex flex-wrap gap-2 pb-2">
-      {#each $players as p}
+      {#each $players as p (p.id)}
         <button
           class="rounded border px-2 py-1 text-xs"
           onclick={() => togglePlayer(p.id)}

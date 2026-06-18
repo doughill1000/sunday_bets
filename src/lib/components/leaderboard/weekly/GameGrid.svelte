@@ -24,7 +24,7 @@
     >
       Game
     </div>
-    {#each players as p}
+    {#each players as p (p.id)}
       <div
         class="player-header sticky top-0 z-20 flex items-center justify-center px-1 py-1 text-[11px] md:text-sm font-semibold tracking-wide uppercase bg-background text-white w-full text-center"
       >
@@ -36,13 +36,13 @@
     {/each}
 
     <!-- rows -->
-    {#each games as g}
+    {#each games as g (g.game_id)}
       <div class="sticky-col sticky left-0 z-10 rounded-md border bg-background p-2 md:p-3">
         <div class="truncate text-sm font-medium md:text-base">{g.label}</div>
         <div class="text-xs text-muted-foreground md:text-sm">{g.score ?? '—'}</div>
       </div>
 
-      {#each players as p}
+      {#each players as p (p.id)}
         <PlayerPickCell cell={cells[g.game_id]?.[p.id] ?? null} />
       {/each}
     {/each}

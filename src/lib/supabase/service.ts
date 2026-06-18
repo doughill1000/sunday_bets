@@ -12,8 +12,6 @@ const serviceKey = SUPABASE_SERVICE_ROLE; // server-only secret
 
 // Hot-reload safe singleton (dev)
 let _client: SupabaseClient<Database> | undefined;
-export const supabaseService =
-  _client ??
-  (_client = createClient<Database>(url, serviceKey, {
-    global: { headers: { 'x-app-role': 'service' } }
-  }));
+export const supabaseService = (_client ??= createClient<Database>(url, serviceKey, {
+  global: { headers: { 'x-app-role': 'service' } }
+}));

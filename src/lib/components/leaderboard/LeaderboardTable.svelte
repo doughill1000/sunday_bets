@@ -29,7 +29,7 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        {#each $seasonTotalsStore as r}
+        {#each $seasonTotalsStore as r (r.display_name)}
           <TableRow>
             <TableCell class="text-center font-semibold">{r.rank}</TableCell>
             <TableCell class="font-medium">{r.display_name}</TableCell>

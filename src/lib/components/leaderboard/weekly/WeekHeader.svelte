@@ -43,7 +43,7 @@
   </span>
 
   <div class="flex flex-1 flex-wrap items-center gap-1" data-week-totals>
-    {#each players as p}
+    {#each players as p (p.id)}
       <span
         class="flex items-center gap-1 rounded px-1 py-0.5 text-[11px] md:text-xs
           bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-700"

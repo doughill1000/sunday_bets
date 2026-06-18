@@ -20,7 +20,7 @@ describe('WeekHeader', () => {
   });
 
   it('marks active week', () => {
-    const { getByText, getByLabelText, container } = render(WeekHeader, {
+    const { getByLabelText, container } = render(WeekHeader, {
       weekNumber: 5,
       players,
       totals: {},
