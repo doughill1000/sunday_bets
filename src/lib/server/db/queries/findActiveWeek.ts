@@ -9,8 +9,8 @@ export async function findActiveWeek() {
     .gte('end_ts', now)
     .order('start_ts', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
-  return data ?? null;
+  return data;
 }
