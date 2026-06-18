@@ -151,5 +151,11 @@
   },
   "grants/player_grants.sql": {
     "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
+  },
+  "functions/grade/advance_week_if_complete.sql": {
+    "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
+    "signature": "public.advance_week_if_complete()",
+    "migration": "20260618165050_advance_week_if_complete.sql",
+    "migrationHash": "9461cf5d92a31cb57c02cb6d00df6ae587ffcfb9bcdfe7c3afac39a03b3aa3ef"
   }
 }
