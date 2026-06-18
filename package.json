@@ -16,6 +16,7 @@
     "db:reset:local": "supabase db reset --local --yes && pnpm db:clone:local",
     "db:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
+    "db:migration:check": "tsx supabase/scripts/generate-migration.ts --check",
     "db:push:dev": "supabase link --project-ref eoncckeqqogezoftooix && supabase db push --yes",
     "db:push:local": "supabase db push --local --yes && pnpm db:types",
     "db:types": "supabase gen types typescript --local > src/lib/types/supabase.ts",

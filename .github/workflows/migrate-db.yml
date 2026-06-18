@@ -3,14 +3,35 @@ name: Supabase Migrations
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-db.yml'
 
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI_VERSION: 2.64.2
+
 jobs:
+  source_integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migration:check
+
   backup:
-    if: ${{ github.ref == 'refs/heads/master' }}
+    needs: [source_integrity]
     runs-on: ubuntu-latest
     environment:
       name: Production
@@ -41,35 +62,16 @@ jobs:
           rclone copy "$FILE" onedrive:supabase-backups/
 
   migrate_master:
-    if: ${{ github.ref == 'refs/heads/master' }}
     needs: [backup]
     runs-on: ubuntu-latest
     environment:
       name: Production
     steps:
       - uses: actions/checkout@v6
-      - name: Install Supabase CLI
-        run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin
-          supabase --version
-      - name: Run Supabase migrations
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
-
-  migrate_develop:
-    if: ${{ github.ref == 'refs/heads/develop' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: Development
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install Supabase CLI
-        run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin
-          supabase --version
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Run Supabase migrations
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

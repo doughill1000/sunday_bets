@@ -1,33 +1,36 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 
-type LedgerEntry = { hash: string; signature?: string };
-type Ledger = Record<string, LedgerEntry>;
+export type LedgerEntry = {
+  hash: string;
+  signature?: string;
+  migration?: string;
+  migrationHash?: string;
+};
 
-// ---------- config: defaults + overrides ----------
-function getArg(prefix: string) {
-  const a = process.argv.find((x: string) => x.startsWith(prefix));
-  return a ? a.slice(prefix.length) : undefined;
-}
-const SRC_ROOT_DEFAULT = 'supabase/src';
+export type Ledger = Record<string, LedgerEntry>;
 
-function getMigrationName() {
-  // Allow --name=custom_name or MIGRATION_NAME env var, default to 'migrations_patch'
-  return getArg('--name=') ?? process.env.MIGRATION_NAME ?? 'migrations_patch';
-}
+type SourceFile = {
+  key: string;
+  content: string;
+  hash: string;
+  signature?: string;
+  primaryObjectCount: number;
+};
 
-// Default to supabase/src, allow --root=... or SQLSRC_ROOT to override
-const ROOT = path.resolve(
-  process.cwd(),
-  getArg('--root=') ?? process.env.SQLSRC_ROOT ?? SRC_ROOT_DEFAULT
-);
-// Put the ledger alongside supabase/src (i.e., supabase/.migration-hash.json)
-const LEDGER_PATH = path.resolve(ROOT, '..', '.migration-hash.json');
-// Supabase migrations live here
-const MIG_DIR = path.resolve(process.cwd(), 'supabase/migrations');
+export type GeneratorOptions = {
+  root: string;
+  ledgerPath: string;
+  migrationDir: string;
+  migrationName: string;
+  bootstrap?: boolean;
+  check?: boolean;
+  now?: Date;
+};
 
-const ORDER = [
+const SOURCE_ORDER = [
   'schemas',
   'indexes',
   'views',
@@ -36,170 +39,329 @@ const ORDER = [
   'triggers',
   'grants',
   'comments'
-];
+] as const;
 
-const BOOTSTRAP = process.argv.includes('--bootstrap');
+const LEGACY_MULTI_OBJECT_SOURCES = new Set([
+  'schemas/0100_enums.sql',
+  'schemas/0200_tables.sql',
+  'functions/auth/handle_new_auth_user.sql'
+]);
 
-// ---------- utils ----------
-function sha(s: string) {
-  return crypto.createHash('sha256').update(s).digest('hex');
+function sha(content: string) {
+  return crypto.createHash('sha256').update(content.replace(/\r\n?/g, '\n')).digest('hex');
 }
-function readFileSafe(p: string) {
-  return fs.readFileSync(p, 'utf8');
+
+function getArg(prefix: string) {
+  const argument = process.argv.find((value) => value.startsWith(prefix));
+  return argument?.slice(prefix.length);
 }
-function readLedger(): Ledger {
-  try {
-    return JSON.parse(fs.readFileSync(LEDGER_PATH, 'utf8'));
-  } catch {
-    return {};
-  }
-}
-function writeLedger(ledger: Ledger) {
-  fs.mkdirSync(path.dirname(LEDGER_PATH), { recursive: true });
-  fs.writeFileSync(LEDGER_PATH, JSON.stringify(ledger, null, 2));
-}
-function rel(p: string) {
-  return path.relative(ROOT, p).replaceAll('\\', '/');
-}
-function walkDir(dir: string, acc: string[] = []) {
-  if (!fs.existsSync(dir)) return acc;
+
+function walkSqlFiles(directory: string, files: string[] = []) {
+  if (!fs.existsSync(directory)) return files;
+
   const entries = fs
-    .readdirSync(dir, { withFileTypes: true })
+    .readdirSync(directory, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name));
-  for (const e of entries) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walkDir(p, acc);
-    else if (e.isFile() && e.name.endsWith('.sql')) acc.push(p);
+
+  for (const entry of entries) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) walkSqlFiles(entryPath, files);
+    else if (entry.isFile() && entry.name.endsWith('.sql')) files.push(entryPath);
   }
-  return acc;
-}
-function collectFiles(): string[] {
-  const files: string[] = [];
-  for (const folder of ORDER) {
-    const d = path.join(ROOT, folder);
-    if (fs.existsSync(d)) walkDir(d, files);
-  }
+
   return files;
 }
 
-/**
- * Extract an optional @signature header from SQL comments.
- *   -- @signature: public.lock_pick(uuid, text, public.weight_enum)
- * Falls back to parsing CREATE OR REPLACE FUNCTION if missing.
- */
 function extractSignature(sql: string): string | undefined {
-  const m = sql.match(/^\s*--\s*@signature:\s*([^\r\n]+)\s*$/im);
-  if (m) return m[1].trim();
-  const m2 = sql.match(/create\s+or\s+replace\s+function\s+([a-z0-9_."]+)\s*\(([\s\S]*?)\)/i);
-  if (!m2) return undefined;
-  const name = m2[1].replace(/\s+/g, '');
-  const argsRaw = m2[2]
+  const explicit = sql.match(/^\s*--\s*@signature:\s*([^\r\n]+)\s*$/im);
+  if (explicit) return explicit[1].trim();
+
+  const functionMatches = [
+    ...sql.matchAll(/create\s+or\s+replace\s+function\s+([a-z0-9_."]+)\s*\(([\s\S]*?)\)/gi)
+  ];
+  if (functionMatches.length !== 1) return undefined;
+
+  const [, rawName, rawArguments] = functionMatches[0];
+  const name = rawName.replace(/\s+/g, '');
+  const argumentsWithoutDefaults = rawArguments.replace(/\s+default\s+[^,]+/gi, '');
+  const argumentTypes = argumentsWithoutDefaults
     .split(',')
-    .map((s) => s.trim())
+    .map((argument) => argument.trim())
     .filter(Boolean)
-    .map((s) =>
-      s
+    .map((argument) =>
+      argument
         .replace(/\b(in|out|inout)\b/gi, '')
         .trim()
         .replace(/^[a-z_][a-z0-9_]*\s+/i, '')
     )
     .join(', ');
-  return `${name}(${argsRaw})`;
+
+  return `${name}(${argumentTypes})`;
 }
 
-function nowStamp() {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+function countPrimaryObjects(sql: string) {
+  const patterns = [
+    /\bcreate\s+table\b/gi,
+    /\bcreate\s+type\b/gi,
+    /\bcreate\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\b/gi,
+    /\bcreate\s+(?:or\s+replace\s+)?function\b/gi
+  ];
+
+  return patterns.reduce((count, pattern) => count + (sql.match(pattern)?.length ?? 0), 0);
+}
+
+function collectSources(root: string): SourceFile[] {
+  const absoluteFiles = SOURCE_ORDER.flatMap((folder) => walkSqlFiles(path.join(root, folder)));
+
+  return absoluteFiles.map((absolutePath) => {
+    const content = `${fs.readFileSync(absolutePath, 'utf8').replace(/\r\n?/g, '\n').trim()}\n`;
+    return {
+      key: path.relative(root, absolutePath).replaceAll('\\', '/'),
+      content,
+      hash: sha(content),
+      signature: extractSignature(content),
+      primaryObjectCount: countPrimaryObjects(content)
+    };
+  });
+}
+
+function validateObjectLayout(sources: SourceFile[], ledger: Ledger, bootstrap: boolean) {
+  const violations = sources.flatMap((source) => {
+    if (source.primaryObjectCount <= 1) return [];
+
+    const previous = ledger[source.key];
+    const isUnchangedLegacy =
+      LEGACY_MULTI_OBJECT_SOURCES.has(source.key) &&
+      (previous?.hash === source.hash || (bootstrap && !previous));
+    if (isUnchangedLegacy) return [];
+
+    return [`${source.key}: ${source.primaryObjectCount} primary objects`];
+  });
+
+  if (violations.length > 0) {
+    throw new Error(
+      `SQL source files must define at most one primary table, type, view, or function:\n- ${violations.join(
+        '\n- '
+      )}\nSplit each object into its own logically named source file.`
+    );
+  }
+}
+
+function readLedger(ledgerPath: string, allowMissing: boolean): Ledger {
+  let contents: string;
+
+  try {
+    contents = fs.readFileSync(ledgerPath, 'utf8');
+  } catch (error) {
+    if (allowMissing && (error as NodeJS.ErrnoException).code === 'ENOENT') return {};
+    throw new Error(`Unable to read migration ledger at ${ledgerPath}`, { cause: error });
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(contents);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('expected a JSON object');
+    }
+    const ledger = parsed as Record<string, unknown>;
+    for (const [source, value] of Object.entries(ledger)) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error(`${source} must be a ledger entry object`);
+      }
+
+      const entry = value as Record<string, unknown>;
+      if (typeof entry.hash !== 'string' || !/^[a-f0-9]{64}$/.test(entry.hash)) {
+        throw new Error(`${source} has an invalid source hash`);
+      }
+      for (const field of ['signature', 'migration', 'migrationHash']) {
+        if (entry[field] !== undefined && typeof entry[field] !== 'string') {
+          throw new Error(`${source}.${field} must be a string`);
+        }
+      }
+    }
+
+    return ledger as Ledger;
+  } catch (error) {
+    throw new Error(`Invalid migration ledger at ${ledgerPath}`, { cause: error });
+  }
+}
+
+function writeLedger(ledgerPath: string, ledger: Ledger) {
+  fs.mkdirSync(path.dirname(ledgerPath), { recursive: true });
+  const temporaryPath = `${ledgerPath}.tmp`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(ledger, null, 2)}\n`, 'utf8');
+  fs.renameSync(temporaryPath, ledgerPath);
+}
+
+function validateMigrationReferences(ledger: Ledger, migrationDir: string) {
+  const failures: string[] = [];
+  const verified = new Map<string, string>();
+
+  for (const [source, entry] of Object.entries(ledger)) {
+    if (!entry.migration && !entry.migrationHash) continue;
+    if (!entry.migration || !entry.migrationHash) {
+      failures.push(`${source}: incomplete migration metadata`);
+      continue;
+    }
+
+    const migrationPath = path.join(migrationDir, entry.migration);
+    let actualHash = verified.get(migrationPath);
+    if (!actualHash) {
+      if (!fs.existsSync(migrationPath)) {
+        failures.push(`${source}: referenced migration is missing (${entry.migration})`);
+        continue;
+      }
+      actualHash = sha(fs.readFileSync(migrationPath, 'utf8'));
+      verified.set(migrationPath, actualHash);
+    }
+
+    if (actualHash !== entry.migrationHash) {
+      failures.push(`${source}: referenced migration was modified (${entry.migration})`);
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Migration ledger references are invalid:\n- ${failures.join('\n- ')}`);
+  }
+}
+
+function utcTimestamp(date: Date) {
+  return date.toISOString().replace(/[-:T]/g, '').slice(0, 14);
+}
+
+function validateMigrationName(name: string) {
+  if (!/^[a-z0-9]+(?:_[a-z0-9]+)*$/.test(name)) {
+    throw new Error(
+      `Invalid migration name "${name}". Use lowercase letters, numbers, and single underscores.`
+    );
+  }
 }
 
 function migrationHeader() {
-  return `-- generated by scripts/gen-func-migration.ts
+  return `-- generated by supabase/scripts/generate-migration.ts
 set check_function_bodies = off;
 set client_min_messages = warning;
 `;
 }
 
-// ---------- main ----------
-function main() {
-  const ledger = readLedger();
-  const files = collectFiles();
+export function runGenerator(options: GeneratorOptions) {
+  if (options.bootstrap && options.check) {
+    throw new Error('--bootstrap and --check cannot be used together.');
+  }
 
-  if (files.length === 0) {
-    console.log(`[gen] No .sql files found.
-[gen] ROOT=${ROOT}
-[gen] Ensure you have folders like ${ORDER.map((f) => `'${f}'`).join(', ')} under that root.`);
-    if (BOOTSTRAP) {
-      writeLedger(ledger);
-      console.log('Bootstrapped ledger with 0 entries. No migration written.');
-    }
+  const sources = collectSources(options.root);
+  if (sources.length === 0) {
+    throw new Error(`No SQL source files found under ${options.root}.`);
+  }
+
+  const ledger = readLedger(options.ledgerPath, Boolean(options.bootstrap));
+  validateObjectLayout(sources, ledger, Boolean(options.bootstrap));
+  validateMigrationReferences(ledger, options.migrationDir);
+
+  const currentKeys = new Set(sources.map((source) => source.key));
+  const staleKeys = Object.keys(ledger).filter((key) => !currentKeys.has(key));
+  const changes = sources.filter((source) => ledger[source.key]?.hash !== source.hash);
+
+  if (options.bootstrap) {
+    const bootstrapped = Object.fromEntries(
+      sources.map((source) => {
+        const previous = ledger[source.key];
+        return [
+          source.key,
+          previous?.hash === source.hash
+            ? previous
+            : { hash: source.hash, signature: source.signature }
+        ];
+      })
+    );
+    writeLedger(options.ledgerPath, bootstrapped);
+    console.log(`Bootstrapped ledger with ${sources.length} entries. No migration written.`);
     return;
   }
 
-  const changes: {
-    key: string;
-    content: string;
-    hash: string;
-    signature?: string;
-    old?: LedgerEntry;
-  }[] = [];
-
-  for (const abs of files) {
-    const content = readFileSafe(abs).trim() + '\n';
-    const hash = sha(content);
-    const sig = extractSignature(content);
-    const key = rel(abs);
-
-    const prev = ledger[key];
-    const changed =
-      !prev || prev.hash !== hash || (sig && prev.signature && sig !== prev.signature);
-
-    if (BOOTSTRAP) {
-      ledger[key] = { hash, signature: sig };
-      continue;
-    }
-
-    if (changed) changes.push({ key, content, hash, signature: sig, old: prev });
+  if (staleKeys.length > 0) {
+    throw new Error(
+      `Deleted or moved SQL sources detected:\n- ${staleKeys.join(
+        '\n- '
+      )}\nRestore them, or add explicit DROP SQL and intentionally remove their ledger entries.`
+    );
   }
 
-  if (BOOTSTRAP) {
-    writeLedger(ledger);
-    console.log(
-      `Bootstrapped ledger with ${Object.keys(ledger).length} entries. No migration written.`
-    );
+  if (options.check) {
+    if (changes.length > 0) {
+      throw new Error(
+        `SQL sources have changes without a generated migration:\n- ${changes
+          .map((change) => change.key)
+          .join('\n- ')}`
+      );
+    }
+    console.log(`Migration source integrity check passed (${sources.length} files).`);
     return;
   }
 
   if (changes.length === 0) {
-    console.log('No function/trigger/policy changes detected.');
+    console.log('No SQL source changes detected.');
     return;
   }
 
-  fs.mkdirSync(MIG_DIR, { recursive: true });
-  const migrationName = getMigrationName();
-  const outPath = path.join(MIG_DIR, `${nowStamp()}_${migrationName}.sql`);
+  validateMigrationName(options.migrationName);
+  fs.mkdirSync(options.migrationDir, { recursive: true });
+  const migrationFile = `${utcTimestamp(options.now ?? new Date())}_${options.migrationName}.sql`;
+  const migrationPath = path.join(options.migrationDir, migrationFile);
 
-  const drops: string[] = [];
-  for (const c of changes) {
-    if (c.old?.signature && c.signature && c.old.signature !== c.signature) {
-      drops.push(
-        `-- drop for signature change: ${c.key}\ndrop function if exists ${c.old.signature};`
-      );
-    }
-  }
+  const drops = changes.flatMap((change) => {
+    const previousSignature = ledger[change.key]?.signature;
+    if (!previousSignature || !change.signature || previousSignature === change.signature)
+      return [];
+    return [
+      `-- drop for signature change: ${change.key}\ndrop function if exists ${previousSignature};`
+    ];
+  });
 
   const body = [
     migrationHeader(),
-    drops.length ? `-- signature-adjustment drops\n${drops.join('\n')}\n` : '',
-    ...changes.map((c) => `-- file: ${c.key}\n${c.content}`)
+    drops.length > 0 ? `-- signature-adjustment drops\n${drops.join('\n')}\n` : '',
+    ...changes.map((change) => `-- file: ${change.key}\n${change.content}`)
   ].join('\n');
 
-  fs.writeFileSync(outPath, body, 'utf8');
+  fs.writeFileSync(migrationPath, body, { encoding: 'utf8', flag: 'wx' });
+  const migrationHash = sha(body);
 
-  for (const c of changes) ledger[c.key] = { hash: c.hash, signature: c.signature };
-  writeLedger(ledger);
+  for (const change of changes) {
+    ledger[change.key] = {
+      hash: change.hash,
+      signature: change.signature,
+      migration: migrationFile,
+      migrationHash
+    };
+  }
+  writeLedger(options.ledgerPath, ledger);
 
-  console.log(`Wrote ${outPath} with ${changes.length} change(s).`);
+  console.log(`Wrote ${migrationPath} with ${changes.length} change(s).`);
 }
 
-main();
+function main() {
+  const root = path.resolve(
+    process.cwd(),
+    getArg('--root=') ?? process.env.SQLSRC_ROOT ?? 'supabase/src'
+  );
+  const migrationDir = path.resolve(process.cwd(), 'supabase/migrations');
+
+  runGenerator({
+    root,
+    ledgerPath: path.resolve(root, '..', '.migration-hash.json'),
+    migrationDir,
+    migrationName: getArg('--name=') ?? process.env.MIGRATION_NAME ?? 'migrations_patch',
+    bootstrap: process.argv.includes('--bootstrap'),
+    check: process.argv.includes('--check')
+  });
+}
+
+const entrypoint = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : undefined;
+if (entrypoint === import.meta.url) {
+  try {
+    main();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  }
+}
