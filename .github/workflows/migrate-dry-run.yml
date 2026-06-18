@@ -1,4 +1,4 @@
-# .github/workflows/supabase-dry-run.yml
+# .github/workflows/migrate-dry-run.yml
 name: Supabase Dry Run Migrations
 
 on:
@@ -9,12 +9,27 @@ on:
       - '.github/workflows/migrate-dry-run.yml'
 
 jobs:
+  source-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migration:check
+
   supabase-dry-run:
+    needs: [source-integrity]
     runs-on: ubuntu-latest
     environment:
       name: Production
     env:
-      SUPABASE_CLI_VERSION: 2.53.6
+      SUPABASE_CLI_VERSION: 2.64.2
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -26,7 +41,6 @@ jobs:
 
       - name: Dry run migrations
         env:
-          # The secret is automatically selected from the job's environment
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           echo "Dry running migrations against Production..."

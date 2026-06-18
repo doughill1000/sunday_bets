@@ -8,8 +8,30 @@ on:
       - 'supabase/**'
       - '.github/workflows/migrate-db.yml'
 
+concurrency:
+  group: supabase-production-migrations
+  cancel-in-progress: false
+
+env:
+  SUPABASE_CLI_VERSION: 2.64.2
+
 jobs:
+  source_integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migration:check
+
   backup:
+    needs: [source_integrity]
     runs-on: ubuntu-latest
     environment:
       name: Production
@@ -46,11 +68,10 @@ jobs:
       name: Production
     steps:
       - uses: actions/checkout@v6
-      - name: Install Supabase CLI
-        run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin
-          supabase --version
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Run Supabase migrations
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

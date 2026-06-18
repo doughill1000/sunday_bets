@@ -40,19 +40,35 @@ SQL sources live under `supabase/src/` (`schemas/`, `views/`, `functions/`,
 `policies/`, ...). **Never edit `supabase/migrations/` by hand.** Instead:
 
 1. Edit the relevant file under `supabase/src/`.
-2. Run `pnpm db:migration --name=describe_the_change` — the generator
+2. Run `pnpm db:migration --name=describe_the_change`. The generator
    (`supabase/scripts/generate-migration.ts`) hashes every source file against
    `supabase/.migration-hash.json` and writes one timestamped migration
-   containing only the changed files, then updates the ledger.
+   containing only the changed files. The ledger records the migration filename
+   and content hash.
 3. Commit the source change, the migration, and the ledger **together**.
 4. `pnpm db:push:local` to apply locally (also regenerates types).
 
+`pnpm db:migration:check` is read-only. It verifies that source hashes match the
+ledger, linked migrations still exist with their original contents, and no source
+files were silently deleted or moved. CI runs this before migration dry-runs and
+production deploys.
+
 Caveats of the hash-ledger approach:
 
-- Don't rename or move files under `supabase/src/` — the generator would treat
-  them as brand new and re-emit (and possibly re-run) their DDL.
+- Don't rename, move, or delete files under `supabase/src/` casually. The generator
+  rejects stale ledger entries. Object removal needs explicit `DROP` SQL before its
+  ledger entry is intentionally removed.
+- `create table if not exists` does not alter an existing table. Schema evolution
+  needs explicit, idempotent `alter table` SQL in a new logically named source file;
+  changing only the original `create table` statement is insufficient.
+- New source files may define only one primary table, type, view, or function. The
+  generator enforces this and only grandfathers the unchanged legacy bundles.
+  Policies and grants may remain grouped as table-scoped access contracts. Function
+  signature changes are safest with an explicit
+  `-- @signature: schema.function(argument_types)` header.
 - `--bootstrap` stamps current hashes without writing a migration; only use it
-  when the DB already matches the sources.
+  when the DB already matches the sources. A missing or malformed ledger otherwise
+  fails closed.
 
 ## Deploys
 
@@ -63,9 +79,9 @@ happens on short-lived branches that PR into `master`; there is no `develop` bra
   gets a **preview deployment** backed by the **staging** Supabase project, which
   replaces a shared staging environment.
 - **Database:** pushing changes under `supabase/**` to `master` deploys to prod
-  (after a `pg_dump` backup to OneDrive). PRs get a `supabase db push --dry-run`
-  check against prod. See `.github/workflows/migrate-db.yml` and
-  `migrate-dry-run.yml`.
+  (after a `pg_dump` backup to OneDrive). PRs get a source-integrity check plus a
+  `supabase db push --dry-run` against prod. See `.github/workflows/migrate-db.yml`
+  and `migrate-dry-run.yml`.
 - **Staging DB:** kept as a recent prod mirror via `pnpm db:clone:dev`. Most PRs
   need nothing extra; for a PR that changes `supabase/**` and whose preview should
   exercise the new schema, run `pnpm db:push:dev` first (then clone-reset after).
