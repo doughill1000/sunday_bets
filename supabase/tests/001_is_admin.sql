@@ -47,6 +47,7 @@ SELECT results_eq(
 
 -- Isolate the function's no-auth behavior from environment-specific grants.
 -- This test-only grant is rolled back with the transaction.
+RESET ROLE;
 GRANT SELECT ON public.users TO anon;
 SELECT tests.clear_authentication();
 SELECT results_eq(
