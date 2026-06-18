@@ -3,14 +3,13 @@ name: Supabase Migrations
 
 on:
   push:
-    branches: [master, develop]
+    branches: [master]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-db.yml'
 
 jobs:
   backup:
-    if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     environment:
       name: Production
@@ -41,28 +40,10 @@ jobs:
           rclone copy "$FILE" onedrive:supabase-backups/
 
   migrate_master:
-    if: ${{ github.ref == 'refs/heads/master' }}
     needs: [backup]
     runs-on: ubuntu-latest
     environment:
       name: Production
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install Supabase CLI
-        run: |
-          curl -sL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
-            | sudo tar -xz -C /usr/local/bin
-          supabase --version
-      - name: Run Supabase migrations
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
-
-  migrate_develop:
-    if: ${{ github.ref == 'refs/heads/develop' }}
-    runs-on: ubuntu-latest
-    environment:
-      name: Development
     steps:
       - uses: actions/checkout@v6
       - name: Install Supabase CLI

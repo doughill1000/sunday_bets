@@ -3,7 +3,7 @@ name: Supabase Dry Run Migrations
 
 on:
   pull_request:
-    branches: [master, develop]
+    branches: [master]
     paths:
       - 'supabase/**'
       - '.github/workflows/migrate-dry-run.yml'
@@ -12,7 +12,7 @@ jobs:
   supabase-dry-run:
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.base_ref == 'master' && 'Production' || 'Development' }}
+      name: Production
     env:
       SUPABASE_CLI_VERSION: 2.53.6
     steps:
@@ -29,6 +29,5 @@ jobs:
           # The secret is automatically selected from the job's environment
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          echo ${{ github.base_ref}}
-          echo "Dry running migrations against ${{ github.base_ref == 'master' && 'Production' || 'Development' }} environment..."
+          echo "Dry running migrations against Production..."
           supabase db push --db-url "$SUPABASE_DB_URL" --dry-run --yes

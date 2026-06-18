@@ -101,11 +101,12 @@ Pro, only the scheduler changes.
 
 ## Phase 5 — Stats & history + DevOps cleanup (August) — v1.6
 
-- **Branching strategy migration** — drop the long-lived `develop` branch; PRs
-  target `main` directly, using Vercel preview deployments for per-PR staging.
-  Steps: update `ci-tests.yml` branch targets, update branch protection rules,
-  repurpose or remove the staging Vercel project, update `CLAUDE.md` branching
-  convention. Low-medium LoE (~1h), no user-facing impact.
+- **Branching strategy migration** — ✅ Done (June 2026). Dropped the long-lived
+  `develop` branch; PRs now target `master` directly (kept `master`, not renamed to
+  `main`), using Vercel preview deployments backed by the staging Supabase project
+  for per-PR staging. Updated the CI workflow branch targets,
+  `migrate-db`/`migrate-dry-run`, and the docs; retired the `-dev` Vercel app and
+  the `Development` GitHub Actions environment.
 - Four SQL views over `pick_settlement` in `supabase/src/views/`:
   `stats_head_to_head`, `stats_accuracy_by_team`, `stats_accuracy_by_weight`
   (All-In record), `stats_season_trend` (cumulative points/week —

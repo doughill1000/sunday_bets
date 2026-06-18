@@ -56,13 +56,21 @@ Caveats of the hash-ledger approach:
 
 ## Deploys
 
-- **App:** Vercel deploys on push via its Git integration (adapter-vercel).
-- **Database:** pushing changes under `supabase/**` to `develop` deploys to the
-  dev project; to `master` deploys to prod (after a `pg_dump` backup to
-  OneDrive). PRs get a `supabase db push --dry-run` check. See
-  `.github/workflows/migrate-db.yml` and `migrate-dry-run.yml`.
+Trunk-based: `master` is the single long-lived branch and production. Feature work
+happens on short-lived branches that PR into `master`; there is no `develop` branch.
 
-PRs target `develop`; `master` is production.
+- **App:** Vercel deploys `master` to production on push (adapter-vercel). Every PR
+  gets a **preview deployment** backed by the **staging** Supabase project, which
+  replaces a shared staging environment.
+- **Database:** pushing changes under `supabase/**` to `master` deploys to prod
+  (after a `pg_dump` backup to OneDrive). PRs get a `supabase db push --dry-run`
+  check against prod. See `.github/workflows/migrate-db.yml` and
+  `migrate-dry-run.yml`.
+- **Staging DB:** kept as a recent prod mirror via `pnpm db:clone:dev`. Most PRs
+  need nothing extra; for a PR that changes `supabase/**` and whose preview should
+  exercise the new schema, run `pnpm db:push:dev` first (then clone-reset after).
+
+PRs target `master`; `master` is production.
 
 Note: `pnpm build` on Windows fails in the final adapter-vercel packaging step
 (symlinks need elevation/Developer Mode). The Vite build itself completing is
