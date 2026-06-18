@@ -16,7 +16,11 @@ export default defineConfig({
     globals: true,
     css: true,
     setupFiles: ['./tests/setup.ts'],
-    include: ['src/**/__tests__/**/*.{test,spec}.{js,ts}', 'src/**/*.{test,spec}.{js,ts}'],
+    include: [
+      'src/**/__tests__/**/*.{test,spec}.{js,ts}',
+      'src/**/*.{test,spec}.{js,ts}',
+      'supabase/scripts/__tests__/**/*.{test,spec}.ts'
+    ],
     exclude: ['src/lib/components/ui/**'],
     coverage: {
       provider: 'v8',
