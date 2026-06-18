@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Guidance for AI agents working in this repo. Human-facing setup, commands, and
 migration docs live in `README.md`; the feature/automation plan lives in
@@ -42,7 +42,7 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   the local clone can be months stale (Doug works across multiple machines). Per-PR
   Vercel preview deployments (backed by the staging Supabase project) replace a
   shared staging environment.
-- **Confirm before any GitHub write** (push, PR, issue, gist) — see user-level CLAUDE.md.
+- **Confirm before any GitHub write** (push, PR, issue, gist) — see user-level AGENTS.md.
 - **Database changes** use the hash-ledger flow (full steps in README): edit
   `supabase/src/**`, run `pnpm db:migration --name=describe_the_change`, then commit
   the source change, the migration, and the ledger **together**. **Never** edit

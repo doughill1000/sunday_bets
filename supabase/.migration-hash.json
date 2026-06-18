@@ -1,84 +1,60 @@
 {
-  "schemas/00_extensions.sql": {
-    "hash": "27decc8ec85439b59efed14948197a3e5a9c17bc5806effd103b6f5c50129c77"
+  "schemas/0000_extensions.sql": {
+    "hash": "f03173791657d71475f4a7d3b8d68cacc33ed95ef97a5861ac7888199716503d"
   },
-  "schemas/01_enums.sql": {
-    "hash": "b99ebde6b2b2d3476785c86f17f6eb30290e6a5ae4a0c7b7fe6d79a6deb4c66a"
+  "schemas/0100_enums.sql": {
+    "hash": "9ebc0fec3a9ac4abc2040659a67b0b079f5b8e470a8b1712f0775cc524949e45"
   },
-  "schemas/02_tables.sql": {
-    "hash": "104c72ea64ec4bb302ce588d183e5306ace920df1f7e8a865b2d0ff9bbf175c9"
+  "schemas/0101_cover_side.sql": {
+    "hash": "c5b326209a40c0b0e016578cce2ec02947c59cd642c4af47c8d741d38ef343c0"
   },
-  "schemas/03_rls.sql": {
-    "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
+  "schemas/0101_pick_outcome.sql": {
+    "hash": "1d4a6923afb73b7e77aaedef37fbe889b046ff80dfb58892b9bd9682788c98ed"
   },
-  "schemas/04_constraints.sql": {
-    "hash": "290bc25aad36ec178a80697d78f5c3f2e22a9311cbfe6b5bbce5577a9b4fd475"
+  "schemas/0200_tables.sql": {
+    "hash": "17f2219cdbd12fbd7b55e25e422be6554fd06c3aca444e4e4642a2a47bf0d101"
   },
-  "functions/admin/grade_week.sql": {
-    "hash": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  "schemas/0201_picks.sql": {
+    "hash": "dd3521186f2895b3d5db3b73ba13a893293e017a8feb03b88c30f057e7d66878"
   },
-  "functions/auth/handle_new_auth_user.sql": {
-    "hash": "f17fd35cac7811eb2380c3fff4465745788be9aa9db31dfa75371d5d67e74f69",
-    "signature": "public.handle_new_auth_user()"
+  "schemas/0202_pick_settlement.sql": {
+    "hash": "66b3ebf1c95b989226eb6ab2e9394fa92483b9e94e2bc59f2f0da961e23fc305"
   },
-  "functions/auth/is_admin.sql": {
-    "hash": "bdf8fc573e6c27deec700e44ddedb4a64352416ac16dcc6979287b693b04fa57",
-    "signature": "public.is_admin()"
+  "schemas/0203_sync_refactor.sql": {
+    "hash": "be8c71170c2ff5889be6dc18141cc4133348bf6dd75d8bca67b9ce2db2203227"
   },
-  "functions/games/game_has_started.sql": {
-    "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
-    "signature": "public.game_has_started(uuid)"
+  "schemas/0204_require_locks.sql": {
+    "hash": "717b365ba83c62d05adbde3b8cd193d85b43a338befb2c29c751f40d0f43a27e"
   },
-  "functions/picks/lock_pick.sql": {
-    "hash": "33f95937813cb8565e25ab11f6d39f4401e8f1fec353494f8ae1ff89635605f8",
-    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text default 'fanduel')"
+  "schemas/0300_rls.sql": {
+    "hash": "0639b0754c72637fa269930414658a6cd360ed8ecde29559b2f7826ecda4cf7e"
   },
-  "functions/picks/unlock_pick.sql": {
-    "hash": "bbd6e789f8a20da92c8298152d542f4b0fb7fe4ea4b9852894cdd0b6d8800d89",
-    "signature": "public.unlock_pick(uuid)"
+  "schemas/0400_constraints.sql": {
+    "hash": "beceabf321db45ee65d46236475b28aa9b3fcee614722f7fe2d2372ef39fffbd"
   },
-  "policies/10_rls_enable.sql": {
-    "hash": "344accafbe5eafd90ca53735ea010347aa0928f8625fbea2a7c5ff40fa15a3b6"
+  "schemas/0401_unique_game_external.sql": {
+    "hash": "1201b2eda6d9afab3c29e39f10855287b1f9a8e3fc35c9f22a14405f19e33186"
   },
-  "policies/20_policies_read_core.sql": {
-    "hash": "6550d209092ca45f292c647a68c8dd0d24d8f31aa865d8d6873750e133143c07"
+  "schemas/0402_fix_active_line_uq.sql": {
+    "hash": "1280e8189b0166c56572dba1395ba4bc3d79403b0c3996afb4b08944a98c2e28"
   },
-  "policies/21_policies_read_lookup.sql": {
-    "hash": "7ada6d12a97f00165249b9cada7ac43ca217840686fa1a09656935c8eeb23d5f"
-  },
-  "policies/30_policies_users.sql": {
-    "hash": "f3766fa2027421ecabdb7dfa4e8643b53708bc781929881b25b6a319465f28c6"
-  },
-  "policies/40_policies_picks.sql": {
-    "hash": "efcb65541ce532b092e36900b8667a7be9d98f59e00ea1c5e2ffc5554c3a8f3d"
-  },
-  "policies/50_policies_admin.sql": {
-    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a"
-  },
-  "grants/admin_grants.sql": {
-    "hash": "d32de0a3815e2cf37b7a5c991cea467cb670e3e984bab7ca5b6acd6f6d617a5b"
-  },
-  "grants/misc_grants.sql": {
-    "hash": "b5df764682dd942228935d142d4bb6e5dc7e5d520a059f4e54b8a1e1a3d2044a"
-  },
-  "grants/player_grants.sql": {
-    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
-  },
-  "functions/_private/audit_log_action.sql": {
-    "hash": "47db4fee67b8ca0f137fea9fc4a29fd0f08ab0492733ee94aa15700b2d9b38b1",
-    "signature": "public.audit_log_action(uuid, text, jsonb)"
-  },
-  "grants/anon_grants.sql": {
-    "hash": "6974af82c9af306376fe995edb143dcbe403a148df03cc86a48f82cf79753bf4"
+  "indexes/idx_pick_settlement_game.sql": {
+    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
   },
   "indexes/ux_active_line_per_game.sql": {
-    "hash": "b9a30e072d328031dccfaa667cbdd90b4239d7495c15bf1a244213cf4bf91382"
+    "hash": "2aaf84274f176ddad61e792ebe504464a785e785f272e1c833ccd2d555cc9629"
   },
-  "views/game_lines_normalized.sql": {
-    "hash": "51963296a8dbfc30ef8682e1cb8a72e410189cf77f5eeddc73444e8ea8ea28a4"
+  "views/current_season_year.sql": {
+    "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f"
+  },
+  "views/leaderboard_season_totals.sql": {
+    "hash": "23956de44edabb299394ca61ed34ebd9d776f072dabcceeb0f385e61b1370bde"
+  },
+  "views/leaderboard_weekly_cumulative.sql": {
+    "hash": "2ca67729c8e952272da31cb7af8d83ef9aefc244db6d7c4142e0e15e6fe0cda5"
   },
   "views/picks_status_view_admin.sql": {
-    "hash": "1aec542857e62bc045478bcabf4d2afafd9d8f17fd0ccb53565c71e32b981af0"
+    "hash": "fabccb9a78a2e79ee1e95971b6421cbf452126f7adc02f1de0bb8e6c0a8f2634"
   },
   "views/picks_status_view_user.sql": {
     "hash": "53109fb2a5577f3dc5e85474fb489ef53a4c70f3cce31b1eaee84f6ca4b8e0b5"
@@ -86,99 +62,94 @@
   "views/ui_games.sql": {
     "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4"
   },
-  "schemas/0000_extensions.sql": {
-    "hash": "27decc8ec85439b59efed14948197a3e5a9c17bc5806effd103b6f5c50129c77"
-  },
-  "schemas/0100_enums.sql": {
-    "hash": "b99ebde6b2b2d3476785c86f17f6eb30290e6a5ae4a0c7b7fe6d79a6deb4c66a"
-  },
-  "schemas/0200_tables.sql": {
-    "hash": "17f2219cdbd12fbd7b55e25e422be6554fd06c3aca444e4e4642a2a47bf0d101"
-  },
-  "schemas/0300_rls.sql": {
-    "hash": "946506864fad6bdeca649429705160848dbb5996386e76dd69c9b0af1ec3fe47"
-  },
-  "schemas/0400_constraints.sql": {
-    "hash": "290bc25aad36ec178a80697d78f5c3f2e22a9311cbfe6b5bbce5577a9b4fd475"
-  },
-  "schemas/0101_pick_outcome.sql": {
-    "hash": "285bcb8a1f7561334e724f47a10cdbaf4285b394c4a006e523a3ccac4526c117"
-  },
-  "schemas/0201_picks.sql": {
-    "hash": "0a9cb51681d17cc8bfa9871e81c8c91696ffa73c88da8f2fe935067199ed9bc7"
-  },
-  "schemas/0202_pick_settlement.sql": {
-    "hash": "f81cd41d8abce7d6d006c6bc307838ebd3b98c56f63aa0d03d0144b0dcf726d4"
-  },
-  "indexes/idx_pick_settlement_game.sql": {
-    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
-  },
-  "views/current_season_year.sql": {
-    "hash": "29b901590402e74f44ccec33beb4b850cac50fc961ea3f16aa6236e8c41baa00"
-  },
-  "views/leaderboard_season_totals.sql": {
-    "hash": "d69928487ecb2e96ce8fddd778905fd08162cadd4e1e74877dfdd8b5e456dafe"
-  },
-  "views/leaderboard_weekly_cumulative.sql": {
-    "hash": "34f13d9f29cc89816c3ef0ef71488e39f1aba0de6bb00e3a22351f8210f02522"
-  },
   "functions/_private/ats_margin_at_lock.sql": {
-    "hash": "7dc1c720f0079f656dffcef255b0a6e0c49da18a89941965eccba748fc7efb07",
+    "hash": "84ef81ba0a6f37a4a7ad2645b076686597be06de13c1b421c86eb709c03e945c",
     "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
   },
+  "functions/_private/audit_log_action.sql": {
+    "hash": "861f11438db018b7d1cc32b8462bffc022d5cb0872a67831b55766ee6b479f5d",
+    "signature": "public.audit_log_action(uuid, text, jsonb)"
+  },
   "functions/_private/game_has_started.sql": {
-    "hash": "6f675a80486e2976b021728bc6f3761ccd0d78cda1541e678e4de88dbd1a37ce",
+    "hash": "cd3ffc5b909d6bbdb2e19bcb3a1aabcbea248f24808b1ca5b8deda3b37aee88a",
     "signature": "public.game_has_started(uuid)"
   },
+  "functions/_private/grade_games_by_ids.sql": {
+    "hash": "d1b5ae5d0d3baafbc3741b25934e5f44ec4d49cbca01aac16a45f05b61dc3413",
+    "signature": "public._grade_games_by_ids(uuid[])"
+  },
   "functions/_private/resolve_missed_penalty.sql": {
-    "hash": "160543fadae9078f83208ad0cad4f6bf88812a66a353390b782873a335a68696",
+    "hash": "07b53c5384738da54de036156b15b57a5c2e9230875253059490414a3bb90a06",
     "signature": "public.resolve_missed_penalty_for_game(uuid)"
   },
   "functions/_private/weight_points.sql": {
-    "hash": "f4182b6bd526dd35cde6896081eae314606f20937b6e89cc97c0a852ac9f4cdf",
+    "hash": "719cf000db2430414b70c958dff53e3686324d11a0be85867d3821988483ad34",
     "signature": "public.weight_points(text)"
   },
+  "functions/auth/handle_new_auth_user.sql": {
+    "hash": "cab661b70dd99907b2ca7ed76ff2864f876f61a9e1dc57a5497d90eaf399bc11"
+  },
+  "functions/auth/is_admin.sql": {
+    "hash": "0278cb4f0d60f916268f7e03995ea01b2bb01b7ff3e8e928338ff1202f4d990c",
+    "signature": "public.is_admin()"
+  },
+  "functions/games/upsert_game_by_external_id.sql": {
+    "hash": "8c550b3de9108fd8ec73d4d7fd6f6ba87b2cb96504838d8e04d34fab2a084bb4",
+    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
+  },
   "functions/grade/grade_game.sql": {
-    "hash": "15d4199979c21a133369eeca95f55b30b03dd72c82e3bda25514d71d6e41b14f",
+    "hash": "62b9dba22ffed92be25d3ea5a1b1dfc9acab61ee6aa56949d0b6635bc9653667",
     "signature": "public.grade_game(uuid)"
   },
   "functions/grade/grade_pick.sql": {
-    "hash": "a402a54ce0b8d5c8062f5248935fdc75b1e62274e23dffacba4ec328fe8ac750",
+    "hash": "13d8f625bede1e7f5a9a92bd46ea321a4d33980fc8f2a765d399cfafdfcf52ad",
     "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
   },
   "functions/grade/grade_season.sql": {
-    "hash": "57bb36931f641e245047f11adaab3ac8f26f1350fc5cb1f286dd74846f628c7f",
+    "hash": "063be5c3e75c701ff86088aac021e6d4f1078fa06f3ea8bee825df3b77f3143c",
     "signature": "public.grade_season(int)"
   },
   "functions/grade/grade_week.sql": {
-    "hash": "6b45e198823b1a42c38aa80ba25b766b247f289507a06d049899acc4736ba2f3",
+    "hash": "c3f42b2af009fe35a67f5b2598b015dfc187f8b3873a5f197fd3d184693dd435",
     "signature": "public.grade_week(int)"
   },
-  "functions/_private/grade_games_by_ids.sql": {
-    "hash": "3641821ad9b585fe9213d9f1b348158cbe43993cbbff9329e59870fb30cf262d",
-    "signature": "public._grade_games_by_ids(uuid[])"
-  },
-  "schemas/0101_cover_side.sql": {
-    "hash": "70e51832bb472fd652b8761e33dac417419503d646c445a9eda6b8f86ec4162e"
-  },
-  "schemas/0203_sync_refactor.sql": {
-    "hash": "1399ff6a1664abbb5635b4abbc057127808cfe2e3f9046654453606b1ba38d73"
-  },
-  "schemas/0204_require_locks.sql": {
-    "hash": "736e8ed691c496801e5e439d9ce3bb9136d92e78753bb65fd7c1db7237f127ea"
-  },
-  "schemas/0401_unique_game_external.sql": {
-    "hash": "ef8366c9d4ec8db6f66812e2df1a8f9aef7808512f9c5c92f7a7a28891f652b5"
-  },
-  "functions/games/upsert_game_by_external_id.sql": {
-    "hash": "c1f7425046823d71e6d63af15bcdf3733abe3a994883b053226f901c68da1af0",
-    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
-  },
   "functions/odds/set_active_line.sql": {
-    "hash": "03d6126c7b4970e079d59ae92de3f88fd953c045e6f4a5855303146eab11c2f9",
-    "signature": "public.set_active_line(uuid, int, numeric, text default 'fanduel')"
+    "hash": "483653e38ba2f94f105f57cabf30c052d02607c730e452613c6750dc10951b21",
+    "signature": "public.set_active_line(uuid, int, numeric, text)"
   },
-  "schemas/0402_fix_active_line_uq.sql": {
-    "hash": "1280e8189b0166c56572dba1395ba4bc3d79403b0c3996afb4b08944a98c2e28"
+  "functions/picks/lock_pick.sql": {
+    "hash": "fa8b8770f43c3ed99bb69ebc56a128edc81568b5bc53e5b4c45ea919f32c7666",
+    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)"
+  },
+  "functions/picks/unlock_pick.sql": {
+    "hash": "b225ce9d7e32df7faafb4851c6efa5c3fd78ef6fe63a9439c6159a8c234f1e79",
+    "signature": "public.unlock_pick(uuid)"
+  },
+  "policies/10_rls_enable.sql": {
+    "hash": "60d9984beb561e77046e28e4beedc4e6121caa8bcd4e98e35769ebaba49b4135"
+  },
+  "policies/20_policies_read_core.sql": {
+    "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0"
+  },
+  "policies/21_policies_read_lookup.sql": {
+    "hash": "a281b1ce08cdb55cd607a44f4af1c9b9742269943ea426f898ff74d8aa1837ca"
+  },
+  "policies/30_policies_users.sql": {
+    "hash": "3e04c236ac4f8530e83794282e8b8d29922cda3727398be45f1370f7e36fd4b7"
+  },
+  "policies/40_policies_picks.sql": {
+    "hash": "9827f4fcb92ea379af78c8e90872d2ccd655bdbcb728518a1f394fb5df72b0d6"
+  },
+  "policies/50_policies_admin.sql": {
+    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a"
+  },
+  "grants/admin_grants.sql": {
+    "hash": "59cd97277566e8fe4096d5fde1c49c456aba2323e9f869a49874dd725a284b7c"
+  },
+  "grants/anon_grants.sql": {
+    "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
+  },
+  "grants/player_grants.sql": {
+    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
   }
 }
