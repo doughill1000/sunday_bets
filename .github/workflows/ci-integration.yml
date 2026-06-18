@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_ENV: test
-      SUPABASE_CLI_VERSION: 2.53.6
+      SUPABASE_CLI_VERSION: 2.107.0
       # Integration tests run against the LOCAL Supabase stack started below.
       # These are the Supabase CLI's static local-dev keys — public constants,
       # identical on every machine (also committed in .env.test), NOT secrets.

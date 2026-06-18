@@ -19,13 +19,8 @@
   let email = $state('');
   let password = $state('');
   let method: 'magic' | 'password' = $state('magic');
-  let error = $state('');
-  let message = $state('');
-
   async function onSubmit(e: Event) {
     e.preventDefault();
-    error = '';
-    message = '';
     const res = await fetch('/auth', {
       method: 'POST',
       body: new FormData(e.target as HTMLFormElement)

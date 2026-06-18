@@ -4,7 +4,6 @@
   import { toast } from 'svelte-sonner';
   import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
   import { Button } from '$lib/components/ui/button';
-  import { canUseAllInRule } from '$lib/domain/rules';
 
   interface Props {
     game: UIGame;

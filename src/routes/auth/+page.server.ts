@@ -32,7 +32,7 @@ export const actions: Actions = {
     }
 
     // No password -> magic link (OTP)
-    const { data, error } = await locals.supabase.auth.signInWithOtp({ email });
+    const { error } = await locals.supabase.auth.signInWithOtp({ email });
 
     if (error) {
       return fail(400, { ok: false, message: error.message ?? 'Sign-in failed' });

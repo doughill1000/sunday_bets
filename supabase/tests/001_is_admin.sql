@@ -45,7 +45,10 @@ SELECT results_eq(
   'regular user returns false for is_admin()'
 );
 
--- Anonymous session => is_admin() = false
+-- Isolate the function's no-auth behavior from environment-specific grants.
+-- This test-only grant is rolled back with the transaction.
+RESET ROLE;
+GRANT SELECT ON public.users TO anon;
 SELECT tests.clear_authentication();
 SELECT results_eq(
   $$ SELECT public.is_admin() $$,

@@ -29,7 +29,7 @@ jobs:
     environment:
       name: Production
     env:
-      SUPABASE_CLI_VERSION: 2.64.2
+      SUPABASE_CLI_VERSION: 2.107.0
     steps:
       - name: Checkout
         uses: actions/checkout@v6

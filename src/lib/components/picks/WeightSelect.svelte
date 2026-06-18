@@ -27,7 +27,7 @@
       class="w-full flex gap-1"
       disabled={!canChange}
     >
-      {#each Object.entries(WEIGHTS) as [code, w]}
+      {#each Object.entries(WEIGHTS) as [code, w] (code)}
         <ToggleGroupItem
           value={code}
           class="flex-1 px-3 py-[6px] leading-none border rounded-md transition

@@ -6,7 +6,7 @@ export async function getActiveWeekGames() {
   const now = new Date().toISOString();
 
   // Try explicit "active window" first…
-  let { data: week, error } = await supabaseService
+  const { data: weekData, error } = await supabaseService
     .from('weeks')
     .select('id, start_ts, end_ts')
     .lte('start_ts', now)
@@ -14,6 +14,8 @@ export async function getActiveWeekGames() {
     .order('start_ts', { ascending: false })
     .limit(1)
     .single();
+
+  let week = weekData;
 
   // …fallback to latest started week
   if (error || !week) {

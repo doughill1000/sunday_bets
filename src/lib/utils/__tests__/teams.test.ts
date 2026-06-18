@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { teamByAbbr, teamById, teamNameById, abbrById, TEAM_BY_ID } from '../teams';
+import { teamByAbbr, teamById, teamNameById, abbrById } from '../teams';
 import { TEAM_META } from '$lib/types/domain';
 
 describe('teams utils', () => {
@@ -17,7 +17,6 @@ describe('teams utils', () => {
   });
 
   it('teamById resolves by number and string', () => {
-    const entry = TEAM_BY_ID[sampleMeta.id];
     expect(teamById(sampleMeta.id)).toMatchObject({ id: sampleMeta.id, abbr: sampleAbbr });
     expect(teamById(String(sampleMeta.id))).toMatchObject({ id: sampleMeta.id, abbr: sampleAbbr });
     expect(teamById(null)).toBeUndefined();

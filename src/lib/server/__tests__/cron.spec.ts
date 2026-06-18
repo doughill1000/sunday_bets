@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Hoisted mocks — vi.hoisted runs before module evaluation so these refs are
@@ -26,9 +26,9 @@ vi.mock('@sentry/sveltekit', () => mockSentryModule);
 // ---------------------------------------------------------------------------
 
 // Mutable handles so individual tests can override return values
-let mockSingle: ReturnType<typeof vi.fn>;
-let mockUpdate: ReturnType<typeof vi.fn>;
-let mockEqUpdate: ReturnType<typeof vi.fn>;
+let mockSingle: Mock;
+let mockUpdate: Mock;
+let mockEqUpdate: Mock;
 
 vi.mock('$lib/supabase/service', () => {
   // We build the mock factory lazily so `mockSingle` etc. are initialised
