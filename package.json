@@ -47,6 +47,7 @@
     "@testing-library/svelte": "^5.3.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.9.3",
+    "@types/web-push": "^3.6.4",
     "@vite-pwa/sveltekit": "^1.1.0",
     "@vitest/coverage-v8": "^4.1.9",
     "bits-ui": "^2.18.1",
@@ -88,6 +89,7 @@
     "@sentry/sveltekit": "^10.58.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
-    "date-fns": "^4.4.0"
+    "date-fns": "^4.4.0",
+    "web-push": "^3.6.7"
   }
 }

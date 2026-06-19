@@ -150,12 +150,34 @@
     "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
   },
   "grants/player_grants.sql": {
-    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
+    "hash": "2d4d4ed12679fc00ce4ea3fdc930b375d3a30ef04ad53ec9a64ba1067a35be70",
+    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
+    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
   },
   "functions/grade/advance_week_if_complete.sql": {
     "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
     "signature": "public.advance_week_if_complete()",
     "migration": "20260618165050_advance_week_if_complete.sql",
     "migrationHash": "9461cf5d92a31cb57c02cb6d00df6ae587ffcfb9bcdfe7c3afac39a03b3aa3ef"
+  },
+  "schemas/0205_push_subscriptions.sql": {
+    "hash": "e91a141bf6f5be77369c44956da405d0903eacc2e68f8570a8a54c66b5f87837",
+    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
+    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
+  },
+  "schemas/0206_notification_log.sql": {
+    "hash": "bc3007d36ddcfcb2b20ceb3e36655cb9b6d96c8134b906cb47b9906eead94158",
+    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
+    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
+  },
+  "schemas/0207_notification_prefs.sql": {
+    "hash": "0a70d05f26a1234307cc176d09c833d6daf31fe1409fd69dab8b6b69863d0ad1",
+    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
+    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
+  },
+  "policies/45_policies_push_notifications.sql": {
+    "hash": "a0d8ab8dd841512dee602d5f058b9a6a88f3be96a9cea8d5e3942450a1c9ead7",
+    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
+    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
   }
 }

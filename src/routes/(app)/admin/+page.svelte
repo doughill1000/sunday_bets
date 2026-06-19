@@ -2,6 +2,7 @@
   import type { PageData } from './$types';
   import OddsSyncCard from '$lib/components/admin/OddsSyncCard.svelte';
   import GradingCard from '$lib/components/admin/GradingCard.svelte';
+  import TestNotificationCard from '$lib/components/admin/TestNotificationCard.svelte';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import {
     Table,
@@ -32,6 +33,8 @@
   <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} onNote={handleNote} />
 
   <GradingCard activeWeek={data.activeWeek} onNote={handleNote} />
+
+  <TestNotificationCard onNote={handleNote} />
 
   {#if msg}
     <div
