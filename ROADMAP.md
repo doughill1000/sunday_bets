@@ -64,7 +64,7 @@ E2E tests come **first** so the component migration has a regression net.
   4. The `supabase-js` SDK accepts the new key format transparently — no code
      changes needed in `src/hooks.server.ts` or `src/lib/supabase/service.ts`.
 
-## Phase 3 — Automation: the app runs itself (late July–August) — v1.4
+## Phase 3 — Automation: the app runs itself (late July–August) — v1.4 ✅ shipped June 2026
 
 **Architecture: `CRON_SECRET`-protected SvelteKit endpoints, scheduled by
 GitHub Actions cron workflows** (already-used infra, free, flexible cadence;
@@ -84,7 +84,7 @@ Pro, only the scheduler changes.
   new `cron_run_log` table (admin-only RLS), `Sentry.captureException` on
   caught errors. Show recent runs on the admin page.
 - Monthly reset function for `settings.odds_api_calls_used_current_month`.
-- **Secrets to set before going live:** `CRON_SECRET` + `DEPLOY_URL` in Vercel (both environments) and GitHub Actions environments (Production/Development).
+- **Secrets:** `CRON_SECRET` + `DEPLOY_URL` set in Vercel (both environments) and GitHub Actions Production environment. ✅
 
 ## Phase 4 — Push notifications (August) — v1.5
 
