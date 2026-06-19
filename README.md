@@ -113,9 +113,12 @@ alerts. See `ROADMAP.md` Phase 4.
   Production environment.
 - **Users** enable notifications and tune the line-shift threshold on `/settings`.
   iOS requires 16.4+ **and** the app installed to the Home Screen.
-- **Triggers:** pick reminders fire on a Thursday cron
-  (`/api/cron/send-reminders`); line-movement alerts piggyback on the odds-sync
-  cron (no extra Odds API calls). Admins can send a test from `/admin`.
+- **Triggers:** an hourly, kickoff-driven `pregame` cron (`/api/cron/pregame`)
+  reminds about unpicked games ~2–3h before kickoff and — when a game is within
+  ~6h — refreshes odds and fires line-movement alerts (within 24h of kickoff,
+  capped to once per pick per day). It self-gates the Odds API call to game-day
+  hours. The daily `sync-odds` cron still runs Tue–Sat to keep UI lines fresh.
+  Admins can send a test from `/admin`.
 - Subscriptions live in `push_subscriptions`; `notification_log` records sends
   for audit + dedupe. Per-user prefs are stored in `users.notification_prefs`.
 

@@ -78,11 +78,10 @@ describe('shouldNotifyLineShift', () => {
     movement: 3,
     threshold: 2,
     lineShiftEnabled: true,
-    lastNotifiedTo: null as number | null,
-    currentTo: -5
+    recentlyNotified: false
   };
 
-  it('fires when over threshold and never notified', () => {
+  it('fires when over threshold and not recently notified', () => {
     expect(shouldNotifyLineShift(base)).toBe(true);
   });
 
@@ -94,11 +93,7 @@ describe('shouldNotifyLineShift', () => {
     expect(shouldNotifyLineShift({ ...base, movement: 1 })).toBe(false);
   });
 
-  it('dedupes when already notified at the current value', () => {
-    expect(shouldNotifyLineShift({ ...base, lastNotifiedTo: -5 })).toBe(false);
-  });
-
-  it('re-fires when the line has moved further since last alert', () => {
-    expect(shouldNotifyLineShift({ ...base, lastNotifiedTo: -4 })).toBe(true);
+  it('is suppressed by the once-per-day cap', () => {
+    expect(shouldNotifyLineShift({ ...base, recentlyNotified: true })).toBe(false);
   });
 });

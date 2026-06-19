@@ -13,7 +13,12 @@ import {
 } from '$lib/domain/notifications';
 import type { Json } from '$lib/types/supabase';
 
-const REMINDER_WINDOW_MS = 48 * 60 * 60 * 1000;
+// Remind ~2–3h before kickoff (hourly cron + this window catches each game once).
+const REMINDER_LOOKAHEAD_MS = 3 * 60 * 60 * 1000;
+// Only alert on line moves for games kicking off within this window.
+const LINE_SHIFT_WINDOW_MS = 24 * 60 * 60 * 1000;
+// At most one line-shift alert per pick within this window (the "per-day" cap).
+const LINE_SHIFT_CAP_MS = 24 * 60 * 60 * 1000;
 
 export type ReminderSummary = { evaluated: number; sent: number; skipped: number };
 export type LineShiftSummary = { evaluated: number; sent: number };
@@ -50,17 +55,34 @@ async function logNotification(entry: {
 }
 
 /**
- * Nudge users who still have unpicked games kicking off within 48h. Sends at
+ * Count active-week games that kick off within the next `hours`. The pregame
+ * cron uses this to decide whether to spend an Odds API call this run.
+ */
+export async function gamesKickingOffWithin(hours: number, now = new Date()): Promise<number> {
+  const week = await findActiveWeek();
+  if (!week) return 0;
+  const cutoff = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabaseService
+    .from('games')
+    .select('id', { count: 'exact', head: true })
+    .eq('week_id', week.id)
+    .gt('commence_time', now.toISOString())
+    .lte('commence_time', cutoff);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+/**
+ * Nudge users who still have unpicked games kicking off within ~3h. Sends at
  * most one consolidated push per user per run; each reminded game is logged so
- * a user isn't re-nudged for the same game (but a fresh push fires when a new
- * game enters the window).
+ * a user isn't re-nudged for the same game.
  */
 export async function sendPickReminders(now = new Date()): Promise<ReminderSummary> {
   const week = await findActiveWeek();
   if (!week) return { evaluated: 0, sent: 0, skipped: 0 };
 
   const nowIso = now.toISOString();
-  const cutoff = new Date(now.getTime() + REMINDER_WINDOW_MS).toISOString();
+  const cutoff = new Date(now.getTime() + REMINDER_LOOKAHEAD_MS).toISOString();
 
   const { data: games, error: gamesErr } = await supabaseService
     .from('games')
@@ -113,13 +135,13 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
       continue;
     }
 
-    const unpickedCount = gameIds.filter((gid) => !picked.has(`${user.id}:${gid}`)).length;
+    const count = pendingGameIds.length;
     await sendToUser(user.id, {
-      title: 'Picks due soon',
+      title: 'Picks lock soon',
       body:
-        unpickedCount === 1
-          ? 'You have 1 game without a pick kicking off within 48 hours.'
-          : `You have ${unpickedCount} games without picks kicking off within 48 hours.`,
+        count === 1
+          ? 'You have 1 unpicked game kicking off in the next few hours.'
+          : `You have ${count} unpicked games kicking off in the next few hours.`,
       url: '/picks',
       tag: `pick-reminder-week-${week.id}`
     });
@@ -139,21 +161,23 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
 }
 
 /**
- * Alert users when the active line on a game they've already picked has moved
- * by at least their per-user threshold versus their snapshot. Deduped so a
- * line sitting past threshold across repeated syncs only fires once (unless it
- * moves further). Intended to run right after a successful odds sync.
+ * Alert users when the active line on a game they've picked (kicking off within
+ * 24h) has moved by at least their per-user threshold versus their snapshot.
+ * Capped at one alert per pick per 24h. Intended to run after a near-kickoff
+ * odds sync.
  */
 export async function detectLineShifts(now = new Date()): Promise<LineShiftSummary> {
   const week = await findActiveWeek();
   if (!week) return { evaluated: 0, sent: 0 };
 
   const nowIso = now.toISOString();
+  const windowEnd = new Date(now.getTime() + LINE_SHIFT_WINDOW_MS).toISOString();
   const { data: games, error: gamesErr } = await supabaseService
     .from('games')
     .select('id, home_team_id, commence_time')
     .eq('week_id', week.id)
-    .gt('commence_time', nowIso);
+    .gt('commence_time', nowIso)
+    .lte('commence_time', windowEnd);
   if (gamesErr) throw gamesErr;
   const gameById = new Map((games ?? []).map((g) => [g.id, g]));
   const gameIds = [...gameById.keys()];
@@ -179,24 +203,18 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
 
   const prefsByUser = await loadPrefs([...new Set(relevantPicks.map((p) => p.user_id))]);
 
-  const { data: priorLogs, error: priorErr } = await supabaseService
+  // Per-pick cap: any line_shift alert for this (user, game) within the cap window.
+  const capSince = new Date(now.getTime() - LINE_SHIFT_CAP_MS).toISOString();
+  const { data: recentLogs, error: recentErr } = await supabaseService
     .from('notification_log')
-    .select('user_id, game_id, detail, created_at')
+    .select('user_id, game_id')
     .eq('kind', 'line_shift')
     .in('game_id', gameIds)
-    .order('created_at', { ascending: false });
-  if (priorErr) throw priorErr;
-  const lastNotifiedTo = new Map<string, number>();
-  for (const log of priorLogs ?? []) {
-    if (!log.game_id) continue;
-    const key = `${log.user_id}:${log.game_id}`;
-    if (lastNotifiedTo.has(key)) continue; // ordered desc → first seen is newest
-    const detail = log.detail;
-    if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
-      const to = (detail as Record<string, unknown>).to;
-      if (typeof to === 'number') lastNotifiedTo.set(key, to);
-    }
-  }
+    .gte('created_at', capSince);
+  if (recentErr) throw recentErr;
+  const recentlyNotified = new Set(
+    (recentLogs ?? []).filter((l) => l.game_id).map((l) => `${l.user_id}:${l.game_id}`)
+  );
 
   let evaluated = 0;
   let sent = 0;
@@ -224,15 +242,13 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
     });
     const from = spreadRelativeToHome(lockedTeamId, lockedValue, game.home_team_id);
     const to = spreadRelativeToHome(currentTeamId, currentValue, game.home_team_id);
-    const key = `${pick.user_id}:${pick.game_id}`;
 
     if (
       !shouldNotifyLineShift({
         movement,
         threshold: prefs.line_shift.threshold,
         lineShiftEnabled: prefs.line_shift.enabled,
-        lastNotifiedTo: lastNotifiedTo.has(key) ? (lastNotifiedTo.get(key) as number) : null,
-        currentTo: to
+        recentlyNotified: recentlyNotified.has(`${pick.user_id}:${pick.game_id}`)
       })
     ) {
       continue;
@@ -251,6 +267,8 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
       week_id: week.id,
       detail: { from, to, threshold: prefs.line_shift.threshold }
     });
+    // Prevent a second alert for this pick in the same run.
+    recentlyNotified.add(`${pick.user_id}:${pick.game_id}`);
     sent++;
   }
 

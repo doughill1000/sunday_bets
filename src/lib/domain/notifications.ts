@@ -83,21 +83,19 @@ export function lineMovementPoints(args: {
 
 /**
  * Decide whether a line-shift alert should fire. Returns false when the feature
- * is off, the move is under threshold, or we already alerted this user for this
- * game at the current line value (dedupe across repeated sync runs).
+ * is off, the move is under threshold, or this user was already alerted for this
+ * game recently (the once-per-pick-per-day cap).
  */
 export function shouldNotifyLineShift(args: {
   movement: number;
   threshold: number;
   lineShiftEnabled: boolean;
-  /** Home-relative line value we last notified about, or null if never. */
-  lastNotifiedTo: number | null;
-  /** Home-relative current line value. */
-  currentTo: number;
+  /** True if a line-shift alert was already sent for this pick within the cap window. */
+  recentlyNotified: boolean;
 }): boolean {
   if (!args.lineShiftEnabled) return false;
   if (!(args.threshold > 0)) return false;
   if (args.movement < args.threshold) return false;
-  if (args.lastNotifiedTo !== null && args.lastNotifiedTo === args.currentTo) return false;
+  if (args.recentlyNotified) return false;
   return true;
 }
