@@ -17,6 +17,7 @@ milestone. Hotfixes within a phase use patch versions (e.g. v1.3.1).
 | v1.4    | Phase 3 — Automation (crons) |
 | v1.5    | Phase 4 — Push notifications |
 | v1.6    | Phase 5 — Stats & history |
+| v1.x (TBD) | Mobile picks-list status navigation |
 | v2.0    | Phase 6 — Social + Week 1 launch |
 | v2.1    | Phase 7 — Gameplay rules & engagement |
 | v2.2    | Phase 8 — Group tenancy foundation |
@@ -115,6 +116,15 @@ Pro, only the scheduler changes.
   `getWeeklyCumulative()` in `src/lib/server/db/queries/leaderboard.ts` already
   queries the existing weekly view and is waiting for a consumer).
 - New `/(app)/stats` route; charts via LayerChart.
+
+## V1.x placeholder — Mobile picks-list status navigation
+
+Improve the weekly picks list so mobile users can quickly move among games that
+are locked, coming up next, and already completed. The interaction model is still
+to be designed (for example, tabs, filters, or another compact control); preserve
+the full-week context while making the current and next actionable games easy to
+reach. Define exact state boundaries, ordering, counts/badges, and empty states
+before assigning a release version.
 
 ## Phase 6 — Social + pre-season polish (late August → Week 1) — v2.0
 
