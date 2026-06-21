@@ -96,99 +96,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_log: {
-        Row: {
-          created_at: string
-          detail: Json | null
-          game_id: string | null
-          id: string
-          kind: string
-          user_id: string
-          week_id: number | null
-        }
-        Insert: {
-          created_at?: string
-          detail?: Json | null
-          game_id?: string | null
-          id?: string
-          kind: string
-          user_id: string
-          week_id?: number | null
-        }
-        Update: {
-          created_at?: string
-          detail?: Json | null
-          game_id?: string | null
-          id?: string
-          kind?: string
-          user_id?: string
-          week_id?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_log_game_id_fkey"
-            columns: ["game_id"]
-            isOneToOne: false
-            referencedRelation: "games"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_log_week_id_fkey"
-            columns: ["week_id"]
-            isOneToOne: false
-            referencedRelation: "weeks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_subscriptions: {
-        Row: {
-          auth_key: string
-          created_at: string
-          endpoint: string
-          id: string
-          last_seen_at: string
-          p256dh: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          auth_key: string
-          created_at?: string
-          endpoint: string
-          id?: string
-          last_seen_at?: string
-          p256dh: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          auth_key?: string
-          created_at?: string
-          endpoint?: string
-          id?: string
-          last_seen_at?: string
-          p256dh?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       game_lines: {
         Row: {
           fetched_at: string
@@ -289,6 +196,65 @@ export type Database = {
           },
           {
             foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_log: {
+        Row: {
+          created_at: string
+          detail: Json | null
+          game_id: string | null
+          id: string
+          kind: string
+          user_id: string
+          week_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json | null
+          game_id?: string | null
+          id?: string
+          kind: string
+          user_id: string
+          week_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          detail?: Json | null
+          game_id?: string | null
+          id?: string
+          kind?: string
+          user_id?: string
+          week_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_week_id_fkey"
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "weeks"
@@ -406,6 +372,47 @@ export type Database = {
           },
           {
             foreignKeyName: "picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
