@@ -19,6 +19,8 @@ milestone. Hotfixes within a phase use patch versions (e.g. v1.3.1).
 | v1.6    | Phase 5 — Stats & history |
 | v2.0    | Phase 6 — Social + Week 1 launch |
 | v2.1    | Phase 7 — Gameplay rules & engagement |
+| v2.2    | Phase 8 — Group tenancy foundation |
+| v2.3    | Phase 9 — Self-service groups |
 
 ## Phase 2 — E2E safety net + finish the Svelte 5 migration — v1.3 ✅ shipped June 2026
 
@@ -64,7 +66,7 @@ E2E tests come **first** so the component migration has a regression net.
   4. The `supabase-js` SDK accepts the new key format transparently — no code
      changes needed in `src/hooks.server.ts` or `src/lib/supabase/service.ts`.
 
-## Phase 3 — Automation: the app runs itself (late July–August) — v1.4
+## Phase 3 — Automation: the app runs itself (late July–August) — v1.4 ✅ shipped June 2026
 
 **Architecture: `CRON_SECRET`-protected SvelteKit endpoints, scheduled by
 GitHub Actions cron workflows** (already-used infra, free, flexible cadence;
@@ -84,7 +86,7 @@ Pro, only the scheduler changes.
   new `cron_run_log` table (admin-only RLS), `Sentry.captureException` on
   caught errors. Show recent runs on the admin page.
 - Monthly reset function for `settings.odds_api_calls_used_current_month`.
-- **Secrets to set before going live:** `CRON_SECRET` + `DEPLOY_URL` in Vercel (both environments) and GitHub Actions environments (Production/Development).
+- **Secrets:** `CRON_SECRET` + `DEPLOY_URL` set in Vercel (both environments) and GitHub Actions Production environment. ✅
 
 ## Phase 4 — Push notifications (August) — v1.5
 
@@ -116,6 +118,14 @@ Pro, only the scheduler changes.
 
 ## Phase 6 — Social + pre-season polish (late August → Week 1) — v2.0
 
+### Scale the original group beyond six players
+
+- Remove implicit six-player assumptions from leaderboard queries and UI.
+- Keep standings and picks usable with larger member lists; add pagination only
+  where measured rendering/query performance requires it.
+- Add an e2e fixture with more than six users so the original competition can grow
+  before multi-group tenancy ships.
+
 - Game-scoped `comments` table (≤500 chars; RLS: write own anytime, **read only
   after `game_has_started(game_id)`** → sealed-envelope trash talk revealed at
   kickoff) + `reactions` (curated emoji set). Supabase Realtime channel per
@@ -143,7 +153,7 @@ Pro, only the scheduler changes.
 
 Brainstormed June 2026. Goal: keep the game fresh (catch-up for trailing players,
 variety beyond the Week-18 All-In) and make line-locking consistent and fair.
-Theme: **rules become league config** so a commissioner can tune the vibe.
+Theme: **rules become competition config** so the organizer can tune the vibe.
 Sequenced cheapest/safest first; the first item ships independently of everything
 else, the rest layer in.
 
@@ -177,7 +187,7 @@ graded on different numbers, and a missed sync leaves stale lines.
 - **Pick anytime per game; picks lock per-game at kickoff** — no "slate" rules
   (per-game auto-handles Thu/Sat/London 9:30am/1pm/4pm/SNF/MNF/playoffs). Set your
   whole lineup in one sitting.
-- **Two presets** (league-wide, on `settings`): **House** (default) = graded on the
+- **Two presets** (competition-wide, on `settings`): **House** (default) = graded on the
   closing line at `kickoff − X`, same number for everyone; **Gamer** = graded on the
   line you locked (today's behavior — line-shopping). Config =
   `line_grading_preset` + `line_freeze_offset (X)`. Closing-line resolution needs the
@@ -226,6 +236,76 @@ week" hook as the line presets). "Special week" = "this week's rules differ."
 - Stretch (separate features, not week-overrides): **Survivor side-game**, **playoff
   bracket bonus**.
 
+## Phase 8 — Group tenancy foundation — v2.2
+
+Use **group** for a private pick'em competition. Keep `league` reserved for the
+sporting league (`NFL` is already stored in `teams.league` and `seasons.league`),
+so the database and product language do not give the same word two meanings. This
+release changes the data model behind the existing experience but does not yet let
+users create or join additional groups.
+
+- Add `groups` and `group_memberships`; roles are `commissioner` and `member`.
+- Add `group_id` to group-owned records and relevant unique keys: picks,
+  settlements/leaderboards, comments/reactions, and rule configuration. Keep games,
+  teams, seasons, weeks, lines, scores, and cron ingestion global so groups share
+  canonical NFL data and do not multiply Odds API usage or grading work.
+- Backfill every existing user and historical record into the original Sunday Bets
+  group, with current admin(s) as commissioner(s), without changing standings.
+- Make membership the RLS boundary and add pgTAP coverage proving cross-group reads
+  and writes are denied. Add indexes beginning with `group_id` to the affected pick
+  and leaderboard access paths.
+- Make existing picks, leaderboards, stats, and social routes group-aware. Initially
+  select the sole membership automatically; keep group selection behind a feature
+  flag until Phase 9.
+
+## Phase 9 — Self-service groups — v2.3
+
+- Add expiring `group_invites` using single-use tokens or shareable codes rather
+  than exposed user IDs.
+- Add create/join/invite flows, a group switcher, and group-scoped URLs so links and
+  browser history retain context. A user may belong to multiple groups.
+- Move gameplay settings to each group while retaining operational settings
+  globally. Commissioners manage their group's name, members, and rules.
+- Test multiple groups with overlapping membership, then remove the feature flag.
+  Paginate or virtualize member-heavy views based on measured performance.
+
+## Cross-cutting: architecture readiness
+
+Keep the current **SvelteKit/Vercel + Supabase Auth/Postgres/RLS** architecture while
+usage grows. The functions under `supabase/src/functions/` are Postgres database
+functions, not Supabase Edge Functions; atomic pick locking, grading, and settlement
+belong close to the data. External API calls, HTTP orchestration, and notification
+fan-out stay in SvelteKit server code. Moving to AWS is not a goal by itself.
+
+- **Immediate function-permission audit:** PostgreSQL grants function execution to
+  `PUBLIC` by default. Revoke `EXECUTE` from `PUBLIC`, `anon`, and `authenticated`
+  globally (including default privileges), then explicitly re-grant only each public
+  RPC. Pay particular attention to `SECURITY DEFINER` grading/admin functions and add
+  pgTAP permission tests for anonymous, member, commissioner, and service-role calls.
+- **Keep RLS on user request paths:** user-facing server queries should receive the
+  request-scoped `event.locals.supabase` client. Reserve `supabaseService` (which
+  bypasses RLS) for cron, odds ingestion, grading, and narrowly defined admin work.
+  Make exposed views `security_invoker = true` or revoke client access and expose a
+  deliberately secured RPC instead.
+- **Mobile-ready API boundary:** introduce versioned endpoints (for example,
+  `/api/v1/groups`, `/api/v1/picks`, and `/api/v1/leaderboards`) backed by shared
+  application services and stable DTOs. Keep cookie auth for the web/PWA while
+  allowing a future native client to authenticate with a Supabase bearer token;
+  business rules remain server/database-owned.
+- **Bound leaderboard work:** replace the full-season `game × player` in-memory matrix
+  with SQL summaries, paginated member lists, and on-demand game/week detail before
+  large groups launch. Add `group_id` filters and leading indexes to every group-owned
+  access path; RLS alone is not a query-performance strategy.
+- **Operational guardrails:** colocate Vercel compute and Supabase regions, lower
+  production Sentry trace/replay sampling, test backup restoration, and load-test the
+  Sunday kickoff burst (especially concurrent lock requests). Add alerts for latency,
+  database size, errors, Odds API quota, and spend.
+- **Revisit infrastructure only from measurements:** consider queues when notification
+  fan-out outgrows request/cron execution, and consider AWS or another host only for
+  demonstrated cost, compliance/data-residency, private-networking, or sustained
+  database/compute requirements. Preserve Postgres and the HTTP API contract so any
+  future migration can move compute first and the database/auth boundary last.
+
 ## Cross-cutting: new tables and the Data API
 
 Supabase no longer auto-exposes new `public` schema tables to the Data (REST)
@@ -247,7 +327,8 @@ holding full privileges (blocked only by RLS). Strip it explicitly, mirroring
 
 Affected tables by phase: `cron_run_log` (Phase 3), `push_subscriptions` /
 `notification_prefs` (Phase 4), `comments` / `reactions` (Phase 6),
-`mulligan_uses` (Phase 7). Tables
+`mulligan_uses` (Phase 7), `groups` / `group_memberships` (Phase 8), and
+`group_invites` (Phase 9). Tables
 only accessed server-side via the secret key (service role) bypass RLS anyway,
 but the grant is still needed for the Data API path.
 
