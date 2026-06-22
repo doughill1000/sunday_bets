@@ -57,9 +57,6 @@
     games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
   );
 
-  const missedGames = $derived(
-    games.filter((g) => !$picks[g.id]?.lockedPick && kickoffMs(g) <= now)
-  );
 </script>
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>

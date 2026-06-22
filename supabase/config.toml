@@ -7,9 +7,7 @@ enabled = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = [
   "http://localhost:5173/auth/callback",
-  "http://localhost:5173/auth/confirm",
-  "http://192.168.1.161:5173/auth/callback",
-  "http://192.168.1.161:5173/auth/confirm"
+  "http://localhost:5173/auth/confirm"
 ]
 email.template.magic_link.content_path = "./supabase/magic_link.html"
 

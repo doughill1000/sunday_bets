@@ -1,7 +1,6 @@
 <script lang="ts">
   import { usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
-  import { kickoffPassed } from '$lib/domain/rules';
   import { signedSpreadForTeam } from '$lib/domain/spread';
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';

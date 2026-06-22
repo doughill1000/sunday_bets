@@ -1,5 +1,7 @@
 <script lang="ts">
   import { usePicksStore } from '$lib/stores/picks';
+  import { WEIGHTS } from '$lib/types/domain';
+  import type { WeightCode } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
 
   interface Props {
@@ -35,7 +37,7 @@
   });
 
   const weightCounts = $derived(
-    (['L', 'M', 'H', 'A'] as const)
+    (Object.keys(WEIGHTS) as WeightCode[])
       .map((code) => ({
         code,
         count: games.filter((g) => $picks[g.id]?.lockedPick?.weight === code).length
@@ -48,14 +50,13 @@
   class="sticky top-14 z-30 -mx-4 border-b bg-background/95 backdrop-blur-sm"
   style="padding: 0.5rem max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left))"
 >
-  <!-- Primary: what's left -->
-  <div class="text-sm">
+  <!-- Primary: locked/total counter + status -->
+  <div class="flex items-center gap-2 text-sm">
+    <span class="font-semibold">{lockedCount}/{games.length} locked</span>
     {#if openCount > 0}
-      <span class="font-semibold text-amber-600 dark:text-amber-400">{openCount} left to lock</span>
+      <span class="text-amber-600 dark:text-amber-400">· {openCount} not locked</span>
     {:else if lockedCount > 0}
-      <span class="font-medium text-muted-foreground">✓ All picks locked</span>
-    {:else}
-      <span class="text-muted-foreground">No picks yet</span>
+      <span class="text-muted-foreground">✓ All locked</span>
     {/if}
   </div>
 
