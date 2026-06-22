@@ -57,6 +57,17 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
 - `ROADMAP.md` is strategy, not a backlog. GitHub Issues define executable scope and
   acceptance criteria; the GitHub Project owns priority, agent assignment, and live
   status.
+- Treat requests to "create/open/file an issue," "create a feature," "create a
+  feature issue," or "add this to the backlog" as issue-authoring requests when no
+  implementation behavior is requested. Read the matching `.github/ISSUE_TEMPLATE/`,
+  inspect enough repository context to fill it accurately, evaluate the ADR
+  requirement, and show the completed title/body and target repository before writing
+  to GitHub. Create it only after explicit approval of that draft (or an explicit
+  instruction to skip the preview), report the issue URL, and do not implement it
+  unless implementation was also requested.
+- Treat requests to "implement," "build," or "add" a feature as code work. Planned
+  code work still requires a Ready issue; create and approve the issue first when one
+  does not exist.
 - Planned feature work starts from a Ready issue. One issue maps to one primary
   branch, worktree, and pull request.
 - Use the trigger test in `docs/adr/README.md`. Security boundaries, persistent data

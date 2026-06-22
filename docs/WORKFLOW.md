@@ -53,6 +53,26 @@ An issue is Ready only when it has:
 - likely paths and shared/generated ownership called out; and
 - a verification plan appropriate to its risk.
 
+## Natural-language issue requests
+
+When Doug asks to "create," "open," or "file" an issue, to "create a feature" or
+"feature issue," or to "add this to the backlog," the agent should author an issue
+rather than begin implementation when no implementation behavior is requested:
+
+1. Choose the matching template from `.github/ISSUE_TEMPLATE/`.
+2. Inspect enough repository context to complete likely files, constraints,
+   dependencies, verification, and the ADR decision credibly.
+3. Present the completed issue title and body, plus the exact target repository.
+4. Wait for explicit approval before the GitHub write. A direct instruction to skip
+   the preview and create the issue counts as approval.
+5. Create the issue through the connected GitHub app, report its URL, and stop unless
+   implementation was also requested.
+
+"Implement," "build," or "add" a feature means code work, not merely issue
+creation. Planned implementation still starts from a Ready issue. If the same request
+asks for both issue creation and implementation, create the approved issue first,
+then use it as the implementation scope.
+
 ## ADR timing
 
 For a high-risk or foundational decision, merge an ADR-only PR before implementation.

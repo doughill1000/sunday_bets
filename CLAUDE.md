@@ -6,3 +6,6 @@ and other coding agents in this repository.
 For planned work, also read `docs/WORKFLOW.md`, the assigned GitHub Issue, and every
 linked or governing ADR before editing. Do not maintain a separate copy of repository
 rules here; that would allow the two agent workflows to drift.
+
+The natural-language issue-creation triggers and draft-before-write approval gate in
+`AGENTS.md` apply to Claude unchanged.
