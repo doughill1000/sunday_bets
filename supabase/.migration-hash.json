@@ -150,7 +150,9 @@
     "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
   },
   "grants/player_grants.sql": {
-    "hash": "081538754f3d70c1f2fa4a63d2e8c67d3355dd26ecf60efbb58a365a3fcf8cca"
+    "hash": "9a5c396dcfdcbf82c56f121374f23c9c3f8429ac0f860d1fd4cfe09ae0bbfba7",
+    "migration": "20260622135430_restore_rpc_grants.sql",
+    "migrationHash": "6c662f7d37d2eaa62eb894f214e430c68abe01ea421a638fc1b401ad88231cbb"
   },
   "functions/grade/advance_week_if_complete.sql": {
     "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
