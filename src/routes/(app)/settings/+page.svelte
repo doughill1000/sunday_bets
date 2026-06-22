@@ -91,12 +91,12 @@
     </CardHeader>
     <CardContent class="space-y-5 p-0 pt-2">
       {#if !supported}
-        <div class="rounded-xl border border-amber-500 p-3 text-sm">
+        <div class="rounded-xl border border-warning p-3 text-sm">
           This browser doesn't support push notifications. On iPhone, add Sunday Bets to your Home
           Screen (Share → Add to Home Screen) and use iOS 16.4 or later.
         </div>
       {:else if permission === 'denied'}
-        <div class="rounded-xl border border-amber-500 p-3 text-sm">
+        <div class="rounded-xl border border-warning p-3 text-sm">
           Notifications are blocked in your browser settings. Re-allow them for this site, then
           enable below.
         </div>
@@ -109,7 +109,11 @@
             Master switch for all notifications on this device.
           </p>
         </div>
-        <Button onclick={toggleMaster} disabled={busy || !supported} variant={enabled ? 'secondary' : 'default'}>
+        <Button
+          onclick={toggleMaster}
+          disabled={busy || !supported}
+          variant={enabled ? 'secondary' : 'default'}
+        >
           {busy ? 'Working…' : enabled ? 'Disable' : 'Enable'}
         </Button>
       </div>
@@ -165,9 +169,9 @@
       {#if msg}
         <div
           class="rounded-xl border p-3 text-sm"
-          class:border-green-500={msg.kind === 'success'}
-          class:border-amber-500={msg.kind === 'warn'}
-          class:border-red-500={msg.kind === 'error'}
+          class:border-success={msg.kind === 'success'}
+          class:border-warning={msg.kind === 'warn'}
+          class:border-destructive={msg.kind === 'error'}
         >
           {msg.text}
         </div>
