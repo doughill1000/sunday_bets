@@ -1,0 +1,56 @@
+name: Bug
+description: Report a reproducible defect with a testable correction
+title: '[Bug]: '
+body:
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who is affected and how severe is the failure?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the smallest reliable sequence, inputs, environment, and observed result.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] The defect is covered by a regression test at the appropriate layer.
+        - [ ] The reproduction no longer fails.
+    validations:
+      required: true
+  - type: dropdown
+    id: adr
+    attributes:
+      label: ADR requirement
+      description: Most bugs do not need an ADR unless the correction changes a durable boundary or rule.
+      options:
+        - Not required
+        - Required
+        - Needs triage
+    validations:
+      required: true
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Likely files and shared ownership
+      description: Name likely paths and any overlap risk with active work.
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Name test commands and any manual checks.
+    validations:
+      required: true
