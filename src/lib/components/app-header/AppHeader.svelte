@@ -69,8 +69,7 @@
           aria-label="Sunday Bets home"
         >
           <img
-            src="/icons/icon-192x192.png"
-            srcset="/icons/icon-72x72.png 2x, /icons/icon-192x192.png 3x"
+            src="/pwa-192x192.png"
             alt="Sunday Bets logo"
             class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
           />

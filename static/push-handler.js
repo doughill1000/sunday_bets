@@ -17,8 +17,8 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       tag: data.tag,
       data: { url: data.url || '/' },
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-96x96.png'
+      icon: '/pwa-192x192.png',
+      badge: '/favicon-48x48.png'
     })
   );
 });
