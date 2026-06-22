@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { enhance } from '$app/forms';
 
   // shadcn-svelte UI
   import {
@@ -19,21 +19,7 @@
   let email = $state('');
   let password = $state('');
   let method: 'magic' | 'password' = $state('magic');
-  async function onSubmit(e: Event) {
-    e.preventDefault();
-    const res = await fetch('/auth', {
-      method: 'POST',
-      body: new FormData(e.target as HTMLFormElement)
-    });
-    const j: { data: string } = await res.json();
-    const data: [{ ok: number; message: number }, boolean, string] = JSON.parse(j.data);
-    if (!data[1]) {
-      toast.error(data[2]);
-      return;
-    }
-    toast.success(data[2]);
-    invalidateAll();
-  }
+  let submitting = $state(false);
 </script>
 
 <!-- Backdrop that makes the card pop -->
@@ -51,9 +37,21 @@
     <CardContent>
       <form
         method="POST"
-        onsubmit={(e) => {
-          e.preventDefault();
-          onSubmit(e);
+        use:enhance={() => {
+          submitting = true;
+          return async ({ result, update }) => {
+            submitting = false;
+            if (result.type === 'failure') {
+              toast.error(String(result.data?.message ?? 'Sign-in failed'));
+            } else if (result.type === 'success') {
+              toast.success(String(result.data?.message ?? 'Signed in'));
+            } else if (result.type === 'error') {
+              toast.error(result.error?.message ?? 'Something went wrong');
+            }
+            // Applies the result: follows the redirect on password sign-in,
+            // re-runs load on success. Keep field values on failure.
+            await update({ reset: false });
+          };
         }}
         class="space-y-5"
       >
@@ -69,9 +67,11 @@
             placeholder="you@example.com"
             autocomplete="email"
           />
-          <p class="text-xs text-muted-foreground">
-            We’ll send a secure link if you choose magic link.
-          </p>
+          {#if method === 'magic'}
+            <p class="text-xs text-muted-foreground">
+              A secure sign-in link will be sent to this address.
+            </p>
+          {/if}
         </div>
 
         <!-- Method toggle -->
@@ -110,7 +110,9 @@
         {/if}
 
         <!-- Submit -->
-        <Button type="submit" class="w-full">Sign in</Button>
+        <Button type="submit" class="w-full" disabled={submitting}>
+          {submitting ? 'Signing in…' : 'Sign in'}
+        </Button>
       </form>
     </CardContent>
 

@@ -42,6 +42,11 @@
           href="/leaderboard"
           onclick={onNavigate}>Leaderboard</a
         >
+        <a
+          class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
+          href="/settings"
+          onclick={onNavigate}>Settings</a
+        >
         {#if canSeeAdmin}
           <a
             class="flex items-center px-3 py-3 min-h-11 hover:bg-accent border-b border-white/15 last:border-b-0"
