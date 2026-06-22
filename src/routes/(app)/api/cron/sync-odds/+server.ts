@@ -2,6 +2,8 @@ import type { RequestHandler } from './$types';
 import { syncOddsForActiveWeek } from '$lib/server/oddsSync';
 import { requireCronSecret, withCronLog } from '$lib/server/cron';
 
+// Daily (Tue–Sat) sync that keeps lines fresh for the picks UI. Near-kickoff
+// syncing + line-movement alerts live in the hourly `pregame` cron.
 export const POST: RequestHandler = async (event) => {
   const guard = requireCronSecret(event);
   if (guard) return guard;

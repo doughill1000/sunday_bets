@@ -40,6 +40,15 @@ grant select on public.settings, public.audit_log to authenticated;
 revoke all on public.cron_run_log from public, anon;
 grant select on public.cron_run_log to authenticated;
 
+-- push_subscriptions: owners manage their own rows; RLS gates which rows.
+-- Strip the default anon/PUBLIC ACL first (defense in depth alongside RLS).
+revoke all on public.push_subscriptions from public, anon;
+grant select, insert, update, delete on public.push_subscriptions to authenticated;
+
+-- notification_log: owners read their own rows via RLS; writes come from service role.
+revoke all on public.notification_log from public, anon;
+grant select on public.notification_log to authenticated;
+
 -- NOTE: Do not grant EXECUTE here. Each RPC file should append its own:
 --   - public get-only RPCs (e.g., get_active_week_games): GRANT to anon, authenticated
 --   - player RPCs (lock_pick, unlock_pick): GRANT to authenticated
