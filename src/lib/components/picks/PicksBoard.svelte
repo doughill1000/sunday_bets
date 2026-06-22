@@ -82,20 +82,10 @@
   <PicksSummaryBar {games} {now} />
 
   {#if upcoming.length === 0}
-    {#if missedGames.length > 0}
-      <Alert class="mt-4" variant="destructive">
-        <AlertTitle>Week done — {missedGames.length} missed</AlertTitle>
-        <AlertDescription>
-          {missedGames.length === 1 ? '1 game' : `${missedGames.length} games`} kicked off without a
-          pick.
-        </AlertDescription>
-      </Alert>
-    {:else}
       <Alert class="mt-4">
         <AlertTitle>You're all set 🎉</AlertTitle>
         <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
       </Alert>
-    {/if}
   {:else}
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
