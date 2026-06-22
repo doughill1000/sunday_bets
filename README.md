@@ -122,6 +122,18 @@ Note: `pnpm build` on Windows fails in the final adapter-vercel packaging step
 (symlinks need elevation/Developer Mode). The Vite build itself completing is
 enough to validate changes locally; real builds happen on Vercel.
 
+## Roadmap and project tracking
+
+The [Sunday Bets GitHub Project](https://github.com/users/doughill1000/projects/1)
+is the working backlog for planned features, architecture work, and parked cleanup.
+Project items use the `Status` field to track delivery and the `Agent` field to show
+who owns the next action.
+
+`ROADMAP.md` remains the longer-form product and technical plan: it records phase
+goals, version targets, dependencies, design decisions, and acceptance details.
+Use the GitHub Project for day-to-day prioritization and progress; update the roadmap
+when the underlying plan or sequencing changes.
+
 ## Operations (currently manual, automation planned — see ROADMAP.md)
 
 Admins trigger from the `/admin` page:
