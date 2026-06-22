@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { picks } from '$lib/stores/picks';
+  import { usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { kickoffPassed } from '$lib/domain/rules';
   import { signedSpreadForTeam } from '$lib/domain/spread';
@@ -11,14 +11,13 @@
     now: number;
   }
   let { games, now }: Props = $props();
+  const picks = usePicksStore();
 
   function kickoffMs(g: PickGame) {
     return new Date(g.kickoff).getTime();
   }
 
-  const hasMissed = $derived(
-    games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick)
-  );
+  const hasMissed = $derived(games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick));
 
   async function onEdit(g: PickGame) {
     const res = await unlockPickApi(g.id);
@@ -31,7 +30,9 @@
       [g.id]: { ...(s[g.id] ?? {}), lockedPick: undefined }
     }));
     requestAnimationFrame(() => {
-      document.getElementById(`game-${g.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document
+        .getElementById(`game-${g.id}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
 </script>

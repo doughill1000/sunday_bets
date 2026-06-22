@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { picks } from '$lib/stores/picks';
+  import { usePicksStore } from '$lib/stores/picks';
   import { kickoffPassed } from '$lib/domain/rules';
   import { WEIGHTS } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
@@ -9,6 +9,7 @@
     now: number;
   }
   let { games, now }: Props = $props();
+  const picks = usePicksStore();
 
   function kickoffMs(g: PickGame) {
     return new Date(g.kickoff).getTime();
@@ -37,13 +38,9 @@
       .sort((a, b) => a - b)[0] ?? null
   );
 
-  const allInLocked = $derived(
-    games.find((g) => $picks[g.id]?.lockedPick?.weight === 'A') ?? null
-  );
+  const allInLocked = $derived(games.find((g) => $picks[g.id]?.lockedPick?.weight === 'A') ?? null);
   const allInSelected = $derived(
-    !allInLocked
-      ? (games.find((g) => $picks[g.id]?.selected?.weight === 'A') ?? null)
-      : null
+    !allInLocked ? (games.find((g) => $picks[g.id]?.selected?.weight === 'A') ?? null) : null
   );
 
   const weightCounts = $derived(

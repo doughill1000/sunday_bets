@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { picks, setPicks, selectTeam } from '$lib/stores/picks';
+  import { providePicksStore } from '$lib/stores/picks';
   import type { PickGame } from '$lib/types/games';
   import type { PickEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
@@ -18,22 +18,27 @@
   }
   let { week = null, games = [], initialPicks = {} }: Props = $props();
 
-  let initialized = $state(false);
+  function seedPicks() {
+    const seededPicks = structuredClone(initialPicks);
+    for (const game of games) {
+      const entry = seededPicks[game.id];
+      if (!entry?.selected && !entry?.lockedPick) {
+        seededPicks[game.id] = { ...entry, selected: { team: 'home', weight: 'L' } };
+      }
+    }
+    return seededPicks;
+  }
+  const picks = providePicksStore(seedPicks());
+
+  const initialized = true;
   let now = $state(Date.now());
 
   let ticker: ReturnType<typeof setInterval>;
 
   onMount(() => {
-    if (!initialized && initialPicks) {
-      setPicks(initialPicks);
-      for (const g of games) {
-        const entry = $picks[g.id];
-        const hasSelection = entry?.selected || entry?.lockedPick;
-        if (!hasSelection) selectTeam(g.id, 'home');
-      }
-      initialized = true;
-    }
-    ticker = setInterval(() => { now = Date.now(); }, 1000);
+    ticker = setInterval(() => {
+      now = Date.now();
+    }, 1000);
   });
 
   onDestroy(() => clearInterval(ticker));
@@ -59,10 +64,14 @@
   <Alert>
     {#if !week}
       <AlertTitle>It's the offseason</AlertTitle>
-      <AlertDescription>No active pick week right now. Check back when the season kicks off.</AlertDescription>
+      <AlertDescription
+        >No active pick week right now. Check back when the season kicks off.</AlertDescription
+      >
     {:else}
       <AlertTitle>No games scheduled yet</AlertTitle>
-      <AlertDescription>Games for this week haven't been loaded yet — check back soon.</AlertDescription>
+      <AlertDescription
+        >Games for this week haven't been loaded yet — check back soon.</AlertDescription
+      >
     {/if}
   </Alert>
 {:else}

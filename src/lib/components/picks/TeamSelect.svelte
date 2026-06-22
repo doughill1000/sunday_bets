@@ -2,7 +2,7 @@
   import { Button } from '$lib/components/ui/button';
   import { TEAM_META } from '$lib/types/domain';
   import { textOn } from '$lib/ui/color';
-  import { picks, selectTeam } from '$lib/stores/picks';
+  import { selectTeam, usePicksStore } from '$lib/stores/picks';
   import type { PickGame } from '$lib/types/games';
 
   interface Props {
@@ -11,6 +11,7 @@
   }
 
   let { game, canChange = false }: Props = $props();
+  const picks = usePicksStore();
 
   function teamVars(abbr: string) {
     const meta = TEAM_META[abbr] ?? {
@@ -38,7 +39,7 @@
     style={awayVars}
     aria-pressed={selAway}
     disabled={!canChange}
-    onclick={() => selectTeam(game.id, 'away')}
+    onclick={() => selectTeam(game.id, 'away', picks)}
   >
     <span class="font-semibold tracking-wide">{game.away}</span>
   </Button>
@@ -49,7 +50,7 @@
     style={homeVars}
     aria-pressed={selHome}
     disabled={!canChange}
-    onclick={() => selectTeam(game.id, 'home')}
+    onclick={() => selectTeam(game.id, 'home', picks)}
   >
     <span class="font-semibold tracking-wide">{game.home}</span>
   </Button>
