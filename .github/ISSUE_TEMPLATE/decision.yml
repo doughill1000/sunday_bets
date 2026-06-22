@@ -1,0 +1,44 @@
+name: Architecture decision
+description: Propose a durable technical or gameplay-fairness decision
+title: '[ADR]: '
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and decision pressure
+      description: What forces a decision now, and what constraints matter?
+    validations:
+      required: true
+  - type: textarea
+    id: drivers
+    attributes:
+      label: Decision drivers
+      description: List security, fairness, operational, cost, performance, or reversibility concerns.
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Credible options
+      description: Include tradeoffs for each option, including keeping the current design.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Proposed direction
+      description: State the proposed boundary clearly without expanding into implementation tasks.
+    validations:
+      required: true
+  - type: textarea
+    id: consequences
+    attributes:
+      label: Expected consequences
+      description: Include both benefits and costs, plus migration or rollback concerns.
+    validations:
+      required: true
+  - type: textarea
+    id: related
+    attributes:
+      label: Related issues and ADRs
+      description: Link implementation issues and decisions this may supersede.

@@ -9,6 +9,19 @@ leaderboards.
 **Stack:** SvelteKit 2 / Svelte 5 · Supabase (Postgres + Auth + RLS) ·
 Tailwind 4 + shadcn-svelte · PWA (vite-plugin-pwa) · Sentry · Vercel.
 
+## Planning and delivery
+
+- [ROADMAP.md](ROADMAP.md) describes product direction and release order.
+- GitHub Issues and the repository Project track executable work, ownership, and
+  status.
+- [Architecture Decision Records](docs/adr/README.md) capture durable architecture
+  and gameplay-fairness decisions.
+- [The delivery workflow](docs/WORKFLOW.md) defines issue readiness, ADR timing,
+  worktrees, parallel-agent coordination, pull requests, and releases.
+
+Claude and Codex work from separate issue-scoped worktrees created from the latest
+`origin/master`; they never share a checkout.
+
 ## Local setup
 
 Prereqs: Node 22+, [pnpm](https://pnpm.io), Docker Desktop,
@@ -144,10 +157,14 @@ Admins trigger from the `/admin` page:
 - **Grade** — refreshes final scores and settles picks
   (`/api/admin/grade-game|grade-week|grade-season`).
 
+GitHub Actions also calls `CRON_SECRET`-protected endpoints for scheduled odds sync,
+grading, week rollover, pregame notifications, and monthly quota reset. See
+`.github/workflows/` for active schedules.
+
 ## Push notifications
 
 Web push (VAPID, no third-party service) for pick reminders and line-movement
-alerts. See `ROADMAP.md` Phase 4.
+alerts.
 
 - **Setup:** generate a keypair with `npx web-push generate-vapid-keys`, then set
   `PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` (see
@@ -164,4 +181,4 @@ alerts. See `ROADMAP.md` Phase 4.
 - Subscriptions live in `push_subscriptions`; `notification_log` records sends
   for audit + dedupe. Per-user prefs are stored in `users.notification_prefs`.
 
-See `ROADMAP.md` for the feature/automation plan.
+See `ROADMAP.md` for product direction.
