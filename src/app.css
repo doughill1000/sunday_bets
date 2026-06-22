@@ -40,43 +40,45 @@
 }
 
 .dark {
-  /* Sunday Bets brand palette — "Sunday Slate Command Center" (issue #77).
-     Dark charcoal surfaces, gold primary, warm cream text, restrained status accents. */
-  --background: #080a0c;
-  --foreground: #f2efe3;
-  --card: #111418;
-  --card-foreground: #f2efe3;
-  --popover: #111418;
-  --popover-foreground: #f2efe3;
-  --primary: #d7b84a;
-  --primary-foreground: #080a0c;
-  --secondary: #1b2027;
-  --secondary-foreground: #f2efe3;
-  --muted: #171b21;
-  --muted-foreground: #8a8f98;
-  --accent: #171b21;
-  --accent-foreground: #f2efe3;
+  /* Sunday Bets brand palette — derived from the app icon (charcoal #1d1d1d,
+     brass gold #dba73b, warm cream #f8efdf) so the header logo blends into the
+     page and the gold matches the mark. Charcoal surfaces, brass-gold primary,
+     warm cream text, restrained status accents. */
+  --background: #1c1c1c;
+  --foreground: #f4ecda;
+  --card: #232324;
+  --card-foreground: #f4ecda;
+  --popover: #232324;
+  --popover-foreground: #f4ecda;
+  --primary: #dba73b;
+  --primary-foreground: #1a1613;
+  --secondary: #2b2b2c;
+  --secondary-foreground: #f4ecda;
+  --muted: #272728;
+  --muted-foreground: #9b958a;
+  --accent: #272728;
+  --accent-foreground: #f4ecda;
   --destructive: #e05252;
   --success: #2fbf71;
-  --success-foreground: #080a0c;
+  --success-foreground: #1a1613;
   --warning: #e0973a;
-  --warning-foreground: #080a0c;
-  --border: #2a2f36;
-  --input: #151a20;
-  --ring: #d7b84a;
+  --warning-foreground: #1a1613;
+  --border: #343436;
+  --input: #222223;
+  --ring: #dba73b;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #111418;
-  --sidebar-foreground: #f2efe3;
-  --sidebar-primary: #d7b84a;
-  --sidebar-primary-foreground: #080a0c;
-  --sidebar-accent: #171b21;
-  --sidebar-accent-foreground: #f2efe3;
-  --sidebar-border: #2a2f36;
-  --sidebar-ring: #d7b84a;
+  --sidebar: #232324;
+  --sidebar-foreground: #f4ecda;
+  --sidebar-primary: #dba73b;
+  --sidebar-primary-foreground: #1a1613;
+  --sidebar-accent: #272728;
+  --sidebar-accent-foreground: #f4ecda;
+  --sidebar-border: #343436;
+  --sidebar-ring: #dba73b;
 }
 
 @theme inline {
