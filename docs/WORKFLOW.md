@@ -101,6 +101,26 @@ git worktree add ..\sunday_bets-claude-124 `
   -b claude/124-settings-page origin/master
 ```
 
+The `.env*` files are gitignored, so a fresh worktree starts with none and cannot
+reach Supabase / The Odds API until they are copied from the main checkout
+(`.npmrc` is tracked, so it comes along automatically). Use the helper, which also
+installs dependencies and prints the dev command:
+
+```powershell
+# Creates the worktree, copies every .env* (except .env.example), installs deps:
+powershell -File scripts/new-worktree.ps1 -Branch claude/124-settings-page
+
+# Add -Dev to also start the dev server on the chosen port:
+powershell -File scripts/new-worktree.ps1 -Branch claude/124-settings-page -Port 5174 -Dev
+```
+
+Run a worktree's dev server **without switching repos** via pnpm's `-C` flag — use
+a non-5173 port so it coexists with the main checkout's dev server:
+
+```powershell
+pnpm -C ..\sunday_bets-claude-124 run dev -- --port 5174
+```
+
 Never run both agents in the same worktree. The original checkout may contain other
 work and must not be cleaned, reset, or repurposed by an agent.
 
