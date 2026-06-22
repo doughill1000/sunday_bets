@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { picks } from '$lib/stores/picks';
+  import { usePicksStore } from '$lib/stores/picks';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
   import { kickoffPassed } from '$lib/domain/rules';
@@ -15,6 +15,7 @@
     initialized?: boolean;
   }
   let { game, initialized = false }: Props = $props();
+  const picks = usePicksStore();
 
   const entry = $derived($picks[game.id] ?? {});
   const current = $derived(entry.selected ?? entry.lockedPick);

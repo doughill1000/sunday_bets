@@ -26,7 +26,17 @@ const supabase: Handle = async ({ event, resolve }) => {
          */
         setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
-            event.cookies.set(name, value, { ...options, path: '/' });
+            // SvelteKit defaults `secure` to true for every host except
+            // `localhost`. Over plain-HTTP LAN access (e.g. http://192.168.x.x
+            // for mobile testing) the browser then rejects the auth cookies and
+            // the session is lost on the next request. Tie `secure` to the
+            // actual protocol so HTTP LAN dev works and production HTTPS stays
+            // secure.
+            event.cookies.set(name, value, {
+              ...options,
+              path: '/',
+              secure: event.url.protocol === 'https:'
+            });
           });
         }
       }

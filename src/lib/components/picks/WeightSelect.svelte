@@ -2,7 +2,7 @@
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { Label } from '$lib/components/ui/label';
   import { WEIGHTS, type WeightCode } from '$lib/types/domain';
-  import { setWeight } from '$lib/stores/picks';
+  import { setWeight, usePicksStore } from '$lib/stores/picks';
 
   interface Props {
     gameId: string;
@@ -13,6 +13,7 @@
   }
 
   let { gameId, canChange = false, selectedWeight = 'L' }: Props = $props();
+  const picks = usePicksStore();
 </script>
 
 <div class="grid grid-cols-1 items-center gap-3 md:grid-cols-[1fr,auto]">
@@ -23,7 +24,7 @@
       id={`w_${gameId}`}
       type="single"
       value={selectedWeight}
-      onValueChange={(val) => setWeight(gameId, (val ?? 'L') as WeightCode)}
+      onValueChange={(val) => setWeight(gameId, (val ?? 'L') as WeightCode, picks)}
       class="w-full flex gap-1"
       disabled={!canChange}
     >

@@ -5,7 +5,7 @@ export function spreadLine(g: PickGame): string {
   if (g.spreadValue === 0) return 'PK';
   const favIsHome = g.spreadTeamId === g.homeTeamId;
   const favName = favIsHome ? g.home : g.away;
-  return `${favName} -${g.spreadValue}`;
+  return `${favName} -${Math.abs(g.spreadValue)}`;
 }
 
 export function signedSpreadForTeam(g: PickGame, team: 'home' | 'away'): string {
@@ -13,5 +13,5 @@ export function signedSpreadForTeam(g: PickGame, team: 'home' | 'away'): string 
   if (g.spreadValue === 0) return ' PK';
   const favIsHome = g.spreadTeamId === g.homeTeamId;
   const teamIsFav = (team === 'home') === favIsHome;
-  return ` ${teamIsFav ? '-' : '+'}${g.spreadValue}`;
+  return ` ${teamIsFav ? '-' : '+'}${Math.abs(g.spreadValue)}`;
 }

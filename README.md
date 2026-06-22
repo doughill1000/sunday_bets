@@ -37,6 +37,36 @@ pnpm dev                      # http://localhost:5173
 
 `pnpm db:types` regenerates `src/lib/types/supabase.ts` from the local DB.
 
+### Demo data for UI work
+
+`db:reset:local` clones **production**, whose games are all in the past — so during
+the offseason there is no active week and the "open picks before kickoff" screens
+never render. To inspect every UI state locally, seed synthetic, **date-anchored**
+data instead:
+
+```sh
+npx supabase start
+pnpm db:reset:demo            # reset migrations + seed demo data (alternative to db:reset:local)
+pnpm dev                      # http://localhost:5173
+```
+
+`db:reset:demo` builds one active week (with a mix of open, selected, locked, and
+missed picks) plus 3 prior fully-graded weeks, across 6 players, so the picks,
+leaderboard, and admin screens are all populated. Re-run just the data with
+`pnpm db:seed:demo` (idempotent). All 6 accounts log in with password `password`:
+
+| Email               | Player  | Role   |
+| ------------------- | ------- | ------ |
+| `admin@example.com` | Doug    | admin  |
+| `test2@example.com` | Hank    | player |
+| `test3@example.com` | Charlie | player |
+| `demo4@example.com` | Frank   | player |
+| `demo5@example.com` | Beth    | player |
+| `demo6@example.com` | Mike    | player |
+
+Log in as `admin@example.com` to also see the `/admin` screen and a showcase picks
+board (committed, missed, a current selection, and open cards with All-In available).
+
 ## Tests
 
 | Command                    | What it runs                                                         |
@@ -105,7 +135,19 @@ Note: `pnpm build` on Windows fails in the final adapter-vercel packaging step
 (symlinks need elevation/Developer Mode). The Vite build itself completing is
 enough to validate changes locally; real builds happen on Vercel.
 
-## Operations
+## Roadmap and project tracking
+
+The [Sunday Bets GitHub Project](https://github.com/users/doughill1000/projects/1)
+is the working backlog for planned features, architecture work, and parked cleanup.
+Project items use the `Status` field to track delivery and the `Agent` field to show
+who owns the next action.
+
+`ROADMAP.md` remains the longer-form product and technical plan: it records phase
+goals, version targets, dependencies, design decisions, and acceptance details.
+Use the GitHub Project for day-to-day prioritization and progress; update the roadmap
+when the underlying plan or sequencing changes.
+
+## Operations (currently manual, automation planned — see ROADMAP.md)
 
 Admins trigger from the `/admin` page:
 

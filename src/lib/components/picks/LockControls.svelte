@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PickGame } from '$lib/types/games';
-  import { picks } from '$lib/stores/picks';
+  import { usePicksStore } from '$lib/stores/picks';
   import { toast } from 'svelte-sonner';
   import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
   import { Button } from '$lib/components/ui/button';
@@ -12,6 +12,7 @@
     locked?: boolean;
   }
   let { game, initialized = false, started = false, locked = false }: Props = $props();
+  const picks = usePicksStore();
 
   async function onLock() {
     const entry = $picks[game.id] ?? {};

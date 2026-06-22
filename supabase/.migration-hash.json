@@ -150,9 +150,9 @@
     "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
   },
   "grants/player_grants.sql": {
-    "hash": "2d4d4ed12679fc00ce4ea3fdc930b375d3a30ef04ad53ec9a64ba1067a35be70",
-    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
-    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
+    "hash": "62bb877e5208af97fb91581b252c91edf049e113a62703bb4da96bdf2749f3c4",
+    "migration": "20260622140914_reconcile_player_grants_after_merge.sql",
+    "migrationHash": "afc0228a54807e340e45dfa4a902d789da996bc27099b611e6c57c169a645f8b"
   },
   "functions/grade/advance_week_if_complete.sql": {
     "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",

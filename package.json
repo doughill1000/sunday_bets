@@ -1,7 +1,7 @@
 {
   "name": "web",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -14,6 +14,8 @@
     "db:clone:dev": "cd supabase/scripts/ && tsx cloneDb.ts --target=dev --reset",
     "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local --reset",
     "db:reset:local": "supabase db reset --local --yes && pnpm db:clone:local",
+    "db:seed:demo": "cross-env DOTENV_CONFIG_PATH=.env.local node -r dotenv/config --import tsx supabase/scripts/seed-demo/index.ts",
+    "db:reset:demo": "supabase db reset --local --yes && pnpm db:seed:demo",
     "db:migration": "tsx supabase/scripts/generate-migration.ts",
     "db:migration:bootstrap": "tsx supabase/scripts/generate-migration.ts --bootstrap",
     "db:migration:check": "tsx supabase/scripts/generate-migration.ts --check",
