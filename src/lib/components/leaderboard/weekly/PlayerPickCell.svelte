@@ -11,12 +11,12 @@
   // derive border tone by result
   const borderTone = $derived(
     cell?.result === 'W'
-      ? 'border-emerald-500'
+      ? 'border-success'
       : cell?.result === 'L'
-        ? 'border-rose-500'
+        ? 'border-destructive'
         : cell?.result === 'P'
-          ? 'border-amber-500'
-          : 'border-zinc-200'
+          ? 'border-warning'
+          : 'border-border'
   );
 </script>
 
