@@ -5,7 +5,7 @@ enabled = true
 
 [auth]
 site_url="http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/auth/callback"]
+additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/auth/confirm"]
 email.template.magic_link.content_path = "./supabase/magic_link.html"
 
 [api]

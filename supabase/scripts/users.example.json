@@ -1,0 +1,9 @@
+[
+  { "email": "doug@example.com", "displayName": "Doug", "role": "admin" },
+  {
+    "email": "alice@example.com",
+    "displayName": "Alice",
+    "password": "set-a-password-or-omit-to-generate"
+  },
+  { "email": "bob@example.com" }
+]
