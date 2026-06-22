@@ -1,0 +1,87 @@
+name: Feature
+description: Define an independently mergeable product or technical outcome
+title: '[Feature]: '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep this issue small enough for one primary pull request. Use sub-issues when independently mergeable work has different dependencies or file ownership.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What changes for the player, admin, or operator?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this needed now? Link roadmap themes, incidents, or prior discussion.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: State what is included and explicitly excluded.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use observable, testable statements.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: dropdown
+    id: adr
+    attributes:
+      label: ADR requirement
+      description: Use the trigger test in docs/adr/README.md.
+      options:
+        - Required - create or update a Proposed ADR before implementation
+        - Not required - governed by an accepted ADR or local implementation only
+        - Needs triage - decision impact is not clear yet
+    validations:
+      required: true
+  - type: input
+    id: adr_link
+    attributes:
+      label: ADR link or rationale
+      description: Link the ADR, name the governing ADR, or briefly explain why none is required.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and ordering
+      description: List blocking issues, blocked issues, rollout order, and external setup.
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Likely files and shared ownership
+      description: Name likely paths and any generated/shared files that make parallel work unsafe.
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database change
+      description: Database changes must follow the hash-ledger flow and are normally serialized.
+      options:
+        - No
+        - Yes - SQL source, generated migration, ledger, types, grants/RLS, and tests may apply
+        - Unknown - investigate during triage
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification plan
+      description: Name the focused test layers and manual checks expected before merge.
+    validations:
+      required: true
