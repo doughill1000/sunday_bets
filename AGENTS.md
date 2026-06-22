@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Guidance for AI agents working in this repo. Human-facing setup, commands, and
-migration docs live in `README.md`; the feature/automation plan lives in
-`ROADMAP.md`. Read those first — this file covers the architecture and the things
-that are easy to get wrong.
+Guidance for AI agents working in this repo. Read `README.md`, `docs/WORKFLOW.md`,
+`ROADMAP.md`, and `docs/adr/README.md` before planned feature work, then read the
+assigned issue and all relevant accepted ADRs. This file covers the architecture and
+the things that are easy to get wrong.
 
 ## What this is
 
@@ -49,9 +49,26 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   `supabase/migrations/` by hand and **never rename or move files under
   `supabase/src/`** — the generator would re-emit them as brand-new DDL.
 - **New `public` tables need explicit `grant` + `enable row level security` +
-  policies** or the Data/REST API can't see them (see ROADMAP "Cross-cutting").
-- **Svelte 5 runes** is the target idiom; some components are mid-migration from
-  Svelte 4 (ROADMAP Phase 2). Match the style of the file you're editing.
+  policies** or the Data/REST API can't see them.
+- **Svelte 5 runes** is the target idiom. Match the style of the file you're editing.
+
+## Delivery workflow
+
+- `ROADMAP.md` is strategy, not a backlog. GitHub Issues define executable scope and
+  acceptance criteria; the GitHub Project owns priority, agent assignment, and live
+  status.
+- Planned feature work starts from a Ready issue. One issue maps to one primary
+  branch, worktree, and pull request.
+- Use the trigger test in `docs/adr/README.md`. Security boundaries, persistent data
+  models, cross-cutting patterns, hard-to-reverse infrastructure, and gameplay
+  fairness changes require an ADR.
+- Claude and Codex must use separate worktrees created from a freshly fetched
+  `origin/master`. Never modify or clean another agent's worktree.
+- Parallel issues must identify likely files. Serialize Supabase migration-ledger,
+  generated-type, shared auth/RLS, dependency-lockfile, and CI changes unless an
+  explicit integration order exists.
+- Pull requests close their issue, link relevant ADRs, and list verification that
+  actually ran. Confirm before every GitHub write.
 
 ## Auth & admin
 
