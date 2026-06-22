@@ -1,7 +1,5 @@
 <script lang="ts">
   import { usePicksStore } from '$lib/stores/picks';
-  import { kickoffPassed } from '$lib/domain/rules';
-  import { WEIGHTS } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
 
   interface Props {
@@ -43,17 +41,17 @@
     !allInLocked ? (games.find((g) => $picks[g.id]?.selected?.weight === 'A') ?? null) : null
   );
 
+  const missedCount = $derived(
+    games.filter((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick).length
+  );
+
   const weightCounts = $derived(
-    Object.values(WEIGHTS)
-      .filter((w) => w !== WEIGHTS.A)
-      .map((_, i) => {
-        const code = (['L', 'M', 'H'] as const)[i];
-        return {
-          code,
-          label: WEIGHTS[code].label[0],
-          count: games.filter((g) => $picks[g.id]?.lockedPick?.weight === code).length
-        };
-      })
+    (['L', 'M', 'H', 'A'] as const)
+      .map((code) => ({
+        code,
+        count: games.filter((g) => $picks[g.id]?.lockedPick?.weight === code).length
+      }))
+      .filter((w) => w.count > 0)
   );
 </script>
 
@@ -76,6 +74,13 @@
     <div class="flex items-center gap-1">
       <span class="font-semibold">{lockedCount}/{games.length}</span>
       <span class="text-muted-foreground">locked</span>
+      {#if missedCount > 0}
+        <span
+          class="ml-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive"
+        >
+          {missedCount} missed
+        </span>
+      {/if}
       {#if openCount > 0}
         <span
           class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
@@ -106,7 +111,7 @@
     <div class="ml-auto flex items-center gap-2">
       {#each weightCounts as w (w.code)}
         <span class="text-muted-foreground"
-          >{w.label}:<span class="ml-0.5 font-semibold text-foreground">{w.count}</span></span
+          >{w.code}:<span class="ml-0.5 font-semibold text-foreground">{w.count}</span></span
         >
       {/each}
     </div>
