@@ -3,3 +3,5 @@ packages:
 
 onlyBuiltDependencies:
   - supabase
+  - esbuild
+  - '@sentry/cli'
