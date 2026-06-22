@@ -179,5 +179,25 @@
     "hash": "a0d8ab8dd841512dee602d5f058b9a6a88f3be96a9cea8d5e3942450a1c9ead7",
     "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
     "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
+  },
+  "views/stats_accuracy_by_team.sql": {
+    "hash": "2289407b3c2216731335a7cacaae3e20d9facfed17bf6324a662e4142ab47397",
+    "migration": "20260622191627_add_stats_views.sql",
+    "migrationHash": "c5de2e13eae0f26044dca0eedbfbd73eb6c13f058bc045e694bad231e530f4e1"
+  },
+  "views/stats_accuracy_by_weight.sql": {
+    "hash": "f09c7056cd4ec13490312f41dab8607c797f65bf67a6e3b546dfe8dd53563444",
+    "migration": "20260622191627_add_stats_views.sql",
+    "migrationHash": "c5de2e13eae0f26044dca0eedbfbd73eb6c13f058bc045e694bad231e530f4e1"
+  },
+  "views/stats_head_to_head.sql": {
+    "hash": "ed99de0b4470e9da90e35c5a2a65e124673b03407a24052491a66aa992e364a2",
+    "migration": "20260622191627_add_stats_views.sql",
+    "migrationHash": "c5de2e13eae0f26044dca0eedbfbd73eb6c13f058bc045e694bad231e530f4e1"
+  },
+  "views/stats_season_trend.sql": {
+    "hash": "3d62fbe259d4ff0de2e0f87f807d45f6439164c2dae5cfcc1c25c51a87388232",
+    "migration": "20260622191627_add_stats_views.sql",
+    "migrationHash": "c5de2e13eae0f26044dca0eedbfbd73eb6c13f058bc045e694bad231e530f4e1"
   }
 }
