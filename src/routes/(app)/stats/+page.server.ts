@@ -1,10 +1,14 @@
 import type { PageServerLoad } from './$types';
-import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
+import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async (event) => {
   const seasonYear = await getCurrentSeasonYear();
-  const stats = await getStatsForSeason(seasonYear);
+  const [{ data: auth }, stats, totals] = await Promise.all([
+    event.locals.supabase.auth.getUser(),
+    getStatsForSeason(seasonYear),
+    getSeasonLeaderboard(seasonYear)
+  ]);
 
-  return { seasonYear, ...stats };
+  return { seasonYear, currentUserId: auth?.user?.id ?? null, totals, ...stats };
 };
