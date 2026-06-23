@@ -126,7 +126,9 @@
     "signature": "public.unlock_pick(uuid)"
   },
   "policies/10_rls_enable.sql": {
-    "hash": "60d9984beb561e77046e28e4beedc4e6121caa8bcd4e98e35769ebaba49b4135"
+    "hash": "f1c6e11a108ffe41505aa921f3bb11190d15bde5634f86fece37c1f936463c17",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "policies/20_policies_read_core.sql": {
     "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0"
@@ -199,5 +201,41 @@
     "hash": "3d62fbe259d4ff0de2e0f87f807d45f6439164c2dae5cfcc1c25c51a87388232",
     "migration": "20260622191627_add_stats_views.sql",
     "migrationHash": "c5de2e13eae0f26044dca0eedbfbd73eb6c13f058bc045e694bad231e530f4e1"
+  },
+  "schemas/0102_group_membership_role.sql": {
+    "hash": "3073a793222a9081f234f8645e49aefb8be0a0f3f6424d8d6d88e693a5a69310",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "schemas/0208_groups.sql": {
+    "hash": "4683f7ab0393bbb9ceb27f77a92da1b53f496ba71f7061d017087ecbba15a283",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "schemas/0209_group_memberships.sql": {
+    "hash": "72aad6871c5f644c6352dd17e2d4438e6b997c094516d59eefa9f8009ec9140c",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "indexes/idx_group_memberships_user_group.sql": {
+    "hash": "0617d23e299557fc42fb5b0ddbb77cbbc90579cb0e5d504df143cd3c347dbb68",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "functions/auth/is_member.sql": {
+    "hash": "b9cd5267184131c134cc07b3c1e0e349ae576260bef15983031de4b1044ebc33",
+    "signature": "public.is_member(uuid)",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "policies/25_policies_groups.sql": {
+    "hash": "9a460a8646f28cd7108e2bde0a68bb9752803e2abc77292777cb089adb254cfd",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+  },
+  "grants/zz_group_grants.sql": {
+    "hash": "2b0e5ace31cc40631542fa4f8ca76559173ef2754cbc9567e7ed10dcfae39741",
+    "migration": "20260623125249_add_groups_and_memberships.sql",
+    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   }
 }
