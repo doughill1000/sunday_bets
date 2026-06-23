@@ -130,7 +130,7 @@
           <span>
             <span class="font-medium">Pick reminders</span>
             <p class="text-sm text-muted-foreground">
-              A nudge when you still have unpicked games kicking off within 48 hours.
+              A nudge when you still have unpicked games kicking off within about 3 hours.
             </p>
           </span>
         </label>
