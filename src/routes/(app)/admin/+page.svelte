@@ -39,9 +39,9 @@
   {#if msg}
     <div
       class="mt-2 rounded-xl border p-3 text-sm"
-      class:border-green-500={msg.kind === 'success'}
-      class:border-amber-500={msg.kind === 'warn'}
-      class:border-red-500={msg.kind === 'error'}
+      class:border-success={msg.kind === 'success'}
+      class:border-warning={msg.kind === 'warn'}
+      class:border-destructive={msg.kind === 'error'}
     >
       {msg.text}
     </div>
@@ -71,14 +71,16 @@
                 <TableRow>
                   <TableCell class="font-mono text-xs">{run.job}</TableCell>
                   <TableCell class="text-xs">{new Date(run.started_at).toLocaleString()}</TableCell>
-                  <TableCell class="text-xs">{formatDuration(run.started_at, run.finished_at)}</TableCell>
+                  <TableCell class="text-xs"
+                    >{formatDuration(run.started_at, run.finished_at)}</TableCell
+                  >
                   <TableCell class="text-xs">
                     {#if run.ok === true}
-                      <span class="font-medium text-green-500">ok</span>
+                      <span class="font-medium text-success">ok</span>
                     {:else if run.ok === false}
-                      <span class="font-medium text-red-500">failed</span>
+                      <span class="font-medium text-destructive">failed</span>
                     {:else}
-                      <span class="font-medium text-amber-500">running</span>
+                      <span class="font-medium text-warning">running</span>
                     {/if}
                   </TableCell>
                   <TableCell class="max-w-xs truncate text-xs text-muted-foreground">

@@ -22,16 +22,16 @@
   let submitting = $state(false);
 </script>
 
-<!-- Backdrop that makes the card pop -->
-<div
-  class="relative grid place-items-center bg-[radial-gradient(ellipse_at_top,theme(colors.neutral.900),theme(colors.neutral.950))]"
->
+<!-- Backdrop that makes the card pop. Brand charcoal (just below the page
+     background) with a gentle top-down vignette — not Tailwind near-black, so it
+     stays in the new dark theme. The lighter card still pops against it. -->
+<div class="relative grid place-items-center bg-[radial-gradient(ellipse_at_top,#1e1e1f,#161617)]">
   <Card
     class="relative z-10 w-full max-w-md rounded-2xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl"
   >
     <CardHeader class="space-y-1">
       <CardTitle class="text-3xl">Sign in</CardTitle>
-      <CardDescription>Use a magic link or your password.</CardDescription>
+      <CardDescription>Use your password or a magic link.</CardDescription>
     </CardHeader>
 
     <CardContent>
