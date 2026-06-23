@@ -75,6 +75,15 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   fairness changes require an ADR.
 - Claude and Codex must use separate worktrees created from a freshly fetched
   `origin/master`. Never modify or clean another agent's worktree.
+- **New worktrees start without the `.env*` files** — they are gitignored, so a
+  fresh worktree cannot reach Supabase / The Odds API until they are copied from
+  the main checkout. Run `scripts/new-worktree.ps1` (it creates the worktree,
+  copies every `.env*` except `.env.example`, installs deps, and can launch dev),
+  or copy them by hand. `.npmrc` is tracked, so it travels with the worktree.
+- **Run a worktree's dev server without leaving your current repo** with pnpm's
+  `-C`: `pnpm -C ..\sunday_bets-claude-124 run dev -- --port 5174`. Use a
+  non-5173 port so it coexists with the main checkout's dev server (the `dev`
+  script hardcodes 5173, and the trailing `--port` overrides it).
 - Parallel issues must identify likely files. Serialize Supabase migration-ledger,
   generated-type, shared auth/RLS, dependency-lockfile, and CI changes unless an
   explicit integration order exists.
