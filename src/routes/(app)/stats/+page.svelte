@@ -67,6 +67,12 @@
   );
 </script>
 
+{#snippet wlp(wins: number, losses: number, pushes: number)}
+  <span class="text-success">{wins}</span>-<span class="text-destructive">{losses}</span>-<span
+    class="text-warning">{pushes}</span
+  >
+{/snippet}
+
 <svelte:head>
   <title>Stats | Sunday Bets</title>
 </svelte:head>
@@ -129,7 +135,7 @@
             <div>
               <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
               <dd class="text-2xl font-bold">
-                {selected.wins}-{selected.losses}-{selected.pushes}
+                {@render wlp(selected.wins, selected.losses, selected.pushes)}
               </dd>
               {#if selected.missed > 0}
                 <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
@@ -180,7 +186,7 @@
                       <TableCell class="font-medium" title={row.team_name}>
                         {row.team_short_name}
                       </TableCell>
-                      <TableCell>{row.wins}-{row.losses}-{row.pushes}</TableCell>
+                      <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
                       <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
                       <TableCell class="text-right">{row.points}</TableCell>
                     </TableRow>
@@ -219,7 +225,7 @@
                           {weightLabel(row.weight)}
                         {/if}
                       </TableCell>
-                      <TableCell>{row.wins}-{row.losses}-{row.pushes}</TableCell>
+                      <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
                       <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
                       <TableCell class="text-right font-medium">{row.points}</TableCell>
                     </TableRow>
@@ -253,7 +259,9 @@
                 </CardHeader>
                 <CardContent class="flex items-end justify-between px-4">
                   <div>
-                    <p class="text-2xl font-bold">{row.wins}-{row.losses}-{row.pushes}</p>
+                    <p class="text-2xl font-bold">
+                      {@render wlp(row.wins, row.losses, row.pushes)}
+                    </p>
                     <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
                   </div>
                   <p class="text-sm font-medium">{row.points} to {row.opponentPoints} pts</p>
