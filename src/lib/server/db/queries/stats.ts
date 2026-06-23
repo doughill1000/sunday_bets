@@ -106,25 +106,28 @@ function toHeadToHead(row: HeadToHeadRow): HeadToHeadEntry | null {
   };
 }
 
-export async function getStatsForSeason(seasonYear: number): Promise<SeasonStats> {
+export async function getStatsForSeason(seasonYear: number, groupId: string): Promise<SeasonStats> {
   const [trend, teamResult, weightResult, headToHeadResult] = await Promise.all([
-    getWeeklyCumulative(seasonYear),
+    getWeeklyCumulative(seasonYear, groupId),
     supabaseService
       .from('stats_accuracy_by_team')
       .select('*')
       .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
       .order('display_name')
       .order('team_short_name'),
     supabaseService
       .from('stats_accuracy_by_weight')
       .select('*')
       .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
       .order('display_name')
       .order('weight'),
     supabaseService
       .from('stats_head_to_head')
       .select('*')
       .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
       .order('display_name')
       .order('opponent_display_name')
   ]);

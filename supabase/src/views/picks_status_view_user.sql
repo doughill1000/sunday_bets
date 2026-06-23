@@ -15,7 +15,8 @@ select
   p.locked_spread_team_id,
   p.locked_at,
   g.commence_time,
-  (g.commence_time <= now()) as game_started
+  (g.commence_time <= now()) as game_started,
+  p.group_id
 from public.picks p
 join public.games g on g.id = p.game_id
 join public.teams t on t.id = p.picked_team_id
