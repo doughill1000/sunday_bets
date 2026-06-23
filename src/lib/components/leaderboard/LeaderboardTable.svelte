@@ -9,6 +9,7 @@
     TableRow
   } from '$lib/components/ui/table';
   import { seasonYearStore, seasonTotalsStore } from '$lib/stores/leaderboard';
+  import UserAvatar from '$lib/components/UserAvatar.svelte';
 </script>
 
 <Card class="mx-auto w-full shadow-sm">
@@ -32,7 +33,12 @@
         {#each $seasonTotalsStore as r (r.display_name)}
           <TableRow>
             <TableCell class="text-center font-semibold">{r.rank}</TableCell>
-            <TableCell class="font-medium">{r.display_name}</TableCell>
+            <TableCell class="font-medium">
+              <div class="flex items-center gap-2">
+                <UserAvatar avatarKey={r.avatar_key ?? null} displayName={r.display_name} size="xs" />
+                {r.display_name}
+              </div>
+            </TableCell>
             <TableCell class="text-right">{r.wins}</TableCell>
             <TableCell class="text-right">{r.losses}</TableCell>
             <TableCell class="text-right">{r.pushes}</TableCell>

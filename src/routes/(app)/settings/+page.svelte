@@ -11,8 +11,27 @@
     subscribeToPush,
     unsubscribeFromPush
   } from '$lib/push/client';
+  import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import { AVATAR_PRESETS } from '$lib/avatars';
 
   let { data }: { data: PageData } = $props();
+
+  const displayName = $derived(data.userProfile?.displayName ?? '');
+  let avatarKey = $state<string | null>(data.userProfile?.avatarKey ?? null);
+  let avatarMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  async function selectAvatar(key: string | null) {
+    avatarKey = key;
+    avatarMsg = null;
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatar_key: key })
+    });
+    avatarMsg = res.ok
+      ? { kind: 'success', text: 'Avatar saved.' }
+      : { kind: 'error', text: 'Could not save avatar.' };
+  }
 
   let enabled = $state(data.prefs.enabled);
   let pickReminders = $state(data.prefs.pick_reminders);
@@ -84,6 +103,56 @@
 
 <section class="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
   <h1 class="text-2xl font-bold">Settings</h1>
+
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Profile</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <div class="flex items-center gap-3">
+        <UserAvatar {avatarKey} {displayName} size="md" />
+        <span class="font-medium">{displayName}</span>
+      </div>
+
+      <div>
+        <p class="mb-2 text-sm text-muted-foreground">Choose an avatar</p>
+        <div class="flex flex-wrap gap-2">
+          {#each AVATAR_PRESETS as preset (preset.key)}
+            <button
+              onclick={() => selectAvatar(preset.key)}
+              title={preset.key}
+              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus:outline-none"
+              class:ring-2={avatarKey === preset.key}
+              class:ring-offset-2={avatarKey === preset.key}
+              class:ring-foreground={avatarKey === preset.key}
+              style="background:{preset.bg};"
+            >
+              {preset.emoji}
+            </button>
+          {/each}
+          {#if avatarKey !== null}
+            <button
+              onclick={() => selectAvatar(null)}
+              title="Remove avatar"
+              class="flex size-10 items-center justify-center rounded-full border text-xs text-muted-foreground transition-transform hover:scale-110 focus:outline-none"
+            >
+              ✕
+            </button>
+          {/if}
+        </div>
+      </div>
+
+      {#if avatarMsg}
+        <div
+          class="rounded-xl border p-3 text-sm"
+          class:border-success={avatarMsg.kind === 'success'}
+          class:border-destructive={avatarMsg.kind === 'error'}
+        >
+          {avatarMsg.text}
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
 
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">

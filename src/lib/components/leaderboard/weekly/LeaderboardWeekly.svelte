@@ -3,6 +3,7 @@
   import { Accordion } from '$lib/components/ui/accordion';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import WeekItem from './WeekItem.svelte';
+  import UserAvatar from '$lib/components/UserAvatar.svelte';
   import {
     players,
     weeks,
@@ -38,10 +39,11 @@
     <div class="flex flex-wrap gap-2 pb-2">
       {#each $players as p (p.id)}
         <button
-          class="rounded border px-2 py-1 text-xs"
+          class="flex items-center gap-1.5 rounded border px-2 py-1 text-xs"
           onclick={() => togglePlayer(p.id)}
           class:opacity-50={hidden.has(p.id)}
         >
+          <UserAvatar avatarKey={p.avatar_key ?? null} displayName={p.display_name} size="xs" />
           {p.display_name}
         </button>
       {/each}

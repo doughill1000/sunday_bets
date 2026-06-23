@@ -54,9 +54,9 @@
     "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "18ee7b403c4c4ed39534ca94e858eee3913542856cb5be51d1f02a347721aeeb",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
+    "hash": "a892b80e226dcce779d59b98b83be624f61c63d12dbe5b214c6dc112be7f097c",
+    "migration": "20260623183834_add_avatar_key.sql",
+    "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
@@ -284,5 +284,10 @@
     "hash": "e8927039292071f416edffb7f8c7997e80d06d27f81e1d2f872d89509b705080",
     "migration": "20260623162921_seed_original_group_config.sql",
     "migrationHash": "9de32ea5f3b1ab1d41ebd403e81870c0afe43dfd85363a785ab1fc1fd24bdf53"
+  },
+  "schemas/0214_avatar_key.sql": {
+    "hash": "147a270be5b42d40918d2500401e182e9528cdddd12527789a9657047dc59521",
+    "migration": "20260623183834_add_avatar_key.sql",
+    "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
   }
 }
