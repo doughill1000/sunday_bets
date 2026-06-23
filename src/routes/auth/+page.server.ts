@@ -24,7 +24,7 @@ export const actions: Actions = {
 
       // Successful password sign-in should create a session; redirect to app
       if (data?.session) {
-        throw redirect(303, '/');
+        throw redirect(303, '/picks');
       }
 
       // Fallback - return a minimal serializable object
