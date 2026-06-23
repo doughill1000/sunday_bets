@@ -37,6 +37,11 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
 ## Conventions that bite
 
 - **pnpm only.** `package-lock.json` is gitignored — never create one.
+- **Codex on Windows should use Corepack pnpm.** Prefer
+  `corepack pnpm <command>`, or run `corepack enable` and
+  `corepack prepare pnpm@<repo-version> --activate`. Do not use bundled pnpm from
+  Codex runtimes unless Corepack fails, and do not rebuild `node_modules` unless
+  explicitly necessary.
 - **Branches:** trunk-based — PRs target `master` (production); there is no
   long-lived `develop` branch. **Branch from `origin/master` after `git fetch`** —
   the local clone can be months stale (Doug works across multiple machines). Per-PR
@@ -48,9 +53,32 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   the source change, the migration, and the ledger **together**. **Never** edit
   `supabase/migrations/` by hand and **never rename or move files under
   `supabase/src/`** — the generator would re-emit them as brand-new DDL.
+- **For Supabase schema work in Codex:** edit `supabase/src/**`, run
+  `corepack pnpm db:migration --name=<name>`, run
+  `corepack pnpm db:migration:check`, and run `npx supabase test db` if Docker and
+  local Supabase are available.
 - **New `public` tables need explicit `grant` + `enable row level security` +
   policies** or the Data/REST API can't see them.
 - **Svelte 5 runes** is the target idiom. Match the style of the file you're editing.
+
+## Codex runtime notes
+
+- Use pnpm only.
+- On Windows/Codex, prefer Corepack pnpm:
+  `corepack pnpm <command>`, or run `corepack enable` and
+  `corepack prepare pnpm@<repo-version> --activate`.
+- Do not use bundled pnpm from Codex runtimes unless Corepack fails.
+- Do not rebuild `node_modules` unless explicitly necessary.
+- Worktrees may live outside the original repo writable root; avoid rerunning setup
+  unless dependencies are missing.
+- If a command fails due to PATH, sandbox, or runtime setup, summarize the failure
+  once and continue with the known fallback.
+- For implementation tasks, prefer repo docs and existing patterns over web search.
+  Use web only for genuinely version-sensitive external behavior, and summarize the
+  reason first.
+- Keep progress updates brief. Do not narrate every command unless it changes the
+  plan. Prefer a compact final summary with files changed, whether a migration was
+  generated, tests run, failures/blockers, and follow-up risks.
 
 ## Delivery workflow
 
