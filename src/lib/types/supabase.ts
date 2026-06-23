@@ -761,6 +761,79 @@ export type Database = {
           },
         ]
       }
+      stats_accuracy_by_team: {
+        Row: {
+          accuracy: number | null
+          decisions: number | null
+          display_name: string | null
+          losses: number | null
+          points: number | null
+          pushes: number | null
+          season_year: number | null
+          team_id: number | null
+          team_name: string | null
+          team_short_name: string | null
+          user_id: string | null
+          wins: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stats_accuracy_by_weight: {
+        Row: {
+          accuracy: number | null
+          decisions: number | null
+          display_name: string | null
+          losses: number | null
+          points: number | null
+          pushes: number | null
+          season_year: number | null
+          user_id: string | null
+          weight: Database["public"]["Enums"]["weight_enum"] | null
+          wins: number | null
+        }
+        Relationships: []
+      }
+      stats_head_to_head: {
+        Row: {
+          display_name: string | null
+          games_compared: number | null
+          losses: number | null
+          opponent_display_name: string | null
+          opponent_points: number | null
+          opponent_user_id: string | null
+          points: number | null
+          pushes: number | null
+          season_year: number | null
+          user_id: string | null
+          wins: number | null
+        }
+        Relationships: []
+      }
+      stats_season_trend: {
+        Row: {
+          cumulative_points: number | null
+          cumulative_rank_this_week: number | null
+          display_name: string | null
+          season_total: number | null
+          season_year: number | null
+          user_id: string | null
+          week_losses: number | null
+          week_missed: number | null
+          week_number: number | null
+          week_points: number | null
+          week_pushes: number | null
+          week_wins: number | null
+        }
+        Relationships: []
+      }
       ui_games: {
         Row: {
           away: string | null

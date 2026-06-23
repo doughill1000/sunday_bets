@@ -7,7 +7,10 @@
   import { registerSW } from 'virtual:pwa-register';
 
   let { children, data } = $props();
-  const { supabase, session, user, isAdmin } = data;
+  const supabase = $derived(data.supabase);
+  const session = $derived(data.session);
+  const user = $derived(data.user);
+  const isAdmin = $derived(data.isAdmin);
 
   onMount(() => {
     const updateSW = registerSW({

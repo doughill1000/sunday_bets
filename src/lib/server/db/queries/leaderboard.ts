@@ -22,7 +22,7 @@ export async function getSeasonLeaderboard(seasonYear: number): Promise<SeasonLe
 
 export async function getWeeklyCumulative(seasonYear: number): Promise<WeeklyCumulativeEntry[]> {
   const { data, error } = await supabaseService
-    .from('leaderboard_weekly_cumulative')
+    .from('stats_season_trend')
     .select('*')
     .eq('season_year', seasonYear)
     .order('week_number', { ascending: true })

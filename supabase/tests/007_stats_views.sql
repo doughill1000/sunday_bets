@@ -1,0 +1,240 @@
+begin;
+
+select plan(14);
+
+select has_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
+select has_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team exists');
+select has_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight exists');
+select has_view('public', 'stats_season_trend', 'stats_season_trend exists');
+
+select columns_are(
+  'public',
+  'stats_season_trend',
+  array[
+    'user_id', 'display_name', 'season_year', 'week_number', 'week_points',
+    'week_wins', 'week_losses', 'week_pushes', 'week_missed',
+    'cumulative_points', 'season_total', 'cumulative_rank_this_week'
+  ],
+  'stats_season_trend matches WeeklyCumulativeEntry'
+);
+
+select tests.create_supabase_user('stats_a');
+select tests.create_supabase_user('stats_b');
+
+update public.users
+set display_name = case id
+  when tests.get_supabase_uid('stats_a') then 'Stats A'
+  when tests.get_supabase_uid('stats_b') then 'Stats B'
+end
+where id in (
+  tests.get_supabase_uid('stats_a'),
+  tests.get_supabase_uid('stats_b')
+);
+
+insert into public.seasons (league, year)
+values ('NFL', 2040)
+on conflict (league, year) do nothing;
+
+insert into public.weeks (season_id, week_number, start_ts, end_ts)
+values (
+  (select id from public.seasons where league = 'NFL' and year = 2040),
+  1,
+  '2040-09-01 00:00:00+00',
+  '2040-09-08 00:00:00+00'
+)
+on conflict (season_id, week_number) do nothing;
+
+insert into public.teams (external_key, name, short_name)
+values
+  ('STATS_A', 'Stats Team A', 'STA'),
+  ('STATS_B', 'Stats Team B', 'STB')
+on conflict (external_key) do nothing;
+
+insert into public.games (
+  week_id,
+  external_game_id,
+  commence_time,
+  home_team_id,
+  away_team_id,
+  status
+)
+select
+  w.id,
+  game.external_game_id,
+  game.commence_time,
+  home.id,
+  away.id,
+  'final'
+from public.weeks w
+cross join public.teams home
+cross join public.teams away
+cross join (
+  values
+    ('stats-game-1', '2040-09-01 17:00:00+00'::timestamptz),
+    ('stats-game-2', '2040-09-01 20:00:00+00'::timestamptz),
+    ('stats-game-3', '2040-09-02 00:00:00+00'::timestamptz)
+) game(external_game_id, commence_time)
+where w.season_id = (select id from public.seasons where league = 'NFL' and year = 2040)
+  and w.week_number = 1
+  and home.external_key = 'STATS_A'
+  and away.external_key = 'STATS_B'
+on conflict (external_game_id) do nothing;
+
+insert into public.picks (
+  user_id,
+  game_id,
+  picked_team_id,
+  weight,
+  locked_at,
+  locked_spread_team_id,
+  locked_spread_value,
+  locked_by
+)
+select
+  player.user_id,
+  g.id,
+  team.id,
+  pick.weight::public.weight_enum,
+  g.commence_time - interval '1 hour',
+  team.id,
+  0,
+  player.user_id
+from (
+  values
+    ('stats_a', 'stats-game-1', 'STATS_A', 'L'),
+    ('stats_a', 'stats-game-2', 'STATS_B', 'A'),
+    ('stats_a', 'stats-game-3', 'STATS_A', 'M'),
+    ('stats_b', 'stats-game-1', 'STATS_B', 'M'),
+    ('stats_b', 'stats-game-2', 'STATS_A', 'H'),
+    ('stats_b', 'stats-game-3', 'STATS_B', 'A')
+) pick(user_name, external_game_id, team_key, weight)
+join lateral (
+  select tests.get_supabase_uid(pick.user_name) as user_id
+) player on true
+join public.games g on g.external_game_id = pick.external_game_id
+join public.teams team on team.external_key = pick.team_key
+on conflict (user_id, game_id) do nothing;
+
+insert into public.pick_settlement (
+  user_id,
+  game_id,
+  pick_id,
+  points_delta,
+  outcome,
+  graded_at
+)
+select
+  p.user_id,
+  p.game_id,
+  p.id,
+  result.points_delta,
+  result.outcome::public.pick_outcome,
+  g.commence_time + interval '4 hours'
+from public.picks p
+join public.games g on g.id = p.game_id
+join lateral (
+  values
+    (tests.get_supabase_uid('stats_a'), 'stats-game-1', 1, 'win'),
+    (tests.get_supabase_uid('stats_a'), 'stats-game-2', -10, 'loss'),
+    (tests.get_supabase_uid('stats_a'), 'stats-game-3', 0, 'push'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-1', -3, 'loss'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-2', 5, 'win'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-3', 0, 'push')
+) result(user_id, external_game_id, points_delta, outcome)
+  on result.user_id = p.user_id
+ and result.external_game_id = g.external_game_id
+on conflict (user_id, game_id) do update
+set
+  pick_id = excluded.pick_id,
+  points_delta = excluded.points_delta,
+  outcome = excluded.outcome,
+  graded_at = excluded.graded_at;
+
+select results_eq(
+  $$
+    select
+      games_compared,
+      case when user_id = tests.get_supabase_uid('stats_a') then wins else losses end,
+      case when user_id = tests.get_supabase_uid('stats_a') then losses else wins end,
+      pushes,
+      case when user_id = tests.get_supabase_uid('stats_a') then points else opponent_points end,
+      case when user_id = tests.get_supabase_uid('stats_a') then opponent_points else points end
+    from public.stats_head_to_head
+    where season_year = 2040
+  $$,
+  $$ values (3, 1, 1, 1, -9, 2) $$,
+  'head-to-head aggregates shared-game weighted results'
+);
+
+select results_eq(
+  $$
+    select decisions, wins, losses, pushes, points, accuracy
+    from public.stats_accuracy_by_team
+    where season_year = 2040
+      and user_id = tests.get_supabase_uid('stats_a')
+      and team_short_name = 'STA'
+  $$,
+  $$ values (2, 1, 0, 1, 1, 1.0000::numeric) $$,
+  'team accuracy groups wins and pushes for the picked team'
+);
+
+select results_eq(
+  $$
+    select decisions, wins, losses, pushes, points, accuracy
+    from public.stats_accuracy_by_weight
+    where season_year = 2040
+      and user_id = tests.get_supabase_uid('stats_a')
+      and weight = 'A'
+  $$,
+  $$ values (1, 0, 1, 0, -10, 0.0000::numeric) $$,
+  'weight accuracy includes the All-In record'
+);
+
+select results_eq(
+  $$
+    select week_points, cumulative_points, season_total, cumulative_rank_this_week
+    from public.stats_season_trend
+    where season_year = 2040
+      and user_id = tests.get_supabase_uid('stats_a')
+  $$,
+  $$ values (-9, -9, -9, 2::bigint) $$,
+  'season trend returns weekly, cumulative, total, and rank values'
+);
+
+select ok(
+  not has_table_privilege('anon', 'public.stats_head_to_head', 'select'),
+  'anon cannot select stats views'
+);
+select ok(
+  not has_table_privilege('authenticated', 'public.stats_head_to_head', 'select'),
+  'authenticated clients cannot select cross-player stats directly'
+);
+select ok(
+  has_table_privilege('service_role', 'public.stats_head_to_head', 'select'),
+  'service_role can select stats views'
+);
+
+select results_eq(
+  $$
+    select count(*)::int
+    from pg_class
+    where relnamespace = 'public'::regnamespace
+      and relname like 'stats_%'
+      and reloptions @> array['security_invoker=on']
+  $$,
+  $$ values (4) $$,
+  'all stats views use security_invoker'
+);
+
+select tests.clear_authentication();
+set role anon;
+select throws_ok(
+  $$ select * from public.stats_season_trend limit 1 $$,
+  '42501',
+  'permission denied for view stats_season_trend',
+  'anon query is denied'
+);
+reset role;
+
+select * from finish();
+rollback;
