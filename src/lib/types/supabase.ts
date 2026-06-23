@@ -560,6 +560,7 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar_key: string | null
           created_at: string
           display_name: string
           id: string
@@ -567,6 +568,7 @@ export type Database = {
           role: string
         }
         Insert: {
+          avatar_key?: string | null
           created_at?: string
           display_name: string
           id: string
@@ -574,6 +576,7 @@ export type Database = {
           role?: string
         }
         Update: {
+          avatar_key?: string | null
           created_at?: string
           display_name?: string
           id?: string
@@ -624,6 +627,7 @@ export type Database = {
       }
       leaderboard_season_totals: {
         Row: {
+          avatar_key: string | null
           decisions: number | null
           display_name: string | null
           losses: number | null

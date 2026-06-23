@@ -87,12 +87,15 @@ const injectSession: Handle = async ({ event, resolve }) => {
   if (user) {
     const { data } = await supabaseService
       .from('users')
-      .select('role, display_name')
+      .select('role, display_name, avatar_key')
       .eq('id', user.id)
       .maybeSingle();
     event.locals.isAdmin = data?.role === 'admin';
     if (data) {
-      event.locals.userProfile = { displayName: data.display_name ?? '', avatarKey: null };
+      event.locals.userProfile = {
+        displayName: data.display_name ?? '',
+        avatarKey: data.avatar_key ?? null
+      };
     }
   }
 
