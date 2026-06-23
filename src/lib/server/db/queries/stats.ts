@@ -2,6 +2,10 @@ import { supabaseService } from '$lib/supabase/service';
 import { getWeeklyCumulative } from '$lib/server/db/queries/leaderboard';
 import type { Tables } from '$lib/types/supabase';
 import type {
+  AllTimeStats,
+  AllTimeTotalsEntry,
+  AllTimeTeamAccuracyEntry,
+  AllTimeWeightAccuracyEntry,
   HeadToHeadEntry,
   SeasonStats,
   TeamAccuracyEntry,
@@ -11,6 +15,9 @@ import type {
 type TeamAccuracyRow = Tables<'stats_accuracy_by_team'>;
 type WeightAccuracyRow = Tables<'stats_accuracy_by_weight'>;
 type HeadToHeadRow = Tables<'stats_head_to_head'>;
+type AllTimeTotalsRow = Tables<'stats_alltime_totals'>;
+type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
+type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
 
 function toTeamAccuracy(row: TeamAccuracyRow): TeamAccuracyEntry | null {
   if (
@@ -148,6 +155,128 @@ export async function getStatsForSeason(seasonYear: number, groupId: string): Pr
     }),
     headToHead: (headToHeadResult.data ?? []).flatMap((row) => {
       const entry = toHeadToHead(row);
+      return entry ? [entry] : [];
+    })
+  };
+}
+
+function toAllTimeTotals(row: AllTimeTotalsRow): AllTimeTotalsEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.total_points == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null ||
+    row.missed == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    total_points: row.total_points,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    missed: row.missed
+  };
+}
+
+function toAllTimeTeamAccuracy(row: AllTimeTeamRow): AllTimeTeamAccuracyEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.team_id == null ||
+    row.team_name == null ||
+    row.team_short_name == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null ||
+    row.points == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    team_id: row.team_id,
+    team_name: row.team_name,
+    team_short_name: row.team_short_name,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    points: row.points,
+    accuracy: row.accuracy
+  };
+}
+
+function toAllTimeWeightAccuracy(row: AllTimeWeightRow): AllTimeWeightAccuracyEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.weight == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null ||
+    row.points == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    weight: row.weight as AllTimeWeightAccuracyEntry['weight'],
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    points: row.points,
+    accuracy: row.accuracy
+  };
+}
+
+export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
+  const [totalsResult, teamResult, weightResult] = await Promise.all([
+    supabaseService
+      .from('stats_alltime_totals')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('display_name'),
+    supabaseService
+      .from('stats_accuracy_by_team_alltime')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('team_short_name'),
+    supabaseService
+      .from('stats_accuracy_by_weight_alltime')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('weight')
+  ]);
+
+  if (totalsResult.error) throw totalsResult.error;
+  if (teamResult.error) throw teamResult.error;
+  if (weightResult.error) throw weightResult.error;
+
+  return {
+    allTimeTotals: (totalsResult.data ?? []).flatMap((row) => {
+      const entry = toAllTimeTotals(row);
+      return entry ? [entry] : [];
+    }),
+    allTimeTeamAccuracy: (teamResult.data ?? []).flatMap((row) => {
+      const entry = toAllTimeTeamAccuracy(row);
+      return entry ? [entry] : [];
+    }),
+    allTimeWeightAccuracy: (weightResult.data ?? []).flatMap((row) => {
+      const entry = toAllTimeWeightAccuracy(row);
       return entry ? [entry] : [];
     })
   };

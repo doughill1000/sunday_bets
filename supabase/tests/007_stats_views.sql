@@ -1,11 +1,14 @@
 begin;
 
-select plan(14);
+select plan(20);
 
 select has_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
 select has_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team exists');
 select has_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight exists');
 select has_view('public', 'stats_season_trend', 'stats_season_trend exists');
+select has_view('public', 'stats_alltime_totals', 'stats_alltime_totals exists');
+select has_view('public', 'stats_accuracy_by_team_alltime', 'stats_accuracy_by_team_alltime exists');
+select has_view('public', 'stats_accuracy_by_weight_alltime', 'stats_accuracy_by_weight_alltime exists');
 
 select columns_are(
   'public',
@@ -230,13 +233,48 @@ select ok(
 
 select results_eq(
   $$
+    select total_points, decisions, wins, losses, pushes
+    from public.stats_alltime_totals
+    where user_id = tests.get_supabase_uid('stats_a')
+      and group_id = '00000000-0000-4000-8000-000000000007'
+  $$,
+  $$ values (-9, 3, 1, 1, 1) $$,
+  'alltime totals aggregate across all seasons'
+);
+
+select results_eq(
+  $$
+    select decisions, wins, losses, pushes, points, accuracy
+    from public.stats_accuracy_by_team_alltime
+    where user_id = tests.get_supabase_uid('stats_a')
+      and group_id = '00000000-0000-4000-8000-000000000007'
+      and team_short_name = 'STA'
+  $$,
+  $$ values (2, 1, 0, 1, 1, 1.0000::numeric) $$,
+  'alltime team accuracy aggregates across all seasons'
+);
+
+select results_eq(
+  $$
+    select decisions, wins, losses, pushes, points, accuracy
+    from public.stats_accuracy_by_weight_alltime
+    where user_id = tests.get_supabase_uid('stats_a')
+      and group_id = '00000000-0000-4000-8000-000000000007'
+      and weight = 'A'
+  $$,
+  $$ values (1, 0, 1, 0, -10, 0.0000::numeric) $$,
+  'alltime weight accuracy aggregates across all seasons'
+);
+
+select results_eq(
+  $$
     select count(*)::int
     from pg_class
     where relnamespace = 'public'::regnamespace
       and relname like 'stats_%'
       and reloptions @> array['security_invoker=on']
   $$,
-  $$ values (4) $$,
+  $$ values (7) $$,
   'all stats views use security_invoker'
 );
 

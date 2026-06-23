@@ -974,6 +974,38 @@ export type Database = {
           },
         ]
       }
+      stats_accuracy_by_team_alltime: {
+        Row: {
+          accuracy: number | null
+          decisions: number | null
+          display_name: string | null
+          group_id: string | null
+          losses: number | null
+          points: number | null
+          pushes: number | null
+          team_id: number | null
+          team_name: string | null
+          team_short_name: string | null
+          user_id: string | null
+          wins: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stats_accuracy_by_weight: {
         Row: {
           accuracy: number | null
@@ -986,6 +1018,51 @@ export type Database = {
           season_year: number | null
           user_id: string | null
           weight: Database["public"]["Enums"]["weight_enum"] | null
+          wins: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stats_accuracy_by_weight_alltime: {
+        Row: {
+          accuracy: number | null
+          decisions: number | null
+          display_name: string | null
+          group_id: string | null
+          losses: number | null
+          points: number | null
+          pushes: number | null
+          user_id: string | null
+          weight: Database["public"]["Enums"]["weight_enum"] | null
+          wins: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stats_alltime_totals: {
+        Row: {
+          decisions: number | null
+          display_name: string | null
+          group_id: string | null
+          losses: number | null
+          missed: number | null
+          pushes: number | null
+          total_points: number | null
+          user_id: string | null
           wins: number | null
         }
         Relationships: [

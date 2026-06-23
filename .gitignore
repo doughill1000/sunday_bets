@@ -58,3 +58,5 @@ build_migration.ps1
 .claude/worktrees/
 
 supabase/scripts/users.json
+
+historical-spreadsheets/*
