@@ -1,7 +1,7 @@
 import type { ShortResult } from '$lib/constants/picks';
 import type { GameResult, WeightCode } from './domain';
 
-export type LeaderboardPlayer = { id: string; display_name: string };
+export type LeaderboardPlayer = { id: string; display_name: string; avatar_key?: string | null };
 
 export type LeaderboardPickCell = {
   weight: WeightCode | null;
@@ -26,6 +26,7 @@ export type WeeklyLeaderboardGame = {
 export type SeasonLeaderboardEntry = {
   user_id: string;
   display_name: string;
+  avatar_key: string | null;
   season_year: number;
   total_points: number;
   decisions: number;

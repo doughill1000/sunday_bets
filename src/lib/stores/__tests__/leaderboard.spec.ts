@@ -91,6 +91,7 @@ describe('leaderboard stores', () => {
       {
         user_id: 'p1',
         display_name: 'A',
+        avatar_key: null,
         season_year: 2025,
         total_points: 5,
         decisions: 1,
