@@ -279,5 +279,10 @@
     "hash": "edf046dceeb9f028977e7aa100af893aa9565dd55916d1759aed9145ec2b0bcd",
     "migration": "20260623160737_group_owned_config_split.sql",
     "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
+  },
+  "schemas/0213_seed_original_group_config.sql": {
+    "hash": "e8927039292071f416edffb7f8c7997e80d06d27f81e1d2f872d89509b705080",
+    "migration": "20260623162921_seed_original_group_config.sql",
+    "migrationHash": "9de32ea5f3b1ab1d41ebd403e81870c0afe43dfd85363a785ab1fc1fd24bdf53"
   }
 }
