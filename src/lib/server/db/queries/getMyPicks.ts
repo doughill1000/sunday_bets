@@ -7,14 +7,16 @@ type PickStatusRow = Tables<'picks_status_view_user'>;
 
 export async function getMyPicks(
   event: RequestEvent,
-  weekId: number
+  weekId: number,
+  groupId: string
 ): Promise<Record<string, PickEntry>> {
   const supabase = event.locals.supabase;
 
   const { data, error } = await supabase
     .from('picks_status_view_user')
     .select('game_id, picked_side, weight, locked_at, locked_spread_value, locked_spread_team_id')
-    .eq('week_id', weekId);
+    .eq('week_id', weekId)
+    .eq('group_id', groupId);
 
   if (error) throw error;
 

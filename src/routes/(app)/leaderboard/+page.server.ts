@@ -2,13 +2,15 @@ import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getWeeklyTable } from '$lib/server/leaderboard';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
+import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
 
 export const load: PageServerLoad = async (event) => {
   const seasonYear = await getCurrentSeasonYear();
+  const groupId = DEFAULT_GROUP_ID;
   const [{ data: auth }, totals, table, activeWeekRow] = await Promise.all([
     event.locals.supabase.auth.getUser(),
-    getSeasonLeaderboard(seasonYear),
-    getWeeklyTable(seasonYear),
+    getSeasonLeaderboard(seasonYear, groupId),
+    getWeeklyTable(seasonYear, groupId),
     findActiveWeek()
   ]);
 

@@ -1,6 +1,6 @@
 import { supabaseService } from '$lib/supabase/service';
 
-export function getPicksForWeeks(weekIds: number[]) {
+export function getPicksForWeeks(weekIds: number[], groupId: string) {
   return supabaseService
     .from('picks_status_view_admin')
     .select(
@@ -15,5 +15,6 @@ export function getPicksForWeeks(weekIds: number[]) {
     locked_spread_team_id
     `
     )
-    .in('week_id', weekIds);
+    .in('week_id', weekIds)
+    .eq('group_id', groupId);
 }
