@@ -26,6 +26,7 @@ to authenticated;
 
 -- Picks CRUD the player needs; RLS gates who/when
 grant select, insert, update on public.picks to authenticated;
+grant select on public.pick_settlement to authenticated;
 
 -- Settings & audit:
 -- Grant SELECT so admins (who are also 'authenticated') can read via RLS (is_admin()).
@@ -57,6 +58,8 @@ grant select on public.notification_log to authenticated;
 grant execute on function public.lock_pick(uuid, public.side_enum, public.weight_enum, text)
   to authenticated, service_role;
 grant execute on function public.unlock_pick(uuid)
+  to authenticated, service_role;
+grant execute on function public.is_member(uuid)
   to authenticated, service_role;
 
 -- NOTE: The remaining RPCs follow the convention of appending their own EXECUTE

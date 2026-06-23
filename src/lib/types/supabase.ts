@@ -203,6 +203,128 @@ export type Database = {
           },
         ]
       }
+      group_config: {
+        Row: {
+          created_at: string
+          group_id: string
+          line_source: string
+          scoring_rules: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          line_source?: string
+          scoring_rules?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          line_source?: string
+          scoring_rules?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_config_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_memberships: {
+        Row: {
+          group_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["group_membership_role"]
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_membership_role"]
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_membership_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_week_overrides: {
+        Row: {
+          created_at: string
+          group_id: string
+          overrides: Json
+          week_id: number
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          overrides?: Json
+          week_id: number
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          overrides?: Json
+          week_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_week_overrides_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_week_overrides_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       notification_log: {
         Row: {
           created_at: string
@@ -266,6 +388,7 @@ export type Database = {
         Row: {
           game_id: string
           graded_at: string
+          group_id: string
           outcome: Database["public"]["Enums"]["pick_outcome"] | null
           pick_id: string | null
           points_delta: number | null
@@ -274,6 +397,7 @@ export type Database = {
         Insert: {
           game_id: string
           graded_at?: string
+          group_id: string
           outcome?: Database["public"]["Enums"]["pick_outcome"] | null
           pick_id?: string | null
           points_delta?: number | null
@@ -282,6 +406,7 @@ export type Database = {
         Update: {
           game_id?: string
           graded_at?: string
+          group_id?: string
           outcome?: Database["public"]["Enums"]["pick_outcome"] | null
           pick_id?: string | null
           points_delta?: number | null
@@ -303,6 +428,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pick_settlement_pick_id_fkey"
             columns: ["pick_id"]
             isOneToOne: false
@@ -314,6 +446,7 @@ export type Database = {
       picks: {
         Row: {
           game_id: string
+          group_id: string
           id: string
           locked_at: string
           locked_by: string
@@ -326,6 +459,7 @@ export type Database = {
         }
         Insert: {
           game_id: string
+          group_id: string
           id?: string
           locked_at: string
           locked_by?: string
@@ -338,6 +472,7 @@ export type Database = {
         }
         Update: {
           game_id?: string
+          group_id?: string
           id?: string
           locked_at?: string
           locked_by?: string
@@ -361,6 +496,13 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
@@ -630,6 +772,7 @@ export type Database = {
           avatar_key: string | null
           decisions: number | null
           display_name: string | null
+          group_id: string | null
           losses: number | null
           missed: number | null
           pushes: number | null
@@ -639,13 +782,22 @@ export type Database = {
           user_id: string | null
           wins: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leaderboard_weekly_cumulative: {
         Row: {
           cumulative_points: number | null
           cumulative_rank_this_week: number | null
           display_name: string | null
+          group_id: string | null
           season_total: number | null
           season_year: number | null
           user_id: string | null
@@ -656,13 +808,22 @@ export type Database = {
           week_pushes: number | null
           week_wins: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       picks_status_view_admin: {
         Row: {
           commence_time: string | null
           game_id: string | null
           game_started: boolean | null
+          group_id: string | null
           locked_at: string | null
           locked_spread_team_id: number | null
           locked_spread_value: number | null
@@ -697,6 +858,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "picks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "picks_picked_team_id_fkey"
             columns: ["picked_team_id"]
             isOneToOne: false
@@ -717,6 +885,7 @@ export type Database = {
           commence_time: string | null
           game_id: string | null
           game_started: boolean | null
+          group_id: string | null
           locked_at: string | null
           locked_spread_team_id: number | null
           locked_spread_value: number | null
@@ -750,6 +919,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "picks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "picks_picked_team_id_fkey"
             columns: ["picked_team_id"]
             isOneToOne: false
@@ -770,6 +946,7 @@ export type Database = {
           accuracy: number | null
           decisions: number | null
           display_name: string | null
+          group_id: string | null
           losses: number | null
           points: number | null
           pushes: number | null
@@ -781,6 +958,13 @@ export type Database = {
           wins: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "picks_picked_team_id_fkey"
             columns: ["team_id"]
@@ -795,6 +979,7 @@ export type Database = {
           accuracy: number | null
           decisions: number | null
           display_name: string | null
+          group_id: string | null
           losses: number | null
           points: number | null
           pushes: number | null
@@ -803,12 +988,21 @@ export type Database = {
           weight: Database["public"]["Enums"]["weight_enum"] | null
           wins: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stats_head_to_head: {
         Row: {
           display_name: string | null
           games_compared: number | null
+          group_id: string | null
           losses: number | null
           opponent_display_name: string | null
           opponent_points: number | null
@@ -819,13 +1013,22 @@ export type Database = {
           user_id: string | null
           wins: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stats_season_trend: {
         Row: {
           cumulative_points: number | null
           cumulative_rank_this_week: number | null
           display_name: string | null
+          group_id: string | null
           season_total: number | null
           season_year: number | null
           user_id: string | null
@@ -836,7 +1039,15 @@ export type Database = {
           week_pushes: number | null
           week_wins: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pick_settlement_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ui_games: {
         Row: {
@@ -924,6 +1135,7 @@ export type Database = {
       grade_season: { Args: { p_season_id: number }; Returns: undefined }
       grade_week: { Args: { p_week_id: number }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_member: { Args: { target_group_id: string }; Returns: boolean }
       lock_pick: {
         Args: {
           p_game_id: string
@@ -976,6 +1188,7 @@ export type Database = {
     }
     Enums: {
       cover_side: "home" | "away" | "push"
+      group_membership_role: "commissioner" | "member"
       pick_outcome: "win" | "loss" | "push" | "missed"
       side_enum: "home" | "away"
       weight_enum: "L" | "M" | "H" | "A"
@@ -1110,6 +1323,7 @@ export const Constants = {
   public: {
     Enums: {
       cover_side: ["home", "away", "push"],
+      group_membership_role: ["commissioner", "member"],
       pick_outcome: ["win", "loss", "push", "missed"],
       side_enum: ["home", "away"],
       weight_enum: ["L", "M", "H", "A"],

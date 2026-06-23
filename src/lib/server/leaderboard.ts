@@ -13,7 +13,10 @@ import type {
 } from '$lib/types/leaderboard';
 import { formatLockedSpread, gameLabel, gameScore, toResult } from '$lib/utils/leaderboard';
 
-export async function getWeeklyTable(seasonYear: number): Promise<{
+export async function getWeeklyTable(
+  seasonYear: number,
+  groupId: string
+): Promise<{
   seasonYear: number;
   players: LeaderboardPlayer[];
   weeks: number[];
@@ -31,13 +34,10 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
     weekRowsNotNull.map((w: WeekRow) => [w.id, w.week_number])
   );
 
-  const { data: players = [] } = await getPlayers();
-  const playersTyped: LeaderboardPlayer[] = (players ?? []).filter(
-    (p: unknown): p is LeaderboardPlayer => !!p && typeof (p as { id?: unknown }).id === 'string'
-  );
+  const playersTyped: LeaderboardPlayer[] = await getPlayers(groupId);
 
   // Picks (must include lock fields & picked team id) — ensure your getPicksForWeeks selects them
-  const { data: picksRaw = [] } = await getPicksForWeeks(weekIds as number[]);
+  const { data: picksRaw = [] } = await getPicksForWeeks(weekIds as number[], groupId);
   const picks: PickRow[] = (picksRaw as PickRow[]).map((r) => ({
     game_id: r.game_id ?? null,
     week_id: r.week_id ?? null,
@@ -77,7 +77,7 @@ export async function getWeeklyTable(seasonYear: number): Promise<{
     new Set(picks.map((p) => p.game_id).filter((x): x is string => typeof x === 'string'))
   );
   const { data: settlementsRaw = [] } = gameIds.length
-    ? await getSettlementsForGames(gameIds)
+    ? await getSettlementsForGames(gameIds, groupId)
     : { data: [] as Settlement[] };
   const settlements: Settlement[] = (settlementsRaw as Settlement[]).map((s) => ({
     user_id: s.user_id,

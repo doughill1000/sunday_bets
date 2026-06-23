@@ -11,11 +11,11 @@ select columns_are(
   'public',
   'stats_season_trend',
   array[
-    'user_id', 'display_name', 'season_year', 'week_number', 'week_points',
+    'group_id', 'user_id', 'display_name', 'season_year', 'week_number', 'week_points',
     'week_wins', 'week_losses', 'week_pushes', 'week_missed',
     'cumulative_points', 'season_total', 'cumulative_rank_this_week'
   ],
-  'stats_season_trend matches WeeklyCumulativeEntry'
+  'stats_season_trend includes group_id and matches WeeklyCumulativeEntry'
 );
 
 select tests.create_supabase_user('stats_a');
@@ -30,6 +30,16 @@ where id in (
   tests.get_supabase_uid('stats_a'),
   tests.get_supabase_uid('stats_b')
 );
+
+insert into public.groups (id, name)
+values ('00000000-0000-4000-8000-000000000007', 'Stats Group')
+on conflict (id) do nothing;
+
+insert into public.group_memberships (group_id, user_id, role)
+values
+  ('00000000-0000-4000-8000-000000000007', tests.get_supabase_uid('stats_a'), 'member'),
+  ('00000000-0000-4000-8000-000000000007', tests.get_supabase_uid('stats_b'), 'member')
+on conflict (group_id, user_id) do nothing;
 
 insert into public.seasons (league, year)
 values ('NFL', 2040)
@@ -81,6 +91,7 @@ where w.season_id = (select id from public.seasons where league = 'NFL' and year
 on conflict (external_game_id) do nothing;
 
 insert into public.picks (
+  group_id,
   user_id,
   game_id,
   picked_team_id,
@@ -91,6 +102,7 @@ insert into public.picks (
   locked_by
 )
 select
+  '00000000-0000-4000-8000-000000000007',
   player.user_id,
   g.id,
   team.id,
@@ -113,9 +125,10 @@ join lateral (
 ) player on true
 join public.games g on g.external_game_id = pick.external_game_id
 join public.teams team on team.external_key = pick.team_key
-on conflict (user_id, game_id) do nothing;
+on conflict (group_id, user_id, game_id) do nothing;
 
 insert into public.pick_settlement (
+  group_id,
   user_id,
   game_id,
   pick_id,
@@ -124,6 +137,7 @@ insert into public.pick_settlement (
   graded_at
 )
 select
+  p.group_id,
   p.user_id,
   p.game_id,
   p.id,
@@ -143,7 +157,7 @@ join lateral (
 ) result(user_id, external_game_id, points_delta, outcome)
   on result.user_id = p.user_id
  and result.external_game_id = g.external_game_id
-on conflict (user_id, game_id) do update
+on conflict (group_id, user_id, game_id) do update
 set
   pick_id = excluded.pick_id,
   points_delta = excluded.points_delta,
