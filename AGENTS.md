@@ -138,6 +138,47 @@ function used in RLS. RLS is enforced everywhere; the service-role client
 - `@typescript-eslint/no-explicit-any` is `error` under `src/lib` + `src/routes`
   (use real types); it is **off** for tests and `supabase/scripts/**`.
 
+## Agent context packs
+
+Targeted deep-reference for the areas agents most often get wrong. Each pack links
+to canonical sources rather than copying them — see
+[docs/agent-context/README.md](docs/agent-context/README.md) for the index and the
+link-not-copy rule.
+
+- [auth.md](docs/agent-context/auth.md) — cookie sessions, iOS PWA constraint,
+  service-role vs anon, admin boundary
+- [database.md](docs/agent-context/database.md) — migration flow, generated files,
+  RLS/grants/pgTAP rules, PR review guidance (how to skip generated noise)
+- [ui.md](docs/agent-context/ui.md) — vendored shadcn-svelte restrictions, Svelte 5
+  runes, Tailwind 4, demo seed
+- [testing.md](docs/agent-context/testing.md) — four test layers, CI gate, lint-not-in-CI
+  gotcha, mock fragility
+
+## Default agent roles (a default, not a hard rule)
+
+The default split between Claude and Codex:
+
+- **Claude**: shape issues and acceptance criteria; review diffs and architecture;
+  write or edit shared planning/agent-instruction files (`AGENTS.md`, `WORKFLOW.md`,
+  ADRs); pair on tricky integrations.
+- **Codex**: implement scoped, Ready issues; produce minimal diffs; run verification
+  commands and report results; generate migrations.
+
+One writer + one reviewer per feature. Never both agents coding the same feature
+concurrently — pick one and let the other review. This is a default pattern: override
+it when the task clearly suits the other agent.
+
+## Token & scope discipline
+
+Start from the assigned issue and the files it names — don't open the whole repo to
+find context. Use `grep` / `glob` before opening large files. Read the diff
+(`git diff master...branch`) before reading full file contents during review.
+
+Do **not** clean up surrounding code opportunistically. A bug fix touches the bug.
+A migration touches `supabase/src/**`. Report scope pressure instead of absorbing it:
+if the task requires changing something outside the stated scope, say so and wait
+for confirmation before proceeding.
+
 ## Gotchas
 
 - `pnpm build` fails on Windows at the adapter-vercel packaging step (EPERM symlink —
