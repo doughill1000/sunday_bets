@@ -85,6 +85,10 @@ to implement it.
 
 ## Claim and isolate work
 
+Before starting, read the relevant [agent context packs](agent-context/README.md) for
+the areas the issue touches (auth, database, UI, testing) — they contain the
+agent-facing rules that are most often gotten wrong and save re-discovery time.
+
 Set the issue's `Agent` and `Status: In progress` before prompting an agent. This is
 the claim that prevents Claude and Codex from starting the same work. Because GitHub
 writes require confirmation, Doug should normally make this assignment during
