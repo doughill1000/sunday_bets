@@ -10,3 +10,5 @@ alter table if exists public.audit_log   enable row level security;
 alter table if exists public.weeks       enable row level security;
 alter table if exists public.seasons     enable row level security;
 alter table if exists public.teams       enable row level security;
+alter table if exists public.groups      enable row level security;
+alter table if exists public.group_memberships enable row level security;
