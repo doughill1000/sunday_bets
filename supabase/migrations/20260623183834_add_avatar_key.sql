@@ -43,7 +43,6 @@ group by user_id, display_name, avatar_key, season_year, group_id
 select
 t.user_id,
 t.display_name,
-t.avatar_key,
 t.season_year,
 t.total_points,
 t.decisions,
@@ -55,5 +54,6 @@ dense_rank() over (
 partition by group_id, season_year
 order by total_points desc, wins desc, pushes desc
 ) as rank,
-t.group_id
+t.group_id,
+t.avatar_key
 from totals t;
