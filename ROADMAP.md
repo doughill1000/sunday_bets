@@ -15,20 +15,25 @@ migration material only.
 
 ## Release direction
 
-| Release | Outcome                                                    | State   |
-| ------- | ---------------------------------------------------------- | ------- |
-| v1.2    | Reliability, cleanup, auth unification, and quota tracking | Shipped |
-| v1.3    | E2E safety net and Svelte 5 migration                      | Shipped |
-| v1.4    | Automated odds sync, grading, and week rollover            | Shipped |
-| v1.5    | Push notifications and player notification preferences     | Shipped |
-| v1.6    | Stats, history, and operational cleanup                    | Now     |
-| v2.0    | Social play and 2026 season launch readiness               | Next    |
-| v2.1    | Configurable gameplay rules and engagement mechanics       | Later   |
-| v2.2    | Group tenancy foundation                                   | Later   |
-| v2.3    | Self-service groups                                        | Later   |
+| Release | Outcome                                                       | State   |
+| ------- | ------------------------------------------------------------- | ------- |
+| v1.2    | Reliability, cleanup, auth unification, and quota tracking    | Shipped |
+| v1.3    | E2E safety net and Svelte 5 migration                         | Shipped |
+| v1.4    | Automated odds sync, grading, and week rollover               | Shipped |
+| v1.5    | Push notifications and player notification preferences        | Shipped |
+| v1.6    | Stats, history, and operational cleanup                       | Now     |
+| v1.7    | Group tenancy foundation (internal; original group only)      | Next    |
+| v1.8    | Season launch — social play and configurable gameplay rules   | Next    |
+| v2.0    | Self-service groups and scaling                               | Later   |
 
 Dates belong on milestones and issues, where they can be revised without turning
 this strategy document into a second project board.
+
+The product's defining boundary is single-group → multi-group, not the version
+number. The tenancy foundation (v1.7) lands first and invisibly so that the social
+and gameplay-rule features in v1.8 are built group-aware from the start and never
+need a later `group_id` retrofit. v2.0 marks the groups epoch, where members
+create, join, and switch between groups.
 
 ## Now
 
@@ -40,31 +45,39 @@ Keep leaderboard aggregation in Postgres and consume the intentionally reserved
 
 ## Next
 
-### v2.0 - Social and season launch
+### v1.7 - Group tenancy foundation
 
-Scale the original group beyond six players, reveal other players' picks after
-kickoff, add game-scoped comments and reactions, support password authentication
-alongside magic links, and complete the 2026 launch checklist.
+Introduce `groups` and `group_memberships` and add `group_id` to picks, settlements,
+leaderboards, and gameplay configuration while keeping canonical NFL games, lines,
+scores, and ingestion global. Membership becomes the RLS boundary. Backfill the
+original Sunday Bets group with all history and standings unchanged. This release is
+invisible to players: it auto-selects the sole membership and keeps group switching
+behind a feature flag until v2.0. Split gameplay configuration to be group-owned now
+while operational settings (quota caps, penalties) stay global.
+
+### v1.8 - Season launch
+
+Ship the 2026 launch as one combined release built on the v1.7 foundation: scale the
+original group beyond six players, reveal other players' picks after kickoff, add
+group-scoped comments and reactions, and support password authentication alongside
+magic links. Layer in configurable gameplay rules — drop-worst-week scoring, per-week
+rule overrides (special weeks) keyed by group and week, and the House/Gamer
+line-grading preset. Hold a launch-blocking cut line: social core plus the safe,
+independently shippable rules (drop-worst-week, multiplier weeks) must ship for Week 1;
+fairness-sensitive rules (line locking, catch-up mechanics) can follow during the
+season and each require an ADR before implementation with explicit examples in their
+issue acceptance criteria.
 
 ## Later
 
-### v2.1 - Gameplay rules
+### v2.0 - Self-service groups and scaling
 
-Explore drop-worst-week scoring, consistent line-grading presets, optional catch-up
-mechanics, and per-week rule overrides. Fairness-sensitive rule changes require an
-ADR before implementation and explicit examples in their issue acceptance criteria.
-
-### v2.2 - Group tenancy foundation
-
-Introduce groups and memberships while keeping canonical NFL games, lines, scores,
-and ingestion global. Membership becomes the RLS boundary. Preserve all historical
-standings when backfilling the original Sunday Bets group.
-
-### v2.3 - Self-service groups
-
-Add create, join, invite, and group-switching flows after the tenancy foundation is
-proven. Gameplay settings become group-owned while operational settings remain
-global.
+Add create, join, invite, and group-switching flows once the tenancy foundation is
+proven, using expiring single-use tokens or shareable codes rather than exposed user
+IDs. A user may belong to multiple groups; commissioners manage their group's name,
+members, and rules. Because v1.7 already established the data model, the remaining work
+is UI and access, not a schema retrofit. Bound leaderboard work with SQL summaries and
+paginated member lists, and revisit infrastructure only from measured scale.
 
 ## Architectural guardrails
 
