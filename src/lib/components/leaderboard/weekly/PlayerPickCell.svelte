@@ -15,7 +15,7 @@
       : cell?.result === 'L'
         ? 'border-destructive'
         : cell?.result === 'P'
-          ? 'border-warning'
+          ? 'border-muted-foreground'
           : 'border-border'
   );
 </script>
