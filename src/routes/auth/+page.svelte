@@ -18,7 +18,7 @@
 
   let email = $state('');
   let password = $state('');
-  let method: 'magic' | 'password' = $state('magic');
+  let method: 'magic' | 'password' = $state('password');
   let submitting = $state(false);
 </script>
 
@@ -79,18 +79,20 @@
           <legend class="sr-only">Sign-in method</legend>
           <Label class="text-sm font-medium">Method</Label>
           <RadioGroup bind:value={method} class="grid grid-cols-2 gap-2">
-            <div
-              class="flex items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
-            >
-              <RadioGroupItem id="method-magic" value="magic" />
-              <Label for="method-magic" class="cursor-pointer">Magic link</Label>
-            </div>
-            <div
-              class="flex items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
+            <label
+              for="method-password"
+              class="flex cursor-pointer items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
             >
               <RadioGroupItem id="method-password" value="password" />
-              <Label for="method-password" class="cursor-pointer">Email + password</Label>
-            </div>
+              <span class="text-sm font-medium">Email + password</span>
+            </label>
+            <label
+              for="method-magic"
+              class="flex cursor-pointer items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
+            >
+              <RadioGroupItem id="method-magic" value="magic" />
+              <span class="text-sm font-medium">Magic link</span>
+            </label>
           </RadioGroup>
         </fieldset>
 
