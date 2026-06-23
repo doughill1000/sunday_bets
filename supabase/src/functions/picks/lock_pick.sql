@@ -30,9 +30,20 @@ declare
   v_spread_value numeric;
   v_now     timestamptz := now();
   v_row     public.picks%rowtype;
+  v_group_id uuid;
 begin
   if v_uid is null then
     raise exception 'unauthorized' using errcode = 'P0001';
+  end if;
+
+  select gm.group_id into v_group_id
+  from public.group_memberships gm
+  where gm.user_id = v_uid
+  order by gm.joined_at, gm.group_id
+  limit 1;
+
+  if v_group_id is null then
+    raise exception 'group membership not found' using errcode = 'P0001';
   end if;
 
   if p_side not in ('home','away') then
@@ -69,7 +80,8 @@ begin
       select 1
       from public.picks p
       join public.games g2 on g2.id = p.game_id
-      where p.user_id = v_uid
+      where p.group_id = v_group_id
+        and p.user_id = v_uid
         and g2.week_id = v_game.week_id
         and p.weight = 'A'
         and p.game_id <> p_game_id
@@ -95,14 +107,14 @@ begin
   -- upsert with snapshot stamped atomically
   with upsert as (
     insert into public.picks (
-      user_id, game_id, picked_team_id, weight,
+      group_id, user_id, game_id, picked_team_id, weight,
       locked_at, locked_by, locked_line_id, locked_spread_team_id, locked_spread_value
     )
     values (
-      v_uid, v_game.id, v_team_id, p_weight,
+      v_group_id, v_uid, v_game.id, v_team_id, p_weight,
       v_now, v_uid, v_line_id, v_spread_team_id, v_spread_value
     )
-    on conflict (user_id, game_id) do update
+    on conflict (group_id, user_id, game_id) do update
       set picked_team_id         = excluded.picked_team_id,
           weight                 = excluded.weight,
           locked_at              = excluded.locked_at,

@@ -1,14 +1,18 @@
-alter table public.settings add column missed_pick_penalty int default -1;
+alter table public.settings add column if not exists missed_pick_penalty int default -1;
 
 create table if not exists public.pick_settlement (
+  group_id     uuid not null,
   user_id      uuid not null,
   game_id      uuid not null references public.games(id) on delete cascade,
   pick_id      uuid references public.picks(id) on delete cascade,
   points_delta int,
   outcome      public.pick_outcome,
   graded_at    timestamptz not null default now(),
-  constraint pick_settlement_pkey primary key (user_id, game_id)
+  constraint pick_settlement_pkey primary key (group_id, user_id, game_id)
 );
+
+alter table public.pick_settlement
+  add column if not exists group_id uuid;
 
 -- keep unique link when a real pick exists
 create unique index if not exists uq_pick_settlement_pick_id
@@ -25,11 +29,13 @@ alter table public.pick_settlement
 
 -- helpful index for joins by game
 create index if not exists idx_pick_settlement_game on public.pick_settlement(game_id);
+create index if not exists idx_pick_settlement_group_game_user
+  on public.pick_settlement(group_id, game_id, user_id);
 
 -- RLS: readable, but no client writes
 alter table public.pick_settlement enable row level security;
 
--- (A) Let authenticated users read settlements (you can tighten to "after kickoff" if desired)
+-- (A) Let authenticated users read settlements for their groups.
 do $$
 begin
   drop policy if exists "read settlements" on public.pick_settlement;
@@ -39,7 +45,7 @@ create policy "read settlements"
   on public.pick_settlement
   for select
   to authenticated
-  using (true);
+  using (public.is_member(group_id));
 
 -- (B) Block all client writes; grading functions (SECURITY DEFINER) or service role will write
 do $$
@@ -50,10 +56,20 @@ begin
 exception when undefined_object then null; end$$;
 
 create policy "no client writes (insert)"
-  on public.pick_settlement for insert to authenticated with check (false);
+  on public.pick_settlement
+  for insert
+  to authenticated
+  with check (public.is_member(group_id) and false);
 
 create policy "no client writes (update)"
-  on public.pick_settlement for update to authenticated using (false) with check (false);
+  on public.pick_settlement
+  for update
+  to authenticated
+  using (public.is_member(group_id) and false)
+  with check (public.is_member(group_id) and false);
 
 create policy "no client writes (delete)"
-  on public.pick_settlement for delete to authenticated using (false);
+  on public.pick_settlement
+  for delete
+  to authenticated
+  using (public.is_member(group_id) and false);

@@ -16,9 +16,20 @@ declare
   v_game public.games%rowtype;
   v_row  public.picks%rowtype;
   v_now  timestamptz := now();
+  v_group_id uuid;
 begin
   if v_uid is null then
     raise exception 'unauthorized' using errcode = 'P0001';
+  end if;
+
+  select gm.group_id into v_group_id
+  from public.group_memberships gm
+  where gm.user_id = v_uid
+  order by gm.joined_at, gm.group_id
+  limit 1;
+
+  if v_group_id is null then
+    raise exception 'group membership not found' using errcode = 'P0001';
   end if;
 
   -- Serialize against concurrent lock/unlock attempts for the same game
@@ -38,7 +49,8 @@ begin
   -- Delete the pick (if present)
   with del as (
     delete from public.picks p
-    where p.user_id = v_uid
+    where p.group_id = v_group_id
+      and p.user_id = v_uid
       and p.game_id = p_game_id
     returning *
   )

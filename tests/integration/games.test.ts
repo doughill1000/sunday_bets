@@ -1,7 +1,7 @@
 // tests/integration/games.test.ts
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import type { RequestEvent } from '@sveltejs/kit';
-import { createServiceClient, createUserClient } from './_auth';
+import { createServiceClient } from './_auth';
 import {
   TEST_USERS,
   ensureCoreTestUsers,
@@ -16,6 +16,7 @@ import { listWeekGamesWithPicks } from '../../src/lib/server/games';
 
 const admin = createServiceClient();
 const EXTERNAL_TAG = `games-int-${Date.now()}`;
+const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 
 /**
  * Minimal RequestEvent mock to satisfy listWeekGamesWithPicks auth check.
@@ -145,6 +146,15 @@ describe('listWeekGamesWithPicks integration', () => {
     otherUserId = users.find((u: any) => u.display_name === TEST_USERS[1].display)?.id as string;
     if (!meUserId || !otherUserId) throw new Error('Could not resolve two fixture users');
 
+    const { error: membershipErr } = await admin.from('group_memberships').upsert(
+      [
+        { group_id: ORIGINAL_GROUP_ID, user_id: meUserId, role: 'member' },
+        { group_id: ORIGINAL_GROUP_ID, user_id: otherUserId, role: 'member' }
+      ],
+      { onConflict: 'group_id,user_id' }
+    );
+    if (membershipErr) throw new Error(`upsert group memberships: ${membershipErr.message}`);
+
     // Clean any prior artifacts with our EXTERNAL_TAG
     await admin
       .from('picks')
@@ -203,6 +213,7 @@ describe('listWeekGamesWithPicks integration', () => {
 
     const { error: pErr } = await admin.from('picks').insert([
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: meUserId,
         game_id: futureGameId,
         picked_team_id: homeTeamId,
@@ -214,6 +225,7 @@ describe('listWeekGamesWithPicks integration', () => {
         locked_spread_value: futureLine.spread_value
       },
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: otherUserId,
         game_id: futureGameId,
         picked_team_id: awayTeamId,
@@ -225,6 +237,7 @@ describe('listWeekGamesWithPicks integration', () => {
         locked_spread_value: futureLine.spread_value
       },
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: meUserId,
         game_id: startedGameId,
         picked_team_id: homeTeamId,
@@ -236,6 +249,7 @@ describe('listWeekGamesWithPicks integration', () => {
         locked_spread_value: startedLine.spread_value
       },
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: otherUserId,
         game_id: startedGameId,
         locked_by: otherUserId,

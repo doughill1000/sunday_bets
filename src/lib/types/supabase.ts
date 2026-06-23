@@ -314,6 +314,7 @@ export type Database = {
         Row: {
           game_id: string;
           graded_at: string;
+          group_id: string;
           outcome: Database['public']['Enums']['pick_outcome'] | null;
           pick_id: string | null;
           points_delta: number | null;
@@ -322,6 +323,7 @@ export type Database = {
         Insert: {
           game_id: string;
           graded_at?: string;
+          group_id: string;
           outcome?: Database['public']['Enums']['pick_outcome'] | null;
           pick_id?: string | null;
           points_delta?: number | null;
@@ -330,6 +332,7 @@ export type Database = {
         Update: {
           game_id?: string;
           graded_at?: string;
+          group_id?: string;
           outcome?: Database['public']['Enums']['pick_outcome'] | null;
           pick_id?: string | null;
           points_delta?: number | null;
@@ -351,6 +354,13 @@ export type Database = {
             referencedColumns: ['id'];
           },
           {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
             foreignKeyName: 'pick_settlement_pick_id_fkey';
             columns: ['pick_id'];
             isOneToOne: false;
@@ -362,6 +372,7 @@ export type Database = {
       picks: {
         Row: {
           game_id: string;
+          group_id: string;
           id: string;
           locked_at: string;
           locked_by: string;
@@ -374,6 +385,7 @@ export type Database = {
         };
         Insert: {
           game_id: string;
+          group_id: string;
           id?: string;
           locked_at: string;
           locked_by?: string;
@@ -386,6 +398,7 @@ export type Database = {
         };
         Update: {
           game_id?: string;
+          group_id?: string;
           id?: string;
           locked_at?: string;
           locked_by?: string;
@@ -409,6 +422,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'ui_games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'picks_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
             referencedColumns: ['id'];
           },
           {

@@ -12,6 +12,16 @@ SELECT has_view('public', 'picks_status_view_user', 'picks_status_view_user exis
 SELECT tests.create_supabase_user('user_a');
 SELECT tests.create_supabase_user('user_b');
 
+INSERT INTO public.groups (id, name)
+VALUES ('00000000-0000-4000-8000-000000000002', 'Picks Status Group')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.group_memberships (group_id, user_id, role)
+VALUES
+  ('00000000-0000-4000-8000-000000000002', tests.get_supabase_uid('user_a'), 'member'),
+  ('00000000-0000-4000-8000-000000000002', tests.get_supabase_uid('user_b'), 'member')
+ON CONFLICT (group_id, user_id) DO NOTHING;
+
 -- 3) Seed minimal season/week
 INSERT INTO public.seasons (year)
 VALUES (2025)
@@ -58,15 +68,17 @@ WITH g AS (
 ), team AS (
   SELECT id AS team_id FROM public.teams WHERE external_key = 'TEAM_A'
 )
-INSERT INTO public.picks (user_id, game_id, picked_team_id, locked_spread_team_id, locked_spread_value, weight, locked_at)
+INSERT INTO public.picks (group_id, user_id, game_id, picked_team_id, locked_spread_team_id, locked_spread_value, weight, locked_at, locked_by)
 SELECT
+  '00000000-0000-4000-8000-000000000002',
   tests.get_supabase_uid('user_a'),
   g.id,
   team.team_id,
   team.team_id,  -- or the correct spread side team id
   3,
   'L',
-  now()
+  now(),
+  tests.get_supabase_uid('user_a')
 FROM g, team;
 
 -- user_b picks AWAY (TEAM_B)
@@ -76,15 +88,17 @@ WITH g AS (
 ), team AS (
   SELECT id AS team_id FROM public.teams WHERE external_key = 'TEAM_B'
 )
-INSERT INTO public.picks (user_id, game_id, picked_team_id, locked_spread_team_id, locked_spread_value, weight, locked_at)
+INSERT INTO public.picks (group_id, user_id, game_id, picked_team_id, locked_spread_team_id, locked_spread_value, weight, locked_at, locked_by)
 SELECT
+  '00000000-0000-4000-8000-000000000002',
   tests.get_supabase_uid('user_b'),
   g.id,
   team.team_id,
   team.team_id,
   3,
   'L',
-  now()
+  now(),
+  tests.get_supabase_uid('user_b')
 FROM g, team
 ON CONFLICT DO NOTHING;
 
