@@ -1,9 +1,9 @@
--- file: schemas/0201_pick_surrogate_id.sql
+-- file: schemas/0201_picks.sql
 
 -- Ensure UUID generator is available
 create extension if not exists pgcrypto;
 
--- 1) Add the column (no PK yet)
+-- 1) Add the surrogate id column used by server code and settlement FKs.
 do $$
 begin
   if not exists (
@@ -16,55 +16,31 @@ begin
   end if;
 end$$;
 
--- 2) Backfill existing rows
+-- 2) Backfill existing ids.
 update public.picks
 set id = gen_random_uuid()
 where id is null;
 
--- 3) Enforce NOT NULL + default for future inserts
+-- 3) Enforce NOT NULL + default for future inserts.
 alter table public.picks
   alter column id set not null;
 
 alter table public.picks
   alter column id set default gen_random_uuid();
 
--- 4) Drop the old primary key (usually picks_pkey) if it exists
-do $$
-declare
-  pk_name text;
-begin
-  select conname into pk_name
-  from pg_constraint
-  where conrelid = 'public.picks'::regclass
-    and contype = 'p'
-  limit 1;
+-- 4) Add the group tenancy column.
+alter table public.picks
+  add column if not exists group_id uuid;
 
-  if pk_name is not null then
-    execute format('alter table public.picks drop constraint %I', pk_name);
-  end if;
-end$$;
-
--- 5) Create the new primary key on (id) if not already present
+-- 5) Keep the surrogate id usable as an FK target after the PK moves.
 do $$
 begin
   if not exists (
     select 1 from pg_constraint
     where conrelid = 'public.picks'::regclass
-      and contype = 'p'
+      and conname = 'picks_id_key'
   ) then
     alter table public.picks
-      add constraint picks_pkey primary key (id);
-  end if;
-end$$;
-
--- 6) Keep uniqueness on (user_id, game_id)
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'picks_user_game_unique'
-  ) then
-    alter table public.picks
-      add constraint picks_user_game_unique unique (user_id, game_id);
+      add constraint picks_id_key unique (id);
   end if;
 end$$;

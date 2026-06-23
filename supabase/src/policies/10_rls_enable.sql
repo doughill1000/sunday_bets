@@ -1,5 +1,6 @@
 -- Enable RLS everywhere (deny by default)
 alter table if exists public.picks       enable row level security;
+alter table if exists public.pick_settlement enable row level security;
 alter table if exists public.games       enable row level security;
 alter table if exists public.game_lines  enable row level security;
 alter table if exists public.results     enable row level security;

@@ -9,6 +9,7 @@ import {
 } from './fixtures/db';
 
 const supabase = createSupaClient();
+const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 
 describe('Grading Integration Flow', () => {
   let testData: {
@@ -43,6 +44,16 @@ describe('Grading Integration Flow', () => {
     const user2Id = users.find((u) => u.display_name === TEST_USERS[1].display)!.id;
     const user3Id = users.find((u) => u.display_name === TEST_USERS[2].display)!.id;
 
+    const { error: membershipErr } = await supabase.from('group_memberships').upsert(
+      [
+        { group_id: ORIGINAL_GROUP_ID, user_id: user1Id, role: 'member' },
+        { group_id: ORIGINAL_GROUP_ID, user_id: user2Id, role: 'member' },
+        { group_id: ORIGINAL_GROUP_ID, user_id: user3Id, role: 'member' }
+      ],
+      { onConflict: 'group_id,user_id' }
+    );
+    if (membershipErr) throw new Error(`Failed to upsert memberships: ${membershipErr.message}`);
+
     const { data: game, error: gameErr } = await supabase
       .from('games')
       .insert({
@@ -61,6 +72,7 @@ describe('Grading Integration Flow', () => {
 
     const { error: pickErr } = await supabase.from('picks').insert([
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: user1Id,
         game_id: gameId,
         picked_team_id: chiefsId,
@@ -71,6 +83,7 @@ describe('Grading Integration Flow', () => {
         locked_at: lockedAt
       },
       {
+        group_id: ORIGINAL_GROUP_ID,
         user_id: user2Id,
         game_id: gameId,
         picked_team_id: billsId,

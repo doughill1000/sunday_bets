@@ -24,6 +24,14 @@ VALUES (tests.get_supabase_uid('picker'), 'player', 'Picker')
 ON CONFLICT (id) DO UPDATE
   SET role = EXCLUDED.role, display_name = EXCLUDED.display_name;
 
+INSERT INTO public.groups (id, name)
+VALUES ('00000000-0000-4000-8000-000000000004', 'Lock Pick Group')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.group_memberships (group_id, user_id, role)
+VALUES ('00000000-0000-4000-8000-000000000004', tests.get_supabase_uid('picker'), 'member')
+ON CONFLICT (group_id, user_id) DO NOTHING;
+
 -- Season + TWO weeks so week 1 is not the final week (All-In rule only applies
 -- when the pick's week is not the last week of the season).
 INSERT INTO public.seasons (year) VALUES (2025)

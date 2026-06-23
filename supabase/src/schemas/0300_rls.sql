@@ -1,5 +1,6 @@
 -- Enable RLS everywhere (deny by default)
 alter table public.picks      enable row level security;
+alter table if exists public.pick_settlement enable row level security;
 alter table public.games      enable row level security;
 alter table public.game_lines enable row level security;
 alter table public.results    enable row level security;
@@ -47,18 +48,33 @@ with check (id = auth.uid());
 drop policy if exists sel_picks_owner_or_started on public.picks;
 create policy sel_picks_owner_or_started
 on public.picks for select to authenticated
-using (user_id = auth.uid() or public.game_has_started(game_id));
+using (
+  public.is_member(group_id)
+  and (user_id = (select auth.uid()) or public.game_has_started(game_id))
+);
 
 drop policy if exists ins_picks_own_pre on public.picks;
 create policy ins_picks_own_pre
 on public.picks for insert to authenticated
-with check (user_id = auth.uid() and not public.game_has_started(game_id));
+with check (
+  public.is_member(group_id)
+  and user_id = (select auth.uid())
+  and not public.game_has_started(game_id)
+);
 
 drop policy if exists upd_picks_pre on public.picks;
 create policy upd_picks_pre
 on public.picks for update to authenticated
-using (user_id = auth.uid() and not public.game_has_started(game_id))
-with check (user_id = auth.uid() and not public.game_has_started(game_id));
+using (
+  public.is_member(group_id)
+  and user_id = (select auth.uid())
+  and not public.game_has_started(game_id)
+)
+with check (
+  public.is_member(group_id)
+  and user_id = (select auth.uid())
+  and not public.game_has_started(game_id)
+);
 
 -- SETTINGS & AUDIT: admin-only
 drop policy if exists admin_sel_settings on public.settings;
