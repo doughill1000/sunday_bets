@@ -79,9 +79,9 @@
       <Progress value={settings.usagePct * 100} max={100} class="h-3 w-32" />
       <div class="text-sm opacity-85">
         {#if capReached}
-          <span class="font-medium text-red-500">Cap reached.</span>
+          <span class="font-medium text-destructive">Cap reached.</span>
         {:else if usage80}
-          <span class="font-medium text-amber-500">Over 80% used.</span>
+          <span class="font-medium text-warning">Over 80% used.</span>
         {:else}
           Within budget.
         {/if}

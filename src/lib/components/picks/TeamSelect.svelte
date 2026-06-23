@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button';
   import { TEAM_META } from '$lib/types/domain';
-  import { textOn } from '$lib/ui/color';
+  import { textOn, mute } from '$lib/ui/color';
   import { selectTeam, usePicksStore } from '$lib/stores/picks';
   import type { PickGame } from '$lib/types/games';
 
@@ -13,12 +13,17 @@
   let { game, canChange = false }: Props = $props();
   const picks = usePicksStore();
 
+  // Retain this fraction of each team color's saturation so the buttons read as
+  // muted team tints rather than full-intensity gradients. Lower = calmer.
+  const TEAM_SATURATION = 0.5;
+
   function teamVars(abbr: string) {
     const meta = TEAM_META[abbr] ?? {
       name: abbr,
       colors: ['#64748b', '#94a3b8'] as [string, string]
     };
-    const [c1, c2] = meta.colors;
+    const c1 = mute(meta.colors[0], TEAM_SATURATION);
+    const c2 = mute(meta.colors[1], TEAM_SATURATION);
     const fg = textOn(c1, c2);
     return `--c1:${c1};--c2:${c2};--fg:${fg}`;
   }

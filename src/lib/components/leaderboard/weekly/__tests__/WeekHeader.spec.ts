@@ -65,15 +65,15 @@ describe('WeekHeader', () => {
     expect(container.querySelectorAll('[data-trophy]').length).toBe(2);
   });
 
-  it('negative totals red, positives green, zero neutral', () => {
+  it('negative totals destructive, positives success, zero muted', () => {
     const { getByText } = render(WeekHeader, {
       weekNumber: 4,
       players,
       totals: { p1: -2, p2: 0, p3: 5 },
       activeWeekNumber: null
     });
-    expect(getByText('-2').className).toMatch(/text-red-600/);
-    expect(getByText('+5').className).toMatch(/text-green-600/);
-    expect(getByText('0').className).toMatch(/text-neutral-600/);
+    expect(getByText('-2').className).toMatch(/text-destructive/);
+    expect(getByText('+5').className).toMatch(/text-success/);
+    expect(getByText('0').className).toMatch(/text-muted-foreground/);
   });
 });

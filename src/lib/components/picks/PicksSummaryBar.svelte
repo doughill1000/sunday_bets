@@ -32,7 +32,8 @@
   const allInTeam = $derived.by(() => {
     const g = allInLocked ?? allInSelected;
     if (!g) return null;
-    const team = (allInLocked ? $picks[g.id]?.lockedPick?.team : $picks[g.id]?.selected?.team) ?? null;
+    const team =
+      (allInLocked ? $picks[g.id]?.lockedPick?.team : $picks[g.id]?.selected?.team) ?? null;
     return team === 'home' ? g.home : team === 'away' ? g.away : null;
   });
 
@@ -54,7 +55,7 @@
   <div class="flex items-center gap-2 text-sm">
     <span class="font-semibold">{lockedCount}/{games.length} locked</span>
     {#if openCount > 0}
-      <span class="text-amber-600 dark:text-amber-400">· {openCount} not locked</span>
+      <span class="text-warning">· {openCount} not locked</span>
     {:else if lockedCount > 0}
       <span class="text-muted-foreground">✓ All locked</span>
     {/if}
@@ -66,9 +67,9 @@
     {#if allInLocked}
       <span>All-In: <span class="font-medium text-foreground">{allInTeam}</span> ✓</span>
     {:else if allInSelected}
-      <span class="text-amber-600 dark:text-amber-400">All-In: {allInTeam} · locks at kickoff</span>
+      <span class="text-warning">All-In: {allInTeam} · locks at kickoff</span>
     {:else if openCount > 0}
-      <span class="text-amber-600 dark:text-amber-400">No All-In</span>
+      <span class="text-warning">No All-In</span>
     {:else}
       <span>No All-In</span>
     {/if}

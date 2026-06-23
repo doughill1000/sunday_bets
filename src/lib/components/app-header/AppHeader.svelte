@@ -68,9 +68,11 @@
           class="pointer-events-auto flex min-w-0 items-center font-semibold tracking-wide"
           aria-label="Sunday Bets home"
         >
+          <!-- Transparent mark (no charcoal tile) so the football floats on the
+               header background with no seam. The opaque tiled icons remain for
+               PWA install / home-screen use. -->
           <img
-            src="/icons/icon-192x192.png"
-            srcset="/icons/icon-72x72.png 2x, /icons/icon-192x192.png 3x"
+            src="/logo-mark.png"
             alt="Sunday Bets logo"
             class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
           />
