@@ -129,9 +129,7 @@
 </script>
 
 {#snippet wlp(wins: number, losses: number, pushes: number)}
-  <span class="text-success">{wins}</span>-<span>{losses}</span>-<span class="text-warning"
-    >{pushes}</span
-  >
+  <span class="tabular-nums text-white">{wins}-{losses}-{pushes}</span>
 {/snippet}
 
 {#snippet teamHead(label: string, key: TeamSortKey, align: 'left' | 'right' = 'left')}
