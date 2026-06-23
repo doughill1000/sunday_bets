@@ -1,0 +1,30 @@
+<script lang="ts">
+  import { page } from '$app/state';
+  import ListChecks from '@lucide/svelte/icons/list-checks';
+  import Trophy from '@lucide/svelte/icons/trophy';
+  import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
+
+  const tabs = [
+    { href: '/picks', label: 'Picks', Icon: ListChecks },
+    { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
+    { href: '/stats', label: 'Stats', Icon: BarChart2 }
+  ];
+</script>
+
+<nav
+  class="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
+  style="padding-bottom: env(safe-area-inset-bottom)"
+>
+  {#each tabs as { href, label, Icon }}
+    {@const active = page.url.pathname.startsWith(href)}
+    <a
+      {href}
+      class="flex flex-1 flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-colors
+        {active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
+      aria-current={active ? 'page' : undefined}
+    >
+      <Icon class="size-5" />
+      {label}
+    </a>
+  {/each}
+</nav>

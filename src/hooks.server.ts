@@ -83,13 +83,17 @@ const injectSession: Handle = async ({ event, resolve }) => {
   // The `users.role` column is the single source of truth for admin access
   // (same source the is_admin() SQL function uses for RLS).
   event.locals.isAdmin = false;
+  event.locals.userProfile = null;
   if (user) {
     const { data } = await supabaseService
       .from('users')
-      .select('role')
+      .select('role, display_name')
       .eq('id', user.id)
       .maybeSingle();
     event.locals.isAdmin = data?.role === 'admin';
+    if (data) {
+      event.locals.userProfile = { displayName: data.display_name ?? '', avatarKey: null };
+    }
   }
 
   return resolve(event);

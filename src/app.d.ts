@@ -11,6 +11,7 @@ declare global {
       session: Session | null;
       user: User | null;
       isAdmin: boolean;
+      userProfile: { displayName: string; avatarKey: string | null } | null;
     }
   }
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import type { User } from '@supabase/supabase-js';
-  import { userNameShort } from '$lib/utils/user';
 
   import { Button } from '$lib/components/ui/button';
   import {
@@ -11,45 +12,99 @@
     DropdownMenuLabel,
     DropdownMenuSeparator
   } from '$lib/components/ui/dropdown-menu';
-  import { Avatar, AvatarImage, AvatarFallback } from '$lib/components/ui/avatar';
+  import UserAvatar from '$lib/components/UserAvatar.svelte';
+
+  interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  }
 
   interface Props {
     user?: User | null;
     canSeeAdmin?: boolean;
-    onNavigate?: () => void;
+    displayName?: string;
+    avatarKey?: string | null;
   }
 
-  let { user = null, canSeeAdmin = false, onNavigate = () => {} }: Props = $props();
+  let { user = null, canSeeAdmin = false, displayName = '', avatarKey = null }: Props = $props();
+
+  let canInstall = $state(false);
+  let deferredPrompt = $state<BeforeInstallPromptEvent | null>(null);
+  let open = $state(false);
+
+  onMount(() => {
+    afterNavigate(() => {
+      open = false;
+    });
+
+    const handler = (e: BeforeInstallPromptEvent) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      canInstall = true;
+    };
+    window.addEventListener('beforeinstallprompt', handler as EventListener);
+    window.addEventListener('appinstalled', () => {
+      canInstall = false;
+      deferredPrompt = null;
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler as EventListener);
+    };
+  });
+
+  async function installPwa(e: MouseEvent) {
+    e.preventDefault();
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    canInstall = false;
+    open = false;
+  }
+
+  const effectiveDisplayName = $derived(
+    displayName || (user?.email ?? 'User')
+  );
 </script>
 
-<div class="-ml-2 flex shrink-0 items-center">
-  {#if user}
-    <DropdownMenu>
-      <DropdownMenuContent align="start" class="w-56">
-        <DropdownMenuLabel>Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {#if canSeeAdmin}
-          <DropdownMenuItem>
-            <a href="/admin" onclick={onNavigate}>Admin</a>
-          </DropdownMenuItem>
-        {/if}
+{#if user}
+  <DropdownMenu bind:open>
+    <DropdownMenuTrigger>
+      <Button variant="ghost" size="icon" class="rounded-full" aria-label="Account menu">
+        <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
+      </Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" class="w-56">
+      <DropdownMenuLabel class="font-normal">
+        <div class="flex items-center gap-2">
+          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
+          <span class="truncate text-sm font-medium">{effectiveDisplayName}</span>
+        </div>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem>
+        <a href="/settings" class="w-full">Settings</a>
+      </DropdownMenuItem>
+      {#if canSeeAdmin}
+        <DropdownMenuItem>
+          <a href="/admin" class="w-full">Admin</a>
+        </DropdownMenuItem>
+      {/if}
+      {#if canInstall}
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <a href="/auth/signout" onclick={onNavigate}>Sign out</a>
+          <button onclick={installPwa} class="w-full text-left">Install App</button>
         </DropdownMenuItem>
-      </DropdownMenuContent>
-      <DropdownMenuTrigger>
-        <Button variant="ghost" class="gap-2">
-          <Avatar class="h-6 w-6">
-            <AvatarImage src={user?.user_metadata?.avatar_url} alt="avatar" />
-            <AvatarFallback>{userNameShort(user)}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-    </DropdownMenu>
-  {:else}
-    <Button variant="default">
-      <a href="/auth">Sign in</a>
-    </Button>
-  {/if}
-</div>
+      {/if}
+      <DropdownMenuSeparator />
+      <DropdownMenuItem>
+        <a href="/auth/signout" class="w-full">Sign out</a>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+{:else}
+  <Button variant="default">
+    <a href="/auth">Sign in</a>
+  </Button>
+{/if}

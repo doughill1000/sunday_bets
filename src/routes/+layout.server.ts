@@ -6,6 +6,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
     session,
     user,
     isAdmin: locals.isAdmin,
+    userProfile: locals.userProfile,
     cookies: cookies.getAll()
   };
 };
