@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
+  import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
   import {
@@ -22,8 +23,22 @@
 
   let { data }: { data: PageData } = $props();
 
+  type TeamSortKey = 'team' | 'record' | 'accuracy' | 'points';
+  type SortDirection = 'asc' | 'desc';
+
   // Light → All-In, so the highlighted All-In row sorts last.
   const WEIGHT_ORDER = ['L', 'M', 'H', 'A'];
+  const DEFAULT_SORT_DIRECTION: Record<TeamSortKey, SortDirection> = {
+    team: 'asc',
+    record: 'desc',
+    accuracy: 'desc',
+    points: 'desc'
+  };
+
+  let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
+    key: 'accuracy',
+    direction: 'desc'
+  });
 
   // Players come from season totals (already per-player and ranked). "You" first.
   const orderedPlayers = $derived.by(() => {
@@ -49,13 +64,59 @@
     return decided > 0 ? selected.wins / decided : null;
   });
 
+  function setTeamSort(key: TeamSortKey) {
+    teamSort =
+      teamSort.key === key
+        ? { key, direction: teamSort.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: DEFAULT_SORT_DIRECTION[key] };
+  }
+
+  function compareNumber(a: number | null, b: number | null, direction: SortDirection) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return direction === 'asc' ? a - b : b - a;
+  }
+
+  function compareRecord(
+    a: { wins: number; losses: number; pushes: number },
+    b: { wins: number; losses: number; pushes: number },
+    direction: SortDirection
+  ) {
+    const multiplier = direction === 'asc' ? 1 : -1;
+    return (
+      multiplier * (a.wins - b.wins) ||
+      -multiplier * (a.losses - b.losses) ||
+      multiplier * (a.pushes - b.pushes)
+    );
+  }
+
+  function compareTeamRows(
+    a: (typeof data.teamAccuracy)[number],
+    b: (typeof data.teamAccuracy)[number]
+  ) {
+    const direction = teamSort.direction;
+    const fallback = a.team_short_name.localeCompare(b.team_short_name);
+
+    switch (teamSort.key) {
+      case 'team':
+        return direction === 'asc' ? fallback : -fallback;
+      case 'record':
+        return compareRecord(a, b, direction) || fallback;
+      case 'accuracy':
+        return (
+          compareNumber(a.accuracy, b.accuracy, direction) ||
+          compareNumber(a.decisions, b.decisions, 'desc') ||
+          fallback
+        );
+      case 'points':
+        return compareNumber(a.points, b.points, direction) || fallback;
+    }
+  }
+
   const trendRows = $derived(data.trend.filter((r) => r.user_id === selectedUserId));
   const teamRows = $derived(
-    data.teamAccuracy
-      .filter((r) => r.user_id === selectedUserId)
-      .toSorted(
-        (a, b) => b.decisions - a.decisions || a.team_short_name.localeCompare(b.team_short_name)
-      )
+    data.teamAccuracy.filter((r) => r.user_id === selectedUserId).toSorted(compareTeamRows)
   );
   const weightRows = $derived(
     data.weightAccuracy
@@ -68,9 +129,18 @@
 </script>
 
 {#snippet wlp(wins: number, losses: number, pushes: number)}
-  <span class="text-success">{wins}</span>-<span class="text-destructive">{losses}</span>-<span
-    class="text-warning">{pushes}</span
+  <span class="text-success">{wins}</span>-<span>{losses}</span>-<span class="text-warning"
+    >{pushes}</span
   >
+{/snippet}
+
+{#snippet teamHead(label: string, key: TeamSortKey, align: 'left' | 'right' = 'left')}
+  <SortableTableHead
+    {label}
+    {align}
+    direction={teamSort.key === key ? teamSort.direction : null}
+    onsort={() => setTeamSort(key)}
+  />
 {/snippet}
 
 <svelte:head>
@@ -174,10 +244,10 @@
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Team</TableHead>
-                    <TableHead>Record</TableHead>
-                    <TableHead class="text-right">Accuracy</TableHead>
-                    <TableHead class="text-right">Pts</TableHead>
+                    {@render teamHead('Team', 'team')}
+                    {@render teamHead('Record', 'record')}
+                    {@render teamHead('Accuracy', 'accuracy', 'right')}
+                    {@render teamHead('Pts', 'points', 'right')}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
