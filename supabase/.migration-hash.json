@@ -146,9 +146,9 @@
     "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
   },
   "policies/10_rls_enable.sql": {
-    "hash": "f487793c2e500cd4b1b87d1c6f05efe5badaf6295d01e3abc30f4dd778d492f3",
-    "migration": "20260623132044_add_group_id_picks_settlement.sql",
-    "migrationHash": "449ef94269e6718e01e77d3d1a50c101b0b3a21a11bcbf0156b0b7198fcc639e"
+    "hash": "d6be994e0073e85732e450fbd2dbc148f4d1482afd85e7c5fa17c4cfb60e3bf8",
+    "migration": "20260623160737_group_owned_config_split.sql",
+    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
   },
   "policies/20_policies_read_core.sql": {
     "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0"
@@ -256,13 +256,28 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "2b0e5ace31cc40631542fa4f8ca76559173ef2754cbc9567e7ed10dcfae39741",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+    "hash": "70338a2e4da9d45b4ea46e061d9ebfed821c359cdcdb3bff855048727f514961",
+    "migration": "20260623160737_group_owned_config_split.sql",
+    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
     "migration": "20260623132537_drop_legacy_pick_uniqueness.sql",
     "migrationHash": "6c1dabb60c82fcafbbf3891a893dd7d746ae28437e8e391b6f83a656375c96cd"
+  },
+  "schemas/0211_group_config.sql": {
+    "hash": "bcf7ef78532ca4a573cc65e63eaeb43321a99bef8fe9d819fb3f547157b30a87",
+    "migration": "20260623160737_group_owned_config_split.sql",
+    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
+  },
+  "schemas/0212_group_week_overrides.sql": {
+    "hash": "2bfbfb16b50f1d368e38ca0bb299cf01447f237f376e5c153dd3172bb21dd243",
+    "migration": "20260623160737_group_owned_config_split.sql",
+    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
+  },
+  "policies/26_policies_group_config.sql": {
+    "hash": "edf046dceeb9f028977e7aa100af893aa9565dd55916d1759aed9145ec2b0bcd",
+    "migration": "20260623160737_group_owned_config_split.sql",
+    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
   }
 }

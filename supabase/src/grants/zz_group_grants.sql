@@ -7,3 +7,11 @@ grant select on public.groups to authenticated;
 grant select, insert on public.group_memberships to authenticated;
 
 grant execute on function public.is_member(uuid) to authenticated, service_role;
+
+-- group_config / group_week_overrides: authenticated read gated by RLS.
+-- Client writes are blocked by policy; all writes go through service_role.
+revoke all on public.group_config from public, anon;
+revoke all on public.group_week_overrides from public, anon;
+
+grant select on public.group_config to authenticated;
+grant select on public.group_week_overrides to authenticated;

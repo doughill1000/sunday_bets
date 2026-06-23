@@ -203,6 +203,38 @@ export type Database = {
           },
         ]
       }
+      group_config: {
+        Row: {
+          created_at: string
+          group_id: string
+          line_source: string
+          scoring_rules: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          line_source?: string
+          scoring_rules?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          line_source?: string
+          scoring_rules?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_config_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_memberships: {
         Row: {
           group_id: string
@@ -235,6 +267,42 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_week_overrides: {
+        Row: {
+          created_at: string
+          group_id: string
+          overrides: Json
+          week_id: number
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          overrides?: Json
+          week_id: number
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          overrides?: Json
+          week_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_week_overrides_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_week_overrides_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
             referencedColumns: ["id"]
           },
         ]
