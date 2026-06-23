@@ -63,3 +63,46 @@ export type SeasonStats = {
   weightAccuracy: WeightAccuracyEntry[];
   headToHead: HeadToHeadEntry[];
 };
+
+export type AllTimeTotalsEntry = {
+  user_id: string;
+  display_name: string;
+  total_points: number;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  missed: number;
+};
+
+export type AllTimeTeamAccuracyEntry = {
+  user_id: string;
+  display_name: string;
+  team_id: number;
+  team_name: string;
+  team_short_name: string;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  points: number;
+  accuracy: number | null;
+};
+
+export type AllTimeWeightAccuracyEntry = {
+  user_id: string;
+  display_name: string;
+  weight: WeightCode;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  points: number;
+  accuracy: number | null;
+};
+
+export type AllTimeStats = {
+  allTimeTotals: AllTimeTotalsEntry[];
+  allTimeTeamAccuracy: AllTimeTeamAccuracyEntry[];
+  allTimeWeightAccuracy: AllTimeWeightAccuracyEntry[];
+};

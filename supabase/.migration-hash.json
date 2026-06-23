@@ -289,5 +289,20 @@
     "hash": "147a270be5b42d40918d2500401e182e9528cdddd12527789a9657047dc59521",
     "migration": "20260623183834_add_avatar_key.sql",
     "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
+  },
+  "views/stats_accuracy_by_team_alltime.sql": {
+    "hash": "9217543f3d31b2a246b7cf369a3178221d19b3717d7c5d29916b1372e38582d8",
+    "migration": "20260623230458_add_alltime_stats_views.sql",
+    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
+  },
+  "views/stats_accuracy_by_weight_alltime.sql": {
+    "hash": "9ca7d45061babfb97a6d4d4767c07d74b0e8a234999f664b2610ed1e72f77e2f",
+    "migration": "20260623230458_add_alltime_stats_views.sql",
+    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
+  },
+  "views/stats_alltime_totals.sql": {
+    "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
+    "migration": "20260623230458_add_alltime_stats_views.sql",
+    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
   }
 }

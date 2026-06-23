@@ -24,6 +24,16 @@ export async function getSeasonLeaderboard(
   return (data ?? []) as SeasonLeaderboardEntry[];
 }
 
+export async function getAvailableSeasons(groupId: string): Promise<number[]> {
+  const { data, error } = await supabaseService
+    .from('leaderboard_season_totals')
+    .select('season_year')
+    .eq('group_id', groupId)
+    .order('season_year', { ascending: false });
+  if (error) throw error;
+  return [...new Set((data ?? []).map((r) => r.season_year as number))].sort((a, b) => b - a);
+}
+
 export async function getWeeklyCumulative(
   seasonYear: number,
   groupId: string
