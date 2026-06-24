@@ -15,3 +15,11 @@ revoke all on public.group_week_overrides from public, anon;
 
 grant select on public.group_config to authenticated;
 grant select on public.group_week_overrides to authenticated;
+
+-- comments / reactions: members read+write their group's rows, gated by RLS.
+-- Strip default anon/public ACLs first (defense in depth alongside RLS).
+revoke all on public.comments  from public, anon;
+revoke all on public.reactions from public, anon;
+
+grant select, insert, delete on public.comments  to authenticated;
+grant select, insert, delete on public.reactions to authenticated;

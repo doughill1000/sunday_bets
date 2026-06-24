@@ -15,13 +15,20 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
 2. If the branch is based on older trunk, refresh from `origin/master`, reverify, and
    regenerate any artifacts (types, migration ledger) from the **combined** state —
    never resolve a ledger conflict by taking one side wholesale.
-3. Draft the PR body:
+3. **Add the shipped-history entry to `docs/CHANGELOG.md`** and commit it on the
+   branch so it travels inside this PR (it then lands in `master` exactly when the
+   code does — no separate write, no drift). Newest-first, under a `## YYYY-MM-DD`
+   heading: `- **#NNN** <short title> — <what changed>` plus notable
+   tables/views/routes and the governing ADR when useful. See the format note at the
+   top of `docs/CHANGELOG.md`. It's a shared file: if the top conflicts with another
+   in-flight PR, keep both entries.
+4. Draft the PR body:
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
    - list the verification that **actually ran** (from step 1)
-4. **Confirm before the GitHub write**, then open with `gh pr create`.
-5. Move the GitHub Project item to **Review**.
-6. After the branch merges and is no longer needed, clean up:
+5. **Confirm before the GitHub write**, then open with `gh pr create`.
+6. Move the GitHub Project item to **Review**.
+7. After the branch merges and is no longer needed, clean up:
    ```powershell
    git worktree remove ..\sunday_bets-claude-NNN
    git worktree prune

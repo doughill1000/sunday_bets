@@ -3,6 +3,8 @@ import type { PageServerLoad } from './$types';
 import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
+import { getCommentsForGame } from '$lib/server/db/queries/getCommentsForGame';
+import { getReactionsForGame } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getGameplaySettings } from '$lib/server/admin';
 import { supabaseService } from '$lib/supabase/service';
@@ -31,6 +33,7 @@ export const load: PageServerLoad = async (event) => {
       week: null,
       games: [],
       picks: {},
+      social: {},
       groupPicks: [],
       userId,
       isLastWeek: false,
@@ -45,10 +48,26 @@ export const load: PageServerLoad = async (event) => {
     isLastWeekOfSeason(week.week_number, week.season_id)
   ]);
 
+  // Load comments and reactions for started games only (RLS also enforces this gate).
+  const now = Date.now();
+  const startedGameIds = games.filter((g) => new Date(g.kickoff).getTime() <= now).map((g) => g.id);
+
+  const socialEntries = await Promise.all(
+    startedGameIds.map(async (gameId) => {
+      const [comments, reactions] = await Promise.all([
+        getCommentsForGame(event, groupId, gameId),
+        getReactionsForGame(event, groupId, gameId)
+      ]);
+      return [gameId, { comments, reactions }] as const;
+    })
+  );
+  const social = Object.fromEntries(socialEntries);
+
   return {
     week,
     games,
     picks,
+    social,
     groupPicks,
     userId,
     isLastWeek: lastWeek,

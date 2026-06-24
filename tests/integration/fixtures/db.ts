@@ -58,7 +58,9 @@ export async function ensureTeams(supabase: SupabaseClient) {
   const { error } = await supabase.from('teams').upsert(
     [
       { name: 'Kansas City Chiefs', short_name: 'KC' },
-      { name: 'Buffalo Bills', short_name: 'BUF' }
+      { name: 'Buffalo Bills', short_name: 'BUF' },
+      { name: 'Philadelphia Eagles', short_name: 'PHI' },
+      { name: 'Dallas Cowboys', short_name: 'DAL' }
     ],
     { onConflict: 'name' }
   );
