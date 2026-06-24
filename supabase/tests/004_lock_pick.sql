@@ -43,34 +43,39 @@ VALUES
   ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 2, now() + interval '7 days', now() + interval '14 days')
 ON CONFLICT (season_id, week_number) DO NOTHING;
 
+-- Four teams so the four games below can each be a distinct matchup. The
+-- uq_games_matchup constraint forbids duplicate (week, home, away) rows, and
+-- lock_pick picks the home/away side of whichever game it is given, so the
+-- specific teams do not matter to these assertions.
 INSERT INTO public.teams (external_key, name, short_name)
-VALUES ('LP_A','Lock Team A','LA'), ('LP_B','Lock Team B','LB')
+VALUES ('LP_A','Lock Team A','LA'), ('LP_B','Lock Team B','LB'),
+       ('LP_C','Lock Team C','LC'), ('LP_D','Lock Team D','LD')
 ON CONFLICT (external_key) DO NOTHING;
 
--- Four games, all in week 1: future (lockable), a second future (All-In rule),
--- a past one (after kickoff), and one with no active line.
-WITH wk AS (
+-- Four games, all in week 1, each a distinct matchup: future (lockable), a
+-- second future (All-In rule), a past one (after kickoff), and one with no
+-- active line.
+INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
+SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
+FROM (
   SELECT id AS week_id FROM public.weeks
   WHERE week_number = 1
     AND season_id = (SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1)
-), t AS (
-  SELECT (SELECT id FROM public.teams WHERE external_key = 'LP_A') AS home_id,
-         (SELECT id FROM public.teams WHERE external_key = 'LP_B') AS away_id
-)
-INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
-SELECT wk.week_id, 'lp_future',  now() + interval '1 day', t.home_id, t.away_id FROM wk, t
-UNION ALL
-SELECT wk.week_id, 'lp_future2', now() + interval '1 day', t.home_id, t.away_id FROM wk, t
-UNION ALL
-SELECT wk.week_id, 'lp_past',    now() - interval '1 day', t.home_id, t.away_id FROM wk, t
-UNION ALL
-SELECT wk.week_id, 'lp_noline',  now() + interval '1 day', t.home_id, t.away_id FROM wk, t
+) wk
+CROSS JOIN (
+  VALUES
+    ('lp_future',  now() + interval '1 day', 'LP_A', 'LP_B'),
+    ('lp_future2', now() + interval '1 day', 'LP_C', 'LP_D'),
+    ('lp_past',    now() - interval '1 day', 'LP_B', 'LP_C'),
+    ('lp_noline',  now() + interval '1 day', 'LP_A', 'LP_D')
+) g(external_game_id, commence_time, home_key, away_key)
+JOIN public.teams home ON home.external_key = g.home_key
+JOIN public.teams away ON away.external_key = g.away_key
 ON CONFLICT (external_game_id) DO NOTHING;
 
--- Active line (on the home team, -6.5) for every game except lp_noline.
+-- Active line (on each game's home team, -6.5) for every game except lp_noline.
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
-SELECT g.id, 'fanduel',
-       (SELECT id FROM public.teams WHERE external_key = 'LP_A'), -6.5, true, now()
+SELECT g.id, 'fanduel', g.home_team_id, -6.5, true, now()
 FROM public.games g
 WHERE g.external_game_id IN ('lp_future','lp_future2','lp_past');
 

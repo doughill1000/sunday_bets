@@ -6,6 +6,7 @@ export type SyncStats = {
   unchanged: number;
   skippedNoTeams: number;
   skippedNoSpread: number;
+  skippedNoMatchup: number;
 };
 
 export type SyncError = { ok: false; reason: string };
