@@ -23,7 +23,16 @@ export const load: PageServerLoad = async (event) => {
   const userId = session?.user.id ?? null;
 
   const week = await findActiveWeek();
-  if (!week) return { week: null, games: [], picks: {}, groupPicks: [], userId, isLastWeek: false, finalWeekUnlimitedAllin: true };
+  if (!week)
+    return {
+      week: null,
+      games: [],
+      picks: {},
+      groupPicks: [],
+      userId,
+      isLastWeek: false,
+      finalWeekUnlimitedAllin: true
+    };
 
   const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (issue #102)
   const [games, picks, groupPicks, gameplay, lastWeek] = await Promise.all([

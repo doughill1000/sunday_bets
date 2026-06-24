@@ -134,10 +134,10 @@
     "signature": "public.set_active_line(uuid, int, numeric, text)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "793e5ed21b182c01476eb27c0cf8082b23036a83993244b1fdc58c79dfd3e88b",
+    "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
-    "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
-    "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
+    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
+    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
   },
   "functions/picks/unlock_pick.sql": {
     "hash": "07a52e195364b7b6ba0dccf8166e7e278773a8c3a090a910d29f706f04c9fa45",
@@ -331,5 +331,11 @@
     "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
     "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
     "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
+  },
+  "functions/_private/get_final_week_unlimited_allin.sql": {
+    "hash": "da89ee7880e312321c0b1e4b41c4caa7b264112125b5cf8e40f5a4cdc998023e",
+    "signature": "public._get_final_week_unlimited_allin()",
+    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
+    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
   }
 }

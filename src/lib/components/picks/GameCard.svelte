@@ -16,7 +16,12 @@
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
   }
-  let { game, initialized = false, isLastWeek = false, finalWeekUnlimitedAllin = true }: Props = $props();
+  let {
+    game,
+    initialized = false,
+    isLastWeek = false,
+    finalWeekUnlimitedAllin = true
+  }: Props = $props();
   const picks = usePicksStore();
 
   const entry = $derived($picks[game.id] ?? {});
@@ -24,7 +29,9 @@
   const started = $derived(kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
   const canChange = $derived(initialized && !started && !locked);
-  const canUseAllIn = $derived(canUseAllInRule(game.id, $picks, isLastWeek, finalWeekUnlimitedAllin));
+  const canUseAllIn = $derived(
+    canUseAllInRule(game.id, $picks, isLastWeek, finalWeekUnlimitedAllin)
+  );
 
   const weightValue = $derived(current?.weight ?? 'L');
   const lineText = $derived(spreadLine(game));

@@ -1238,6 +1238,7 @@ export type Database = {
       }
     }
     Functions: {
+      _get_final_week_unlimited_allin: { Args: never; Returns: boolean }
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] }
         Returns: undefined

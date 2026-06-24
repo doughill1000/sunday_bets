@@ -100,6 +100,24 @@ INSERT INTO public.settings (id, final_week_unlimited_allin)
 VALUES (true, true)
 ON CONFLICT (id) DO UPDATE SET final_week_unlimited_allin = true;
 
+-- SECURITY DEFINER helper so mid-test settings mutations work even after
+-- tests.clear_authentication() resets the session role to anon.
+CREATE OR REPLACE FUNCTION tests.set_final_week_allin(val boolean)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE public.settings SET final_week_unlimited_allin = val WHERE id = true;
+$$;
+
+-- SECURITY DEFINER helper to clear final-week picks between scenarios. A plain
+-- DELETE after clear_authentication() runs as anon and is blocked by RLS, so it
+-- would silently affect 0 rows and leave stale All-In picks behind.
+CREATE OR REPLACE FUNCTION tests.delete_final_week_picks()
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  DELETE FROM public.picks
+  WHERE game_id IN (
+    SELECT id FROM public.games WHERE external_game_id IN ('lp_final_1','lp_final_2')
+  );
+$$;
+
 -- ---- Authenticated player exercises lock_pick ------------------------------
 SELECT tests.authenticate_as('picker');
 
@@ -210,17 +228,12 @@ SELECT lives_ok(
 );
 
 -- ---- Final-week exception tests (setting = false) --------------------------
--- Switch the setting off (still as superuser via tests.clear_authentication).
+-- Switch the setting off via SECURITY DEFINER helper (session role is anon after clear_authentication).
 SELECT tests.clear_authentication();
-UPDATE public.settings SET final_week_unlimited_allin = false WHERE id = true;
+SELECT tests.set_final_week_allin(false);
 
 -- Clean up the final-week All-In picks so the test below starts from a clean state.
-DELETE FROM public.picks
-WHERE user_id = tests.get_supabase_uid('picker')
-  AND game_id IN (
-    SELECT id FROM public.games
-    WHERE external_game_id IN ('lp_final_1','lp_final_2')
-  );
+SELECT tests.delete_final_week_picks();
 
 SELECT tests.authenticate_as('picker');
 
@@ -243,13 +256,9 @@ SELECT throws_ok(
 
 -- 15) Restoring the setting to true re-enables the exception
 SELECT tests.clear_authentication();
-UPDATE public.settings SET final_week_unlimited_allin = true WHERE id = true;
+SELECT tests.set_final_week_allin(true);
 
-DELETE FROM public.picks
-WHERE user_id = tests.get_supabase_uid('picker')
-  AND game_id IN (
-    SELECT id FROM public.games WHERE external_game_id IN ('lp_final_1','lp_final_2')
-  );
+SELECT tests.delete_final_week_picks();
 
 SELECT tests.authenticate_as('picker');
 

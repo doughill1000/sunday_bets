@@ -8,7 +8,9 @@ function picks(overrides: Record<string, Partial<PickEntry>> = {}): Record<strin
 
 describe('canUseAllInRule', () => {
   it('allows All-In when no other game uses it', () => {
-    expect(canUseAllInRule('g1', picks({ g1: { selected: { team: 'home', weight: 'M' } } }))).toBe(true);
+    expect(canUseAllInRule('g1', picks({ g1: { selected: { team: 'home', weight: 'M' } } }))).toBe(
+      true
+    );
   });
 
   it('blocks All-In when another game has selected All-In', () => {

@@ -37,8 +37,8 @@
       <div>
         <p class="text-sm font-medium">Unlimited All-In in final week</p>
         <p class="mt-1 text-xs text-muted-foreground">
-          When enabled, players may use All-In on multiple games during the season's last week.
-          When disabled, the one-All-In-per-week limit applies in every week.
+          When enabled, players may use All-In on multiple games during the season's last week. When
+          disabled, the one-All-In-per-week limit applies in every week.
         </p>
       </div>
       <Button
