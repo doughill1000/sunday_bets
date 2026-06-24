@@ -15,8 +15,14 @@ import { listWeekGamesWithPicks } from '../../src/lib/server/games';
 // ---- Test helpers -----------------------------------------------------------
 
 const admin = createServiceClient();
-const EXTERNAL_TAG = `games-int-${Date.now()}`;
+const ts = Date.now();
+const EXTERNAL_TAG = `games-int-${ts}`;
 const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
+// Unique team names so the "started" game uses a different matchup than the
+// "future" game. Both games share the same week, but uq_games_matchup is
+// (week_id, LEAST(home,away), GREATEST(home,away)) — different pairs is fine.
+const STARTED_HOME_NAME = `GamesIntHome-${ts}`;
+const STARTED_AWAY_NAME = `GamesIntAway-${ts}`;
 
 /**
  * Minimal RequestEvent mock to satisfy listWeekGamesWithPicks auth check.
@@ -109,6 +115,8 @@ describe('listWeekGamesWithPicks integration', () => {
   let weekId: number;
   let homeTeamId: number;
   let awayTeamId: number;
+  let startedHomeTeamId: number;
+  let startedAwayTeamId: number;
   let meUserId: string;
   let otherUserId: string;
 
@@ -122,7 +130,7 @@ describe('listWeekGamesWithPicks integration', () => {
     weekId = (await ensureSeasonAndWeek(admin, 2024, 1)).weekId;
     await ensureSettings(admin);
 
-    // Resolve two teams by name from your seed fixtures
+    // Resolve two teams by name from seed fixtures (used for the future game)
     const { data: teams, error: tErr } = await admin.from('teams').select('id,name,short_name');
     if (tErr) throw tErr;
     if (!teams?.length) throw new Error('Teams not seeded');
@@ -133,6 +141,19 @@ describe('listWeekGamesWithPicks integration', () => {
 
     homeTeamId = chiefs.id as number;
     awayTeamId = bills.id as number;
+
+    // Create a separate team pair for the started game so both games live in
+    // the same week without violating uq_games_matchup.
+    const { data: extra, error: eErr } = await admin
+      .from('teams')
+      .insert([
+        { name: STARTED_HOME_NAME, short_name: `SH${ts % 10000}` },
+        { name: STARTED_AWAY_NAME, short_name: `SA${ts % 10000}` }
+      ])
+      .select('id, name');
+    if (eErr) throw new Error(`create started teams: ${eErr.message}`);
+    startedHomeTeamId = extra!.find((t: any) => t.name === STARTED_HOME_NAME)!.id as number;
+    startedAwayTeamId = extra!.find((t: any) => t.name === STARTED_AWAY_NAME)!.id as number;
 
     // Pick two users from fixture table
     const { data: users, error: uErr } = await admin
@@ -182,8 +203,8 @@ describe('listWeekGamesWithPicks integration', () => {
     const kickoffPast = new Date(Date.now() - 10 * 60_000).toISOString();
     startedGameId = await createGameWithActiveLine({
       weekId,
-      homeTeamId,
-      awayTeamId,
+      homeTeamId: startedHomeTeamId,
+      awayTeamId: startedAwayTeamId,
       kickoffISO: kickoffPast,
       tag: EXTERNAL_TAG + '-started'
     });
@@ -240,7 +261,7 @@ describe('listWeekGamesWithPicks integration', () => {
         group_id: ORIGINAL_GROUP_ID,
         user_id: meUserId,
         game_id: startedGameId,
-        picked_team_id: homeTeamId,
+        picked_team_id: startedHomeTeamId,
         locked_by: meUserId,
         weight: 'L',
         locked_at: lockedAt,
@@ -253,7 +274,7 @@ describe('listWeekGamesWithPicks integration', () => {
         user_id: otherUserId,
         game_id: startedGameId,
         locked_by: otherUserId,
-        picked_team_id: awayTeamId,
+        picked_team_id: startedAwayTeamId,
         weight: 'A',
         locked_at: lockedAt,
         locked_line_id: startedLine.id,
@@ -269,6 +290,7 @@ describe('listWeekGamesWithPicks integration', () => {
     await admin.from('picks').delete().in('game_id', [futureGameId, startedGameId]);
     await admin.from('game_lines').delete().in('game_id', [futureGameId, startedGameId]);
     await admin.from('games').delete().in('id', [futureGameId, startedGameId]);
+    await admin.from('teams').delete().in('name', [STARTED_HOME_NAME, STARTED_AWAY_NAME]);
   });
 
   it('throws when not authenticated', async () => {
