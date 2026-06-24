@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { providePicksStore } from '$lib/stores/picks';
   import type { PickGame } from '$lib/types/games';
-  import type { PickEntry } from '$lib/types/picks';
+  import type { PickEntry, GroupPickEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import GameCard from './GameCard.svelte';
@@ -15,8 +15,20 @@
     week?: Week | null;
     games?: PickGame[];
     initialPicks?: Record<string, PickEntry>;
+    groupPicks?: GroupPickEntry[];
+    userId?: string | null;
+    isLastWeek?: boolean;
+    finalWeekUnlimitedAllin?: boolean;
   }
-  let { week = null, games = [], initialPicks = {} }: Props = $props();
+  let {
+    week = null,
+    games = [],
+    initialPicks = {},
+    groupPicks = [],
+    userId = null,
+    isLastWeek = false,
+    finalWeekUnlimitedAllin = true
+  }: Props = $props();
 
   function seedPicks() {
     const seededPicks = structuredClone(initialPicks);
@@ -56,7 +68,6 @@
   const committed = $derived(
     games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
   );
-
 </script>
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
@@ -79,19 +90,19 @@
   <PicksSummaryBar {games} {now} />
 
   {#if upcoming.length === 0}
-      <Alert class="mt-4">
-        <AlertTitle>You're all set 🎉</AlertTitle>
-        <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
-      </Alert>
+    <Alert class="mt-4">
+      <AlertTitle>You're all set 🎉</AlertTitle>
+      <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
+    </Alert>
   {:else}
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
-          <GameCard game={g} {initialized} />
+          <GameCard game={g} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
         </div>
       {/each}
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} />
+  <LockedPicksSection games={committed} {now} {groupPicks} {userId} />
 {/if}

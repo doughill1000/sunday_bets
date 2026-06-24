@@ -7,7 +7,8 @@ import {
   ensureCoreTestUsers,
   ensureTeams,
   ensureSeasonAndWeek,
-  ensureSettings
+  ensureSettings,
+  clearWeekGames
 } from './fixtures/db';
 
 import { listWeekGamesWithPicks } from '../../src/lib/server/games';
@@ -109,6 +110,7 @@ describe('listWeekGamesWithPicks integration', () => {
   let weekId: number;
   let homeTeamId: number;
   let awayTeamId: number;
+  let startedAwayId: number;
   let meUserId: string;
   let otherUserId: string;
 
@@ -116,23 +118,34 @@ describe('listWeekGamesWithPicks integration', () => {
   let startedGameId: string;
 
   beforeAll(async () => {
-    // Core seed & settings
+    // Core seed & settings. This suite owns week 2 of the 2024 season so its two
+    // games never collide (via uq_games_matchup) with games other suites seed.
     await ensureCoreTestUsers(admin, true);
     await ensureTeams(admin);
-    weekId = (await ensureSeasonAndWeek(admin, 2024, 1)).weekId;
+    // A third team so the two games below are distinct matchups: uq_games_matchup
+    // forbids two games with the same (week, team-pair).
+    const { error: extraTeamErr } = await admin
+      .from('teams')
+      .upsert([{ name: 'Philadelphia Eagles', short_name: 'PHI' }], { onConflict: 'name' });
+    if (extraTeamErr) throw new Error(`seed extra team: ${extraTeamErr.message}`);
+    weekId = (await ensureSeasonAndWeek(admin, 2024, 2)).weekId;
     await ensureSettings(admin);
 
-    // Resolve two teams by name from your seed fixtures
+    // Resolve teams by name from your seed fixtures
     const { data: teams, error: tErr } = await admin.from('teams').select('id,name,short_name');
     if (tErr) throw tErr;
     if (!teams?.length) throw new Error('Teams not seeded');
 
     const chiefs = teams.find((t: any) => t.name === 'Kansas City Chiefs');
     const bills = teams.find((t: any) => t.name === 'Buffalo Bills');
-    if (!chiefs || !bills) throw new Error('Expected Chiefs/Bills seeded');
+    const eagles = teams.find((t: any) => t.name === 'Philadelphia Eagles');
+    if (!chiefs || !bills || !eagles) throw new Error('Expected Chiefs/Bills/Eagles seeded');
 
+    // Chiefs is home in both games; the away team differs so the matchups are
+    // distinct. future = Chiefs vs Bills, started = Chiefs vs Eagles.
     homeTeamId = chiefs.id as number;
     awayTeamId = bills.id as number;
+    startedAwayId = eagles.id as number;
 
     // Pick two users from fixture table
     const { data: users, error: uErr } = await admin
@@ -155,19 +168,9 @@ describe('listWeekGamesWithPicks integration', () => {
     );
     if (membershipErr) throw new Error(`upsert group memberships: ${membershipErr.message}`);
 
-    // Clean any prior artifacts with our EXTERNAL_TAG
-    await admin
-      .from('picks')
-      .delete()
-      .in('game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
-    await admin
-      .from('game_lines')
-      .delete()
-      .in('game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
-    await admin
-      .from('games')
-      .delete()
-      .in('external_game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
+    // Clear any games this suite owns (picks/game_lines cascade) so a crashed
+    // prior run can't leave a matchup behind that collides with uq_games_matchup.
+    await clearWeekGames(admin, weekId);
 
     // Create one future game (+10 min) and one "already started" game (-10 min)
     const kickoffFuture = new Date(Date.now() + 10 * 60_000).toISOString();
@@ -183,7 +186,7 @@ describe('listWeekGamesWithPicks integration', () => {
     startedGameId = await createGameWithActiveLine({
       weekId,
       homeTeamId,
-      awayTeamId,
+      awayTeamId: startedAwayId,
       kickoffISO: kickoffPast,
       tag: EXTERNAL_TAG + '-started'
     });
@@ -253,7 +256,7 @@ describe('listWeekGamesWithPicks integration', () => {
         user_id: otherUserId,
         game_id: startedGameId,
         locked_by: otherUserId,
-        picked_team_id: awayTeamId,
+        picked_team_id: startedAwayId,
         weight: 'A',
         locked_at: lockedAt,
         locked_line_id: startedLine.id,
