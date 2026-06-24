@@ -10,7 +10,7 @@ export async function getGroupPicks(
 ): Promise<GroupPickEntry[]> {
   const { data, error } = await event.locals.supabase
     .from('picks_group_view')
-    .select('user_id, display_name, game_id, picked_side, weight, picked_team_short')
+    .select('user_id, display_name, avatar_key, game_id, picked_side, weight, picked_team_short')
     .eq('week_id', weekId)
     .eq('group_id', groupId);
 
@@ -19,6 +19,7 @@ export async function getGroupPicks(
   return (data ?? []).map((r) => ({
     userId: r.user_id as string,
     displayName: r.display_name as string | null,
+    avatarKey: r.avatar_key as string | null,
     gameId: r.game_id as string,
     pickedSide: r.picked_side as GroupPickEntry['pickedSide'],
     weight: r.weight as GroupPickEntry['weight'],
