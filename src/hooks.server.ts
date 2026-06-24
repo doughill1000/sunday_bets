@@ -94,7 +94,7 @@ const injectSession: Handle = async ({ event, resolve }) => {
         .maybeSingle(),
       supabaseService
         .from('group_memberships')
-        .select('group_id')
+        .select('group_id, status')
         .eq('user_id', user.id)
         .limit(1)
         .maybeSingle()
@@ -108,17 +108,22 @@ const injectSession: Handle = async ({ event, resolve }) => {
       };
     }
 
-    event.locals.groupId = membershipResult.data?.group_id ?? null;
+    const membership = membershipResult.data;
+    const isExemptPath =
+      event.url.pathname.startsWith('/auth') ||
+      event.url.pathname.startsWith('/api') ||
+      event.url.pathname.startsWith('/join');
 
-    // Authenticated user has no group membership — redirect away from app routes.
-    // Auth and API routes are exempt to avoid redirect loops.
-    if (
-      !event.locals.groupId &&
-      !event.url.pathname.startsWith('/auth') &&
-      !event.url.pathname.startsWith('/api')
-    ) {
-      throw redirect(303, '/auth/error?reason=no-group');
+    if (!isExemptPath) {
+      if (!membership) {
+        throw redirect(303, '/join');
+      }
+      if (membership.status === 'pending') {
+        throw redirect(303, '/join/pending');
+      }
     }
+
+    event.locals.groupId = membership?.status === 'active' ? membership.group_id : null;
   }
 
   return resolve(event);
