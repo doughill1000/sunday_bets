@@ -6,10 +6,12 @@ const { mockSetVapidDetails, mockSendNotification, captureException } = vi.hoist
   captureException: vi.fn()
 }));
 
-vi.mock('$env/static/public', () => ({ PUBLIC_VAPID_PUBLIC_KEY: 'test-pub' }));
-vi.mock('$env/static/private', () => ({
-  VAPID_PRIVATE_KEY: 'test-priv',
-  VAPID_SUBJECT: 'mailto:test@test'
+vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_VAPID_PUBLIC_KEY: 'test-pub' } }));
+vi.mock('$env/dynamic/private', () => ({
+  env: {
+    VAPID_PRIVATE_KEY: 'test-priv',
+    VAPID_SUBJECT: 'mailto:test@test'
+  }
 }));
 vi.mock('@sentry/sveltekit', () => ({ captureException }));
 vi.mock('web-push', () => ({

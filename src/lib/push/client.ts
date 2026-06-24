@@ -1,5 +1,5 @@
 // Browser-side push subscription helpers. Used by the /settings page.
-import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 export type PushResult = { ok: boolean; reason?: string };
 
@@ -30,7 +30,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 /** Request permission, create/reuse a subscription, and register it server-side. */
 export async function subscribeToPush(): Promise<PushResult> {
   if (!isPushSupported()) return { ok: false, reason: 'unsupported' };
-  if (!PUBLIC_VAPID_PUBLIC_KEY) return { ok: false, reason: 'missing-vapid-key' };
+  const vapidPublicKey = env.PUBLIC_VAPID_PUBLIC_KEY;
+  if (!vapidPublicKey) return { ok: false, reason: 'missing-vapid-key' };
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return { ok: false, reason: 'permission-denied' };
@@ -40,7 +41,7 @@ export async function subscribeToPush(): Promise<PushResult> {
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_PUBLIC_KEY)
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
   }
 

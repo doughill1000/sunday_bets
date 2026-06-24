@@ -3,21 +3,23 @@
 import webpush from 'web-push';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
-import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
-import { VAPID_PRIVATE_KEY, VAPID_SUBJECT } from '$env/static/private';
+import { env as publicEnv } from '$env/dynamic/public';
+import { env as privateEnv } from '$env/dynamic/private';
 import type { PushPayload } from '$lib/domain/notifications';
 
 let configured = false;
 
 function ensureConfigured() {
   if (configured) return;
-  if (!PUBLIC_VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  const vapidPublicKey = publicEnv.PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = privateEnv.VAPID_PRIVATE_KEY;
+  if (!vapidPublicKey || !vapidPrivateKey) {
     throw new Error('VAPID keys are not configured (PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)');
   }
   webpush.setVapidDetails(
-    VAPID_SUBJECT || 'mailto:admin@sundaybets.app',
-    PUBLIC_VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
+    privateEnv.VAPID_SUBJECT || 'mailto:admin@sundaybets.app',
+    vapidPublicKey,
+    vapidPrivateKey
   );
   configured = true;
 }
