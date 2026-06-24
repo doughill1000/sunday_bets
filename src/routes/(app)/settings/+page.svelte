@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
   import type { PageData } from './$types';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
@@ -80,6 +81,66 @@
       passwordMsg = { kind: 'success', text: 'Password updated.' };
     } finally {
       passwordBusy = false;
+    }
+  }
+
+  // Sign-in methods
+  const PROVIDER_LABELS: Record<string, string> = {
+    email: 'Email / Password',
+    google: 'Google'
+  };
+
+  // Providers the user can actively connect (OAuth only — email is implicit).
+  const LINKABLE_PROVIDERS = ['google'] as const;
+
+  let identities = $state(data.identities);
+  let identityBusy = $state<string | null>(null); // identity_id currently being removed
+  let linkBusy = $state<string | null>(null); // provider currently being linked
+  let identityMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  function hasProvider(provider: string) {
+    return identities.some((i) => i.provider === provider);
+  }
+
+  async function unlinkIdentity(identityId: string) {
+    identityBusy = identityId;
+    identityMsg = null;
+    try {
+      const res = await fetch('/api/profile/identities', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity_id: identityId })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        identityMsg = { kind: 'error', text: body.reason ?? 'Could not disconnect method.' };
+        return;
+      }
+      await invalidateAll();
+      identities = data.identities;
+      identityMsg = { kind: 'success', text: 'Sign-in method disconnected.' };
+    } finally {
+      identityBusy = null;
+    }
+  }
+
+  async function linkProvider(provider: (typeof LINKABLE_PROVIDERS)[number]) {
+    linkBusy = provider;
+    identityMsg = null;
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=/settings`;
+      const { error } = await data.supabase.auth.linkIdentity({
+        provider,
+        options: { redirectTo }
+      });
+      if (error) {
+        identityMsg = { kind: 'error', text: error.message };
+        linkBusy = null;
+      }
+      // On success the browser navigates to the OAuth provider — no further handling needed here.
+    } catch {
+      identityMsg = { kind: 'error', text: 'Could not start the link flow. Try again.' };
+      linkBusy = null;
     }
   }
 
@@ -281,6 +342,71 @@
           </div>
         {/if}
       </form>
+    </CardContent>
+  </Card>
+
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Sign-in methods</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <p class="text-sm text-muted-foreground">
+        Manage how you sign in. You must keep at least one method connected.
+      </p>
+
+      <ul class="space-y-3" aria-label="Connected sign-in methods">
+        {#each identities as identity (identity.identity_id)}
+          <li class="flex items-center justify-between gap-4 rounded-lg border p-3">
+            <span class="font-medium">
+              {PROVIDER_LABELS[identity.provider] ?? identity.provider}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={identities.length <= 1 || identityBusy === identity.identity_id}
+              onclick={() => void unlinkIdentity(identity.identity_id)}
+              aria-label="Disconnect {PROVIDER_LABELS[identity.provider] ?? identity.provider}"
+            >
+              {identityBusy === identity.identity_id ? 'Disconnecting…' : 'Disconnect'}
+            </Button>
+          </li>
+        {/each}
+      </ul>
+
+      {#if identities.length <= 1}
+        <p class="text-sm text-muted-foreground">
+          Connect another sign-in method before disconnecting this one.
+        </p>
+      {/if}
+
+      <div class="space-y-2 border-t pt-3">
+        <p class="text-sm font-medium">Connect a new method</p>
+        {#each LINKABLE_PROVIDERS as provider (provider)}
+          {#if !hasProvider(provider)}
+            <Button
+              variant="outline"
+              disabled={linkBusy === provider}
+              onclick={() => void linkProvider(provider)}
+              aria-label="Connect {PROVIDER_LABELS[provider]}"
+            >
+              {linkBusy === provider ? 'Redirecting…' : `Connect with ${PROVIDER_LABELS[provider]}`}
+            </Button>
+          {/if}
+        {/each}
+        {#if LINKABLE_PROVIDERS.every((p) => hasProvider(p))}
+          <p class="text-sm text-muted-foreground">All available sign-in methods are connected.</p>
+        {/if}
+      </div>
+
+      {#if identityMsg}
+        <div
+          class="rounded-xl border p-3 text-sm"
+          class:border-success={identityMsg.kind === 'success'}
+          class:border-destructive={identityMsg.kind === 'error'}
+        >
+          {identityMsg.text}
+        </div>
+      {/if}
     </CardContent>
   </Card>
 
