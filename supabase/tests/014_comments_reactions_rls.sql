@@ -5,7 +5,7 @@
 
 BEGIN;
 
-SELECT plan(22);
+SELECT plan(25);
 
 -- ── Schema checks ─────────────────────────────────────────────────────────────
 
@@ -17,6 +17,9 @@ SELECT has_column('public', 'comments', 'user_id',    'comments has user_id');
 SELECT has_column('public', 'comments', 'game_id',    'comments has game_id');
 SELECT has_column('public', 'comments', 'body',       'comments has body');
 SELECT col_not_null('public', 'comments', 'group_id', 'comments.group_id is not null');
+
+SELECT has_column('public', 'comments', 'deleted_at', 'comments has deleted_at');
+SELECT col_is_null('public',  'comments', 'deleted_at', 'comments.deleted_at is nullable');
 
 SELECT has_column('public', 'reactions', 'group_id',  'reactions has group_id');
 SELECT has_column('public', 'reactions', 'emoji',     'reactions has emoji');
@@ -100,6 +103,16 @@ VALUES (
   tests.get_supabase_uid('cr_player_b'),
   '00000000-0000-4001-8000-000000000031',
   'Group B comment on past game'
+);
+
+-- Seed a soft-deleted comment in Group B (should be invisible to members)
+INSERT INTO public.comments (group_id, user_id, game_id, body, deleted_at)
+VALUES (
+  '00000000-0000-4001-8000-0000000000b3',
+  tests.get_supabase_uid('cr_player_b'),
+  '00000000-0000-4001-8000-000000000031',
+  'deleted comment in Group B',
+  now()
 );
 
 -- Seed a comment in Group B on the future game (should not be readable before kickoff)
@@ -187,6 +200,14 @@ SELECT results_eq(
        AND game_id  = '00000000-0000-4001-8000-000000000031' $$,
   $$ VALUES (1::bigint) $$,
   'group B member can read own group past-game comment'
+);
+
+SELECT results_eq(
+  $$ SELECT count(*) FROM public.comments
+     WHERE group_id = '00000000-0000-4001-8000-0000000000b3'
+       AND deleted_at IS NOT NULL $$,
+  $$ VALUES (0::bigint) $$,
+  'soft-deleted comments are hidden from group members'
 );
 
 SELECT results_eq(
