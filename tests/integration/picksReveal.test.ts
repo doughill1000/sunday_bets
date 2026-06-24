@@ -12,7 +12,7 @@ const EXT_FUTURE = `reveal-future-${ts}`;
 const TEAM_HOME_PAST = `RevealHP-${ts}`;
 const TEAM_AWAY_PAST = `RevealAP-${ts}`;
 const TEAM_HOME_FUTURE = `RevealHF-${ts}`;
-const TEAM_AWAY_FUTURE = TEAM_AWAY_FUTURE;
+const TEAM_AWAY_FUTURE = `RevealAF-${ts}`;
 
 describe('picks reveal after kickoff (picks_group_view RLS)', () => {
   let userAId: string;
