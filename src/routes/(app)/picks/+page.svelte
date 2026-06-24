@@ -15,4 +15,6 @@
   week={data.week}
   groupPicks={data.groupPicks}
   userId={data.userId}
+  isLastWeek={data.isLastWeek}
+  finalWeekUnlimitedAllin={data.finalWeekUnlimitedAllin}
 />
