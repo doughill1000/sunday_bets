@@ -1,19 +1,20 @@
 import { test, expect } from '@playwright/test';
 
-test('leaderboard renders the weekly and totals views', async ({ page }) => {
+test('leaderboard renders standings view', async ({ page }) => {
   await page.goto('/leaderboard');
 
-  await expect(page.getByRole('tab', { name: 'Weekly' })).toBeVisible();
-  const totalsTab = page.getByRole('tab', { name: 'Totals' });
-  await expect(totalsTab).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
 
-  // Weekly is the default view.
-  await expect(page.getByText('Weekly Progress')).toBeVisible();
+  // No tabs — the page is a single standings view.
+  await expect(page.getByRole('tab', { name: 'Weekly' })).not.toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Totals' })).not.toBeVisible();
 
-  // Switch to Totals. The first click can be dropped while the page is still
-  // hydrating in dev, so retry until the standings table appears.
-  await expect(async () => {
-    await totalsTab.click();
-    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  // Standings table headers are visible (with data) or the empty-state card is shown.
+  const hasStandings = await page.getByRole('columnheader', { name: 'Player' }).isVisible();
+  if (hasStandings) {
+    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Total' })).toBeVisible();
+  } else {
+    await expect(page.getByText('No standings yet')).toBeVisible();
+  }
 });

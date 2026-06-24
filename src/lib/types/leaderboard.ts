@@ -1,26 +1,6 @@
-import type { ShortResult } from '$lib/constants/picks';
-import type { GameResult, WeightCode } from './domain';
+import type { GameResult } from './domain';
 
 export type LeaderboardPlayer = { id: string; display_name: string; avatar_key?: string | null };
-
-export type LeaderboardPickCell = {
-  weight: WeightCode | null;
-  team: string | null;
-  result: ShortResult | null;
-  spread: string | null;
-};
-
-export type WeeklyLeaderboard = {
-  games: WeeklyLeaderboardGame[];
-  cells: Record<string, Record<string, LeaderboardPickCell>>;
-};
-
-export type WeeklyLeaderboardGame = {
-  game_id: string;
-  label: string;
-  score: string | null;
-  isFinal: boolean;
-};
 
 /** Non-null application contract shaped from leaderboard_season_totals. */
 export type SeasonLeaderboardEntry = {
