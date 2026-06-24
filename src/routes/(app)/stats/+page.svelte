@@ -21,6 +21,7 @@
     TableHeader,
     TableRow
   } from '$lib/components/ui/table';
+  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { formatAccuracy, headToHeadForUser, weightLabel } from '$lib/utils/stats';
 
   let { data }: { data: PageData } = $props();
@@ -36,6 +37,9 @@
     accuracy: 'desc',
     points: 'desc'
   };
+  const SHOW_HEAD_TO_HEAD = false;
+  const ACTIVE_TAB_TRIGGER_CLASS =
+    'data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:border-primary dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground';
 
   let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
     key: 'accuracy',
@@ -47,37 +51,31 @@
     direction: 'desc'
   });
 
-  // Players come from season totals (already per-player and ranked). "You" first.
-  const orderedPlayers = $derived.by(() => {
-    const you = data.totals.find((t) => t.user_id === data.currentUserId);
-    const others = data.totals.filter((t) => t.user_id !== data.currentUserId);
-    return you ? [you, ...others] : data.totals;
-  });
-
-  // Fall back to allTimeTotals order if season has no picks yet
   const orderedPlayersForPicker = $derived.by(() => {
-    if (orderedPlayers.length > 0) return orderedPlayers;
     const you = data.allTimeTotals.find((t) => t.user_id === data.currentUserId);
     const others = data.allTimeTotals.filter((t) => t.user_id !== data.currentUserId);
     return you ? [you, ...others] : data.allTimeTotals;
   });
 
   let selectedUserId = $state<string | null>(
-    data.totals.some((t) => t.user_id === data.currentUserId)
+    data.allTimeTotals.some((t) => t.user_id === data.currentUserId)
       ? data.currentUserId
-      : (data.totals[0]?.user_id ?? data.allTimeTotals[0]?.user_id ?? null)
+      : (data.allTimeTotals[0]?.user_id ?? null)
   );
+  let selectedSeasonYear = $state(String(data.seasonYear));
 
   const selected = $derived(data.totals.find((t) => t.user_id === selectedUserId) ?? null);
   const selectedCareer = $derived(
     data.allTimeTotals.find((t) => t.user_id === selectedUserId) ?? null
   );
-  const isSelectedYou = $derived(selected != null && selected.user_id === data.currentUserId);
-  const isCareerYou = $derived(
-    selectedCareer != null && selectedCareer.user_id === data.currentUserId
+  const isSelectedYou = $derived(selectedUserId === data.currentUserId);
+  const isCareerYou = $derived(selectedUserId === data.currentUserId);
+  const selectedDisplayName = $derived(
+    selected?.display_name ?? selectedCareer?.display_name ?? ''
   );
-  const subjectLabel = $derived(isSelectedYou ? 'You' : (selected?.display_name ?? ''));
-  const possessive = $derived(isSelectedYou ? 'Your' : `${selected?.display_name ?? ''}'s`);
+  const subjectLabel = $derived(isSelectedYou ? 'You' : selectedDisplayName);
+  const emptyStateSubject = $derived(isSelectedYou ? 'you' : selectedDisplayName);
+  const possessive = $derived(isSelectedYou ? 'Your' : `${selectedDisplayName}'s`);
 
   const atsAccuracy = $derived.by(() => {
     if (!selected) return null;
@@ -188,11 +186,16 @@
       .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
   );
 
+  $effect(() => {
+    selectedSeasonYear = String(data.seasonYear);
+  });
+
   function onSeasonChange(e: Event) {
     const year = (e.target as HTMLSelectElement).value;
+    selectedSeasonYear = year;
     const url = new URL(window.location.href);
     url.searchParams.set('season', year);
-    goto(url.toString());
+    void goto(url.toString(), { invalidateAll: true });
   }
 </script>
 
@@ -241,12 +244,11 @@
     </Card>
   {:else}
     <!-- Player selector -->
-    <div class="flex flex-wrap gap-2" role="tablist" aria-label="Select a player">
+    <div class="flex flex-wrap gap-2" aria-label="Select a player">
       {#each orderedPlayersForPicker as player (player.user_id)}
         {@const isYou = player.user_id === data.currentUserId}
         <Button
-          role="tab"
-          aria-selected={player.user_id === selectedUserId}
+          aria-pressed={player.user_id === selectedUserId}
           variant={player.user_id === selectedUserId ? 'default' : 'outline'}
           size="sm"
           onclick={() => (selectedUserId = player.user_id)}
@@ -257,280 +259,311 @@
     </div>
 
     {#if selectedCareer}
-      <!-- Career summary -->
-      <CareerSummary entry={selectedCareer} isYou={isCareerYou} />
+      <Tabs value="season" class="w-full space-y-6">
+        <TabsList
+          class={SHOW_HEAD_TO_HEAD
+            ? 'grid w-full grid-cols-3 sm:inline-grid sm:w-auto'
+            : 'grid w-full grid-cols-2 sm:inline-grid sm:w-auto'}
+        >
+          <TabsTrigger value="season" class={ACTIVE_TAB_TRIGGER_CLASS}>Season</TabsTrigger>
+          <TabsTrigger value="career" class={ACTIVE_TAB_TRIGGER_CLASS}>Career</TabsTrigger>
+          {#if SHOW_HEAD_TO_HEAD}
+            <TabsTrigger value="head-to-head" class={ACTIVE_TAB_TRIGGER_CLASS}
+              >Head to head</TabsTrigger
+            >
+          {/if}
+        </TabsList>
 
-      <!-- Season picker + per-season heading -->
-      <div class="flex flex-wrap items-center gap-3">
-        <h2 class="text-xl font-semibold tracking-tight">Season breakdown</h2>
-        {#if data.availableSeasons.length > 1}
-          <select
-            class="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            value={data.seasonYear}
-            onchange={onSeasonChange}
-            aria-label="Select season"
-          >
-            {#each data.availableSeasons as year (year)}
-              <option value={year}>{year}</option>
-            {/each}
-          </select>
-        {:else}
-          <span class="text-sm text-muted-foreground">{data.seasonYear} season</span>
-        {/if}
-      </div>
-
-      {#if data.totals.length === 0}
-        <Card class="border-dashed">
-          <CardHeader>
-            <CardTitle>No settled picks for {data.seasonYear}</CardTitle>
-            <CardDescription>Select a different season above.</CardDescription>
-          </CardHeader>
-        </Card>
-      {:else if selected}
-        <!-- Per-season summary -->
-        <Card>
-          <CardHeader>
-            <CardDescription>{data.seasonYear} season</CardDescription>
-            <CardTitle class="text-2xl">{subjectLabel}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div>
-                <dt class="text-xs font-medium text-muted-foreground">Rank</dt>
-                <dd class="text-2xl font-bold">
-                  #{selected.rank}
-                  <span class="text-base font-normal text-muted-foreground"
-                    >of {data.totals.length}</span
-                  >
-                </dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-muted-foreground">Points</dt>
-                <dd class="text-2xl font-bold">{selected.total_points}</dd>
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
-                <dd class="text-2xl font-bold">
-                  {@render wlp(selected.wins, selected.losses, selected.pushes)}
-                </dd>
-                {#if selected.missed > 0}
-                  <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
-                {/if}
-              </div>
-              <div>
-                <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
-                <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
-              </div>
-            </dl>
-          </CardContent>
-        </Card>
-
-        {#if trendRows.length > 0}
-          <Card>
-            <CardHeader>
-              <CardTitle>Season trend</CardTitle>
-              <CardDescription
-                >{possessive} cumulative points after each completed week.</CardDescription
+        <TabsContent value="season" class="space-y-6">
+          <!-- Season picker + per-season heading -->
+          <div class="flex flex-wrap items-center gap-3">
+            <h2 class="text-xl font-semibold tracking-tight">Season breakdown</h2>
+            {#if data.availableSeasons.length > 1}
+              <select
+                class="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                bind:value={selectedSeasonYear}
+                onchange={onSeasonChange}
+                aria-label="Select season"
               >
-            </CardHeader>
-            <CardContent>
-              <SeasonTrendChart rows={trendRows} showLegend={false} />
-            </CardContent>
-          </Card>
-        {/if}
+                {#each data.availableSeasons as year (year)}
+                  <option value={String(year)}>{year}</option>
+                {/each}
+              </select>
+            {:else}
+              <span class="text-sm text-muted-foreground">{data.seasonYear} season</span>
+            {/if}
+          </div>
 
-        <div class="grid gap-6 xl:grid-cols-2">
-          {#if teamRows.length > 0}
+          {#if data.totals.length === 0}
+            <Card class="border-dashed">
+              <CardHeader>
+                <CardTitle>No settled picks for {data.seasonYear}</CardTitle>
+                <CardDescription>Select a different season above.</CardDescription>
+              </CardHeader>
+            </Card>
+          {:else if selected}
+            <!-- Per-season summary -->
             <Card>
               <CardHeader>
-                <CardTitle>Accuracy by team</CardTitle>
-                <CardDescription
-                  >{possessive}
-                  {data.seasonYear} results grouped by the team backed.</CardDescription
-                >
+                <CardDescription>{data.seasonYear} season</CardDescription>
+                <CardTitle class="text-2xl">{subjectLabel}</CardTitle>
               </CardHeader>
-              <CardContent class="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {@render teamHead('Team', 'team')}
-                      {@render teamHead('Record', 'record')}
-                      {@render teamHead('Accuracy', 'accuracy', 'right')}
-                      {@render teamHead('Pts', 'points', 'right')}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {#each teamRows as row (row.team_id)}
-                      <TableRow>
-                        <TableCell class="font-medium" title={row.team_name}>
-                          {row.team_short_name}
-                        </TableCell>
-                        <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                        <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                        <TableCell class="text-right">{row.points}</TableCell>
-                      </TableRow>
-                    {/each}
-                  </TableBody>
-                </Table>
+              <CardContent>
+                <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">Rank</dt>
+                    <dd class="text-2xl font-bold">
+                      #{selected.rank}
+                      <span class="text-base font-normal text-muted-foreground"
+                        >of {data.totals.length}</span
+                      >
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">Points</dt>
+                    <dd class="text-2xl font-bold">{selected.total_points}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
+                    <dd class="text-2xl font-bold">
+                      {@render wlp(selected.wins, selected.losses, selected.pushes)}
+                    </dd>
+                    {#if selected.missed > 0}
+                      <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
+                    {/if}
+                  </div>
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
+                    <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
+                  </div>
+                </dl>
               </CardContent>
             </Card>
-          {/if}
 
-          {#if weightRows.length > 0}
-            <Card>
-              <CardHeader>
-                <CardTitle>Accuracy by weight</CardTitle>
-                <CardDescription
-                  >{possessive}
-                  {data.seasonYear} confidence-level results, including each All-In.</CardDescription
-                >
-              </CardHeader>
-              <CardContent class="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Weight</TableHead>
-                      <TableHead>Record</TableHead>
-                      <TableHead class="text-right">Accuracy</TableHead>
-                      <TableHead class="text-right">Pts</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {#each weightRows as row (row.weight)}
-                      <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
-                        <TableCell>
-                          {#if row.weight === 'A'}
-                            <Badge>All-In</Badge>
-                          {:else}
-                            {weightLabel(row.weight)}
-                          {/if}
-                        </TableCell>
-                        <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                        <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                        <TableCell class="text-right font-medium">{row.points}</TableCell>
-                      </TableRow>
-                    {/each}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          {/if}
-        </div>
+            {#if trendRows.length > 0}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Season trend</CardTitle>
+                  <CardDescription
+                    >{possessive} cumulative points after each completed week.</CardDescription
+                  >
+                </CardHeader>
+                <CardContent>
+                  <SeasonTrendChart rows={trendRows} showLegend={false} />
+                </CardContent>
+              </Card>
+            {/if}
 
-        {#if headToHead.length > 0}
-          <section class="space-y-3" aria-labelledby="head-to-head-heading">
-            <div>
-              <h2 id="head-to-head-heading" class="text-2xl font-semibold tracking-tight">
-                Head to head
-              </h2>
-              <p class="text-sm text-muted-foreground">
-                {possessive} weighted results against each player on games you both shared.
-              </p>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {#each headToHead as row (row.opponentUserId)}
-                <Card class="gap-3 py-4">
-                  <CardHeader class="px-4">
-                    <CardTitle class="text-base">
-                      {subjectLabel} <span class="text-muted-foreground">vs</span>
-                      {row.opponentDisplayName}
-                    </CardTitle>
-                    <CardDescription>{row.gamesCompared} games compared</CardDescription>
+            <div class="grid gap-6 xl:grid-cols-2">
+              {#if teamRows.length > 0}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Accuracy by team</CardTitle>
+                    <CardDescription
+                      >{possessive}
+                      {data.seasonYear} results grouped by the team backed.</CardDescription
+                    >
                   </CardHeader>
-                  <CardContent class="flex items-end justify-between px-4">
-                    <div>
-                      <p class="text-2xl font-bold">
-                        {@render wlp(row.wins, row.losses, row.pushes)}
-                      </p>
-                      <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
-                    </div>
-                    <p class="text-sm font-medium">{row.points} to {row.opponentPoints} pts</p>
+                  <CardContent class="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {@render teamHead('Team', 'team')}
+                          {@render teamHead('Record', 'record')}
+                          {@render teamHead('Accuracy', 'accuracy', 'right')}
+                          {@render teamHead('Pts', 'points', 'right')}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {#each teamRows as row (row.team_id)}
+                          <TableRow>
+                            <TableCell class="font-medium" title={row.team_name}>
+                              {row.team_short_name}
+                            </TableCell>
+                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
+                            <TableCell class="text-right">{row.points}</TableCell>
+                          </TableRow>
+                        {/each}
+                      </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
-              {/each}
+              {/if}
+
+              {#if weightRows.length > 0}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Accuracy by weight</CardTitle>
+                    <CardDescription
+                      >{possessive}
+                      {data.seasonYear} confidence-level results, including each All-In.</CardDescription
+                    >
+                  </CardHeader>
+                  <CardContent class="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Weight</TableHead>
+                          <TableHead>Record</TableHead>
+                          <TableHead class="text-right">Accuracy</TableHead>
+                          <TableHead class="text-right">Pts</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {#each weightRows as row (row.weight)}
+                          <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
+                            <TableCell>
+                              {#if row.weight === 'A'}
+                                <Badge>All-In</Badge>
+                              {:else}
+                                {weightLabel(row.weight)}
+                              {/if}
+                            </TableCell>
+                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
+                            <TableCell class="text-right font-medium">{row.points}</TableCell>
+                          </TableRow>
+                        {/each}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              {/if}
             </div>
-          </section>
+          {:else}
+            <Card class="border-dashed">
+              <CardHeader>
+                <CardTitle>No settled picks for {emptyStateSubject} in {data.seasonYear}</CardTitle>
+                <CardDescription>Select another player or season.</CardDescription>
+              </CardHeader>
+            </Card>
+          {/if}
+        </TabsContent>
+
+        <TabsContent value="career" class="space-y-6">
+          <!-- Career summary -->
+          <CareerSummary entry={selectedCareer} isYou={isCareerYou} />
+
+          <!-- All-time accuracy breakdowns -->
+          {#if allTimeTeamRows.length > 0 || allTimeWeightRows.length > 0}
+            <div>
+              <h2 class="text-xl font-semibold tracking-tight">All-time accuracy</h2>
+              <p class="mt-1 text-sm text-muted-foreground">Aggregated across all seasons.</p>
+            </div>
+            <div class="grid gap-6 xl:grid-cols-2">
+              {#if allTimeTeamRows.length > 0}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Accuracy by team</CardTitle>
+                    <CardDescription>All-time results grouped by the team backed.</CardDescription>
+                  </CardHeader>
+                  <CardContent class="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {@render allTimeTeamHead('Team', 'team')}
+                          {@render allTimeTeamHead('Record', 'record')}
+                          {@render allTimeTeamHead('Accuracy', 'accuracy', 'right')}
+                          {@render allTimeTeamHead('Pts', 'points', 'right')}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {#each allTimeTeamRows as row (row.team_id)}
+                          <TableRow>
+                            <TableCell class="font-medium" title={row.team_name}>
+                              {row.team_short_name}
+                            </TableCell>
+                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
+                            <TableCell class="text-right">{row.points}</TableCell>
+                          </TableRow>
+                        {/each}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              {/if}
+
+              {#if allTimeWeightRows.length > 0}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Accuracy by weight</CardTitle>
+                    <CardDescription>All-time confidence-level results.</CardDescription>
+                  </CardHeader>
+                  <CardContent class="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Weight</TableHead>
+                          <TableHead>Record</TableHead>
+                          <TableHead class="text-right">Accuracy</TableHead>
+                          <TableHead class="text-right">Pts</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {#each allTimeWeightRows as row (row.weight)}
+                          <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
+                            <TableCell>
+                              {#if row.weight === 'A'}
+                                <Badge>All-In</Badge>
+                              {:else}
+                                {weightLabel(row.weight)}
+                              {/if}
+                            </TableCell>
+                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
+                            <TableCell class="text-right font-medium">{row.points}</TableCell>
+                          </TableRow>
+                        {/each}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              {/if}
+            </div>
+          {/if}
+        </TabsContent>
+
+        {#if SHOW_HEAD_TO_HEAD}
+          <TabsContent value="head-to-head" class="space-y-6">
+            {#if headToHead.length > 0}
+              <section class="space-y-3" aria-labelledby="head-to-head-heading">
+                <div>
+                  <h2 id="head-to-head-heading" class="text-2xl font-semibold tracking-tight">
+                    Head to head
+                  </h2>
+                  <p class="text-sm text-muted-foreground">
+                    {possessive} weighted results against each player on games you both shared.
+                  </p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {#each headToHead as row (row.opponentUserId)}
+                    <Card class="gap-3 py-4">
+                      <CardHeader class="px-4">
+                        <CardTitle class="text-base">
+                          {subjectLabel} <span class="text-muted-foreground">vs</span>
+                          {row.opponentDisplayName}
+                        </CardTitle>
+                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                      </CardHeader>
+                      <CardContent class="flex items-end justify-between px-4">
+                        <div>
+                          <p class="text-2xl font-bold">
+                            {@render wlp(row.wins, row.losses, row.pushes)}
+                          </p>
+                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
+                        </div>
+                        <p class="text-sm font-medium">{row.points} to {row.opponentPoints} pts</p>
+                      </CardContent>
+                    </Card>
+                  {/each}
+                </div>
+              </section>
+            {/if}
+          </TabsContent>
         {/if}
-      {/if}
-
-      <!-- All-time accuracy breakdowns -->
-      {#if allTimeTeamRows.length > 0 || allTimeWeightRows.length > 0}
-        <div>
-          <h2 class="text-xl font-semibold tracking-tight">All-time accuracy</h2>
-          <p class="mt-1 text-sm text-muted-foreground">Aggregated across all seasons.</p>
-        </div>
-        <div class="grid gap-6 xl:grid-cols-2">
-          {#if allTimeTeamRows.length > 0}
-            <Card>
-              <CardHeader>
-                <CardTitle>Accuracy by team</CardTitle>
-                <CardDescription>All-time results grouped by the team backed.</CardDescription>
-              </CardHeader>
-              <CardContent class="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {@render allTimeTeamHead('Team', 'team')}
-                      {@render allTimeTeamHead('Record', 'record')}
-                      {@render allTimeTeamHead('Accuracy', 'accuracy', 'right')}
-                      {@render allTimeTeamHead('Pts', 'points', 'right')}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {#each allTimeTeamRows as row (row.team_id)}
-                      <TableRow>
-                        <TableCell class="font-medium" title={row.team_name}>
-                          {row.team_short_name}
-                        </TableCell>
-                        <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                        <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                        <TableCell class="text-right">{row.points}</TableCell>
-                      </TableRow>
-                    {/each}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          {/if}
-
-          {#if allTimeWeightRows.length > 0}
-            <Card>
-              <CardHeader>
-                <CardTitle>Accuracy by weight</CardTitle>
-                <CardDescription>All-time confidence-level results.</CardDescription>
-              </CardHeader>
-              <CardContent class="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Weight</TableHead>
-                      <TableHead>Record</TableHead>
-                      <TableHead class="text-right">Accuracy</TableHead>
-                      <TableHead class="text-right">Pts</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {#each allTimeWeightRows as row (row.weight)}
-                      <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
-                        <TableCell>
-                          {#if row.weight === 'A'}
-                            <Badge>All-In</Badge>
-                          {:else}
-                            {weightLabel(row.weight)}
-                          {/if}
-                        </TableCell>
-                        <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                        <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                        <TableCell class="text-right font-medium">{row.points}</TableCell>
-                      </TableRow>
-                    {/each}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          {/if}
-        </div>
-      {/if}
+      </Tabs>
     {/if}
   {/if}
 </section>
