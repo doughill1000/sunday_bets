@@ -19,6 +19,7 @@ export type PickEntry = {
 export type GroupPickEntry = {
   userId: string;
   displayName: string | null;
+  avatarKey: string | null;
   gameId: string;
   pickedSide: TeamSide | null;
   weight: WeightCode | null;
