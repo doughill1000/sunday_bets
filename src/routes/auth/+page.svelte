@@ -13,13 +13,11 @@
   import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
-  import { RadioGroup, RadioGroupItem } from '$lib/components/ui/radio-group';
 
   type Mode = 'signin' | 'signup' | 'resetRequest';
 
   let email = $state('');
   let password = $state('');
-  let method: 'magic' | 'password' = $state('password');
   let mode: Mode = $state('signin');
   let submitting = $state(false);
 
@@ -30,7 +28,7 @@
   };
 
   const descriptions: Record<Mode, string> = {
-    signin: 'Use a magic link or your password.',
+    signin: 'Use your password or continue with Google.',
     signup: 'Enter your email and choose a password.',
     resetRequest: 'Enter your email to receive a password reset link.'
   };
@@ -89,59 +87,31 @@
             placeholder="you@example.com"
             autocomplete="email"
           />
-          {#if mode === 'signin' && method === 'magic'}
-            <p class="text-xs text-muted-foreground">
-              A secure sign-in link will be sent to this address.
-            </p>
-          {/if}
         </div>
 
-        <!-- Sign-in: method toggle + password -->
+        <!-- Sign-in: password -->
         {#if mode === 'signin'}
-          <fieldset class="grid gap-3">
-            <legend class="sr-only">Sign-in method</legend>
-            <Label class="text-sm font-medium">Method</Label>
-            <RadioGroup bind:value={method} class="grid grid-cols-2 gap-2">
-              <label
-                for="method-password"
-                class="flex cursor-pointer items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
+          <div class="grid gap-2">
+            <div class="flex items-center justify-between">
+              <Label for="password">Password</Label>
+              <button
+                type="button"
+                class="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                onclick={() => switchMode('resetRequest')}
               >
-                <RadioGroupItem id="method-password" value="password" />
-                <span class="text-sm font-medium">Email + password</span>
-              </label>
-              <label
-                for="method-magic"
-                class="flex cursor-pointer items-center space-x-2 rounded-lg border border-border/70 p-3 transition hover:bg-accent/40"
-              >
-                <RadioGroupItem id="method-magic" value="magic" />
-                <span class="text-sm font-medium">Magic link</span>
-              </label>
-            </RadioGroup>
-          </fieldset>
-
-          {#if method === 'password'}
-            <div class="grid gap-2">
-              <div class="flex items-center justify-between">
-                <Label for="password">Password</Label>
-                <button
-                  type="button"
-                  class="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                  onclick={() => switchMode('resetRequest')}
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                bind:value={password}
-                placeholder="••••••••"
-                autocomplete="current-password"
-              />
+                Forgot password?
+              </button>
             </div>
-          {/if}
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              bind:value={password}
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+          </div>
         {/if}
 
         <!-- Sign-up: password -->

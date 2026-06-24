@@ -15,7 +15,7 @@ export const actions: Actions = {
     throw redirect(303, data.url);
   },
 
-  signin: async ({ request, locals, url }) => {
+  signin: async ({ request, locals }) => {
     const form = await request.formData();
     const email = String(form.get('email') ?? '').trim();
     const password = String(form.get('password') ?? '').trim();
@@ -23,36 +23,24 @@ export const actions: Actions = {
     if (!email) {
       return fail(400, { ok: false, message: 'Email is required' });
     }
-
-    if (password) {
-      const { data, error } = await locals.supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        return fail(400, { ok: false, message: error.message ?? 'Sign-in failed' });
-      }
-
-      if (data?.session) {
-        throw redirect(303, '/picks');
-      }
-
-      return { ok: true, message: 'Signed in (no session returned)' };
+    if (!password) {
+      return fail(400, { ok: false, message: 'Password is required' });
     }
 
-    // No password → magic link (OTP). Send the user back to whichever origin
-    // they requested the link from (prod, or a dynamic Vercel preview URL).
-    const { error } = await locals.supabase.auth.signInWithOtp({
+    const { data, error } = await locals.supabase.auth.signInWithPassword({
       email,
-      options: { emailRedirectTo: `${url.origin}/auth/confirm` }
+      password
     });
 
     if (error) {
       return fail(400, { ok: false, message: error.message ?? 'Sign-in failed' });
     }
 
-    return { ok: true, message: 'Check your email for a sign-in link' };
+    if (data?.session) {
+      throw redirect(303, '/picks');
+    }
+
+    return { ok: true, message: 'Signed in (no session returned)' };
   },
 
   signup: async ({ request, locals, url }) => {
