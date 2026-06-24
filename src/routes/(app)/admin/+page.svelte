@@ -4,6 +4,7 @@
   import ScheduleSyncCard from '$lib/components/admin/ScheduleSyncCard.svelte';
   import GradingCard from '$lib/components/admin/GradingCard.svelte';
   import TestNotificationCard from '$lib/components/admin/TestNotificationCard.svelte';
+  import AddMemberCard from '$lib/components/admin/AddMemberCard.svelte';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import {
     Table,
@@ -38,6 +39,8 @@
   <GradingCard activeWeek={data.activeWeek} onNote={handleNote} />
 
   <TestNotificationCard onNote={handleNote} />
+
+  <AddMemberCard onNote={handleNote} />
 
   {#if msg}
     <div
