@@ -54,9 +54,9 @@
     "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "a892b80e226dcce779d59b98b83be624f61c63d12dbe5b214c6dc112be7f097c",
-    "migration": "20260623183834_add_avatar_key.sql",
-    "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
+    "hash": "13e7d2193e0fa63e2256cc94795ddc03268826af13d2d396b7750e79e4ae099e",
+    "migration": "20260624142715_drop_worst_week_season_total.sql",
+    "migrationHash": "f3696a917d7ae70fc34cd5711c1777cd3b8df368b493f928ad2cd771ac963504"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
