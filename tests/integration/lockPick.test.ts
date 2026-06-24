@@ -7,7 +7,10 @@ import {
   ensureTeams,
   ensureSeasonAndWeek,
   ensureSettings,
-  clearWeekGames
+  clearWeekGames,
+  ensureGroup,
+  ensureMembership,
+  ensureAuthUsers
 } from './fixtures/db';
 
 // ---- Test setup -------------------------------------------------------------
@@ -218,5 +221,217 @@ describe('lock_pick RPC integration', () => {
     const msg = res.error!.message.toLowerCase();
     // allow a few likely phrasings depending on your SQL
     expect(/kickoff|already.*started|lock.*closed|too late/.test(msg)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// All-In constraint: within-group enforcement + cross-group independence
+// ---------------------------------------------------------------------------
+//
+// lock_pick auto-resolves the caller's group via:
+//   SELECT group_id FROM group_memberships WHERE user_id = auth.uid()
+//   ORDER BY joined_at, group_id LIMIT 1
+//
+// Strategy:
+//   - userGroupA: only member of groupA → always resolves to groupA
+//   - userGroupB: only member of groupB → always resolves to groupB
+//
+// This suite owns week 5 of the 2024 season and two stable group UUIDs
+// so it never collides with the original suite (week 3) or other test files.
+
+describe('All-In constraint — within-group and cross-group independence', () => {
+  const GROUP_A_ID = '00000000-0000-4000-8000-000000001a05';
+  const GROUP_B_ID = '00000000-0000-4000-8000-000000001b05';
+
+  // Stable user IDs for this describe block (distinct from TEST_USERS)
+  const USER_A_ID = '00000000-0000-0000-0000-000000005001';
+  const USER_B_ID = '00000000-0000-0000-0000-000000005002';
+
+  let weekId: number;
+  let homeTeamId: number;
+  let awayTeamId: number;
+  // Two games in the same week — needed to test "second All-In rejected within group"
+  let gameId1: string;
+  let gameId2: string;
+
+  const EXT_ID_1 = `allin-cross-group-g1-${Date.now()}`;
+  const EXT_ID_2 = `allin-cross-group-g2-${Date.now()}`;
+
+  async function insertGameWithLine(
+    weekId: number,
+    home: number,
+    away: number,
+    externalId: string,
+    kickoffISO: string
+  ): Promise<string> {
+    const { data: game, error: gErr } = await admin
+      .from('games')
+      .insert({
+        week_id: weekId,
+        home_team_id: home,
+        away_team_id: away,
+        external_game_id: externalId,
+        commence_time: kickoffISO
+      })
+      .select('id')
+      .single();
+    if (gErr) throw new Error(`insertGameWithLine: ${gErr.message}`);
+    const id = game!.id as string;
+    const now = new Date().toISOString();
+    const { error: lineErr } = await admin.from('game_lines').insert({
+      game_id: id,
+      source: 'fanduel',
+      spread_team_id: home,
+      spread_value: -6.5,
+      is_active_line: true,
+      fetched_at: now
+    });
+    if (lineErr) throw new Error(`insertGameWithLine line: ${lineErr.message}`);
+    return id;
+  }
+
+  beforeAll(async () => {
+    // Ensure settings row
+    await ensureSettings(admin);
+
+    // Seed auth.users for the two dedicated users
+    await ensureAuthUsers([
+      { id: USER_A_ID, email: 'allin-user-a@example.com', displayName: 'AllInUserA' },
+      { id: USER_B_ID, email: 'allin-user-b@example.com', displayName: 'AllInUserB' }
+    ]);
+
+    // Upsert public.users
+    const { error: userErr } = await admin.from('users').upsert(
+      [
+        { id: USER_A_ID, display_name: 'AllInUserA', role: 'player' },
+        { id: USER_B_ID, display_name: 'AllInUserB', role: 'player' }
+      ],
+      { onConflict: 'id' }
+    );
+    if (userErr) throw new Error('upsert users: ' + userErr.message);
+
+    // Create two separate groups
+    await ensureGroup(admin, { id: GROUP_A_ID, name: 'AllIn Group A' });
+    await ensureGroup(admin, { id: GROUP_B_ID, name: 'AllIn Group B' });
+
+    // userA → groupA only; userB → groupB only
+    await ensureMembership(admin, GROUP_A_ID, [USER_A_ID]);
+    await ensureMembership(admin, GROUP_B_ID, [USER_B_ID]);
+
+    // Resolve teams (reuse canonical teams)
+    await ensureTeams(admin);
+    const { data: teams, error: tErr } = await admin.from('teams').select('id, name');
+    if (tErr) throw tErr;
+    homeTeamId = teams!.find((t) => t.name === 'Kansas City Chiefs')!.id as number;
+    awayTeamId = teams!.find((t) => t.name === 'Buffalo Bills')!.id as number;
+
+    // Season + week 5 of 2024 (distinct from week 3 used by the original suite)
+    weekId = (await ensureSeasonAndWeek(admin, 2024, 5)).weekId;
+
+    // Clear stale games from this week before creating new ones
+    await clearWeekGames(admin, weekId);
+
+    const kickoff = new Date(Date.now() + 10 * 60_000).toISOString(); // +10 min
+    gameId1 = await insertGameWithLine(weekId, homeTeamId, awayTeamId, EXT_ID_1, kickoff);
+    gameId2 = await insertGameWithLine(weekId, awayTeamId, homeTeamId, EXT_ID_2, kickoff);
+  }, 60_000);
+
+  afterAll(async () => {
+    // Best-effort cleanup
+    await admin.from('picks').delete().eq('game_id', gameId1);
+    await admin.from('picks').delete().eq('game_id', gameId2);
+    await admin.from('game_lines').delete().eq('game_id', gameId1);
+    await admin.from('game_lines').delete().eq('game_id', gameId2);
+    await admin.from('games').delete().in('id', [gameId1, gameId2]);
+  });
+
+  it('All-In is enforced within a single group: first succeeds, second is rejected', async () => {
+    const asUserA = createUserClient(USER_A_ID);
+
+    // First All-In in groupA / week 5 — must succeed
+    const first = await asUserA.rpc('lock_pick', {
+      p_game_id: gameId1,
+      p_side: 'home',
+      p_weight: 'A'
+    });
+    expect(first.error).toBeNull();
+    const firstRow = (Array.isArray(first.data) ? first.data[0] : first.data) as any;
+    expect(firstRow?.ok).toBe(true);
+    expect(firstRow?.weight).toBe('A');
+
+    // Second All-In in the SAME group / SAME week — must be rejected
+    const second = await asUserA.rpc('lock_pick', {
+      p_game_id: gameId2,
+      p_side: 'home',
+      p_weight: 'A'
+    });
+    expect(second.data).toBeNull();
+    expect(second.error).toBeTruthy();
+    const msg = second.error!.message.toLowerCase();
+    expect(/all.?in.*used|already.*used|used.*this.*week/.test(msg)).toBe(true);
+  });
+
+  it('All-In is independent across groups: each group allows its own All-In', async () => {
+    // userA already used All-In in groupA (from the test above).
+    // userB in groupB should be able to lock All-In freely — the constraint
+    // only checks within the resolved group, not globally.
+    const asUserB = createUserClient(USER_B_ID);
+
+    // userB locks All-In in groupB / week 5 — must succeed (independent of groupA)
+    const res = await asUserB.rpc('lock_pick', {
+      p_game_id: gameId1,
+      p_side: 'home',
+      p_weight: 'A'
+    });
+    expect(res.error).toBeNull();
+    const row = (Array.isArray(res.data) ? res.data[0] : res.data) as any;
+    expect(row?.ok).toBe(true);
+    expect(row?.weight).toBe('A');
+
+    // Confirm the pick was stored under groupB
+    const { data: pick, error: pickErr } = await admin
+      .from('picks')
+      .select('group_id, weight')
+      .eq('game_id', gameId1)
+      .eq('user_id', USER_B_ID)
+      .maybeSingle();
+    expect(pickErr).toBeNull();
+    expect(pick?.group_id).toBe(GROUP_B_ID);
+    expect(pick?.weight).toBe('A');
+  });
+
+  it('same week allows All-In in group A and All-In in group B without interference', async () => {
+    // At this point:
+    //   groupA / week 5 / userA → All-In on gameId1 (locked above)
+    //   groupB / week 5 / userB → All-In on gameId1 (locked above)
+    //
+    // Verify both picks independently coexist and neither's All-In blocks the other.
+    const [{ data: pickA, error: errA }, { data: pickB, error: errB }] = await Promise.all([
+      admin
+        .from('picks')
+        .select('group_id, weight')
+        .eq('game_id', gameId1)
+        .eq('user_id', USER_A_ID)
+        .maybeSingle(),
+      admin
+        .from('picks')
+        .select('group_id, weight')
+        .eq('game_id', gameId1)
+        .eq('user_id', USER_B_ID)
+        .maybeSingle()
+    ]);
+
+    expect(errA).toBeNull();
+    expect(errB).toBeNull();
+
+    expect(pickA?.group_id).toBe(GROUP_A_ID);
+    expect(pickA?.weight).toBe('A');
+
+    expect(pickB?.group_id).toBe(GROUP_B_ID);
+    expect(pickB?.weight).toBe('A');
+
+    // The two picks are in separate groups — the same game/week allows
+    // one All-In per group, not one All-In globally.
+    expect(pickA?.group_id).not.toBe(pickB?.group_id);
   });
 });
