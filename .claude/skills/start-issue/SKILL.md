@@ -32,6 +32,9 @@ One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.
 
 ## Remember
 
+- To check whether related work has **already shipped**, read `docs/CHANGELOG.md`
+  first (terse, newest-first, in-context), then `gh` for anything newer — don't
+  reverse-engineer completion from source.
 - Branch from a **freshly fetched `origin/master`** — the local clone can be months
   stale (Doug works across machines).
 - **Serialize** work touching the migration ledger, generated types, or shared

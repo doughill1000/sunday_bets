@@ -14,7 +14,8 @@ Codex concurrently.
 | Release grouping                           | GitHub Milestone         |
 | Durable technical and fairness decisions   | [ADRs](adr/README.md)    |
 | Implementation and verification            | Pull request             |
-| Shipped history                            | GitHub Release           |
+| Shipped history (authoritative)            | GitHub Release           |
+| Shipped history (in-repo convenience log)  | [docs/CHANGELOG.md](CHANGELOG.md) |
 
 Do not duplicate live status in the roadmap or ADRs. Links are preferable to copied
 checklists.
@@ -158,7 +159,9 @@ migration-ledger conflict by choosing one side wholesale.
 
 ## Pull request and merge
 
-1. Open one PR for the issue and use `Closes #NNN`.
+1. Add a newest-first entry to [`docs/CHANGELOG.md`](CHANGELOG.md) on the branch so
+   shipped history merges atomically with the PR (it lands in `master` only when the
+   code does), then open one PR for the issue and use `Closes #NNN`.
 2. Link the governing or proposed ADR and explain any deviation from it.
 3. Record commands that actually ran and explain skipped checks.
 4. Move the Project item to Review.
