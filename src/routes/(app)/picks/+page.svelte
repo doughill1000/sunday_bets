@@ -9,4 +9,10 @@
   <title>My Picks</title>
 </svelte:head>
 
-<PicksBoard games={data.games} initialPicks={data.picks} week={data.week} />
+<PicksBoard
+  games={data.games}
+  initialPicks={data.picks}
+  week={data.week}
+  social={data.social}
+  userId={data.userId}
+/>

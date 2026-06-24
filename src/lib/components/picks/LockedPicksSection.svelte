@@ -4,12 +4,19 @@
   import { signedSpreadForTeam } from '$lib/domain/spread';
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';
+  import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
+  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
+  import CommentsSection from './CommentsSection.svelte';
+
+  type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
 
   interface Props {
     games: PickGame[];
     now: number;
+    social?: Record<string, SocialData>;
+    userId?: string | null;
   }
-  let { games, now }: Props = $props();
+  let { games, now, social = {}, userId = null }: Props = $props();
   const picks = usePicksStore();
 
   function kickoffMs(g: PickGame) {
@@ -89,6 +96,17 @@
             {/if}
           </div>
         </div>
+
+        {#if started && social[g.id]}
+          <div class="px-3 pb-3">
+            <CommentsSection
+              gameId={g.id}
+              comments={social[g.id].comments}
+              reactions={social[g.id].reactions}
+              currentUserId={userId}
+            />
+          </div>
+        {/if}
       {/each}
     </div>
   </details>

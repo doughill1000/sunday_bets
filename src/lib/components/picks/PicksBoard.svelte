@@ -8,15 +8,20 @@
   import GameCard from './GameCard.svelte';
   import PicksSummaryBar from './PicksSummaryBar.svelte';
   import LockedPicksSection from './LockedPicksSection.svelte';
+  import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
+  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
   type Week = Database['public']['Tables']['weeks']['Row'];
+  type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
 
   interface Props {
     week?: Week | null;
     games?: PickGame[];
     initialPicks?: Record<string, PickEntry>;
+    social?: Record<string, SocialData>;
+    userId?: string | null;
   }
-  let { week = null, games = [], initialPicks = {} }: Props = $props();
+  let { week = null, games = [], initialPicks = {}, social = {}, userId = null }: Props = $props();
 
   function seedPicks() {
     const seededPicks = structuredClone(initialPicks);
@@ -56,7 +61,6 @@
   const committed = $derived(
     games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
   );
-
 </script>
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
@@ -79,10 +83,10 @@
   <PicksSummaryBar {games} {now} />
 
   {#if upcoming.length === 0}
-      <Alert class="mt-4">
-        <AlertTitle>You're all set 🎉</AlertTitle>
-        <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
-      </Alert>
+    <Alert class="mt-4">
+      <AlertTitle>You're all set 🎉</AlertTitle>
+      <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
+    </Alert>
   {:else}
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
@@ -93,5 +97,5 @@
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} />
+  <LockedPicksSection games={committed} {now} {social} {userId} />
 {/if}

@@ -1,0 +1,59 @@
+-- Comments: members may post anytime; reads are gated to post-kickoff to avoid
+-- revealing pick context before the game locks (mirrors the picks read gate in
+-- 40_policies_picks.sql).
+
+drop policy if exists sel_comments_member_post_kickoff on public.comments;
+create policy sel_comments_member_post_kickoff
+  on public.comments for select
+  to authenticated
+  using (
+    public.is_member(group_id)
+    and public.game_has_started(game_id)
+  );
+
+drop policy if exists ins_comments_own_member on public.comments;
+create policy ins_comments_own_member
+  on public.comments for insert
+  to authenticated
+  with check (
+    public.is_member(group_id)
+    and user_id = (select auth.uid())
+  );
+
+drop policy if exists del_comments_own on public.comments;
+create policy del_comments_own
+  on public.comments for delete
+  to authenticated
+  using (
+    public.is_member(group_id)
+    and user_id = (select auth.uid())
+  );
+
+-- Reactions: same post-kickoff read gate; toggle (insert + delete) allowed for members.
+
+drop policy if exists sel_reactions_member_post_kickoff on public.reactions;
+create policy sel_reactions_member_post_kickoff
+  on public.reactions for select
+  to authenticated
+  using (
+    public.is_member(group_id)
+    and public.game_has_started(game_id)
+  );
+
+drop policy if exists ins_reactions_own_member on public.reactions;
+create policy ins_reactions_own_member
+  on public.reactions for insert
+  to authenticated
+  with check (
+    public.is_member(group_id)
+    and user_id = (select auth.uid())
+  );
+
+drop policy if exists del_reactions_own on public.reactions;
+create policy del_reactions_own
+  on public.reactions for delete
+  to authenticated
+  using (
+    public.is_member(group_id)
+    and user_id = (select auth.uid())
+  );

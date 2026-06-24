@@ -1,0 +1,125 @@
+/**
+ * E2E: Comments and Reactions
+ *
+ * The global setup seeds a started (past) game so the CommentsSection is visible.
+ * These tests verify that: the UI renders post-kickoff, a user can post a comment,
+ * and reactions can be toggled.
+ *
+ * Note: The seeded E2E game uses a future commence_time (to allow pick locking in
+ * the picks tests). For CommentsSection to appear, the game must have already
+ * started. This spec uses the Supabase service role to seed an additional past game
+ * dedicated to the social feature tests, then visits the picks page.
+ *
+ * Because we seed server-side and rely on server-rendered data, a page reload is
+ * needed after seeding to see the CommentsSection.
+ */
+
+import { test, expect } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
+
+const PAST_GAME_TAG = 'e2e-comments-past-game';
+
+// This test file requires its own seeding; it runs after auth.setup so the
+// storageState is available for authenticated requests.
+test.use({ storageState: 'playwright/.auth/user.json' });
+
+test.beforeAll(async () => {
+  const url = process.env.PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
+  if (!url || !serviceRole) return;
+
+  const supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+
+  // Look up the week seeded by global-setup
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('year', 2026)
+    .maybeSingle();
+  if (!season) return;
+  const { data: week } = await supabase
+    .from('weeks')
+    .select('id')
+    .eq('season_id', season.id)
+    .eq('week_number', 1)
+    .maybeSingle();
+  if (!week) return;
+
+  const { data: teams } = await supabase.from('teams').select('id').limit(2);
+  if (!teams || teams.length < 2) return;
+
+  // Seed a past game for the comments feature
+  await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
+  await supabase.from('games').insert({
+    week_id: week.id,
+    external_game_id: PAST_GAME_TAG,
+    commence_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    home_team_id: teams[0].id,
+    away_team_id: teams[1].id
+  });
+});
+
+test.afterAll(async () => {
+  const url = process.env.PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
+  if (!url || !serviceRole) return;
+  const supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
+});
+
+test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
+  await page.goto('/picks');
+
+  // The committed picks section should show started games. When expanded,
+  // the CommentsSection (with reaction buttons) should be visible.
+  const details = page.locator('details').first();
+  await expect(details).toBeVisible();
+
+  // Open the committed section if it isn't already
+  const summary = details.locator('summary');
+  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
+  if (!isOpen) await summary.click();
+
+  // Reaction buttons are rendered by CommentsSection for started games.
+  // We look for at least one reaction toggle button (aria-label includes "reaction").
+  await expect(page.getByRole('button', { name: /reaction/i }).first()).toBeVisible({
+    timeout: 5000
+  });
+});
+
+test('user can post a comment on a started game', async ({ page }) => {
+  await page.goto('/picks');
+
+  const details = page.locator('details').first();
+  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
+  if (!isOpen) await details.locator('summary').click();
+
+  const commentInput = page.getByRole('textbox', { name: /comment/i }).first();
+  await expect(commentInput).toBeVisible({ timeout: 5000 });
+
+  const uniqueBody = `E2E test comment ${Date.now()}`;
+  await commentInput.fill(uniqueBody);
+  await page.getByRole('button', { name: 'Post' }).first().click();
+
+  // The comment should appear in the list immediately (optimistic update)
+  await expect(page.getByText(uniqueBody)).toBeVisible({ timeout: 3000 });
+});
+
+test('user can toggle a reaction on a started game', async ({ page }) => {
+  await page.goto('/picks');
+
+  const details = page.locator('details').first();
+  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
+  if (!isOpen) await details.locator('summary').click();
+
+  // Click the 👍 reaction button
+  const thumbsUp = page.getByRole('button', { name: /👍/ }).first();
+  await expect(thumbsUp).toBeVisible({ timeout: 5000 });
+  await thumbsUp.click();
+
+  // After toggling, the button should show a count ≥ 1
+  await expect(async () => {
+    const text = await thumbsUp.textContent();
+    expect(text).toMatch(/1/);
+  }).toPass({ timeout: 3000 });
+});
