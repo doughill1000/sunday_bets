@@ -6,7 +6,8 @@ import {
   ensureGroupMembership,
   ensureTeams,
   ensureSeasonAndWeek,
-  ensureSettings
+  ensureSettings,
+  clearWeekGames
 } from './fixtures/db';
 
 // ---- Test setup -------------------------------------------------------------
@@ -68,10 +69,11 @@ describe('lock_pick RPC integration', () => {
   let gameId: string;
 
   beforeAll(async () => {
-    // Core seed
+    // Core seed. This suite owns week 3 of the 2024 season so its game never
+    // collides (via uq_games_matchup) with games seeded by the other suites.
     await ensureCoreTestUsers(admin, true);
     await ensureTeams(admin);
-    weekId = (await ensureSeasonAndWeek(admin, 2024, 1)).weekId;
+    weekId = (await ensureSeasonAndWeek(admin, 2024, 3)).weekId;
     await ensureSettings(admin);
 
     // Resolve teams (Chiefs/Bills from fixtures)
@@ -91,10 +93,9 @@ describe('lock_pick RPC integration', () => {
     // or grading.test.ts ran first (they happen to seed the same membership).
     await ensureGroupMembership(admin, [userId]);
 
-    // Clean any prior artifacts
-    await admin.from('picks').delete().eq('game_id', EXTERNAL_ID); // safe if you store external id there
-    await admin.from('game_lines').delete().eq('game_id', EXTERNAL_ID);
-    await admin.from('games').delete().eq('external_game_id', EXTERNAL_ID);
+    // Clear any games this suite owns (picks/game_lines cascade) so a crashed
+    // prior run can't leave a matchup behind that collides with uq_games_matchup.
+    await clearWeekGames(admin, weekId);
 
     // Create fresh game with a kickoff in the future (so locking is allowed)
     const kickoff = new Date(Date.now() + 5 * 60_000).toISOString(); // +5 minutes

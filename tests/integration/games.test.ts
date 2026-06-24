@@ -7,7 +7,8 @@ import {
   ensureCoreTestUsers,
   ensureTeams,
   ensureSeasonAndWeek,
-  ensureSettings
+  ensureSettings,
+  clearWeekGames
 } from './fixtures/db';
 
 import { listWeekGamesWithPicks } from '../../src/lib/server/games';
@@ -15,14 +16,8 @@ import { listWeekGamesWithPicks } from '../../src/lib/server/games';
 // ---- Test helpers -----------------------------------------------------------
 
 const admin = createServiceClient();
-const ts = Date.now();
-const EXTERNAL_TAG = `games-int-${ts}`;
+const EXTERNAL_TAG = `games-int-${Date.now()}`;
 const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
-// Unique team names so the "started" game uses a different matchup than the
-// "future" game. Both games share the same week, but uq_games_matchup is
-// (week_id, LEAST(home,away), GREATEST(home,away)) — different pairs is fine.
-const STARTED_HOME_NAME = `GamesIntHome-${ts}`;
-const STARTED_AWAY_NAME = `GamesIntAway-${ts}`;
 
 /**
  * Minimal RequestEvent mock to satisfy listWeekGamesWithPicks auth check.
@@ -115,8 +110,7 @@ describe('listWeekGamesWithPicks integration', () => {
   let weekId: number;
   let homeTeamId: number;
   let awayTeamId: number;
-  let startedHomeTeamId: number;
-  let startedAwayTeamId: number;
+  let startedAwayId: number;
   let meUserId: string;
   let otherUserId: string;
 
@@ -124,36 +118,34 @@ describe('listWeekGamesWithPicks integration', () => {
   let startedGameId: string;
 
   beforeAll(async () => {
-    // Core seed & settings
+    // Core seed & settings. This suite owns week 2 of the 2024 season so its two
+    // games never collide (via uq_games_matchup) with games other suites seed.
     await ensureCoreTestUsers(admin, true);
     await ensureTeams(admin);
-    weekId = (await ensureSeasonAndWeek(admin, 2024, 1)).weekId;
+    // A third team so the two games below are distinct matchups: uq_games_matchup
+    // forbids two games with the same (week, team-pair).
+    const { error: extraTeamErr } = await admin
+      .from('teams')
+      .upsert([{ name: 'Philadelphia Eagles', short_name: 'PHI' }], { onConflict: 'name' });
+    if (extraTeamErr) throw new Error(`seed extra team: ${extraTeamErr.message}`);
+    weekId = (await ensureSeasonAndWeek(admin, 2024, 2)).weekId;
     await ensureSettings(admin);
 
-    // Resolve two teams by name from seed fixtures (used for the future game)
+    // Resolve teams by name from your seed fixtures
     const { data: teams, error: tErr } = await admin.from('teams').select('id,name,short_name');
     if (tErr) throw tErr;
     if (!teams?.length) throw new Error('Teams not seeded');
 
     const chiefs = teams.find((t: any) => t.name === 'Kansas City Chiefs');
     const bills = teams.find((t: any) => t.name === 'Buffalo Bills');
-    if (!chiefs || !bills) throw new Error('Expected Chiefs/Bills seeded');
+    const eagles = teams.find((t: any) => t.name === 'Philadelphia Eagles');
+    if (!chiefs || !bills || !eagles) throw new Error('Expected Chiefs/Bills/Eagles seeded');
 
+    // Chiefs is home in both games; the away team differs so the matchups are
+    // distinct. future = Chiefs vs Bills, started = Chiefs vs Eagles.
     homeTeamId = chiefs.id as number;
     awayTeamId = bills.id as number;
-
-    // Create a separate team pair for the started game so both games live in
-    // the same week without violating uq_games_matchup.
-    const { data: extra, error: eErr } = await admin
-      .from('teams')
-      .insert([
-        { name: STARTED_HOME_NAME, short_name: `SH${ts % 10000}` },
-        { name: STARTED_AWAY_NAME, short_name: `SA${ts % 10000}` }
-      ])
-      .select('id, name');
-    if (eErr) throw new Error(`create started teams: ${eErr.message}`);
-    startedHomeTeamId = extra!.find((t: any) => t.name === STARTED_HOME_NAME)!.id as number;
-    startedAwayTeamId = extra!.find((t: any) => t.name === STARTED_AWAY_NAME)!.id as number;
+    startedAwayId = eagles.id as number;
 
     // Pick two users from fixture table
     const { data: users, error: uErr } = await admin
@@ -176,19 +168,9 @@ describe('listWeekGamesWithPicks integration', () => {
     );
     if (membershipErr) throw new Error(`upsert group memberships: ${membershipErr.message}`);
 
-    // Clean any prior artifacts with our EXTERNAL_TAG
-    await admin
-      .from('picks')
-      .delete()
-      .in('game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
-    await admin
-      .from('game_lines')
-      .delete()
-      .in('game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
-    await admin
-      .from('games')
-      .delete()
-      .in('external_game_id', [EXTERNAL_TAG + '-future', EXTERNAL_TAG + '-started']);
+    // Clear any games this suite owns (picks/game_lines cascade) so a crashed
+    // prior run can't leave a matchup behind that collides with uq_games_matchup.
+    await clearWeekGames(admin, weekId);
 
     // Create one future game (+10 min) and one "already started" game (-10 min)
     const kickoffFuture = new Date(Date.now() + 10 * 60_000).toISOString();
@@ -203,8 +185,8 @@ describe('listWeekGamesWithPicks integration', () => {
     const kickoffPast = new Date(Date.now() - 10 * 60_000).toISOString();
     startedGameId = await createGameWithActiveLine({
       weekId,
-      homeTeamId: startedHomeTeamId,
-      awayTeamId: startedAwayTeamId,
+      homeTeamId,
+      awayTeamId: startedAwayId,
       kickoffISO: kickoffPast,
       tag: EXTERNAL_TAG + '-started'
     });
@@ -261,7 +243,7 @@ describe('listWeekGamesWithPicks integration', () => {
         group_id: ORIGINAL_GROUP_ID,
         user_id: meUserId,
         game_id: startedGameId,
-        picked_team_id: startedHomeTeamId,
+        picked_team_id: homeTeamId,
         locked_by: meUserId,
         weight: 'L',
         locked_at: lockedAt,
@@ -274,7 +256,7 @@ describe('listWeekGamesWithPicks integration', () => {
         user_id: otherUserId,
         game_id: startedGameId,
         locked_by: otherUserId,
-        picked_team_id: startedAwayTeamId,
+        picked_team_id: startedAwayId,
         weight: 'A',
         locked_at: lockedAt,
         locked_line_id: startedLine.id,
@@ -290,7 +272,6 @@ describe('listWeekGamesWithPicks integration', () => {
     await admin.from('picks').delete().in('game_id', [futureGameId, startedGameId]);
     await admin.from('game_lines').delete().in('game_id', [futureGameId, startedGameId]);
     await admin.from('games').delete().in('id', [futureGameId, startedGameId]);
-    await admin.from('teams').delete().in('name', [STARTED_HOME_NAME, STARTED_AWAY_NAME]);
   });
 
   it('throws when not authenticated', async () => {
