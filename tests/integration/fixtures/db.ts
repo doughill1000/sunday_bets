@@ -1,4 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import postgres from 'postgres';
+
+// PostgREST/GoTrue won't let us write the auth schema, so auth.users seeding goes
+// through a direct Postgres connection (same approach as supabase/scripts/seed-demo).
+// The local Supabase DB is reachable at this fixed URL; allow an override for CI.
+const LOCAL_DB_URL =
+  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 
 // Canonical test IDs and emails so multiple tests can share fixtures deterministically.
 export const TEST_USERS = [
@@ -121,11 +128,74 @@ export async function ensureSettings(supabase: SupabaseClient) {
 // The stable original group ID seeded in migration 0210_pick_group_foreign_keys.sql.
 export const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 
+/**
+ * Seed auth.users rows for the given users so that public.users inserts satisfy
+ * the users_id_fkey -> auth.users(id) foreign key. PostgREST/GoTrue won't let us
+ * write the auth schema, so we use a direct Postgres connection. Idempotent:
+ * existing rows (matched by id) are left untouched.
+ *
+ * Use this whenever a test needs users beyond the three seeded in supabase/seed.sql.
+ */
+export async function ensureAuthUsers(users: { id: string; email: string; displayName: string }[]) {
+  if (users.length === 0) return;
+  const sql = postgres(LOCAL_DB_URL);
+  try {
+    for (const u of users) {
+      await sql`
+        insert into auth.users (
+          id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+          raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+          confirmation_token, recovery_token, email_change_token_new, email_change,
+          email_change_token_current, phone_change, phone_change_token, reauthentication_token
+        ) values (
+          ${u.id}, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+          ${u.email}, crypt('password', gen_salt('bf')), now(),
+          ${sql.json({ provider: 'email', providers: ['email'] })},
+          ${sql.json({ display_name: u.displayName })}, now(), now(),
+          '', '', '', '', '', '', '', ''
+        )
+        on conflict (id) do nothing`;
+    }
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * Delete auth.users rows by id. The public.users -> auth.users FK is
+ * ON DELETE CASCADE, so this also removes the mirrored public.users rows.
+ */
+export async function deleteAuthUsers(ids: string[]) {
+  if (ids.length === 0) return;
+  const sql = postgres(LOCAL_DB_URL);
+  try {
+    await sql`delete from auth.users where id in ${sql(ids)}`;
+  } finally {
+    await sql.end();
+  }
+}
+
+/**
+ * Delete all games in a week. picks and game_lines reference games with
+ * ON DELETE CASCADE, so they are removed too. Used to give matchup-scoped tests
+ * a clean week, since uq_games_matchup forbids duplicate (week, team-pair) rows
+ * and a crashed prior run could otherwise leave a colliding game behind.
+ */
+export async function clearWeekGames(supabase: SupabaseClient, weekId: number) {
+  const { data: games, error } = await supabase.from('games').select('id').eq('week_id', weekId);
+  if (error) throw new Error('clearWeekGames select: ' + error.message);
+  const ids = (games ?? []).map((g) => g.id as string);
+  if (ids.length === 0) return;
+  const { error: delErr } = await supabase.from('games').delete().in('id', ids);
+  if (delErr) throw new Error('clearWeekGames delete: ' + delErr.message);
+}
+
 export async function ensureGroupMembership(supabase: SupabaseClient, userIds: string[]) {
   const { error: groupErr } = await supabase
     .from('groups')
     .upsert({ id: ORIGINAL_GROUP_ID, name: 'Sunday Bets' }, { onConflict: 'id' });
-  if (groupErr) throw new Error('ensureGroupMembership: failed to upsert group: ' + groupErr.message);
+  if (groupErr)
+    throw new Error('ensureGroupMembership: failed to upsert group: ' + groupErr.message);
 
   const { error: memberErr } = await supabase.from('group_memberships').upsert(
     userIds.map((id) => ({ group_id: ORIGINAL_GROUP_ID, user_id: id, role: 'member' })),
