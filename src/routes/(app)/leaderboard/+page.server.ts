@@ -1,12 +1,14 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getWeeklyTable } from '$lib/server/leaderboard';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
-import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
 
 export const load: PageServerLoad = async (event) => {
+  const { groupId } = event.locals;
+  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+
   const seasonYear = await getCurrentSeasonYear();
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (issue #102)
   const [{ data: auth }, totals, table, activeWeekRow] = await Promise.all([
     event.locals.supabase.auth.getUser(),
     getSeasonLeaderboard(seasonYear, groupId),

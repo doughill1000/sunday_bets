@@ -23,7 +23,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // hand-seeded auth.users rows), so we create/repair auth users via a direct Postgres
 // connection (DATABASE_URL) instead. Password is the same for everyone: "password".
 const PASSWORD = 'password';
-// The stable v1.7 tenancy group (mirrors DEFAULT_GROUP_ID in src/lib/constants/groups.ts).
+// The stable v1.7 tenancy group (seeded by migration 0213_seed_original_group_config.sql).
 // The migration seeds memberships only for users that exist at migration time, so the demo
 // players created below must be enrolled here for group-scoped reads (picks_group_view) to work.
 const GROUP_ID = '00000000-0000-4000-8000-000000000017';
