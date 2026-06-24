@@ -1,6 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import type { GroupPickEntry } from '$lib/types/picks';
 
+// Reads picks via picks_group_view (security_invoker=on + RLS):
+// own picks always visible; others' only after game kickoff.
 export async function getGroupPicks(
   event: RequestEvent,
   weekId: number,
