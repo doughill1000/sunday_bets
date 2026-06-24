@@ -3,6 +3,7 @@ import { createServiceClient, createUserClient } from './_auth';
 import {
   TEST_USERS,
   ensureCoreTestUsers,
+  ensureGroupMembership,
   ensureTeams,
   ensureSeasonAndWeek,
   ensureSettings
@@ -84,6 +85,11 @@ describe('lock_pick RPC integration', () => {
     const { data: users, error: uErr } = await admin.from('users').select('id, display_name');
     if (uErr) throw uErr;
     userId = users!.find((u) => u.display_name === TEST_USERS[0].display)!.id as string;
+
+    // Ensure group membership exists so lock_pick can resolve the user's group.
+    // Without this, the test is order-dependent: it only passes if games.test.ts
+    // or grading.test.ts ran first (they happen to seed the same membership).
+    await ensureGroupMembership(admin, [userId]);
 
     // Clean any prior artifacts
     await admin.from('picks').delete().eq('game_id', EXTERNAL_ID); // safe if you store external id there
