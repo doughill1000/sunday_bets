@@ -323,9 +323,9 @@
     "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
   },
   "views/picks_group_view.sql": {
-    "hash": "d25a8f7704a7b9afacaab27bbf71930b528f8b30603ef89a6d7928d8f2db04e9",
-    "migration": "20260624145150_picks_group_view.sql",
-    "migrationHash": "6e7dfda2a7a7090fe39eec7cbd82d4fec874929311e8466ebb3b292cdbf6277c"
+    "hash": "3fab816ab9c924ddb133d45eab3276b4eabeae84ce34840c930e385c18fb44ed",
+    "migration": "20260624160630_picks_group_view_avatar_key.sql",
+    "migrationHash": "59b4448c2262a42a03af116e8a625ac97d9c1cbd8f3068f2389b5ef6dbc6e0ba"
   },
   "schemas/0216_settings_final_week_allin.sql": {
     "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
