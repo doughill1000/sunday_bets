@@ -235,9 +235,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "schemas/0209_group_memberships.sql": {
-    "hash": "72aad6871c5f644c6352dd17e2d4438e6b997c094516d59eefa9f8009ec9140c",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+    "hash": "d6f80c86e7a3d67add95cbaf05adc0872885c82ee3d28a53c6ec2ac7a644ae53",
+    "migration": "20260624183925_add_group_membership_status.sql",
+    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
   },
   "indexes/idx_group_memberships_user_group.sql": {
     "hash": "0617d23e299557fc42fb5b0ddbb77cbbc90579cb0e5d504df143cd3c347dbb68",
@@ -337,5 +337,15 @@
     "signature": "public._get_final_week_unlimited_allin()",
     "migration": "20260624160318_add_get_final_week_allin_helper.sql",
     "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
+  },
+  "schemas/0103_group_membership_status.sql": {
+    "hash": "711c1d530f168565a6d02c89deb34fb89dbaae9f487ba4cadbe0b4653898cb5b",
+    "migration": "20260624183925_add_group_membership_status.sql",
+    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
+  },
+  "schemas/0217_group_membership_status_column.sql": {
+    "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
+    "migration": "20260624184155_add_group_membership_status_column.sql",
+    "migrationHash": "ba90581ad8bfb385d9bca84cbe2699cbf34a61634a8cad865dd65df9380501bf"
   }
 }
