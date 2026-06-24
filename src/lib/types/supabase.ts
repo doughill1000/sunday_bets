@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -621,6 +621,7 @@ export type Database = {
       }
       settings: {
         Row: {
+          final_week_unlimited_allin: boolean
           id: boolean
           missed_pick_penalty: number | null
           odds_api_calls_used_current_month: number
@@ -628,6 +629,7 @@ export type Database = {
           reset_on: string | null
         }
         Insert: {
+          final_week_unlimited_allin?: boolean
           id?: boolean
           missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
@@ -635,6 +637,7 @@ export type Database = {
           reset_on?: string | null
         }
         Update: {
+          final_week_unlimited_allin?: boolean
           id?: boolean
           missed_pick_penalty?: number | null
           odds_api_calls_used_current_month?: number
@@ -817,6 +820,67 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      picks_group_view: {
+        Row: {
+          commence_time: string | null
+          display_name: string | null
+          game_id: string | null
+          group_id: string | null
+          locked_at: string | null
+          locked_spread_team_id: number | null
+          locked_spread_value: number | null
+          picked_side: Database["public"]["Enums"]["side_enum"] | null
+          picked_team_id: number | null
+          picked_team_short: string | null
+          user_id: string | null
+          week_id: number | null
+          weight: Database["public"]["Enums"]["weight_enum"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ui_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_picked_team_id_fkey"
+            columns: ["picked_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "picks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1174,6 +1238,7 @@ export type Database = {
       }
     }
     Functions: {
+      _get_final_week_unlimited_allin: { Args: never; Returns: boolean }
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] }
         Returns: undefined

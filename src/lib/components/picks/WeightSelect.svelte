@@ -7,12 +7,11 @@
   interface Props {
     gameId: string;
     canChange?: boolean;
-    // export let canUseAllIn = true;
+    canUseAllIn?: boolean;
     selectedWeight?: WeightCode;
-    // export let showAllInHint = false;
   }
 
-  let { gameId, canChange = false, selectedWeight = 'L' }: Props = $props();
+  let { gameId, canChange = false, canUseAllIn = true, selectedWeight = 'L' }: Props = $props();
   const picks = usePicksStore();
 </script>
 
@@ -31,6 +30,7 @@
       {#each Object.entries(WEIGHTS) as [code, w] (code)}
         <ToggleGroupItem
           value={code}
+          disabled={code === 'A' && !canUseAllIn}
           class="flex-1 px-3 py-[6px] leading-none border rounded-md transition
                  bg-muted/40 hover:bg-muted/60
                  data-[state=on]:border-primary data-[state=on]:text-primary
@@ -46,10 +46,10 @@
       {/each}
     </ToggleGroup>
 
-    <!-- {#if showAllInHint}
+    {#if canChange && !canUseAllIn}
       <p class="mt-1 text-[11px] text-muted-foreground">
-        {WEIGHTS.A.label} has already been used on another game.
+        All-In already used on another game this week.
       </p>
-    {/if} -->
+    {/if}
   </div>
 </div>
