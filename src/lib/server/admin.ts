@@ -15,9 +15,14 @@ export type ActiveWeek = {
   end_ts: string;
 } | null;
 
+export type GameplaySettings = {
+  finalWeekUnlimitedAllin: boolean;
+};
+
 type SettingsRow = {
   odds_api_monthly_cap: number | null;
   odds_api_calls_used_current_month: number | null;
+  final_week_unlimited_allin: boolean | null;
   admin_flags?: Record<string, unknown> | null;
 };
 
@@ -42,6 +47,18 @@ export async function getSettingsSummary(): Promise<SettingsSummary> {
   const usagePct = cap > 0 ? Math.min(used / cap, 1) : 1;
 
   return { cap, used, remaining, usagePct };
+}
+
+export async function getGameplaySettings(): Promise<GameplaySettings> {
+  const { data: st } = await supabaseService
+    .from('settings')
+    .select('final_week_unlimited_allin')
+    .limit(1)
+    .maybeSingle<SettingsRow>();
+
+  return {
+    finalWeekUnlimitedAllin: st?.final_week_unlimited_allin ?? true
+  };
 }
 
 export async function getActiveWeek(nowIso: string): Promise<ActiveWeek> {

@@ -17,13 +17,17 @@
     initialPicks?: Record<string, PickEntry>;
     groupPicks?: GroupPickEntry[];
     userId?: string | null;
+    isLastWeek?: boolean;
+    finalWeekUnlimitedAllin?: boolean;
   }
   let {
     week = null,
     games = [],
     initialPicks = {},
     groupPicks = [],
-    userId = null
+    userId = null,
+    isLastWeek = false,
+    finalWeekUnlimitedAllin = true
   }: Props = $props();
 
   function seedPicks() {
@@ -94,7 +98,7 @@
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
-          <GameCard game={g} {initialized} />
+          <GameCard game={g} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
         </div>
       {/each}
     </div>
