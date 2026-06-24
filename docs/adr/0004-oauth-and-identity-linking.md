@@ -1,6 +1,6 @@
 # ADR-0004: Third-party (OAuth) sign-in and the single-identity / account-linking model
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-24
 - Issue: #105
 - Supersedes: None
