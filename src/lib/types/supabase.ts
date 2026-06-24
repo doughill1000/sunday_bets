@@ -156,6 +156,7 @@ export type Database = {
           final_scores: Json | null
           home_team_id: number
           id: string
+          schedule_game_id: string | null
           status: string
           week_id: number
         }
@@ -166,6 +167,7 @@ export type Database = {
           final_scores?: Json | null
           home_team_id: number
           id?: string
+          schedule_game_id?: string | null
           status?: string
           week_id: number
         }
@@ -176,6 +178,7 @@ export type Database = {
           final_scores?: Json | null
           home_team_id?: number
           id?: string
+          schedule_game_id?: string | null
           status?: string
           week_id?: number
         }
@@ -1258,6 +1261,26 @@ export type Database = {
           p_external_game_id: string
           p_home_team_id: number
           p_week_id: number
+        }
+        Returns: string
+      }
+      upsert_game_by_matchup: {
+        Args: {
+          p_week_id: number
+          p_home_team_id: number
+          p_away_team_id: number
+          p_commence: string
+          p_schedule_game_id: string
+          p_status?: string
+        }
+        Returns: string
+      }
+      attach_line_to_matchup: {
+        Args: {
+          p_week_id: number
+          p_home_team_id: number
+          p_away_team_id: number
+          p_external_game_id: string
         }
         Returns: string
       }

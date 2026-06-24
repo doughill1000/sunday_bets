@@ -3,7 +3,7 @@ import { syncOddsForActiveWeek } from '../oddsSync';
 import { fetchNFLSpreadsForWeek, extractFanduelSpread } from '../odds';
 import { findActiveWeek } from '../db/queries/findActiveWeek';
 import { findTeamsByNames } from '../db/queries/findTeamsByNames';
-import { upsertGameByExternalId } from '../db/commands/upsertGameByExternalId';
+import { attachLineToMatchup } from '../db/commands/attachLineToMatchup';
 import { setActiveLine } from '../db/commands/setActiveLine';
 import { supabaseService } from '$lib/supabase/service';
 
@@ -21,8 +21,8 @@ vi.mock('../db/queries/findTeamsByNames', () => ({
   findTeamsByNames: vi.fn()
 }));
 
-vi.mock('../db/commands/upsertGameByExternalId', () => ({
-  upsertGameByExternalId: vi.fn()
+vi.mock('../db/commands/attachLineToMatchup', () => ({
+  attachLineToMatchup: vi.fn()
 }));
 
 vi.mock('../db/commands/setActiveLine', () => ({
@@ -44,7 +44,7 @@ vi.mock('$lib/supabase/service', () => {
 });
 
 // Helper to control the mocked maybeSingle() return value
-const mockMaybeSingle = (supabaseService as any).maybeSingle as ReturnType<typeof vi.fn>;
+const mockMaybeSingle = (supabaseService as { maybeSingle: ReturnType<typeof vi.fn> }).maybeSingle;
 
 describe('syncOddsForActiveWeek', () => {
   beforeEach(() => {
@@ -53,7 +53,7 @@ describe('syncOddsForActiveWeek', () => {
   });
 
   it('should return an error if no active week is found', async () => {
-    (findActiveWeek as any).mockResolvedValue(null);
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
     const result = await syncOddsForActiveWeek();
 
@@ -62,7 +62,7 @@ describe('syncOddsForActiveWeek', () => {
 
   it('should refuse to sync once the monthly API cap is reached', async () => {
     const { canSyncNow } = await import('../settings');
-    (canSyncNow as any).mockResolvedValueOnce(false);
+    (canSyncNow as ReturnType<typeof vi.fn>).mockResolvedValueOnce(false);
 
     const result = await syncOddsForActiveWeek();
 
@@ -71,16 +71,29 @@ describe('syncOddsForActiveWeek', () => {
   });
 
   it('should process a game and set a new line successfully', async () => {
-    (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
-    (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      week_number: 1,
+      start_ts: '2026-09-04T00:00:00Z',
+      end_ts: '2026-09-09T00:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-1',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: '2026-09-07T20:00:00Z'
+      }
     ]);
-    (findTeamsByNames as any).mockResolvedValue([
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 10, name: 'Team A' },
       { id: 20, name: 'Team B' }
     ]);
-    (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -3.5 });
-    (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
+    (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
+      spreadTeamName: 'Team A',
+      spreadValue: -3.5
+    });
+    (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({ data: null });
 
     const result = await syncOddsForActiveWeek();
@@ -97,33 +110,88 @@ describe('syncOddsForActiveWeek', () => {
   });
 
   it('should skip a game if a team is not found in the database', async () => {
-    (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
-    (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team C' }
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      week_number: 1,
+      start_ts: '2026-09-04T00:00:00Z',
+      end_ts: '2026-09-09T00:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-1',
+        home_team: 'Team A',
+        away_team: 'Team C',
+        commence_time: '2026-09-07T20:00:00Z'
+      }
     ]);
-    (findTeamsByNames as any).mockResolvedValue([
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 10, name: 'Team A' },
       { id: 20, name: 'Team B' }
     ]);
 
     const result = await syncOddsForActiveWeek();
 
-    expect(upsertGameByExternalId).not.toHaveBeenCalled();
+    expect(attachLineToMatchup).not.toHaveBeenCalled();
     expect(setActiveLine).not.toHaveBeenCalled();
     expect(result).toEqual(expect.objectContaining({ ok: true, skippedNoTeams: 1, count: 0 }));
   });
 
-  it('should skip setting a line if the new spread is identical to the active one', async () => {
-    (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
-    (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
+  it('should skip a game when no pre-seeded matchup exists', async () => {
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      week_number: 1,
+      start_ts: '2026-09-04T00:00:00Z',
+      end_ts: '2026-09-09T00:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-1',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: '2026-09-07T20:00:00Z'
+      }
     ]);
-    (findTeamsByNames as any).mockResolvedValue([
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 10, name: 'Team A' },
       { id: 20, name: 'Team B' }
     ]);
-    (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -3.5 });
-    (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
+    (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
+      spreadTeamName: 'Team A',
+      spreadValue: -3.5
+    });
+    // No pre-seeded game — attach returns null
+    (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const result = await syncOddsForActiveWeek();
+
+    expect(setActiveLine).not.toHaveBeenCalled();
+    expect(result).toEqual(expect.objectContaining({ ok: true, skippedNoMatchup: 1, count: 0 }));
+  });
+
+  it('should skip setting a line if the new spread is identical to the active one', async () => {
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      week_number: 1,
+      start_ts: '2026-09-04T00:00:00Z',
+      end_ts: '2026-09-09T00:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-1',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: '2026-09-07T20:00:00Z'
+      }
+    ]);
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 10, name: 'Team A' },
+      { id: 20, name: 'Team B' }
+    ]);
+    (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
+      spreadTeamName: 'Team A',
+      spreadValue: -3.5
+    });
+    (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
       data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
     });
@@ -135,16 +203,29 @@ describe('syncOddsForActiveWeek', () => {
   });
 
   it('should update the line if the new spread is different from the active one', async () => {
-    (findActiveWeek as any).mockResolvedValue({ id: 1, week_number: 1 });
-    (fetchNFLSpreadsForWeek as any).mockResolvedValue([
-      { id: 'ext-1', home_team: 'Team A', away_team: 'Team B' }
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      week_number: 1,
+      start_ts: '2026-09-04T00:00:00Z',
+      end_ts: '2026-09-09T00:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-1',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: '2026-09-07T20:00:00Z'
+      }
     ]);
-    (findTeamsByNames as any).mockResolvedValue([
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue([
       { id: 10, name: 'Team A' },
       { id: 20, name: 'Team B' }
     ]);
-    (extractFanduelSpread as any).mockReturnValue({ spreadTeamName: 'Team A', spreadValue: -4.0 });
-    (upsertGameByExternalId as any).mockResolvedValue('game-uuid-1');
+    (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
+      spreadTeamName: 'Team A',
+      spreadValue: -4.0
+    });
+    (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
       data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
     });

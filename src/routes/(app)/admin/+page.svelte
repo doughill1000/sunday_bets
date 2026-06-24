@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import OddsSyncCard from '$lib/components/admin/OddsSyncCard.svelte';
+  import ScheduleSyncCard from '$lib/components/admin/ScheduleSyncCard.svelte';
   import GradingCard from '$lib/components/admin/GradingCard.svelte';
   import TestNotificationCard from '$lib/components/admin/TestNotificationCard.svelte';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
@@ -31,6 +32,8 @@
 
 <section class="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
   <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} onNote={handleNote} />
+
+  <ScheduleSyncCard onNote={handleNote} />
 
   <GradingCard activeWeek={data.activeWeek} onNote={handleNote} />
 
