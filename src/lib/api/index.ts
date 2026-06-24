@@ -29,6 +29,13 @@ export function post<T>(path: string, body: object = {}): Promise<T> {
   });
 }
 
+export function patch<T>(path: string, body: object = {}): Promise<T> {
+  return apiCall<T>(path, {
+    method: 'PATCH',
+    body: JSON.stringify(body)
+  });
+}
+
 // New helper for DELETE requests
 export function del<T>(path: string): Promise<T> {
   return apiCall<T>(path, {

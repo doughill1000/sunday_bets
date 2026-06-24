@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
 import { error as httpError, json } from '@sveltejs/kit';
-import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
 
 type PostBody = { emoji: string };
 
@@ -14,9 +13,11 @@ export const POST: RequestHandler = async (event) => {
     return json({ ok: false, reason: 'Emoji is required.' }, { status: 400 });
   }
 
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (#102)
   const userId = event.locals.user?.id;
   if (!userId) return json({ ok: false, reason: 'Not authenticated.' }, { status: 401 });
+
+  const groupId = event.locals.groupId;
+  if (!groupId) return json({ ok: false, reason: 'No active group.' }, { status: 400 });
 
   const { data, error } = await supabase
     .from('reactions')
@@ -48,7 +49,8 @@ export const DELETE: RequestHandler = async (event) => {
     return json({ ok: false, reason: 'emoji query param is required.' }, { status: 400 });
   }
 
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (#102)
+  const groupId = event.locals.groupId;
+  if (!groupId) return json({ ok: false, reason: 'No active group.' }, { status: 400 });
 
   const { error } = await supabase
     .from('reactions')

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { providePicksStore } from '$lib/stores/picks';
   import type { PickGame } from '$lib/types/games';
-  import type { PickEntry } from '$lib/types/picks';
+  import type { PickEntry, GroupPickEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import GameCard from './GameCard.svelte';
@@ -19,9 +19,21 @@
     games?: PickGame[];
     initialPicks?: Record<string, PickEntry>;
     social?: Record<string, SocialData>;
+    groupPicks?: GroupPickEntry[];
     userId?: string | null;
+    isLastWeek?: boolean;
+    finalWeekUnlimitedAllin?: boolean;
   }
-  let { week = null, games = [], initialPicks = {}, social = {}, userId = null }: Props = $props();
+  let {
+    week = null,
+    games = [],
+    initialPicks = {},
+    social = {},
+    groupPicks = [],
+    userId = null,
+    isLastWeek = false,
+    finalWeekUnlimitedAllin = true
+  }: Props = $props();
 
   function seedPicks() {
     const seededPicks = structuredClone(initialPicks);
@@ -91,11 +103,11 @@
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
-          <GameCard game={g} {initialized} />
+          <GameCard game={g} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
         </div>
       {/each}
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} {social} {userId} />
+  <LockedPicksSection games={committed} {now} {social} {groupPicks} {userId} />
 {/if}

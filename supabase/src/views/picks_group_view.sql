@@ -1,0 +1,33 @@
+-- Group-scoped view of picks for started games.
+-- security_invoker means the caller's RLS on public.picks is applied:
+--   - members see their own picks always
+--   - members see others' picks only after game_has_started (the sel_picks_owner_or_started policy)
+-- The WHERE clause mirrors that restriction for performance and clarity.
+create or replace view public.picks_group_view
+with (security_invoker = on) as
+select
+  p.group_id,
+  p.user_id,
+  u.display_name,
+  p.game_id,
+  g.week_id,
+  p.weight,
+  (case
+     when p.picked_team_id = g.home_team_id then 'home'
+     when p.picked_team_id = g.away_team_id then 'away'
+   end)::public.side_enum as picked_side,
+  p.picked_team_id,
+  t.short_name as picked_team_short,
+  p.locked_spread_value,
+  p.locked_spread_team_id,
+  p.locked_at,
+  g.commence_time,
+  u.avatar_key
+from public.picks p
+join public.users u on u.id = p.user_id
+join public.games g on g.id = p.game_id
+join public.teams t on t.id = p.picked_team_id
+where g.commence_time <= now();
+
+revoke all on public.picks_group_view from public, anon;
+grant select on public.picks_group_view to authenticated;

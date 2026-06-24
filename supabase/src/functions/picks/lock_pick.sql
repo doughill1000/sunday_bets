@@ -25,6 +25,7 @@ declare
   v_weeknum int;
   v_season  int;
   v_lastwk  int;
+  v_final_week_allin boolean;
   v_line_id int;
   v_spread_team_id int;
   v_spread_value numeric;
@@ -66,7 +67,7 @@ begin
 
   v_team_id := case when p_side = 'home' then v_game.home_team_id else v_game.away_team_id end;
 
-  -- All-In (A) once per week unless final week
+  -- All-In (A) enforcement: once per week, unless the final-week exception is enabled
   select w.week_number, w.season_id into v_weeknum, v_season
   from public.weeks w
   where w.id = v_game.week_id;
@@ -75,7 +76,9 @@ begin
   from public.weeks
   where season_id = v_season;
 
-  if p_weight = 'A' and v_weeknum <> v_lastwk then
+  v_final_week_allin := public._get_final_week_unlimited_allin();
+
+  if p_weight = 'A' and not (v_weeknum = v_lastwk and v_final_week_allin) then
     if exists (
       select 1
       from public.picks p

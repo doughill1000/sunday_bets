@@ -1,50 +1,54 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
-import { getWeeklyTable } from '$lib/server/leaderboard';
-import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
-import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
+import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 
 export const load: PageServerLoad = async (event) => {
+  const { groupId } = event.locals;
+  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+
+  const view = event.url.searchParams.get('view') ?? 'standings';
+  const weekParam = event.url.searchParams.get('week');
+
   const seasonYear = await getCurrentSeasonYear();
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (issue #102)
-  const [{ data: auth }, totals, table, activeWeekRow] = await Promise.all([
+
+  const [{ data: auth }, totals] = await Promise.all([
     event.locals.supabase.auth.getUser(),
-    getSeasonLeaderboard(seasonYear, groupId),
-    getWeeklyTable(seasonYear, groupId),
-    findActiveWeek()
+    getSeasonLeaderboard(seasonYear, groupId)
   ]);
 
-  const activeWeekNumber = activeWeekRow?.week_number ?? null;
+  const currentUserId = auth?.user?.id ?? null;
 
-  const nonPreseasonWeeks = table.weeks.filter((w) => w >= 0);
-
-  // Show only active + prior weeks (hide future weeks)
-  let weeksOrdered: number[];
-  if (activeWeekNumber != null) {
-    const prior = nonPreseasonWeeks.filter((w) => w < activeWeekNumber).sort((a, b) => b - a); // descending prior weeks
-    weeksOrdered = [activeWeekNumber, ...prior];
-  } else {
-    // If no active week, just show all non-preseason weeks descending
-    weeksOrdered = [...nonPreseasonWeeks].sort((a, b) => b - a);
+  if (view !== 'weekly') {
+    return {
+      seasonYear,
+      totals,
+      currentUserId,
+      view: 'standings' as const,
+      weeks: null,
+      selectedWeek: null,
+      breakdown: null
+    };
   }
 
-  // Restrict tableByWeek and weekTotals to visible weeks
-  const visibleWeekSet = new Set(weeksOrdered);
-  const filteredTableByWeek = Object.fromEntries(
-    Object.entries(table.tableByWeek).filter(([wk]) => visibleWeekSet.has(Number(wk)))
-  );
-  const filteredWeekTotals = Object.fromEntries(
-    Object.entries(table.weekTotals ?? {}).filter(([wk]) => visibleWeekSet.has(Number(wk)))
-  );
+  const weeks = await getSeasonWeekOptions(seasonYear);
+  const latestWeek = weeks.length > 0 ? weeks[weeks.length - 1] : null;
+  const selectedWeekNumber =
+    weekParam != null ? Number(weekParam) : (latestWeek?.weekNumber ?? null);
+  const selectedWeek = weeks.find((w) => w.weekNumber === selectedWeekNumber) ?? latestWeek;
+
+  const breakdown =
+    selectedWeek != null
+      ? await getWeeklyPickBreakdown(event, selectedWeek.weekId, groupId, currentUserId)
+      : [];
 
   return {
     seasonYear,
     totals,
-    players: table.players,
-    weeks: weeksOrdered,
-    activeWeekNumber,
-    tableByWeek: filteredTableByWeek,
-    weekTotals: filteredWeekTotals,
-    currentUserId: auth?.user?.id ?? null
+    currentUserId,
+    view: 'weekly' as const,
+    weeks,
+    selectedWeek: selectedWeek ?? null,
+    breakdown
   };
 };

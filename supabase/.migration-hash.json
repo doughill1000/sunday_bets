@@ -134,10 +134,10 @@
     "signature": "public.set_active_line(uuid, int, numeric, text)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "af493aad650203bc206749c45b5658487167e38d648cf80496b4ab232d23655f",
+    "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
-    "migration": "20260623132324_group_aware_pick_functions.sql",
-    "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
+    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
+    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
   },
   "functions/picks/unlock_pick.sql": {
     "hash": "07a52e195364b7b6ba0dccf8166e7e278773a8c3a090a910d29f706f04c9fa45",
@@ -235,9 +235,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "schemas/0209_group_memberships.sql": {
-    "hash": "72aad6871c5f644c6352dd17e2d4438e6b997c094516d59eefa9f8009ec9140c",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+    "hash": "d6f80c86e7a3d67add95cbaf05adc0872885c82ee3d28a53c6ec2ac7a644ae53",
+    "migration": "20260624183925_add_group_membership_status.sql",
+    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
   },
   "indexes/idx_group_memberships_user_group.sql": {
     "hash": "0617d23e299557fc42fb5b0ddbb77cbbc90579cb0e5d504df143cd3c347dbb68",
@@ -341,5 +341,31 @@
     "hash": "7726edcc8cfc276b0f46a660c80795aa819196a1b47b913eba5925940354eb38",
     "migration": "20260624185624_add_deleted_at_to_comments.sql",
     "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
+  },
+  "views/picks_group_view.sql": {
+    "hash": "3fab816ab9c924ddb133d45eab3276b4eabeae84ce34840c930e385c18fb44ed",
+    "migration": "20260624160630_picks_group_view_avatar_key.sql",
+    "migrationHash": "59b4448c2262a42a03af116e8a625ac97d9c1cbd8f3068f2389b5ef6dbc6e0ba"
+  },
+  "schemas/0216_settings_final_week_allin.sql": {
+    "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
+    "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
+    "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
+  },
+  "functions/_private/get_final_week_unlimited_allin.sql": {
+    "hash": "da89ee7880e312321c0b1e4b41c4caa7b264112125b5cf8e40f5a4cdc998023e",
+    "signature": "public._get_final_week_unlimited_allin()",
+    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
+    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
+  },
+  "schemas/0103_group_membership_status.sql": {
+    "hash": "711c1d530f168565a6d02c89deb34fb89dbaae9f487ba4cadbe0b4653898cb5b",
+    "migration": "20260624183925_add_group_membership_status.sql",
+    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
+  },
+  "schemas/0217_group_membership_status_column.sql": {
+    "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
+    "migration": "20260624184155_add_group_membership_status_column.sql",
+    "migrationHash": "ba90581ad8bfb385d9bca84cbe2699cbf34a61634a8cad865dd65df9380501bf"
   }
 }

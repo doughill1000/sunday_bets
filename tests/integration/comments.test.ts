@@ -19,9 +19,12 @@ beforeAll(async () => {
   await ensureTeams(admin);
   const { weekId } = await ensureSeasonAndWeek(admin, 2025, 1);
 
-  const { data: teams } = await admin.from('teams').select('id').limit(2);
-  if (!teams || teams.length < 2) throw new Error('Need 2 teams');
+  // Use two distinct matchups: the uq_games_matchup index forbids two games with
+  // the same (week, team-pair), so past and future games need different teams.
+  const { data: teams } = await admin.from('teams').select('id').limit(4);
+  if (!teams || teams.length < 4) throw new Error('Need 4 teams');
   const [homeId, awayId] = [teams[0].id, teams[1].id];
+  const [futureHomeId, futureAwayId] = [teams[2].id, teams[3].id];
 
   // Seed groups (may already exist from other test runs — ignore conflicts)
   await admin.from('groups').upsert(
@@ -64,8 +67,8 @@ beforeAll(async () => {
       week_id: weekId,
       external_game_id: FUTURE_GAME_EXTERNAL,
       commence_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      home_team_id: homeId,
-      away_team_id: awayId
+      home_team_id: futureHomeId,
+      away_team_id: futureAwayId
     })
     .select('id')
     .single();
@@ -74,8 +77,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Delete the games first so their comments/reactions cascade away, then remove
+  // the memberships and groups this suite created. Leaving the memberships behind
+  // would pollute grade_game in other suites (the test users would be settled in
+  // these groups for unrelated games).
   await admin.from('games').delete().eq('external_game_id', PAST_GAME_EXTERNAL);
   await admin.from('games').delete().eq('external_game_id', FUTURE_GAME_EXTERNAL);
+  await admin.from('group_memberships').delete().in('group_id', [GROUP_A_ID, GROUP_B_ID]);
+  await admin.from('groups').delete().in('id', [GROUP_A_ID, GROUP_B_ID]);
 });
 
 describe('comments RLS — cross-group denial', () => {

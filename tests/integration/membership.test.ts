@@ -6,7 +6,7 @@
 
 import { describe, it, beforeAll, afterAll, expect } from 'vitest';
 import { createServiceClient } from './_auth';
-import { ensureTeams } from './fixtures/db';
+import { ensureTeams, ensureAuthUsers, deleteAuthUsers } from './fixtures/db';
 import { getPlayers } from '../../src/lib/server/db/queries/getPlayers';
 import {
   getSeasonLeaderboard,
@@ -28,7 +28,17 @@ let seedGameId: string;
 beforeAll(async () => {
   const now = new Date().toISOString();
 
-  // Seed public.users directly via service role (bypasses auth.users trigger)
+  // public.users.id is a FK to auth.users(id), so the auth rows must exist first.
+  // Seed them via a direct Postgres connection (PostgREST can't write auth schema).
+  await ensureAuthUsers(
+    MEMBER_IDS.map((id, i) => ({
+      id,
+      email: `membertest${i + 1}@example.com`,
+      displayName: `MemberTest${i + 1}`
+    }))
+  );
+
+  // Seed public.users directly via service role
   const { error: userErr } = await admin.from('users').upsert(
     MEMBER_IDS.map((id, i) => ({
       id,
@@ -167,6 +177,8 @@ afterAll(async () => {
     .eq('group_id', ORIGINAL_GROUP_ID)
     .in('user_id', MEMBER_IDS);
   await admin.from('users').delete().in('id', MEMBER_IDS);
+  // Remove the auth.users rows too (cascades to any leftover public.users).
+  await deleteAuthUsers(MEMBER_IDS);
 });
 
 describe('membership: 10+ members', () => {
