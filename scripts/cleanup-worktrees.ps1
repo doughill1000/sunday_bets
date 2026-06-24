@@ -20,6 +20,13 @@
   Anything dirty, unmerged, or unpushed is reported and left alone. Never clean
   another agent's in-progress worktree -- run this only against your own.
 
+  Removal uses `git worktree remove --force` and then deletes the directory
+  directly when git leaves gitignored files (node_modules, copied .env*) behind
+  -- the usual Windows "Directory not empty" failure -- using a robocopy fallback
+  for paths that exceed the 260-char limit. Any pre-existing orphaned worktree
+  directories (left by an earlier failed removal, no longer tracked by git) are
+  reported so they can be cleaned up by hand.
+
 .EXAMPLE
   # Show which merged worktrees WOULD be removed (default; nothing deleted):
   powershell -File scripts/cleanup-worktrees.ps1
@@ -57,6 +64,31 @@ if ($LASTEXITCODE -ne 0) { throw "cannot resolve trunk ref '$Trunk'" }
 
 $hasGh = [bool](Get-Command gh -ErrorAction SilentlyContinue)
 
+# Delete a directory, tolerating Windows' MAX_PATH (260 char) limit that trips
+# Remove-Item on the deeply nested node_modules/.pnpm paths a worktree carries.
+# Falls back to mirroring an empty directory over the target with robocopy, which
+# uses long-path-aware APIs, then removes the now-flattened directory.
+function Remove-DirRobust {
+  param([Parameter(Mandatory)][string] $Path)
+  if (-not (Test-Path -LiteralPath $Path)) { return $true }
+  try {
+    Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+    return $true
+  } catch {
+    $empty = Join-Path ([System.IO.Path]::GetTempPath()) ("wt_empty_" + [guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Force -Path $empty | Out-Null
+    try {
+      # robocopy exit codes 0-7 are success; only >= 8 signals a real failure.
+      robocopy $empty $Path /MIR /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+      if ($LASTEXITCODE -ge 8) { return $false }
+      Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+    } finally {
+      Remove-Item -LiteralPath $empty -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    return (-not (Test-Path -LiteralPath $Path))
+  }
+}
+
 # Parse `git worktree list --porcelain` into objects.
 $worktrees = @()
 $cur = $null
@@ -74,15 +106,32 @@ foreach ($line in (git -C $root worktree list --porcelain)) {
 }
 if ($cur) { $worktrees += $cur }
 
-# The main checkout is this repo root -- never a removal candidate.
-$rootFull = (Resolve-Path $root).Path
+# The main checkout is the FIRST entry git reports -- never a removal candidate.
+# (Don't assume it's this script's directory: the script may be invoked from a
+# linked worktree, in which case its parent is NOT the main checkout.)
+$mainPath = if ($worktrees.Count) {
+  try { (Resolve-Path $worktrees[0].Path -ErrorAction Stop).Path } catch { $worktrees[0].Path }
+} else { (Resolve-Path $root).Path }
+
+# Detect orphaned worktree directories: sibling folders that still carry a linked
+# worktree's `.git` file but that git no longer tracks (e.g. left by a failed
+# removal before this script handled long paths). Their branch/merge status is no
+# longer recoverable, so we report them rather than auto-deleting.
+$trackedPaths = $worktrees | ForEach-Object { try { (Resolve-Path $_.Path -ErrorAction Stop).Path } catch { $_.Path } }
+$orphans = @()
+foreach ($dir in (Get-ChildItem -LiteralPath (Split-Path $mainPath -Parent) -Directory -ErrorAction SilentlyContinue)) {
+  $gitFile = Join-Path $dir.FullName '.git'
+  if ((Test-Path -LiteralPath $gitFile -PathType Leaf) -and ($trackedPaths -notcontains $dir.FullName)) {
+    $orphans += $dir.FullName
+  }
+}
 
 $toRemove = @()
 foreach ($wt in $worktrees) {
   $pathFull = try { (Resolve-Path $wt.Path -ErrorAction Stop).Path } catch { $wt.Path }
 
   if ($wt.Bare) { continue }
-  if ($pathFull -eq $rootFull) { continue }            # main checkout
+  if ($pathFull -eq $mainPath) { continue }            # main checkout, never remove
   if ($wt.Detached -or -not $wt.Branch) {
     Write-Warning "SKIP  $($wt.Path) -- detached HEAD / no branch (clean up by hand)"
     continue
@@ -129,6 +178,15 @@ foreach ($wt in $worktrees) {
   $toRemove += [pscustomobject]@{ Path = $pathFull; Branch = $branch }
 }
 
+# Report orphaned directories regardless of -Force (dry run surfaces them too).
+if ($orphans) {
+  Write-Host ""
+  Write-Warning "Orphaned worktree directories (git no longer tracks these):"
+  $orphans | ForEach-Object { Write-Host "    $_" -ForegroundColor Yellow }
+  Write-Host "    Confirm they're not needed, then delete by hand, e.g.:" -ForegroundColor DarkGray
+  Write-Host "    Remove-Item -LiteralPath '<path>' -Recurse -Force" -ForegroundColor DarkGray
+}
+
 if ($toRemove.Count -eq 0) {
   Write-Host ""
   Write-Host "Nothing to clean up -- no merged, clean worktrees found." -ForegroundColor Green
@@ -147,11 +205,20 @@ if (-not $Force) {
 
 Write-Host ""
 foreach ($r in $toRemove) {
-  Write-Host "==> git worktree remove `"$($r.Path)`"" -ForegroundColor Cyan
-  git -C $root worktree remove $r.Path
-  if ($LASTEXITCODE -ne 0) {
-    Write-Warning "    failed to remove $($r.Path) -- left in place"
-    continue
+  Write-Host "==> removing worktree $($r.Path) [$($r.Branch)]" -ForegroundColor Cyan
+  # --force is required because the worktree carries gitignored files
+  # (node_modules, copied .env*) that plain `remove` refuses to discard.
+  git -C $root worktree remove --force $r.Path 2>$null
+  # On Windows git deletes the tracked files but leaves the ignored ones, so the
+  # final rmdir fails ("Directory not empty"). Finish the job ourselves, then
+  # prune so git drops its now-dangling administrative reference.
+  if (($LASTEXITCODE -ne 0) -or (Test-Path -LiteralPath $r.Path)) {
+    Write-Host "    git left files behind; removing directory directly" -ForegroundColor DarkGray
+    if (-not (Remove-DirRobust -Path $r.Path)) {
+      Write-Warning "    could not fully delete $($r.Path) -- left in place"
+      continue
+    }
+    git -C $root worktree prune
   }
   # Delete the now-orphaned local branch (its work is in trunk).
   git -C $root branch -D $r.Branch 2>$null | Out-Null
