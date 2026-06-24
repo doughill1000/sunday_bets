@@ -117,6 +117,8 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   explicit integration order exists.
 - Pull requests close their issue, link relevant ADRs, and list verification that
   actually ran. Confirm before every GitHub write.
+- **If the issue includes a target version number**, bump `package.json` `"version"`
+  to that value as part of the implementation commit.
 
 ## Auth & admin
 
