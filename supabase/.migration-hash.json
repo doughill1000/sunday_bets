@@ -333,8 +333,13 @@
     "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "policies/41_policies_comments_reactions.sql": {
-    "hash": "bd22f6380c39f8cca40447336a3a53109f46f82c35e1b64db14f088e6275a3b5",
-    "migration": "20260624145307_add_comments_reactions.sql",
-    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
+    "hash": "5e8c78f3fdfbc11bcb0547ee7c0f22a21e8beca8f0b4a4b0c598708b307a55ef",
+    "migration": "20260624185624_add_deleted_at_to_comments.sql",
+    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
+  },
+  "schemas/0217_comments_deleted_at.sql": {
+    "hash": "7726edcc8cfc276b0f46a660c80795aa819196a1b47b913eba5925940354eb38",
+    "migration": "20260624185624_add_deleted_at_to_comments.sql",
+    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
   }
 }
