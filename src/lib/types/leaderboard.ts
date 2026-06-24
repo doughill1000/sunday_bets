@@ -45,6 +45,7 @@ export type SeasonWeekOption = { weekNumber: number; weekId: number };
 export type WeeklyPickRow = {
   userId: string;
   displayName: string;
+  avatarKey: string | null;
   isYou: boolean;
   pickedSide: TeamSide | null;
   pickedTeamShort: string | null;
