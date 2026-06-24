@@ -1,4 +1,4 @@
-import type { GameResult } from './domain';
+import type { GameResult, TeamSide, WeightCode } from './domain';
 
 export type LeaderboardPlayer = { id: string; display_name: string; avatar_key?: string | null };
 
@@ -38,4 +38,28 @@ export type Settlement = {
   game_id: string;
   points_delta: number | null;
   outcome: GameResult | null;
+};
+
+export type SeasonWeekOption = { weekNumber: number; weekId: number };
+
+export type WeeklyPickRow = {
+  userId: string;
+  displayName: string;
+  isYou: boolean;
+  pickedSide: TeamSide | null;
+  pickedTeamShort: string | null;
+  weight: WeightCode | null;
+  outcome: GameResult | 'missed' | null;
+  pointsDelta: number | null;
+};
+
+export type WeeklyGameBreakdown = {
+  gameId: string;
+  away: string;
+  home: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  kickoff: string;
+  isFinal: boolean;
+  picks: WeeklyPickRow[];
 };
