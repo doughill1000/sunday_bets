@@ -42,3 +42,4 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 | [ADR-0001](0001-use-issue-led-delivery-and-adrs.md) | Use issue-led delivery and ADRs | Accepted |
 | [ADR-0002](0002-group-tenancy-boundary.md)          | Group tenancy boundary and data model | Proposed |
 | [ADR-0003](0003-schedule-source-and-game-identity.md) | Schedule source and game-identity / reconciliation model | Proposed |
+| [ADR-0004](0004-oauth-and-identity-linking.md) | Third-party (OAuth) sign-in and the single-identity / account-linking model | Proposed |

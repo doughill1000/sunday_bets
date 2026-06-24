@@ -10,6 +10,9 @@ rules here; that would allow the two agent workflows to drift.
 The natural-language issue-creation triggers and draft-before-write approval gate in
 `AGENTS.md` apply to Claude unchanged.
 
+Docker Desktop is assumed to be running locally; integration tests and `supabase`
+commands can run without manually starting it.
+
 When creating a new worktree, copy the gitignored `.env*` files from the main
 checkout into it (a fresh worktree has none and cannot reach Supabase / The Odds
 API without them). Use `scripts/new-worktree.ps1`, which creates the worktree,
