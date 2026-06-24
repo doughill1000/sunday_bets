@@ -13,6 +13,7 @@
   games={data.games}
   initialPicks={data.picks}
   week={data.week}
+  social={data.social}
   groupPicks={data.groupPicks}
   userId={data.userId}
   isLastWeek={data.isLastWeek}

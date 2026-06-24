@@ -8,13 +8,17 @@
   import GameCard from './GameCard.svelte';
   import PicksSummaryBar from './PicksSummaryBar.svelte';
   import LockedPicksSection from './LockedPicksSection.svelte';
+  import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
+  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
   type Week = Database['public']['Tables']['weeks']['Row'];
+  type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
 
   interface Props {
     week?: Week | null;
     games?: PickGame[];
     initialPicks?: Record<string, PickEntry>;
+    social?: Record<string, SocialData>;
     groupPicks?: GroupPickEntry[];
     userId?: string | null;
     isLastWeek?: boolean;
@@ -24,6 +28,7 @@
     week = null,
     games = [],
     initialPicks = {},
+    social = {},
     groupPicks = [],
     userId = null,
     isLastWeek = false,
@@ -104,5 +109,5 @@
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} {groupPicks} {userId} />
+  <LockedPicksSection games={committed} {now} {social} {groupPicks} {userId} />
 {/if}

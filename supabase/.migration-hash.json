@@ -146,9 +146,9 @@
     "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
   },
   "policies/10_rls_enable.sql": {
-    "hash": "d6be994e0073e85732e450fbd2dbc148f4d1482afd85e7c5fa17c4cfb60e3bf8",
-    "migration": "20260623160737_group_owned_config_split.sql",
-    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
+    "hash": "e07f0ec5c9560e98eedef5757d52e0c7db7fdeea0139832a6423da41b855b1bc",
+    "migration": "20260624184300_add_comments_reactions.sql",
+    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "policies/20_policies_read_core.sql": {
     "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0"
@@ -256,9 +256,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "70338a2e4da9d45b4ea46e061d9ebfed821c359cdcdb3bff855048727f514961",
-    "migration": "20260623160737_group_owned_config_split.sql",
-    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
+    "hash": "78bfc523840d75810b04c93d6407db4048767f3e0d17f84813985cf336a61a8e",
+    "migration": "20260624184300_add_comments_reactions.sql",
+    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -321,6 +321,26 @@
     "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
     "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
     "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "schemas/0215_comments.sql": {
+    "hash": "a6d4a61ded3445709f65fe39b3a3a77ca4739fe6cb2077beb1875fb96c0c8fe0",
+    "migration": "20260624184300_add_comments_reactions.sql",
+    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
+  },
+  "schemas/0216_reactions.sql": {
+    "hash": "2b3736f5ebdc6472d4cfd9eda22b36964db4923de7c3016e4f61b024808ee549",
+    "migration": "20260624184300_add_comments_reactions.sql",
+    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
+  },
+  "policies/41_policies_comments_reactions.sql": {
+    "hash": "5e8c78f3fdfbc11bcb0547ee7c0f22a21e8beca8f0b4a4b0c598708b307a55ef",
+    "migration": "20260624185624_add_deleted_at_to_comments.sql",
+    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
+  },
+  "schemas/0217_comments_deleted_at.sql": {
+    "hash": "7726edcc8cfc276b0f46a660c80795aa819196a1b47b913eba5925940354eb38",
+    "migration": "20260624185624_add_deleted_at_to_comments.sql",
+    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
   },
   "views/picks_group_view.sql": {
     "hash": "3fab816ab9c924ddb133d45eab3276b4eabeae84ce34840c930e385c18fb44ed",
