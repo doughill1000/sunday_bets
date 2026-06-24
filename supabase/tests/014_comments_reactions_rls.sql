@@ -1,4 +1,4 @@
--- 012_comments_reactions_rls.sql
+-- 014_comments_reactions_rls.sql
 -- pgTAP tests for group-scoped comments and reactions RLS.
 -- Verifies: schema shape, cross-group denial, post-kickoff read gate,
 -- and membership-scoped write access.
@@ -56,10 +56,15 @@ VALUES (
 )
 ON CONFLICT (season_id, week_number) DO NOTHING;
 
+-- Two distinct team pairs: the past and future games must be different
+-- matchups, since uq_games_matchup forbids two games with the same
+-- (week, unordered team pair).
 INSERT INTO public.teams (external_key, name, short_name)
 VALUES
   ('CR_HOME', 'CR Home Team', 'CRH'),
-  ('CR_AWAY', 'CR Away Team', 'CRA')
+  ('CR_AWAY', 'CR Away Team', 'CRA'),
+  ('CR_HOME2', 'CR Home Team 2', 'CRH2'),
+  ('CR_AWAY2', 'CR Away Team 2', 'CRA2')
 ON CONFLICT (external_key) DO NOTHING;
 
 -- A past game (started) so post-kickoff reads are possible
@@ -83,8 +88,8 @@ VALUES (
      AND season_id = (SELECT id FROM public.seasons WHERE year = 2031 LIMIT 1)),
   'cr_game_future',
   now() + interval '1 day',
-  (SELECT id FROM public.teams WHERE external_key = 'CR_HOME'),
-  (SELECT id FROM public.teams WHERE external_key = 'CR_AWAY')
+  (SELECT id FROM public.teams WHERE external_key = 'CR_HOME2'),
+  (SELECT id FROM public.teams WHERE external_key = 'CR_AWAY2')
 )
 ON CONFLICT (external_game_id) DO NOTHING;
 
