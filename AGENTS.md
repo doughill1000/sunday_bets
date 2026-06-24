@@ -184,8 +184,8 @@ for confirmation before proceeding.
 - `pnpm build` fails on Windows at the adapter-vercel packaging step (EPERM symlink —
   needs elevation/Developer Mode). The Vite client+server build phases completing is
   the local validation signal; real builds happen on Vercel.
-- Docker Desktop is often not running — start it before `supabase status` or
-  integration tests.
+- Docker Desktop is assumed to be running locally — `supabase status` and integration
+  tests can be run without manually starting it first.
 - Unit tests mock `fetch` without `headers` and stub `$env` with only the keys each
   spec needs — server code touching response headers or new env vars must be
   defensive or specs break (see `recordUsage()` in `src/lib/server/odds.ts`).
