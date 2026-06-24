@@ -2,7 +2,7 @@
 import { fetchNFLSpreadsForWeek, extractFanduelSpread } from './odds';
 import { findActiveWeek } from './db/queries/findActiveWeek';
 import { findTeamsByNames } from './db/queries/findTeamsByNames';
-import { upsertGameByExternalId } from './db/commands/upsertGameByExternalId';
+import { attachLineToMatchup } from './db/commands/attachLineToMatchup';
 import { setActiveLine } from './db/commands/setActiveLine';
 import { supabaseService } from '$lib/supabase/service';
 import { canSyncNow } from './settings';
@@ -32,6 +32,7 @@ export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncSta
   let unchanged = 0;
   let skippedNoTeams = 0;
   let skippedNoSpread = 0;
+  let skippedNoMatchup = 0;
 
   // Process sequentially; easy to read and keeps DB load tame.
   for (const g of games) {
@@ -48,13 +49,19 @@ export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncSta
       continue;
     }
 
-    const gameId = await upsertGameByExternalId({
-      externalGameId: g.id,
+    // Find the schedule-seeded game and attach external_game_id.
+    // Returns null when schedule sync hasn't created the matchup yet.
+    const gameId = await attachLineToMatchup({
       weekId: week.id,
-      commenceTime: g.commence_time,
       homeTeamId: home.id,
-      awayTeamId: away.id
+      awayTeamId: away.id,
+      externalGameId: g.id
     });
+
+    if (!gameId) {
+      skippedNoMatchup++;
+      continue;
+    }
 
     const spreadTeamId = spread.spreadTeamName === home.name ? home.id : away.id;
 
@@ -97,6 +104,7 @@ export async function syncOddsForActiveWeek(source = 'fanduel'): Promise<SyncSta
     processed,
     unchanged,
     skippedNoTeams,
-    skippedNoSpread
+    skippedNoSpread,
+    skippedNoMatchup
   };
 }

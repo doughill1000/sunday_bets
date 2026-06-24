@@ -304,5 +304,22 @@
     "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
     "migration": "20260623230458_add_alltime_stats_views.sql",
     "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
+  },
+  "schemas/0215_schedule_game_id.sql": {
+    "hash": "3c1aab3b6a847ff0741c019f9eb291c22555254d814b18b422e64b0dc874943b",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "functions/games/attach_line_to_matchup.sql": {
+    "hash": "9b3886fed46dade3549dcffb5cceb37fce8af757a3e014c2fd842767439d696e",
+    "signature": "public.attach_line_to_matchup(int, int, int, text)",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "functions/games/upsert_game_by_matchup.sql": {
+    "hash": "df07bf3e9d1e7df5525dcc77389acbb2e6dd99ee48fc10647542a916891fbfba",
+    "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
   }
 }

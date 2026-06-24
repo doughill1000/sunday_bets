@@ -11,6 +11,7 @@ import { E2E_USER, E2E_RESET_USER } from './test-user';
 const SEASON_YEAR = 2026;
 const WEEK_NUMBER = 1;
 const GAME_TAG = 'e2e-game-1';
+const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -27,7 +28,7 @@ export default async function globalSetup(_config: FullConfig) {
 
   // E2E sign-in user — created via the admin API so it can actually
   // password-login (the seed.sql users can't). Idempotent across runs.
-  const { error: userErr } = await supabase.auth.admin.createUser({
+  const { data: userData, error: userErr } = await supabase.auth.admin.createUser({
     email: E2E_USER.email,
     password: E2E_USER.password,
     email_confirm: true,
@@ -35,6 +36,30 @@ export default async function globalSetup(_config: FullConfig) {
   });
   if (userErr && !/already|exists|registered/i.test(userErr.message)) {
     throw new Error('seed e2e user: ' + userErr.message);
+  }
+
+  // Resolve the E2E user's id (either freshly created or already existing).
+  let e2eUserId: string | undefined = userData?.user?.id;
+  if (!e2eUserId) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    e2eUserId = list?.users.find((u) => u.email === E2E_USER.email)?.id;
+  }
+
+  // Elevate E2E user to admin so the admin UI is accessible in E2E tests,
+  // and add them to the original group for group-scoped page access.
+  if (e2eUserId) {
+    await supabase
+      .from('users')
+      .upsert(
+        { id: e2eUserId, display_name: E2E_USER.displayName, role: 'admin' },
+        { onConflict: 'id' }
+      );
+    await supabase
+      .from('group_memberships')
+      .upsert(
+        { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'member' },
+        { onConflict: 'group_id,user_id' }
+      );
   }
 
   // E2E password-reset user — kept separate from E2E_USER so the reset test can

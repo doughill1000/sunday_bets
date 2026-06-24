@@ -57,10 +57,16 @@ values (
 )
 on conflict (season_id, week_number) do nothing;
 
+-- Three teams so the three games can each be a distinct matchup. The
+-- uq_games_matchup constraint forbids duplicate (week, home, away) rows.
+-- stats_a's picks (STATS_A / STATS_B) are what the team-accuracy assertions
+-- pin, so every game stats_a picks in still contains the team it picks;
+-- stats_b's picked team is never asserted, so STATS_C stands in where needed.
 insert into public.teams (external_key, name, short_name)
 values
   ('STATS_A', 'Stats Team A', 'STA'),
-  ('STATS_B', 'Stats Team B', 'STB')
+  ('STATS_B', 'Stats Team B', 'STB'),
+  ('STATS_C', 'Stats Team C', 'STC')
 on conflict (external_key) do nothing;
 
 insert into public.games (
@@ -79,18 +85,16 @@ select
   away.id,
   'final'
 from public.weeks w
-cross join public.teams home
-cross join public.teams away
 cross join (
   values
-    ('stats-game-1', '2040-09-01 17:00:00+00'::timestamptz),
-    ('stats-game-2', '2040-09-01 20:00:00+00'::timestamptz),
-    ('stats-game-3', '2040-09-02 00:00:00+00'::timestamptz)
-) game(external_game_id, commence_time)
+    ('stats-game-1', '2040-09-01 17:00:00+00'::timestamptz, 'STATS_A', 'STATS_B'),
+    ('stats-game-2', '2040-09-01 20:00:00+00'::timestamptz, 'STATS_B', 'STATS_C'),
+    ('stats-game-3', '2040-09-02 00:00:00+00'::timestamptz, 'STATS_A', 'STATS_C')
+) game(external_game_id, commence_time, home_key, away_key)
+join public.teams home on home.external_key = game.home_key
+join public.teams away on away.external_key = game.away_key
 where w.season_id = (select id from public.seasons where league = 'NFL' and year = 2040)
   and w.week_number = 1
-  and home.external_key = 'STATS_A'
-  and away.external_key = 'STATS_B'
 on conflict (external_game_id) do nothing;
 
 insert into public.picks (
@@ -120,8 +124,8 @@ from (
     ('stats_a', 'stats-game-2', 'STATS_B', 'A'),
     ('stats_a', 'stats-game-3', 'STATS_A', 'M'),
     ('stats_b', 'stats-game-1', 'STATS_B', 'M'),
-    ('stats_b', 'stats-game-2', 'STATS_A', 'H'),
-    ('stats_b', 'stats-game-3', 'STATS_B', 'A')
+    ('stats_b', 'stats-game-2', 'STATS_C', 'H'),
+    ('stats_b', 'stats-game-3', 'STATS_C', 'A')
 ) pick(user_name, external_game_id, team_key, weight)
 join lateral (
   select tests.get_supabase_uid(pick.user_name) as user_id
