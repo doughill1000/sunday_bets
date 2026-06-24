@@ -5,20 +5,27 @@
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
-  import {
-    isPushSupported,
-    notificationPermission,
-    subscribeToPush,
-    unsubscribeFromPush
-  } from '$lib/push/client';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { AVATAR_PRESETS } from '$lib/avatars';
+
+  type PushClient = typeof import('$lib/push/client');
 
   let { data }: { data: PageData } = $props();
 
   const displayName = $derived(data.userProfile?.displayName ?? '');
   let avatarKey = $state<string | null>(data.userProfile?.avatarKey ?? null);
   let avatarMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let currentPassword = $state('');
+  let newPassword = $state('');
+  let confirmPassword = $state('');
+  let passwordBusy = $state(false);
+  let passwordMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const canSubmitPassword = $derived(
+    currentPassword.length > 0 &&
+      newPassword.length > 0 &&
+      confirmPassword.length > 0 &&
+      !passwordBusy
+  );
 
   async function selectAvatar(key: string | null) {
     avatarKey = key;
@@ -33,6 +40,49 @@
       : { kind: 'error', text: 'Could not save avatar.' };
   }
 
+  async function changePassword() {
+    if (passwordBusy) return;
+    passwordMsg = null;
+
+    if (newPassword.length < 8) {
+      passwordMsg = { kind: 'error', text: 'New password must be at least 8 characters.' };
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      passwordMsg = { kind: 'error', text: 'New passwords do not match.' };
+      return;
+    }
+
+    passwordBusy = true;
+    try {
+      const res = await fetch('/api/profile/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword
+        })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+
+      if (!res.ok) {
+        passwordMsg = {
+          kind: 'error',
+          text: body.reason ?? 'Could not update password.'
+        };
+        return;
+      }
+
+      currentPassword = '';
+      newPassword = '';
+      confirmPassword = '';
+      passwordMsg = { kind: 'success', text: 'Password updated.' };
+    } finally {
+      passwordBusy = false;
+    }
+  }
+
   let enabled = $state(data.prefs.enabled);
   let pickReminders = $state(data.prefs.pick_reminders);
   let lineShiftEnabled = $state(data.prefs.line_shift.enabled);
@@ -42,10 +92,17 @@
   let permission = $state<NotificationPermission | 'unsupported'>('default');
   let busy = $state(false);
   let msg = $state<{ kind: 'success' | 'error' | 'warn'; text: string } | null>(null);
+  let pushClient = $state<PushClient | null>(null);
 
-  onMount(() => {
-    supported = isPushSupported();
-    permission = notificationPermission();
+  onMount(async () => {
+    try {
+      pushClient = await import('$lib/push/client');
+      supported = pushClient.isPushSupported();
+      permission = pushClient.notificationPermission();
+    } catch {
+      supported = false;
+      permission = 'unsupported';
+    }
   });
 
   async function savePrefs(): Promise<boolean> {
@@ -70,8 +127,16 @@
     busy = true;
     msg = null;
     try {
+      if (!pushClient) {
+        msg = {
+          kind: 'warn',
+          text: 'This browser/device does not support push notifications.'
+        };
+        return;
+      }
+
       if (!enabled) {
-        const r = await subscribeToPush();
+        const r = await pushClient.subscribeToPush();
         if (!r.ok) {
           msg = {
             kind: 'warn',
@@ -86,10 +151,10 @@
         }
         enabled = true;
       } else {
-        await unsubscribeFromPush();
+        await pushClient.unsubscribeFromPush();
         enabled = false;
       }
-      permission = notificationPermission();
+      permission = pushClient.notificationPermission();
       if (await savePrefs()) msg = { kind: 'success', text: 'Settings saved.' };
     } finally {
       busy = false;
@@ -151,6 +216,71 @@
           {avatarMsg.text}
         </div>
       {/if}
+
+      <form
+        class="space-y-4 border-t pt-4"
+        onsubmit={(event) => {
+          event.preventDefault();
+          void changePassword();
+        }}
+      >
+        <div>
+          <h2 class="font-medium">Password</h2>
+          <p class="text-sm text-muted-foreground">Update the password for this account.</p>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="current-password">Current password</Label>
+          <Input
+            id="current-password"
+            name="current-password"
+            type="password"
+            autocomplete="current-password"
+            bind:value={currentPassword}
+          />
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="new-password">New password</Label>
+            <Input
+              id="new-password"
+              name="new-password"
+              type="password"
+              autocomplete="new-password"
+              minlength={8}
+              bind:value={newPassword}
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="confirm-password">Confirm new password</Label>
+            <Input
+              id="confirm-password"
+              name="confirm-password"
+              type="password"
+              autocomplete="new-password"
+              minlength={8}
+              bind:value={confirmPassword}
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <Button type="submit" disabled={!canSubmitPassword}>
+            {passwordBusy ? 'Updating...' : 'Update password'}
+          </Button>
+        </div>
+
+        {#if passwordMsg}
+          <div
+            class="rounded-xl border p-3 text-sm"
+            class:border-success={passwordMsg.kind === 'success'}
+            class:border-destructive={passwordMsg.kind === 'error'}
+          >
+            {passwordMsg.text}
+          </div>
+        {/if}
+      </form>
     </CardContent>
   </Card>
 
