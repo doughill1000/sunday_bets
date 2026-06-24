@@ -43,3 +43,4 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 | [ADR-0002](0002-group-tenancy-boundary.md)          | Group tenancy boundary and data model | Accepted |
 | [ADR-0003](0003-schedule-source-and-game-identity.md) | Schedule source and game-identity / reconciliation model | Accepted |
 | [ADR-0004](0004-oauth-and-identity-linking.md) | Third-party (OAuth) sign-in and the single-identity / account-linking model | Accepted |
+| [ADR-0005](0005-drop-worst-week-scoring.md) | Drop-worst-week scoring (configurable per group) | Accepted |
