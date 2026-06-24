@@ -1,6 +1,6 @@
 # ADR-0004: Third-party (OAuth) sign-in and the single-identity / account-linking model
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-24
 - Issue: #105
 - Supersedes: None
@@ -47,6 +47,12 @@ covers Gmail (every current user); Apple covers the iOS-ecosystem friends and us
 Apple's hide-my-email. Both are first-class Supabase Auth providers. Additional providers (e.g.
 GitHub) are a later config + button addition using the same pattern and do **not** require a new
 ADR — the identity model below governs all of them.
+
+> **Implementation note (2026-06-24):** launch is scoped to **Google-only**; Apple is deferred. The
+> paid Apple Developer account and its expiring-JWT client secret (rotation ops, see Consequences)
+> are not worth it for the current group, and Google covers every existing user (all on Gmail).
+> Apple is a later config + button add under this same identity model — no new ADR — exactly like
+> the GitHub case above. Tracked on issue #134 (Google-only) with an Apple deferred follow-up note.
 
 ### 2. One person, one account, regardless of method
 
