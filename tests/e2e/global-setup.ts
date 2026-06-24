@@ -1,6 +1,6 @@
 import type { FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
-import { E2E_USER } from './test-user';
+import { E2E_USER, E2E_RESET_USER } from './test-user';
 
 /**
  * Seeds the deterministic fixtures the E2E flows need into the LOCAL Supabase
@@ -60,6 +60,18 @@ export default async function globalSetup(_config: FullConfig) {
         { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'member' },
         { onConflict: 'group_id,user_id' }
       );
+  }
+
+  // E2E password-reset user — kept separate from E2E_USER so the reset test can
+  // change this password without breaking auth.setup.ts on subsequent runs.
+  const { error: resetUserErr } = await supabase.auth.admin.createUser({
+    email: E2E_RESET_USER.email,
+    password: E2E_RESET_USER.password,
+    email_confirm: true,
+    user_metadata: { display_name: E2E_RESET_USER.displayName }
+  });
+  if (resetUserErr && !/already|exists|registered/i.test(resetUserErr.message)) {
+    throw new Error('seed e2e reset user: ' + resetUserErr.message);
   }
 
   // Teams
