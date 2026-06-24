@@ -1,6 +1,6 @@
 # ADR-0003: Schedule source and game-identity / reconciliation model
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-24
 - Issue: #123
 - Supersedes: None
