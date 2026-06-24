@@ -147,7 +147,7 @@
   },
   "policies/10_rls_enable.sql": {
     "hash": "e07f0ec5c9560e98eedef5757d52e0c7db7fdeea0139832a6423da41b855b1bc",
-    "migration": "20260624145307_add_comments_reactions.sql",
+    "migration": "20260624184300_add_comments_reactions.sql",
     "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "policies/20_policies_read_core.sql": {
@@ -257,7 +257,7 @@
   },
   "grants/zz_group_grants.sql": {
     "hash": "78bfc523840d75810b04c93d6407db4048767f3e0d17f84813985cf336a61a8e",
-    "migration": "20260624145307_add_comments_reactions.sql",
+    "migration": "20260624184300_add_comments_reactions.sql",
     "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
@@ -324,12 +324,12 @@
   },
   "schemas/0215_comments.sql": {
     "hash": "a6d4a61ded3445709f65fe39b3a3a77ca4739fe6cb2077beb1875fb96c0c8fe0",
-    "migration": "20260624145307_add_comments_reactions.sql",
+    "migration": "20260624184300_add_comments_reactions.sql",
     "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "schemas/0216_reactions.sql": {
     "hash": "2b3736f5ebdc6472d4cfd9eda22b36964db4923de7c3016e4f61b024808ee549",
-    "migration": "20260624145307_add_comments_reactions.sql",
+    "migration": "20260624184300_add_comments_reactions.sql",
     "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
   },
   "policies/41_policies_comments_reactions.sql": {
