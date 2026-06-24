@@ -1,26 +1,6 @@
-import type { ShortResult } from '$lib/constants/picks';
-import type { GameResult, WeightCode } from './domain';
+import type { GameResult, TeamSide, WeightCode } from './domain';
 
 export type LeaderboardPlayer = { id: string; display_name: string; avatar_key?: string | null };
-
-export type LeaderboardPickCell = {
-  weight: WeightCode | null;
-  team: string | null;
-  result: ShortResult | null;
-  spread: string | null;
-};
-
-export type WeeklyLeaderboard = {
-  games: WeeklyLeaderboardGame[];
-  cells: Record<string, Record<string, LeaderboardPickCell>>;
-};
-
-export type WeeklyLeaderboardGame = {
-  game_id: string;
-  label: string;
-  score: string | null;
-  isFinal: boolean;
-};
 
 /** Non-null application contract shaped from leaderboard_season_totals. */
 export type SeasonLeaderboardEntry = {
@@ -58,4 +38,28 @@ export type Settlement = {
   game_id: string;
   points_delta: number | null;
   outcome: GameResult | null;
+};
+
+export type SeasonWeekOption = { weekNumber: number; weekId: number };
+
+export type WeeklyPickRow = {
+  userId: string;
+  displayName: string;
+  isYou: boolean;
+  pickedSide: TeamSide | null;
+  pickedTeamShort: string | null;
+  weight: WeightCode | null;
+  outcome: GameResult | 'missed' | null;
+  pointsDelta: number | null;
+};
+
+export type WeeklyGameBreakdown = {
+  gameId: string;
+  away: string;
+  home: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  kickoff: string;
+  isFinal: boolean;
+  picks: WeeklyPickRow[];
 };

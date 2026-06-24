@@ -15,7 +15,7 @@ export type PickEntry = {
   lockedSpreadTeamId?: number;
 };
 
-/** A group member's revealed pick (only visible after game kickoff). */
+/** A group member's revealed pick (only visible after game kickoff via picks_group_view). */
 export type GroupPickEntry = {
   userId: string;
   displayName: string | null;
