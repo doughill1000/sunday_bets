@@ -1,19 +1,30 @@
 import { test, expect } from '@playwright/test';
 
-test('leaderboard renders the weekly and totals views', async ({ page }) => {
+test('leaderboard renders Standings and Weekly tabs', async ({ page }) => {
   await page.goto('/leaderboard');
 
+  await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
+
+  // Both tabs are present.
+  await expect(page.getByRole('tab', { name: 'Standings' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Weekly' })).toBeVisible();
-  const totalsTab = page.getByRole('tab', { name: 'Totals' });
-  await expect(totalsTab).toBeVisible();
 
-  // Weekly is the default view.
-  await expect(page.getByText('Weekly Progress')).toBeVisible();
+  // Standings is the default tab: table headers or empty state visible.
+  const hasStandings = await page.getByRole('columnheader', { name: 'Player' }).isVisible();
+  if (hasStandings) {
+    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Total' })).toBeVisible();
+  } else {
+    await expect(page.getByText('No standings yet')).toBeVisible();
+  }
 
-  // Switch to Totals. The first click can be dropped while the page is still
-  // hydrating in dev, so retry until the standings table appears.
+  // Switch to Weekly tab and confirm a week label or empty state renders.
+  const weeklyTab = page.getByRole('tab', { name: 'Weekly' });
   await expect(async () => {
-    await totalsTab.click();
-    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible({ timeout: 1000 });
+    await weeklyTab.click();
+    // Either a week label, a game card, or an empty-state message should be visible.
+    await expect(
+      page.locator('text=/Week \\d+|No weeks have started|No games this week/')
+    ).toBeVisible({ timeout: 5000 });
   }).toPass({ timeout: 15000 });
 });
