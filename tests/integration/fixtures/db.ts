@@ -117,3 +117,20 @@ export async function ensureSettings(supabase: SupabaseClient) {
   });
   if (error) throw new Error('ensureSettings failed: ' + error.message);
 }
+
+// The stable original group ID seeded in migration 0210_pick_group_foreign_keys.sql.
+export const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
+
+export async function ensureGroupMembership(supabase: SupabaseClient, userIds: string[]) {
+  const { error: groupErr } = await supabase
+    .from('groups')
+    .upsert({ id: ORIGINAL_GROUP_ID, name: 'Sunday Bets' }, { onConflict: 'id' });
+  if (groupErr) throw new Error('ensureGroupMembership: failed to upsert group: ' + groupErr.message);
+
+  const { error: memberErr } = await supabase.from('group_memberships').upsert(
+    userIds.map((id) => ({ group_id: ORIGINAL_GROUP_ID, user_id: id, role: 'member' })),
+    { onConflict: 'group_id,user_id' }
+  );
+  if (memberErr)
+    throw new Error('ensureGroupMembership: failed to upsert memberships: ' + memberErr.message);
+}

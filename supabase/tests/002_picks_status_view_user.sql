@@ -40,24 +40,30 @@ ON CONFLICT (season_id, week_number) DO NOTHING;
 INSERT INTO public.teams (external_key, name, short_name)
 VALUES
   ('TEAM_A','Team A','A'),
-  ('TEAM_B','Team B','B')
+  ('TEAM_B','Team B','B'),
+  ('TEAM_C','Team C','C')
 ON CONFLICT (external_key) DO NOTHING;
 
--- Two future games in the same week (TEAM_A home, TEAM_B away)
+-- Two future games in the same week. The matchup uniqueness constraint
+-- (uq_games_matchup) is on the *unordered* team pair, so the two games must be
+-- distinct matchups. TEAM_A plays in both (g1 = A vs B, g2 = A vs C) so user_a
+-- can still pick TEAM_A in each game; user_b picks the other participant.
 WITH wk AS (
   SELECT id AS week_id
   FROM public.weeks
   WHERE week_number = 1
     AND season_id = (SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1)
-), t AS (
-  SELECT
-    (SELECT id FROM public.teams WHERE external_key = 'TEAM_A') AS home_id,
-    (SELECT id FROM public.teams WHERE external_key = 'TEAM_B') AS away_id
 )
 INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
-SELECT wk.week_id, 'g1', now() + interval '5 minutes',  t.home_id, t.away_id FROM wk, t
-UNION ALL
-SELECT wk.week_id, 'g2', now() + interval '10 minutes', t.home_id, t.away_id FROM wk, t
+SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
+FROM wk
+CROSS JOIN (
+  VALUES
+    ('g1', now() + interval '5 minutes',  'TEAM_A', 'TEAM_B'),
+    ('g2', now() + interval '10 minutes', 'TEAM_A', 'TEAM_C')
+) g(external_game_id, commence_time, home_key, away_key)
+JOIN public.teams home ON home.external_key = g.home_key
+JOIN public.teams away ON away.external_key = g.away_key
 ON CONFLICT (external_game_id) DO NOTHING;
 
 -- 4) Insert picks directly with locked_at set (RLS satisfied by auth)
@@ -81,25 +87,26 @@ SELECT
   tests.get_supabase_uid('user_a')
 FROM g, team;
 
--- user_b picks AWAY (TEAM_B)
+-- user_b picks the away team in each game (TEAM_B in g1, TEAM_C in g2)
 SELECT tests.authenticate_as('user_b');
-WITH g AS (
-  SELECT id FROM public.games WHERE external_game_id IN ('g1','g2')
-), team AS (
-  SELECT id AS team_id FROM public.teams WHERE external_key = 'TEAM_B'
+WITH pick AS (
+  SELECT g.id AS game_id, away.id AS team_id
+  FROM public.games g
+  JOIN public.teams away ON away.id = g.away_team_id
+  WHERE g.external_game_id IN ('g1','g2')
 )
 INSERT INTO public.picks (group_id, user_id, game_id, picked_team_id, locked_spread_team_id, locked_spread_value, weight, locked_at, locked_by)
 SELECT
   '00000000-0000-4000-8000-000000000002',
   tests.get_supabase_uid('user_b'),
-  g.id,
-  team.team_id,
-  team.team_id,
+  pick.game_id,
+  pick.team_id,
+  pick.team_id,
   3,
   'L',
   now(),
   tests.get_supabase_uid('user_b')
-FROM g, team
+FROM pick
 ON CONFLICT DO NOTHING;
 
 -- 5) Assertions for user_a

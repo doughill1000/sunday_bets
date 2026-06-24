@@ -54,9 +54,9 @@
     "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "a892b80e226dcce779d59b98b83be624f61c63d12dbe5b214c6dc112be7f097c",
-    "migration": "20260623183834_add_avatar_key.sql",
-    "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
+    "hash": "13e7d2193e0fa63e2256cc94795ddc03268826af13d2d396b7750e79e4ae099e",
+    "migration": "20260624142715_drop_worst_week_season_total.sql",
+    "migrationHash": "f3696a917d7ae70fc34cd5711c1777cd3b8df368b493f928ad2cd771ac963504"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
@@ -304,5 +304,22 @@
     "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
     "migration": "20260623230458_add_alltime_stats_views.sql",
     "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
+  },
+  "schemas/0215_schedule_game_id.sql": {
+    "hash": "3c1aab3b6a847ff0741c019f9eb291c22555254d814b18b422e64b0dc874943b",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "functions/games/attach_line_to_matchup.sql": {
+    "hash": "9b3886fed46dade3549dcffb5cceb37fce8af757a3e014c2fd842767439d696e",
+    "signature": "public.attach_line_to_matchup(int, int, int, text)",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "functions/games/upsert_game_by_matchup.sql": {
+    "hash": "df07bf3e9d1e7df5525dcc77389acbb2e6dd99ee48fc10647542a916891fbfba",
+    "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
+    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
+    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
   }
 }
