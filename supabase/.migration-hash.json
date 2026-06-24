@@ -321,5 +321,10 @@
     "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
     "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
     "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
+  },
+  "views/picks_group_view.sql": {
+    "hash": "d25a8f7704a7b9afacaab27bbf71930b528f8b30603ef89a6d7928d8f2db04e9",
+    "migration": "20260624145150_picks_group_view.sql",
+    "migrationHash": "6e7dfda2a7a7090fe39eec7cbd82d4fec874929311e8466ebb3b292cdbf6277c"
   }
 }

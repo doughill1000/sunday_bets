@@ -16,19 +16,28 @@ import {
 const admin = createServiceClient();
 const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 const SEASON_YEAR = 2099; // far-future year so no collision with real data
+const ts = Date.now();
 
-// 10 deterministic test user IDs for this suite
-const MEMBER_IDS = Array.from(
-  { length: 10 },
-  (_, i) => `00000000-0000-0000-8000-${String(i + 1).padStart(12, '0')}`
-);
+// Populated in beforeAll after creating auth users
+let MEMBER_IDS: string[] = [];
 
 let seedGameId: string;
 
 beforeAll(async () => {
   const now = new Date().toISOString();
 
-  // Seed public.users directly via service role (bypasses auth.users trigger)
+  // Create auth users first — public.users.id is an FK to auth.users.id.
+  // Using unique emails per run so retries don't collide.
+  for (let i = 0; i < 10; i++) {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: `membertest${i + 1}-${ts}@test.local`,
+      email_confirm: true
+    });
+    if (error) throw new Error(`Failed to create auth user ${i + 1}: ` + error.message);
+    MEMBER_IDS.push(data.user.id);
+  }
+
+  // Upsert public.users using the real auth UUIDs
   const { error: userErr } = await admin.from('users').upsert(
     MEMBER_IDS.map((id, i) => ({
       id,
@@ -167,6 +176,8 @@ afterAll(async () => {
     .eq('group_id', ORIGINAL_GROUP_ID)
     .in('user_id', MEMBER_IDS);
   await admin.from('users').delete().in('id', MEMBER_IDS);
+  // Remove auth users created in beforeAll
+  await Promise.all(MEMBER_IDS.map((id) => admin.auth.admin.deleteUser(id)));
 });
 
 describe('membership: 10+ members', () => {
