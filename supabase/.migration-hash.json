@@ -134,10 +134,10 @@
     "signature": "public.set_active_line(uuid, int, numeric, text)"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "af493aad650203bc206749c45b5658487167e38d648cf80496b4ab232d23655f",
+    "hash": "793e5ed21b182c01476eb27c0cf8082b23036a83993244b1fdc58c79dfd3e88b",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
-    "migration": "20260623132324_group_aware_pick_functions.sql",
-    "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
+    "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
+    "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
   },
   "functions/picks/unlock_pick.sql": {
     "hash": "07a52e195364b7b6ba0dccf8166e7e278773a8c3a090a910d29f706f04c9fa45",
@@ -326,5 +326,10 @@
     "hash": "d25a8f7704a7b9afacaab27bbf71930b528f8b30603ef89a6d7928d8f2db04e9",
     "migration": "20260624145150_picks_group_view.sql",
     "migrationHash": "6e7dfda2a7a7090fe39eec7cbd82d4fec874929311e8466ebb3b292cdbf6277c"
+  },
+  "schemas/0216_settings_final_week_allin.sql": {
+    "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
+    "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
+    "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
   }
 }

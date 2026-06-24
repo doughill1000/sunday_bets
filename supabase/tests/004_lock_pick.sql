@@ -7,7 +7,7 @@
 
 BEGIN;
 
-SELECT plan(10);
+SELECT plan(15);
 
 -- 1) Function exists with the expected signature
 SELECT has_function(
@@ -32,29 +32,28 @@ INSERT INTO public.group_memberships (group_id, user_id, role)
 VALUES ('00000000-0000-4000-8000-000000000004', tests.get_supabase_uid('picker'), 'member')
 ON CONFLICT (group_id, user_id) DO NOTHING;
 
--- Season + TWO weeks so week 1 is not the final week (All-In rule only applies
--- when the pick's week is not the last week of the season).
+-- Season + THREE weeks:
+--   Week 1 = non-final (All-In restricted)
+--   Week 2 = non-final (used for final-week-disabled tests)
+--   Week 3 = final week of the season
 INSERT INTO public.seasons (year) VALUES (2025)
 ON CONFLICT (league, year) DO NOTHING;
 
 INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts)
 VALUES
   ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 1, now(),                     now() + interval '7 days'),
-  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 2, now() + interval '7 days', now() + interval '14 days')
+  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 2, now() + interval '7 days', now() + interval '14 days'),
+  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 3, now() + interval '14 days', now() + interval '21 days')
 ON CONFLICT (season_id, week_number) DO NOTHING;
 
--- Four teams so the four games below can each be a distinct matchup. The
--- uq_games_matchup constraint forbids duplicate (week, home, away) rows, and
--- lock_pick picks the home/away side of whichever game it is given, so the
--- specific teams do not matter to these assertions.
+-- Teams for the various games.
 INSERT INTO public.teams (external_key, name, short_name)
 VALUES ('LP_A','Lock Team A','LA'), ('LP_B','Lock Team B','LB'),
-       ('LP_C','Lock Team C','LC'), ('LP_D','Lock Team D','LD')
+       ('LP_C','Lock Team C','LC'), ('LP_D','Lock Team D','LD'),
+       ('LP_E','Lock Team E','LE'), ('LP_F','Lock Team F','LF')
 ON CONFLICT (external_key) DO NOTHING;
 
--- Four games, all in week 1, each a distinct matchup: future (lockable), a
--- second future (All-In rule), a past one (after kickoff), and one with no
--- active line.
+-- Games in week 1 (non-final): future, second future, past, no-line.
 INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
 SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
 FROM (
@@ -73,11 +72,33 @@ JOIN public.teams home ON home.external_key = g.home_key
 JOIN public.teams away ON away.external_key = g.away_key
 ON CONFLICT (external_game_id) DO NOTHING;
 
--- Active line (on each game's home team, -6.5) for every game except lp_noline.
+-- Games in week 3 (final week): two future games for All-In limit tests.
+INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
+SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
+FROM (
+  SELECT id AS week_id FROM public.weeks
+  WHERE week_number = 3
+    AND season_id = (SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1)
+) wk
+CROSS JOIN (
+  VALUES
+    ('lp_final_1', now() + interval '15 days', 'LP_A', 'LP_C'),
+    ('lp_final_2', now() + interval '15 days', 'LP_B', 'LP_D')
+) g(external_game_id, commence_time, home_key, away_key)
+JOIN public.teams home ON home.external_key = g.home_key
+JOIN public.teams away ON away.external_key = g.away_key
+ON CONFLICT (external_game_id) DO NOTHING;
+
+-- Active line for all games except lp_noline.
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
 SELECT g.id, 'fanduel', g.home_team_id, -6.5, true, now()
 FROM public.games g
-WHERE g.external_game_id IN ('lp_future','lp_future2','lp_past');
+WHERE g.external_game_id IN ('lp_future','lp_future2','lp_past','lp_final_1','lp_final_2');
+
+-- Ensure settings row exists with default (final_week_unlimited_allin = true).
+INSERT INTO public.settings (id, final_week_unlimited_allin)
+VALUES (true, true)
+ON CONFLICT (id) DO UPDATE SET final_week_unlimited_allin = true;
 
 -- ---- Authenticated player exercises lock_pick ------------------------------
 SELECT tests.authenticate_as('picker');
@@ -148,20 +169,16 @@ SELECT lives_ok(
   'first All-In of the week is allowed'
 );
 
--- 9) Second All-In in the same week is rejected
+-- 9) Second All-In in the same (non-final) week is rejected
 SELECT throws_ok(
   $$ SELECT public.lock_pick(
        (SELECT id FROM public.games WHERE external_game_id = 'lp_future2'),
        'home'::public.side_enum, 'A'::public.weight_enum) $$,
   'P0001', 'all in already used this week',
-  'lock_pick rejects a second All-In in the same week'
+  'lock_pick rejects a second All-In in a non-final week'
 );
 
--- 10) Anonymous callers cannot lock a pick: the function's auth.uid() guard
---     rejects them. (Note: anon can technically reach the function body because
---     Postgres leaves the default EXECUTE grant to PUBLIC in place, so the
---     revoke-from-anon in anon_grants.sql is not what stops them here -- the
---     unauthorized guard is. Hence we assert P0001/unauthorized, not 42501.)
+-- 10) Anonymous callers cannot lock a pick
 SELECT tests.clear_authentication();
 SET ROLE anon;
 SELECT throws_ok(
@@ -172,6 +189,76 @@ SELECT throws_ok(
   'anon (no auth.uid) is rejected as unauthorized'
 );
 RESET ROLE;
+
+-- ---- Final-week exception tests (setting = true = default) -----------------
+SELECT tests.authenticate_as('picker');
+
+-- 11) First All-In in the final week is allowed
+SELECT lives_ok(
+  $$ SELECT public.lock_pick(
+       (SELECT id FROM public.games WHERE external_game_id = 'lp_final_1'),
+       'home'::public.side_enum, 'A'::public.weight_enum) $$,
+  'first All-In in the final week is allowed (exception enabled)'
+);
+
+-- 12) Second All-In in the final week is also allowed when exception is enabled
+SELECT lives_ok(
+  $$ SELECT public.lock_pick(
+       (SELECT id FROM public.games WHERE external_game_id = 'lp_final_2'),
+       'home'::public.side_enum, 'A'::public.weight_enum) $$,
+  'second All-In in the final week is allowed when final_week_unlimited_allin = true'
+);
+
+-- ---- Final-week exception tests (setting = false) --------------------------
+-- Switch the setting off (still as superuser via tests.clear_authentication).
+SELECT tests.clear_authentication();
+UPDATE public.settings SET final_week_unlimited_allin = false WHERE id = true;
+
+-- Clean up the final-week All-In picks so the test below starts from a clean state.
+DELETE FROM public.picks
+WHERE user_id = tests.get_supabase_uid('picker')
+  AND game_id IN (
+    SELECT id FROM public.games
+    WHERE external_game_id IN ('lp_final_1','lp_final_2')
+  );
+
+SELECT tests.authenticate_as('picker');
+
+-- 13) First All-In in the final week is allowed regardless
+SELECT lives_ok(
+  $$ SELECT public.lock_pick(
+       (SELECT id FROM public.games WHERE external_game_id = 'lp_final_1'),
+       'home'::public.side_enum, 'A'::public.weight_enum) $$,
+  'first All-In in the final week is still allowed when exception is disabled'
+);
+
+-- 14) Second All-In in the final week is rejected when exception is disabled
+SELECT throws_ok(
+  $$ SELECT public.lock_pick(
+       (SELECT id FROM public.games WHERE external_game_id = 'lp_final_2'),
+       'home'::public.side_enum, 'A'::public.weight_enum) $$,
+  'P0001', 'all in already used this week',
+  'lock_pick rejects a second All-In in the final week when final_week_unlimited_allin = false'
+);
+
+-- 15) Restoring the setting to true re-enables the exception
+SELECT tests.clear_authentication();
+UPDATE public.settings SET final_week_unlimited_allin = true WHERE id = true;
+
+DELETE FROM public.picks
+WHERE user_id = tests.get_supabase_uid('picker')
+  AND game_id IN (
+    SELECT id FROM public.games WHERE external_game_id IN ('lp_final_1','lp_final_2')
+  );
+
+SELECT tests.authenticate_as('picker');
+
+SELECT lives_ok(
+  $$ SELECT public.lock_pick(
+       (SELECT id FROM public.games WHERE external_game_id = 'lp_final_2'),
+       'home'::public.side_enum, 'A'::public.weight_enum) $$,
+  'second All-In in final week is allowed again after re-enabling the exception'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

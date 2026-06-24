@@ -2,7 +2,7 @@
   import { usePicksStore } from '$lib/stores/picks';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { kickoffPassed } from '$lib/domain/rules';
+  import { kickoffPassed, canUseAllInRule } from '$lib/domain/rules';
   import { formatKickoff } from '$lib/ui/format';
   import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
   import TeamSelect from './TeamSelect.svelte';
@@ -13,8 +13,10 @@
   interface Props {
     game: PickGame;
     initialized?: boolean;
+    isLastWeek?: boolean;
+    finalWeekUnlimitedAllin?: boolean;
   }
-  let { game, initialized = false }: Props = $props();
+  let { game, initialized = false, isLastWeek = false, finalWeekUnlimitedAllin = true }: Props = $props();
   const picks = usePicksStore();
 
   const entry = $derived($picks[game.id] ?? {});
@@ -22,6 +24,7 @@
   const started = $derived(kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
   const canChange = $derived(initialized && !started && !locked);
+  const canUseAllIn = $derived(canUseAllInRule(game.id, $picks, isLastWeek, finalWeekUnlimitedAllin));
 
   const weightValue = $derived(current?.weight ?? 'L');
   const lineText = $derived(spreadLine(game));
@@ -60,7 +63,7 @@
   <CardContent class="space-y-3">
     <TeamSelect {game} {canChange} />
 
-    <WeightSelect gameId={game.id} {canChange} selectedWeight={weightValue} />
+    <WeightSelect gameId={game.id} {canChange} selectedWeight={weightValue} {canUseAllIn} />
 
     <LockControls {game} {initialized} {started} {locked} />
 
