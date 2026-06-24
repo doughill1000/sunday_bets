@@ -117,6 +117,12 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   explicit integration order exists.
 - Pull requests close their issue, link relevant ADRs, and list verification that
   actually ran. Confirm before every GitHub write.
+- **Record shipped work in `docs/CHANGELOG.md` as part of the PR** (a `finish-pr`
+  step): one terse, newest-first entry per merged issue. Because it rides inside the
+  PR it lands in `master` exactly when the code does and cannot drift. To decide
+  whether something is **already done**, read that file first (then `gh` for anything
+  newer) — do not reverse-engineer completion from source. GitHub (closed issues,
+  merged PRs, Releases) stays authoritative.
 - **If the issue includes a target version number**, bump `package.json` `"version"`
   to that value as part of the implementation commit.
 
