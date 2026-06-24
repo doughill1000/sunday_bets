@@ -16,9 +16,6 @@ export const POST: RequestHandler = async (event) => {
 
   try {
     const res = await syncSchedule(year);
-    if (!res.ok) {
-      return new Response(JSON.stringify({ ok: false, reason: res.reason }), { status: 400 });
-    }
     return new Response(JSON.stringify(res), { status: 200 });
   } catch (e) {
     return new Response(

@@ -72,6 +72,9 @@ function normalizeAbbr(abbr: string): string {
 function mapStatus(state: string, completed: boolean): EspnGame['status'] {
   if (completed) return 'final';
   if (state === 'in') return 'in_progress';
+  // ESPN uses 'post' for both finished and postponed/cancelled games.
+  // The completed guard above handles the normal finished case; reaching here
+  // means the game entered post-state without completing (postponed/cancelled).
   if (state === 'post') return 'postponed';
   return 'scheduled';
 }

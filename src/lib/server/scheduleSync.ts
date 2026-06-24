@@ -19,21 +19,39 @@ export type ScheduleSyncStats = {
   weeksFailed: number;
 };
 
-export type ScheduleSyncError = {
-  ok: false;
-  reason: string;
-};
-
 // Derive the NFL year to sync when not explicitly specified.
-// Jan–Aug: upcoming season (current calendar year).
-// Sep–Dec: current season (current calendar year).
+// Jan–Feb: playoffs still running for the prior calendar year's season.
+// Mar–Aug: offseason; sync targets the upcoming season.
+// Sep–Dec: regular season in progress.
 export function targetNFLYear(): number {
-  return new Date().getFullYear();
+  const now = new Date();
+  const month = now.getUTCMonth() + 1; // 1-12
+  return month <= 2 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
 }
 
-export async function syncSchedule(
-  year: number = targetNFLYear()
-): Promise<ScheduleSyncStats | ScheduleSyncError> {
+// Derive gapless Tuesday-to-Tuesday week windows from a set of kickoff timestamps.
+// Matches the historical import convention so findActiveWeek() is always satisfied
+// from Tuesday pre-game through the following Monday night.
+function weekBoundaries(timestamps: number[]): { startTs: string; endTs: string } {
+  const earliest = Math.min(...timestamps);
+  const latest = Math.max(...timestamps);
+
+  // Snap back to the most recent Tuesday 00:00 UTC.
+  const startDate = new Date(earliest);
+  const startDay = startDate.getUTCDay(); // 0=Sun … 6=Sat
+  startDate.setUTCDate(startDate.getUTCDate() - ((startDay - 2 + 7) % 7));
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  // Snap forward to the next Tuesday 00:00 UTC after last game ends (~+4 h).
+  const endDate = new Date(latest + 4 * 60 * 60 * 1000);
+  const endDay = endDate.getUTCDay();
+  endDate.setUTCDate(endDate.getUTCDate() + ((2 - endDay + 7) % 7 || 7));
+  endDate.setUTCHours(0, 0, 0, 0);
+
+  return { startTs: startDate.toISOString(), endTs: endDate.toISOString() };
+}
+
+export async function syncSchedule(year: number = targetNFLYear()): Promise<ScheduleSyncStats> {
   const seasonId = await upsertSeasonByYear(year);
 
   const teams = await findTeamsByExternalKeys();
@@ -62,11 +80,8 @@ export async function syncSchedule(
       continue;
     }
 
-    // Derive week window from actual game kickoff times.
     const timestamps = weekResult.games.map((g) => new Date(g.date).getTime());
-    const startTs = new Date(Math.min(...timestamps)).toISOString();
-    // +4 h so findActiveWeek() keeps the week "open" through the last game.
-    const endTs = new Date(Math.max(...timestamps) + 4 * 60 * 60 * 1000).toISOString();
+    const { startTs, endTs } = weekBoundaries(timestamps);
 
     const weekId = await upsertWeek({ seasonId, weekNumber: weekNum, startTs, endTs });
     weeksProcessed++;

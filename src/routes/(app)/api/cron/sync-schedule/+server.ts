@@ -7,9 +7,7 @@ export const POST: RequestHandler = async (event) => {
   if (guard) return guard;
 
   const jobResult = await withCronLog('sync-schedule', async () => {
-    const res = await syncSchedule();
-    if (!res.ok) throw new Error(res.reason);
-    return res;
+    return await syncSchedule();
   });
 
   return new Response(JSON.stringify(jobResult), {

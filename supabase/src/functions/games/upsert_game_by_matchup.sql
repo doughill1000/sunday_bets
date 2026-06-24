@@ -24,7 +24,7 @@ begin
     p_commence, p_schedule_game_id,
     coalesce(p_status, 'scheduled')
   )
-  on conflict on constraint uq_games_matchup
+  on conflict (week_id, least(home_team_id, away_team_id), greatest(home_team_id, away_team_id))
   do update set
     commence_time    = excluded.commence_time,
     schedule_game_id = excluded.schedule_game_id,
