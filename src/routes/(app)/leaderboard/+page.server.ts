@@ -1,14 +1,16 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
-import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
 
 export const load: PageServerLoad = async (event) => {
+  const { groupId } = event.locals;
+  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+
   const view = event.url.searchParams.get('view') ?? 'standings';
   const weekParam = event.url.searchParams.get('week');
 
   const seasonYear = await getCurrentSeasonYear();
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (issue #102)
 
   const [{ data: auth }, totals] = await Promise.all([
     event.locals.supabase.auth.getUser(),

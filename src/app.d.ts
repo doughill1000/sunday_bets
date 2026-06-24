@@ -12,6 +12,7 @@ declare global {
       user: User | null;
       isAdmin: boolean;
       userProfile: { displayName: string; avatarKey: string | null } | null;
+      groupId: string | null;
     }
   }
 }

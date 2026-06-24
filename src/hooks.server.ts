@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/sveltekit';
 import { createServerClient } from '@supabase/ssr';
-import { type Handle } from '@sveltejs/kit';
+import { type Handle, redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
@@ -84,18 +84,40 @@ const injectSession: Handle = async ({ event, resolve }) => {
   // (same source the is_admin() SQL function uses for RLS).
   event.locals.isAdmin = false;
   event.locals.userProfile = null;
+  event.locals.groupId = null;
   if (user) {
-    const { data } = await supabaseService
-      .from('users')
-      .select('role, display_name, avatar_key')
-      .eq('id', user.id)
-      .maybeSingle();
-    event.locals.isAdmin = data?.role === 'admin';
-    if (data) {
+    const [profileResult, membershipResult] = await Promise.all([
+      supabaseService
+        .from('users')
+        .select('role, display_name, avatar_key')
+        .eq('id', user.id)
+        .maybeSingle(),
+      supabaseService
+        .from('group_memberships')
+        .select('group_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle()
+    ]);
+
+    event.locals.isAdmin = profileResult.data?.role === 'admin';
+    if (profileResult.data) {
       event.locals.userProfile = {
-        displayName: data.display_name ?? '',
-        avatarKey: data.avatar_key ?? null
+        displayName: profileResult.data.display_name ?? '',
+        avatarKey: profileResult.data.avatar_key ?? null
       };
+    }
+
+    event.locals.groupId = membershipResult.data?.group_id ?? null;
+
+    // Authenticated user has no group membership — redirect away from app routes.
+    // Auth and API routes are exempt to avoid redirect loops.
+    if (
+      !event.locals.groupId &&
+      !event.url.pathname.startsWith('/auth') &&
+      !event.url.pathname.startsWith('/api')
+    ) {
+      throw redirect(303, '/auth/error?reason=no-group');
     }
   }
 
