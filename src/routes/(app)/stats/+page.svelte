@@ -38,6 +38,8 @@
     points: 'desc'
   };
   const SHOW_HEAD_TO_HEAD = false;
+  const ACTIVE_TAB_TRIGGER_CLASS =
+    'data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:border-primary dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground';
 
   let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
     key: 'accuracy',
@@ -49,25 +51,16 @@
     direction: 'desc'
   });
 
-  // Players come from season totals (already per-player and ranked). "You" first.
-  const orderedPlayers = $derived.by(() => {
-    const you = data.totals.find((t) => t.user_id === data.currentUserId);
-    const others = data.totals.filter((t) => t.user_id !== data.currentUserId);
-    return you ? [you, ...others] : data.totals;
-  });
-
-  // Fall back to allTimeTotals order if season has no picks yet
   const orderedPlayersForPicker = $derived.by(() => {
-    if (orderedPlayers.length > 0) return orderedPlayers;
     const you = data.allTimeTotals.find((t) => t.user_id === data.currentUserId);
     const others = data.allTimeTotals.filter((t) => t.user_id !== data.currentUserId);
     return you ? [you, ...others] : data.allTimeTotals;
   });
 
   let selectedUserId = $state<string | null>(
-    data.totals.some((t) => t.user_id === data.currentUserId)
+    data.allTimeTotals.some((t) => t.user_id === data.currentUserId)
       ? data.currentUserId
-      : (data.totals[0]?.user_id ?? data.allTimeTotals[0]?.user_id ?? null)
+      : (data.allTimeTotals[0]?.user_id ?? null)
   );
   let selectedSeasonYear = $state(String(data.seasonYear));
 
@@ -75,12 +68,14 @@
   const selectedCareer = $derived(
     data.allTimeTotals.find((t) => t.user_id === selectedUserId) ?? null
   );
-  const isSelectedYou = $derived(selected != null && selected.user_id === data.currentUserId);
-  const isCareerYou = $derived(
-    selectedCareer != null && selectedCareer.user_id === data.currentUserId
+  const isSelectedYou = $derived(selectedUserId === data.currentUserId);
+  const isCareerYou = $derived(selectedUserId === data.currentUserId);
+  const selectedDisplayName = $derived(
+    selected?.display_name ?? selectedCareer?.display_name ?? ''
   );
-  const subjectLabel = $derived(isSelectedYou ? 'You' : (selected?.display_name ?? ''));
-  const possessive = $derived(isSelectedYou ? 'Your' : `${selected?.display_name ?? ''}'s`);
+  const subjectLabel = $derived(isSelectedYou ? 'You' : selectedDisplayName);
+  const emptyStateSubject = $derived(isSelectedYou ? 'you' : selectedDisplayName);
+  const possessive = $derived(isSelectedYou ? 'Your' : `${selectedDisplayName}'s`);
 
   const atsAccuracy = $derived.by(() => {
     if (!selected) return null;
@@ -265,11 +260,17 @@
 
     {#if selectedCareer}
       <Tabs value="season" class="w-full space-y-6">
-        <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-          <TabsTrigger value="season">Season</TabsTrigger>
-          <TabsTrigger value="career">Career</TabsTrigger>
+        <TabsList
+          class={SHOW_HEAD_TO_HEAD
+            ? 'grid w-full grid-cols-3 sm:inline-grid sm:w-auto'
+            : 'grid w-full grid-cols-2 sm:inline-grid sm:w-auto'}
+        >
+          <TabsTrigger value="season" class={ACTIVE_TAB_TRIGGER_CLASS}>Season</TabsTrigger>
+          <TabsTrigger value="career" class={ACTIVE_TAB_TRIGGER_CLASS}>Career</TabsTrigger>
           {#if SHOW_HEAD_TO_HEAD}
-            <TabsTrigger value="head-to-head">Head to head</TabsTrigger>
+            <TabsTrigger value="head-to-head" class={ACTIVE_TAB_TRIGGER_CLASS}
+              >Head to head</TabsTrigger
+            >
           {/if}
         </TabsList>
 
@@ -430,6 +431,13 @@
                 </Card>
               {/if}
             </div>
+          {:else}
+            <Card class="border-dashed">
+              <CardHeader>
+                <CardTitle>No settled picks for {emptyStateSubject} in {data.seasonYear}</CardTitle>
+                <CardDescription>Select another player or season.</CardDescription>
+              </CardHeader>
+            </Card>
           {/if}
         </TabsContent>
 
