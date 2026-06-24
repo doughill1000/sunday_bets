@@ -23,6 +23,10 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // hand-seeded auth.users rows), so we create/repair auth users via a direct Postgres
 // connection (DATABASE_URL) instead. Password is the same for everyone: "password".
 const PASSWORD = 'password';
+// The stable v1.7 tenancy group (mirrors DEFAULT_GROUP_ID in src/lib/constants/groups.ts).
+// The migration seeds memberships only for users that exist at migration time, so the demo
+// players created below must be enrolled here for group-scoped reads (picks_group_view) to work.
+const GROUP_ID = '00000000-0000-4000-8000-000000000017';
 interface Player {
   email: string;
   display: string;
@@ -229,6 +233,21 @@ async function ensurePlayers(supabase: SupabaseClient): Promise<Player[]> {
   return PLAYERS;
 }
 
+async function ensureMemberships(supabase: SupabaseClient, players: Player[]) {
+  // Enroll every demo player in the default group so group-scoped reads (picks_group_view,
+  // RLS sel_picks_owner_or_started -> is_member(group_id)) can reveal their picks after kickoff.
+  await supabase.from('groups').upsert({ id: GROUP_ID, name: 'Sunday Bets' }, { onConflict: 'id' });
+  const { error } = await supabase.from('group_memberships').upsert(
+    players.map((p) => ({
+      group_id: GROUP_ID,
+      user_id: p.id,
+      role: p.role === 'admin' ? 'commissioner' : 'member'
+    })),
+    { onConflict: 'group_id,user_id' }
+  );
+  if (error) throw new Error(`upsert group_memberships failed: ${error.message}`);
+}
+
 async function ensureTeams(supabase: SupabaseClient) {
   const { error } = await supabase.from('teams').upsert(
     TEAMS.map((t) => ({ ...t, league: 'NFL' })),
@@ -350,6 +369,7 @@ async function ensurePick(
 ) {
   const { error } = await supabase.from('picks').upsert(
     {
+      group_id: GROUP_ID,
       user_id: opts.userId,
       game_id: opts.gameId,
       picked_team_id: opts.pickedTeamId,
@@ -360,7 +380,7 @@ async function ensurePick(
       locked_spread_value: Math.abs(opts.lockedSpreadValue),
       locked_by: opts.userId
     },
-    { onConflict: 'user_id,game_id' }
+    { onConflict: 'group_id,user_id,game_id' }
   );
   if (error) throw new Error(`upsert pick failed: ${error.message}`);
 }
@@ -372,6 +392,9 @@ async function run() {
 
   console.log('Seeding players…');
   const players = await ensurePlayers(supabase);
+
+  console.log('Enrolling players in default group…');
+  await ensureMemberships(supabase, players);
 
   console.log('Seeding teams…');
   await ensureTeams(supabase);
