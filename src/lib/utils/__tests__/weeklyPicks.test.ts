@@ -19,14 +19,15 @@ function makeGame(overrides: Partial<GameInputRow> = {}): GameInputRow {
   };
 }
 
-function makePlayer(id: string, name: string): LeaderboardPlayer {
-  return { id, display_name: name };
+function makePlayer(id: string, name: string, avatarKey: string | null = null): LeaderboardPlayer {
+  return { id, display_name: name, avatar_key: avatarKey };
 }
 
 function makePick(overrides: Partial<GroupPickEntry> = {}): GroupPickEntry {
   return {
     userId: USER_A,
     displayName: 'Alice',
+    avatarKey: null,
     gameId: GAME_ID,
     pickedSide: 'home',
     weight: 'M',
@@ -118,6 +119,18 @@ describe('assembleWeeklyBreakdown', () => {
     const bob = result[0].picks.find((r) => r.userId === USER_B)!;
     expect(alice.isYou).toBe(true);
     expect(bob.isYou).toBe(false);
+  });
+
+  it('threads avatarKey from the player onto each row', () => {
+    const withAvatars = [
+      makePlayer(USER_A, 'Alice', 'preset-1'),
+      makePlayer(USER_B, 'Bob', null)
+    ];
+    const result = assembleWeeklyBreakdown([makeGame()], [], [], withAvatars, null);
+    const alice = result[0].picks.find((r) => r.userId === USER_A)!;
+    const bob = result[0].picks.find((r) => r.userId === USER_B)!;
+    expect(alice.avatarKey).toBe('preset-1');
+    expect(bob.avatarKey).toBeNull();
   });
 
   it('returns one row per player per game', () => {

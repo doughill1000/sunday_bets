@@ -49,6 +49,7 @@ export function assembleWeeklyBreakdown(
       return {
         userId: player.id,
         displayName: player.display_name,
+        avatarKey: player.avatar_key ?? null,
         isYou: player.id === currentUserId,
         pickedSide: pick?.pickedSide ?? null,
         pickedTeamShort: pick?.pickedTeamShort ?? null,

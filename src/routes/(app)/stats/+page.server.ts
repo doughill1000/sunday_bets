@@ -1,3 +1,4 @@
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import {
   getCurrentSeasonYear,
@@ -5,10 +6,10 @@ import {
   getAvailableSeasons
 } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason, getAllTimeStats } from '$lib/server/db/queries/stats';
-import { DEFAULT_GROUP_ID } from '$lib/constants/groups';
 
 export const load: PageServerLoad = async (event) => {
-  const groupId = DEFAULT_GROUP_ID; // TODO(v2): resolve from event.locals.active_group_id (issue #102)
+  const { groupId } = event.locals;
+  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
 
   const [currentSeasonYear, { data: auth }] = await Promise.all([
     getCurrentSeasonYear(),
