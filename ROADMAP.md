@@ -21,9 +21,9 @@ migration material only.
 | v1.3    | E2E safety net and Svelte 5 migration                         | Shipped |
 | v1.4    | Automated odds sync, grading, and week rollover               | Shipped |
 | v1.5    | Push notifications and player notification preferences        | Shipped |
-| v1.6    | Stats, history, and operational cleanup                       | Now     |
-| v1.7    | Group tenancy foundation (internal; original group only)      | Next    |
-| v1.8    | Season launch — social play and configurable gameplay rules   | Next    |
+| v1.6    | Stats, history, and operational cleanup                       | Shipped |
+| v1.7    | Group tenancy foundation (internal; original group only)      | Shipped |
+| v1.8    | Season launch — social play and configurable gameplay rules   | Now     |
 | v2.0    | Self-service groups and scaling                               | Later   |
 
 Dates belong on milestones and issues, where they can be revised without turning
@@ -36,24 +36,6 @@ need a later `group_id` retrofit. v2.0 marks the groups epoch, where members
 create, join, and switch between groups.
 
 ## Now
-
-### v1.6 - Stats and history
-
-Add historical views over `pick_settlement` and a player-facing stats experience.
-Keep leaderboard aggregation in Postgres and consume the intentionally reserved
-`getWeeklyCumulative()` query for the season trend.
-
-## Next
-
-### v1.7 - Group tenancy foundation
-
-Introduce `groups` and `group_memberships` and add `group_id` to picks, settlements,
-leaderboards, and gameplay configuration while keeping canonical NFL games, lines,
-scores, and ingestion global. Membership becomes the RLS boundary. Backfill the
-original Sunday Bets group with all history and standings unchanged. This release is
-invisible to players: it auto-selects the sole membership and keeps group switching
-behind a feature flag until v2.0. Split gameplay configuration to be group-owned now
-while operational settings (quota caps, penalties) stay global.
 
 ### v1.8 - Season launch
 
@@ -97,6 +79,24 @@ supersedes the relevant prior decision.
   query-performance strategy.
 - Revisit queues or hosting only for demonstrated scale, cost, compliance, regional,
   or networking needs.
+
+## Shipped
+
+### v1.7 - Group tenancy foundation
+
+Introduced `groups` and `group_memberships` and added `group_id` to picks,
+settlements, leaderboards, and gameplay configuration while keeping canonical NFL
+games, lines, scores, and ingestion global. Membership is the RLS boundary. The
+original Sunday Bets group was backfilled with all history and standings unchanged.
+Invisible to players: the sole membership is auto-selected and group switching is
+held behind a stopgap (`DEFAULT_GROUP_ID`) until v2.0 wires `active_group_id`
+resolution.
+
+### v1.6 - Stats and history
+
+Added historical views over `pick_settlement` and a player-facing stats experience.
+Leaderboard aggregation kept in Postgres; uses `getWeeklyCumulative()` for the
+season trend.
 
 ## Parked
 
