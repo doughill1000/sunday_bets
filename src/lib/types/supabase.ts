@@ -615,6 +615,7 @@ export type Database = {
       };
       settings: {
         Row: {
+          final_week_unlimited_allin: boolean;
           id: boolean;
           missed_pick_penalty: number | null;
           odds_api_calls_used_current_month: number;
@@ -622,6 +623,7 @@ export type Database = {
           reset_on: string | null;
         };
         Insert: {
+          final_week_unlimited_allin?: boolean;
           id?: boolean;
           missed_pick_penalty?: number | null;
           odds_api_calls_used_current_month?: number;
@@ -629,6 +631,7 @@ export type Database = {
           reset_on?: string | null;
         };
         Update: {
+          final_week_unlimited_allin?: boolean;
           id?: boolean;
           missed_pick_penalty?: number | null;
           odds_api_calls_used_current_month?: number;
@@ -817,6 +820,7 @@ export type Database = {
       };
       picks_group_view: {
         Row: {
+          avatar_key: string | null;
           commence_time: string | null;
           display_name: string | null;
           game_id: string | null;
@@ -1229,6 +1233,7 @@ export type Database = {
       };
     };
     Functions: {
+      _get_final_week_unlimited_allin: { Args: never; Returns: boolean };
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] };
         Returns: undefined;
