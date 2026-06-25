@@ -122,10 +122,7 @@ describe('assembleWeeklyBreakdown', () => {
   });
 
   it('threads avatarKey from the player onto each row', () => {
-    const withAvatars = [
-      makePlayer(USER_A, 'Alice', 'preset-1'),
-      makePlayer(USER_B, 'Bob', null)
-    ];
+    const withAvatars = [makePlayer(USER_A, 'Alice', 'preset-1'), makePlayer(USER_B, 'Bob', null)];
     const result = assembleWeeklyBreakdown([makeGame()], [], [], withAvatars, null);
     const alice = result[0].picks.find((r) => r.userId === USER_A)!;
     const bob = result[0].picks.find((r) => r.userId === USER_B)!;

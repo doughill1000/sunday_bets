@@ -37,11 +37,11 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 
 ## Index
 
-| ADR                                                 | Decision                        | Status   |
-| --------------------------------------------------- | ------------------------------- | -------- |
-| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md) | Use issue-led delivery and ADRs | Accepted |
-| [ADR-0002](0002-group-tenancy-boundary.md)          | Group tenancy boundary and data model | Accepted |
-| [ADR-0003](0003-schedule-source-and-game-identity.md) | Schedule source and game-identity / reconciliation model | Accepted |
-| [ADR-0004](0004-oauth-and-identity-linking.md) | Third-party (OAuth) sign-in and the single-identity / account-linking model | Accepted |
-| [ADR-0005](0005-drop-worst-week-scoring.md) | Drop-worst-week scoring (configurable per group) | Accepted |
-| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management | Accepted |
+| ADR                                                        | Decision                                                                    | Status   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------- | -------- |
+| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md)        | Use issue-led delivery and ADRs                                             | Accepted |
+| [ADR-0002](0002-group-tenancy-boundary.md)                 | Group tenancy boundary and data model                                       | Accepted |
+| [ADR-0003](0003-schedule-source-and-game-identity.md)      | Schedule source and game-identity / reconciliation model                    | Accepted |
+| [ADR-0004](0004-oauth-and-identity-linking.md)             | Third-party (OAuth) sign-in and the single-identity / account-linking model | Accepted |
+| [ADR-0005](0005-drop-worst-week-scoring.md)                | Drop-worst-week scoring (configurable per group)                            | Accepted |
+| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management       | Accepted |

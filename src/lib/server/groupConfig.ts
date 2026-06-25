@@ -14,22 +14,22 @@
 import { supabaseService } from '$lib/supabase/service';
 
 export async function getGroupConfig(groupId: string) {
-	const { data, error } = await supabaseService
-		.from('group_config')
-		.select('*')
-		.eq('group_id', groupId)
-		.maybeSingle();
-	if (error) throw error;
-	return data;
+  const { data, error } = await supabaseService
+    .from('group_config')
+    .select('*')
+    .eq('group_id', groupId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function getGroupWeekOverrides(groupId: string, weekId: number) {
-	const { data, error } = await supabaseService
-		.from('group_week_overrides')
-		.select('*')
-		.eq('group_id', groupId)
-		.eq('week_id', weekId)
-		.maybeSingle();
-	if (error) throw error;
-	return data;
+  const { data, error } = await supabaseService
+    .from('group_week_overrides')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('week_id', weekId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }

@@ -1,10 +1,10 @@
 # .github/workflows/cron-reset-odds-usage.yml
-name: "Cron: Reset Odds API Usage"
+name: 'Cron: Reset Odds API Usage'
 
 on:
   schedule:
     # Monthly reset — 1st of each month at 00:05 UTC
-    - cron: "5 0 1 * *"
+    - cron: '5 0 1 * *'
   workflow_dispatch:
 
 jobs:

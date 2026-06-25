@@ -6,15 +6,15 @@ Codex concurrently.
 
 ## Sources of truth
 
-| Concern                                    | Source of truth          |
-| ------------------------------------------ | ------------------------ |
-| Product outcomes and release order         | [Roadmap](../ROADMAP.md) |
-| Executable scope and acceptance criteria   | GitHub Issue             |
-| Priority, agent ownership, and live status | GitHub Project           |
-| Release grouping                           | GitHub Milestone         |
-| Durable technical and fairness decisions   | [ADRs](adr/README.md)    |
-| Implementation and verification            | Pull request             |
-| Shipped history (authoritative)            | GitHub Release           |
+| Concern                                    | Source of truth                   |
+| ------------------------------------------ | --------------------------------- |
+| Product outcomes and release order         | [Roadmap](../ROADMAP.md)          |
+| Executable scope and acceptance criteria   | GitHub Issue                      |
+| Priority, agent ownership, and live status | GitHub Project                    |
+| Release grouping                           | GitHub Milestone                  |
+| Durable technical and fairness decisions   | [ADRs](adr/README.md)             |
+| Implementation and verification            | Pull request                      |
+| Shipped history (authoritative)            | GitHub Release                    |
 | Shipped history (in-repo convenience log)  | [docs/CHANGELOG.md](CHANGELOG.md) |
 
 Do not duplicate live status in the roadmap or ADRs. Links are preferable to copied

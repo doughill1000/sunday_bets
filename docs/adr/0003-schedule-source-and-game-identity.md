@@ -24,7 +24,7 @@ The persistent game-identity model is the hard part. Today
 `public.games.external_game_id` holds the **Odds API** game id and carries the only
 matchup `UNIQUE` constraint (`uq_games_external`); `upsert_game_by_external_id()` keys
 all inserts/updates on it (`supabase/src/functions/games/upsert_game_by_external_id.sql`).
-A schedule source seeds a game *before* any odds exist, so the seeded row has no Odds
+A schedule source seeds a game _before_ any odds exist, so the seeded row has no Odds
 API id. Odds sync can therefore no longer key on `external_game_id` without creating a
 duplicate `games` row for a matchup that already exists — which would orphan picks
 (`public.picks` references `games.id`). Reconciliation needs a source-independent
@@ -79,7 +79,7 @@ never changes for the life of a matchup — across flex moves and across odds at
 
 ### 3. Reconciliation: schedule seeds, odds attaches by matchup
 
-- **Schedule sync** is the writer that *creates* `games` rows. It upserts by the
+- **Schedule sync** is the writer that _creates_ `games` rows. It upserts by the
   matchup key: insert when the matchup is new, otherwise update `commence_time`,
   `status`, and `schedule_game_id` in place on the existing `games.id`.
 - **Odds sync** stops creating identity. `upsert_game_by_external_id()` is replaced (or

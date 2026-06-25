@@ -29,9 +29,7 @@ export const POST: RequestHandler = async (event) => {
       synced = res;
       // A notification failure must not fail the sync/job.
       try {
-        lineShifts = res.ok
-          ? await detectLineShifts()
-          : { skipped: true, reason: 'sync failed' };
+        lineShifts = res.ok ? await detectLineShifts() : { skipped: true, reason: 'sync failed' };
       } catch (e) {
         Sentry.captureException(e);
         lineShifts = { error: e instanceof Error ? e.message : 'line-shift detection failed' };

@@ -1,7 +1,7 @@
 // Push + notificationclick handlers, imported into the generated service worker
 // via workbox.importScripts (see vite.config.ts). Plain JS — runs in the SW
 // global scope, not bundled by Vite.
-/* global self, clients */
+/* global clients */
 
 self.addEventListener('push', (event) => {
   let data = {};

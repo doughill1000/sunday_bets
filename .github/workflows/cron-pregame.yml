@@ -1,11 +1,11 @@
 # .github/workflows/cron-pregame.yml
-name: "Cron: Pregame (reminders + line moves)"
+name: 'Cron: Pregame (reminders + line moves)'
 
 on:
   schedule:
     # Hourly. The endpoint self-gates: it only spends an Odds API call when a
     # game kicks off within the next few hours, so off-game hours are cheap.
-    - cron: "0 * * * *"
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:

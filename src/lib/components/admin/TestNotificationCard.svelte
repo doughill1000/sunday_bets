@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '$lib/components/ui/card';
+  import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent
+  } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
 
   interface Props {
@@ -43,7 +49,8 @@
 <Card class="p-6">
   <CardHeader class="mb-4 flex items-center justify-between">
     <CardTitle class="text-xl font-bold">Admin • Test Notification</CardTitle>
-    <CardDescription class="text-sm text-muted-foreground">Sends a push to yourself</CardDescription>
+    <CardDescription class="text-sm text-muted-foreground">Sends a push to yourself</CardDescription
+    >
   </CardHeader>
   <CardContent>
     <div class="flex items-center gap-3">
