@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import WeightSelect from '$lib/components/picks/WeightSelect.svelte';
 import { picks, setPicks } from '$lib/stores/picks';
 import { get } from 'svelte/store';
-import { WEIGHTS } from '$lib/types/domain';
+import { WEIGHTS } from '$lib/domain/scoring';
 import type { PickGame } from '$lib/types/games';
 
 vi.mock('$lib/api/picks', () => ({

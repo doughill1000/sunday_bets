@@ -4,13 +4,6 @@ export type TeamSide = Enums<'side_enum'>;
 export type WeightCode = Enums<'weight_enum'>;
 export type GameResult = Enums<'pick_outcome'>;
 
-export const WEIGHTS: Record<WeightCode, { label: string; points: number }> = {
-  L: { label: 'Low', points: 1 },
-  M: { label: 'Medium', points: 3 },
-  H: { label: 'High', points: 5 },
-  A: { label: 'All-In', points: 10 }
-};
-
 export type TeamMeta = {
   id: number;
   name: string;
