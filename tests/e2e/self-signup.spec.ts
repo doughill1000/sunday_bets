@@ -162,12 +162,9 @@ async function signInAs(
   const page = await context.newPage();
   await page.goto('/auth');
 
-  // Switch to password sign-in (magic link is the default; click may be
-  // dropped while the page is still hydrating — retry until the field appears).
-  await expect(async () => {
-    await page.locator('#method-password').click();
-    await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  // Password is the default sign-in method (the magic-link toggle was removed in
+  // #137); wait for the always-rendered field once the page hydrates.
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
 
   await page.locator('input[name="email"]').fill(credentials.email);
   await page.locator('input[name="password"]').fill(credentials.password);

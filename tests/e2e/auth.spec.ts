@@ -22,10 +22,9 @@ test('password sign-in updates the header account state after auth invalidation'
 }) => {
   await page.goto('/auth');
 
-  await expect(async () => {
-    await page.locator('#method-password').click();
-    await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  // Password is the default sign-in method (the magic-link toggle was removed in
+  // #137); wait for the always-rendered field once the page hydrates.
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
 
   await page.locator('input[name="email"]').fill(E2E_USER.email);
   await page.locator('input[name="password"]').fill(E2E_USER.password);
