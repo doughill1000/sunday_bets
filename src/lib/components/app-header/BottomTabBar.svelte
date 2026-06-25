@@ -19,11 +19,11 @@
     {@const active = page.url.pathname.startsWith(href)}
     <a
       {href}
-      class="flex flex-1 flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-medium transition-colors
+      class="flex flex-1 flex-col items-center gap-1 px-2 py-3.5 text-[10px] font-medium transition-colors
         {active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
       aria-current={active ? 'page' : undefined}
     >
-      <Icon class="size-5" />
+      <Icon class="size-6" />
       {label}
     </a>
   {/each}
