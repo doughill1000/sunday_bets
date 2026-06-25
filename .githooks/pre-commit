@@ -1,0 +1,11 @@
+#!/bin/sh
+# Run Prettier on staged files before committing so formatter drift never
+# produces uncommitted changes after a commit.
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|svelte|js|json|css|html|md)$')
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+echo "$STAGED" | xargs npx prettier --write --ignore-unknown
+echo "$STAGED" | xargs git add
