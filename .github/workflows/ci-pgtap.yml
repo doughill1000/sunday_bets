@@ -2,9 +2,21 @@ name: PGTap Tests
 on:
   pull_request:
     branches: [master]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/ci-pgtap.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       NODE_ENV: test
       SUPABASE_CLI_VERSION: 2.107.0

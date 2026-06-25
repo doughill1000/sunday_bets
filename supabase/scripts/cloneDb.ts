@@ -37,7 +37,6 @@ if (explicitDest) {
   DEST = must('SUPABASE_DB_URL_DEV');
 }
 
-const CLEAN_SESSIONS = (process.env.DEV_CLEAR_SESSIONS ?? 'true') === 'true';
 const DUMP_ROLES = (process.env.CLONE_DUMP_ROLES ?? 'false') === 'true';
 const RESET =
   (process.env.DEV_RESET ?? (process.argv.includes('--reset') ? 'true' : 'false')) === 'true';

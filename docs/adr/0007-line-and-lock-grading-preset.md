@@ -20,11 +20,11 @@ click-timing alone:
 > Chiefs open −3, drift to −6 by kickoff; Chiefs win by 4. Alice picks Tuesday
 > (line −3), Bob picks Saturday (line −6), both at High (5).
 >
-> | | Line graded | 4 covers? | Result |
-> |---|---|---|---|
-> | Gamer — Alice | −3 | yes | **+5** |
-> | Gamer — Bob | −6 | no | **−5** |
-> | House (closing line) — both | same | same | **same** |
+> |                             | Line graded | 4 covers? | Result   |
+> | --------------------------- | ----------- | --------- | -------- |
+> | Gamer — Alice               | −3          | yes       | **+5**   |
+> | Gamer — Bob                 | −6          | no        | **−5**   |
+> | House (closing line) — both | same        | same      | **same** |
 >
 > A 10-point swing on an identical pick, purely from when each clicked.
 
@@ -50,8 +50,8 @@ the season**, with **Gamer** retained as an optional legacy preset.
   for that game. Because NFL games kick off across Thursday–Monday, the line is
   captured per game at its own kickoff; there is no week-wide cutoff and no
   commissioner action.
-- **Pick lock is unchanged.** Players still lock a *side* per game at kickoff, as
-  today. House only changes the *line that side is graded against*; it aligns the
+- **Pick lock is unchanged.** Players still lock a _side_ per game at kickoff, as
+  today. House only changes the _line that side is graded against_; it aligns the
   line-lock to the same per-game kickoff moment that already locks picks. The live
   line is shown as guidance when picking, but the graded number is the closing line.
 - **Config:** add `group_config.grading_preset` (`'gamer' | 'house'`). New groups
@@ -102,7 +102,7 @@ the season**, with **Gamer** retained as an optional legacy preset.
   number), it buys nothing over the closing line while feeling more arbitrary.
   Rejected.
 - **Per-player opt-in line-lock ("lock my number now").** The only mechanic that
-  lets active and passive players coexist *fairly* in one group, because the
+  lets active and passive players coexist _fairly_ in one group, because the
   lock-now-vs-closing option is symmetric. Out of scope here: we chose per-group
   presets (one mode per group per season), not within-group coexistence. Parked for
   future research rather than discarded.

@@ -1,10 +1,10 @@
 # .github/workflows/cron-sync-odds.yml
-name: "Cron: Sync Odds"
+name: 'Cron: Sync Odds'
 
 on:
   schedule:
     # Daily Tue–Sat ~14:00 UTC
-    - cron: "0 14 * * 2-6"
+    - cron: '0 14 * * 2-6'
   workflow_dispatch:
 
 jobs:

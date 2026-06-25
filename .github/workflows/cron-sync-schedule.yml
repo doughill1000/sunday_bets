@@ -1,9 +1,9 @@
-name: "Cron: Sync Schedule"
+name: 'Cron: Sync Schedule'
 
 on:
   schedule:
     # Weekly on Tuesday ~15:00 UTC — catches the flex window after Monday's announcement
-    - cron: "0 15 * * 2"
+    - cron: '0 15 * * 2'
   workflow_dispatch:
 
 jobs:

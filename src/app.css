@@ -70,11 +70,11 @@
   --border: #343436;
   --input: #45454a;
   --ring: #dba73b;
-  --chart-1: oklch(0.737 0.155 72);   /* brass gold — brand primary */
-  --chart-2: oklch(0.694 0.14 208);   /* sky blue */
-  --chart-3: oklch(0.682 0.161 152);  /* green — matches --success */
-  --chart-4: oklch(0.675 0.132 280);  /* lavender */
-  --chart-5: oklch(0.620 0.195 22);   /* coral red */
+  --chart-1: oklch(0.737 0.155 72); /* brass gold — brand primary */
+  --chart-2: oklch(0.694 0.14 208); /* sky blue */
+  --chart-3: oklch(0.682 0.161 152); /* green — matches --success */
+  --chart-4: oklch(0.675 0.132 280); /* lavender */
+  --chart-5: oklch(0.62 0.195 22); /* coral red */
   --sidebar: #232324;
   --sidebar-foreground: #f4ecda;
   --sidebar-primary: #dba73b;

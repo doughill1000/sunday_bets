@@ -33,10 +33,7 @@
 
   // Local mirror of the committed weight so an un-confirmed All-In tap doesn't
   // visually "stick" before the user confirms (cancel restores this value).
-  let value = $state<WeightCode | undefined>(selectedWeight);
-  $effect(() => {
-    value = selectedWeight;
-  });
+  let value = $derived<WeightCode | undefined>(selectedWeight);
 
   // null = no open prompt; otherwise the resolved All-In intent awaiting the user.
   let pending = $state<AllInIntent | null>(null);

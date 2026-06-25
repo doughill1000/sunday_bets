@@ -19,11 +19,11 @@ pnpm test:unit # Vitest + jsdom
 
 ## Conditional layers (by what changed)
 
-| Change                                   | Add                                            |
-| ---------------------------------------- | ---------------------------------------------- |
-| `supabase/src` or `src/lib/server/db`    | `npx supabase test db` + `pnpm test:integration` |
-| New table / policy / SQL function        | `npx supabase test db` (required) + integration  |
-| Route or auth flow                       | `pnpm test:e2e`                                 |
+| Change                                | Add                                              |
+| ------------------------------------- | ------------------------------------------------ |
+| `supabase/src` or `src/lib/server/db` | `npx supabase test db` + `pnpm test:integration` |
+| New table / policy / SQL function     | `npx supabase test db` (required) + integration  |
+| Route or auth flow                    | `pnpm test:e2e`                                  |
 
 Integration/pgTAP/e2e need Docker + local Supabase — check `npx supabase status`
 first; if it's not up, start it (don't skip the tests).

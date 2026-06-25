@@ -1,4 +1,3 @@
-import type { FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { E2E_USER, E2E_RESET_USER } from './test-user';
 
@@ -15,7 +14,7 @@ const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export default async function globalSetup(_config: FullConfig) {
+export default async function globalSetup() {
   const url = process.env.PUBLIC_SUPABASE_URL;
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
   if (!url || !serviceRole) {

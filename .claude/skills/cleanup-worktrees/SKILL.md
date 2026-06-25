@@ -13,9 +13,11 @@ alone. Canonical worktree rules: `docs/WORKFLOW.md` §"Claim and isolate work".
 
 1. Dry run first — list which worktrees would be removed without touching
    anything:
+
    ```powershell
    powershell -File scripts/cleanup-worktrees.ps1
    ```
+
    It fetches `origin --prune`, then for each sibling worktree classifies it as:
    - **removal candidate** — branch merged into `origin/master`, clean tree, no
      commits missing from trunk

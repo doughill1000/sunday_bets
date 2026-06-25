@@ -1,14 +1,6 @@
 {
   "permissions": {
-    "deny": [
-      "Read(./.env.production)",
-      "Read(./.env.staging)",
-      "Read(./.env)"
-    ],
-    "allow": [
-      "PowerShell(Select-String *)",
-      "Bash(git -C * ls-files *)",
-      "Bash(git -C * log *)"
-    ]
+    "deny": ["Read(./.env.production)", "Read(./.env.staging)", "Read(./.env)"],
+    "allow": ["PowerShell(Select-String *)", "Bash(git -C * ls-files *)", "Bash(git -C * log *)"]
   }
 }

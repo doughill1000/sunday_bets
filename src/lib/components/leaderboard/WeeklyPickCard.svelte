@@ -89,7 +89,8 @@
 
     {#if noPick.length > 0}
       <div class="flex gap-2">
-        <span class="mt-0.5 w-10 shrink-0 text-xs font-semibold text-muted-foreground">No pick</span>
+        <span class="mt-0.5 w-10 shrink-0 text-xs font-semibold text-muted-foreground">No pick</span
+        >
         <ul class="flex flex-1 flex-wrap gap-x-2.5 gap-y-1">
           {#each noPick as p (p.userId)}
             <li class="flex items-center gap-1 text-xs">
