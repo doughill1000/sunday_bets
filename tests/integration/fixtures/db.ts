@@ -274,8 +274,10 @@ export interface TwoGroupSettlementsResult {
   groupAId: string;
   /** UUID of group B */
   groupBId: string;
-  /** Season ID (integer) shared by both groups */
+  /** Season ID (integer primary key) shared by both groups */
   seasonId: number;
+  /** Season YEAR (e.g. 2099) — pass this to query functions that filter on `season_year` */
+  seasonYear: number;
   /** Week ID (integer) shared by both groups */
   weekId: number;
   /** UUID of the game used in both groups */
@@ -539,6 +541,7 @@ export async function seedTwoGroupSettlements(
     groupAId: TWO_GROUP_IDS.groupA,
     groupBId: TWO_GROUP_IDS.groupB,
     seasonId,
+    seasonYear: TWO_GROUP_YEAR,
     weekId,
     gameId,
     homeTeamId,
