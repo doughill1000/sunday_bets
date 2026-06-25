@@ -13,11 +13,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SUPABASE_CLI_VERSION: 2.64.2
+  SUPABASE_CLI_VERSION: 2.107.0
 
 jobs:
   source_integrity:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -33,6 +34,7 @@ jobs:
   backup:
     needs: [source_integrity]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: Production
     steps:
@@ -64,6 +66,7 @@ jobs:
   migrate_master:
     needs: [backup]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: Production
     steps:

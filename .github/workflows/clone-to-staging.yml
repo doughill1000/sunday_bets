@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SUPABASE_CLI_VERSION: 2.64.2
+  SUPABASE_CLI_VERSION: 2.107.0
   PG_VERSION: 17
 
 permissions:
@@ -19,6 +19,7 @@ permissions:
 jobs:
   clone:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: Production
     steps:
@@ -111,7 +112,7 @@ jobs:
       - name: Restore production data to staging
         env:
           SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
-          PGOPTIONS: "--session-replication-role=replica"
+          PGOPTIONS: '--session-replication-role=replica'
         run: |
           /usr/lib/postgresql/${{ env.PG_VERSION }}/bin/pg_restore \
             --dbname="$SUPABASE_STAGING_DB_URL" \

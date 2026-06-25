@@ -9,9 +9,17 @@ on:
       - 'tests/integration/**'
       - '.github/workflows/ci-integration.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   integration:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       NODE_ENV: test
       SUPABASE_CLI_VERSION: 2.107.0

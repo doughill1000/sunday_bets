@@ -8,9 +8,17 @@ on:
       - 'supabase/**'
       - '.github/workflows/migrate-dry-run.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   source-integrity:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
@@ -26,6 +34,7 @@ jobs:
   supabase-dry-run:
     needs: [source-integrity]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment:
       name: Production
     env:
