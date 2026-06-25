@@ -109,10 +109,15 @@ describe('Grading Integration Flow', () => {
     const { error: rpcError } = await supabase.rpc('grade_game', { p_game_id: testData.gameId });
     expect(rpcError).toBeNull();
 
+    // Scope to the group under test: grade_game also writes cross-group "missed"
+    // settlements for every other group/player that exists for this game (other
+    // integration fixtures seed additional groups), so a game_id-only query would
+    // pick those up too.
     const { data: settlements, error: settlementErr } = await supabase
       .from('pick_settlement')
       .select('*')
-      .eq('game_id', testData.gameId);
+      .eq('game_id', testData.gameId)
+      .eq('group_id', ORIGINAL_GROUP_ID);
     expect(settlementErr).toBeNull();
     expect(settlements).toHaveLength(3);
 
