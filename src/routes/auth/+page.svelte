@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { page } from '$app/state';
 
   import {
     Card,
@@ -44,6 +45,14 @@
     email = '';
     password = '';
   }
+
+  // Post-auth redirect target (e.g. /join/[code]). A form's `action` attribute
+  // replaces the page's query string, so we re-append `next` to the action URL;
+  // otherwise the server action can't read it and falls back to /picks.
+  const nextParam = $derived(page.url.searchParams.get('next'));
+  function actionFor(m: string): string {
+    return nextParam ? `?/${m}&next=${encodeURIComponent(nextParam)}` : `?/${m}`;
+  }
 </script>
 
 <div class="grid place-items-center">
@@ -57,7 +66,7 @@
 
     <CardContent>
       <form
-        action="?/{mode}"
+        action={actionFor(mode)}
         method="POST"
         use:enhance={() => {
           submitting = true;
@@ -147,7 +156,7 @@
           <div class="flex-1 border-t border-border/60"></div>
         </div>
 
-        <form method="POST" action="?/google">
+        <form method="POST" action={actionFor('google')}>
           <Button type="submit" variant="outline" class="w-full gap-2">
             <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
               <path
