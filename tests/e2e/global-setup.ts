@@ -48,12 +48,17 @@ export default async function globalSetup(_config: FullConfig) {
   // Elevate E2E user to admin so the admin UI is accessible in E2E tests,
   // and add them to the original group for group-scoped page access.
   if (e2eUserId) {
-    await supabase
-      .from('users')
-      .upsert(
-        { id: e2eUserId, display_name: E2E_USER.displayName, role: 'admin' },
-        { onConflict: 'id' }
-      );
+    await supabase.from('users').upsert(
+      {
+        id: e2eUserId,
+        display_name: E2E_USER.displayName,
+        role: 'admin',
+        // Pre-set guide_seen_at so the How-to-Play welcome guide does not
+        // auto-open and intercept clicks in unrelated e2e specs.
+        guide_seen_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    );
     await supabase
       .from('group_memberships')
       .upsert(

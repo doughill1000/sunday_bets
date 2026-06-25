@@ -36,6 +36,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 ## 2026-06-24
 
 - **#147** Invite tokens — `group_invites` table, commissioner RLS, and `redeem_invite` SECURITY DEFINER RPC. tables: group_invites · functions: is_commissioner, redeem_invite · pgTAP: 016_group_invites_rls · ADR-0006
+- **#141** How to Play onboarding guide — dismissible welcome guide (Sheet on mobile, Dialog on desktop) auto-opens once for new users; shareable `/how-to-play` route; account-menu link. column: `users.guide_seen_at`
 - **#188** Pre-v2 regression test suite — locks in gameplay behavior and
   group-isolation / self-sign-up boundaries before the v2.0 self-service-groups
   refactor. Adds two-group + self-signup integration fixtures, cross-group

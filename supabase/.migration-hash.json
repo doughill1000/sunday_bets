@@ -399,5 +399,10 @@
     "hash": "d08b619c709eadfe95515811e4f55566a7fcc4bc0982f5b30d1b1fff9e761f3e",
     "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
     "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "schemas/0218_guide_seen_at.sql": {
+    "hash": "c85c7def19ea8ff787667c1f0952637e43b33c567dfe180479c190789d6a525f",
+    "migration": "20260625010552_guide_seen_at.sql",
+    "migrationHash": "e96a68c0d3a541038cb45b7e726545e9a699966d88d8df5d961a5a5c363b8a35"
   }
 }
