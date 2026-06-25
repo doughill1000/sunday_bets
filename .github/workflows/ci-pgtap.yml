@@ -21,9 +21,9 @@ jobs:
       NODE_ENV: test
       SUPABASE_CLI_VERSION: 2.107.0
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Supabase Start
