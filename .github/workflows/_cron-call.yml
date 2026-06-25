@@ -1,0 +1,96 @@
+# .github/workflows/_cron-call.yml
+# Reusable workflow: POST to a production cron endpoint with HTTP status checking,
+# a job timeout, least-privilege permissions, and best-effort Sentry Cron Monitor
+# check-ins. Called by the thin cron-*.yml trigger workflows.
+#
+# Sentry check-ins are OPTIONAL and best-effort: they only fire when the
+# SENTRY_CRON_INGEST_URL and SENTRY_CRON_KEY secrets are configured AND the caller
+# passes a monitor_slug. Until then the cron simply behaves as before.
+name: Cron Call
+
+on:
+  workflow_call:
+    inputs:
+      endpoint:
+        description: "Cron endpoint path segment, e.g. 'grade' for /api/cron/grade"
+        required: true
+        type: string
+      monitor_slug:
+        description: "Sentry cron monitor slug for check-ins (optional)"
+        required: false
+        type: string
+        default: ''
+    secrets:
+      CRON_SECRET:
+        required: true
+      SENTRY_CRON_INGEST_URL:
+        required: false
+      SENTRY_CRON_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  call:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: Production
+    steps:
+      - name: Call cron endpoint (with optional Sentry check-in)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+          ENDPOINT: ${{ inputs.endpoint }}
+          MONITOR_SLUG: ${{ inputs.monitor_slug }}
+          SENTRY_CRON_INGEST_URL: ${{ secrets.SENTRY_CRON_INGEST_URL }}
+          SENTRY_CRON_KEY: ${{ secrets.SENTRY_CRON_KEY }}
+        run: |
+          set -uo pipefail
+
+          # Sentry Cron Monitor check-ins are best-effort: only active when both
+          # ingest secrets are present AND the caller passed a monitor slug.
+          sentry_enabled=false
+          if [ -n "${SENTRY_CRON_INGEST_URL}" ] && [ -n "${SENTRY_CRON_KEY}" ] && [ -n "${MONITOR_SLUG}" ]; then
+            sentry_enabled=true
+            BASE="${SENTRY_CRON_INGEST_URL%/}/cron/${MONITOR_SLUG}/${SENTRY_CRON_KEY}"
+          fi
+
+          checkin_id=""
+          if [ "$sentry_enabled" = true ]; then
+            checkin_id=$(curl -s --max-time 10 "${BASE}/?status=in_progress" | jq -r '.id // empty' || true)
+            echo "Sentry check-in started: ${checkin_id:-<none>}"
+          fi
+
+          # Call the production cron endpoint.
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            "${DEPLOY_URL}/api/cron/${ENDPOINT}")
+          http_code=$(echo "$response" | tail -1)
+          http_code=${http_code:-0}
+          body=$(echo "$response" | head -n -1)
+          echo "Response: $body"
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            status=ok
+          else
+            status=error
+          fi
+
+          # Finish the Sentry check-in (best-effort), pairing with the start id so
+          # Sentry measures duration. Falls back to a fresh check-in if no id.
+          if [ "$sentry_enabled" = true ]; then
+            if [ -n "$checkin_id" ]; then
+              curl -s --max-time 10 "${BASE}/${checkin_id}/?status=${status}" >/dev/null || true
+            else
+              curl -s --max-time 10 "${BASE}/?status=${status}" >/dev/null || true
+            fi
+            echo "Sentry check-in finished: ${status}"
+          fi
+
+          if [ "$status" != ok ]; then
+            echo "Cron job failed with HTTP $http_code"
+            exit 1
+          fi
