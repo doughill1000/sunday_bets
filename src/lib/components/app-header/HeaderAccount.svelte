@@ -13,11 +13,7 @@
     DropdownMenuSeparator
   } from '$lib/components/ui/dropdown-menu';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
-
-  interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-  }
+  import { installStore } from '$lib/pwa/install.svelte';
 
   interface Props {
     user?: User | null;
@@ -28,38 +24,17 @@
 
   let { user = null, canSeeAdmin = false, displayName = '', avatarKey = null }: Props = $props();
 
-  let canInstall = $state(false);
-  let deferredPrompt = $state<BeforeInstallPromptEvent | null>(null);
   let open = $state(false);
 
   onMount(() => {
     afterNavigate(() => {
       open = false;
     });
-
-    const handler = (e: BeforeInstallPromptEvent) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      canInstall = true;
-    };
-    window.addEventListener('beforeinstallprompt', handler as EventListener);
-    window.addEventListener('appinstalled', () => {
-      canInstall = false;
-      deferredPrompt = null;
-    });
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler as EventListener);
-    };
   });
 
   async function installPwa(e: MouseEvent) {
     e.preventDefault();
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    canInstall = false;
+    await installStore.promptInstall();
     open = false;
   }
 
@@ -95,7 +70,7 @@
           <a href="/admin" class="w-full">Admin</a>
         </DropdownMenuItem>
       {/if}
-      {#if canInstall}
+      {#if installStore.canInstall}
         <DropdownMenuSeparator />
         <DropdownMenuItem>
           <button onclick={installPwa} class="w-full text-left">Install App</button>
