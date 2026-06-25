@@ -43,47 +43,31 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
   const { code } = params;
 
   // Pre-validate the code so we can show a friendly state before the user
-  // clicks "Join". We peek at the invite without locking or consuming it.
-  // The RPC re-validates atomically on submit, so this is display-only.
-  const { data: invite, error } = await locals.supabase
-    .from('group_invites')
-    .select('code, group_id, expires_at, revoked_at, max_uses, used_count, groups(name)')
-    .eq('code', code)
-    .maybeSingle();
+  // clicks "Join". The invite SELECT policy is commissioner-only, so an invitee
+  // cannot read their own invite directly — preview_invite is a SECURITY DEFINER
+  // RPC that returns only the display state. redeem_invite re-validates
+  // atomically on submit, so this is display-only.
+  const { data, error } = await locals.supabase.rpc('preview_invite', { p_code: code });
 
-  if (error || !invite) {
+  const preview = data as { status: string; group_name: string | null } | null;
+
+  if (error || !preview) {
     return { status: 'invalid' as const, groupName: null, code };
   }
 
-  if (invite.revoked_at !== null) {
-    return { status: 'revoked' as const, groupName: null, code };
-  }
-
-  if (invite.expires_at !== null && new Date(invite.expires_at) < new Date()) {
-    return { status: 'expired' as const, groupName: null, code };
-  }
-
-  if (invite.max_uses !== null && invite.used_count >= invite.max_uses) {
-    return { status: 'exhausted' as const, groupName: null, code };
-  }
-
-  // Check if the caller is already a member of this group so we can route
-  // them straight in rather than showing the join button.
-  const { data: existing } = await locals.supabase
-    .from('group_memberships')
-    .select('group_id')
-    .eq('group_id', invite.group_id)
-    .eq('user_id', locals.user.id)
-    .maybeSingle();
-
-  if (existing) {
+  // Already a member: route straight in rather than showing the join button.
+  if (preview.status === 'already_member') {
     throw redirect(303, '/picks');
   }
 
-  const groupName =
-    invite.groups && !Array.isArray(invite.groups) ? (invite.groups.name ?? null) : null;
+  if (preview.status === 'valid') {
+    return { status: 'valid' as const, groupName: preview.group_name ?? null, code };
+  }
 
-  return { status: 'valid' as const, groupName, code };
+  // invalid | revoked | expired | exhausted — the page renders a friendly
+  // message for each. Anything unexpected falls back to 'invalid'.
+  const status = (['revoked', 'expired', 'exhausted'] as const).find((s) => s === preview.status);
+  return { status: status ?? ('invalid' as const), groupName: null, code };
 };
 
 export const actions: Actions = {
