@@ -9,7 +9,15 @@
 // Additionally verifies that add-member writes to the REQUESTED group, not
 // the hardcoded fallback group.
 
-import { describe, test, expect, beforeAll, afterAll } from 'vitest';
+import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest';
+
+// Importing the admin route handlers transitively pulls in modules that
+// `import * as Sentry from '@sentry/sveltekit'` (e.g. scheduleSync). The real
+// package eagerly loads its client bundle, which imports the `$app` runtime
+// alias that does not exist in the node/jsdom test environment. Stub it — the
+// only member used in the server chain is captureException. Mirrors push.spec.ts.
+vi.mock('@sentry/sveltekit', () => ({ captureException: () => undefined }));
+
 import { createServiceClient } from './_auth';
 import {
   TEST_USERS,
