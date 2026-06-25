@@ -208,20 +208,27 @@ foreach ($r in $toRemove) {
   Write-Host "==> removing worktree $($r.Path) [$($r.Branch)]" -ForegroundColor Cyan
   # --force is required because the worktree carries gitignored files
   # (node_modules, copied .env*) that plain `remove` refuses to discard.
-  git -C $root worktree remove --force $r.Path 2>$null
-  # On Windows git deletes the tracked files but leaves the ignored ones, so the
-  # final rmdir fails ("Directory not empty"). Finish the job ourselves, then
-  # prune so git drops its now-dangling administrative reference.
+  #
+  # On Windows this command writes to stderr AND exits non-zero whenever git
+  # leaves those ignored files behind ("Directory not empty"). Under this
+  # script's $ErrorActionPreference='Stop', PowerShell 5.1 promotes that stderr
+  # to a *terminating* NativeCommandError -- which `2>$null` does NOT suppress --
+  # aborting the whole loop before the Remove-DirRobust fallback below ever runs.
+  # Swallow it with try/catch so the loop continues; $LASTEXITCODE is still set.
+  try { git -C $root worktree remove --force $r.Path 2>$null } catch { }
+  # git deleted the tracked files but left the ignored ones, so the final rmdir
+  # failed. Finish the job ourselves, then prune so git drops its now-dangling
+  # administrative reference.
   if (($LASTEXITCODE -ne 0) -or (Test-Path -LiteralPath $r.Path)) {
     Write-Host "    git left files behind; removing directory directly" -ForegroundColor DarkGray
     if (-not (Remove-DirRobust -Path $r.Path)) {
       Write-Warning "    could not fully delete $($r.Path) -- left in place"
       continue
     }
-    git -C $root worktree prune
+    try { git -C $root worktree prune } catch { }
   }
   # Delete the now-orphaned local branch (its work is in trunk).
-  git -C $root branch -D $r.Branch 2>$null | Out-Null
+  try { git -C $root branch -D $r.Branch 2>$null | Out-Null } catch { }
 }
 
 Write-Host "==> git worktree prune" -ForegroundColor Cyan
