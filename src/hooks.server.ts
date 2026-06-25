@@ -6,6 +6,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 import { supabaseService } from '$lib/supabase/service';
 import type { Database } from '$lib/types/supabase';
+import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-resolver';
 
 const supabase: Handle = async ({ event, resolve }) => {
   /**
@@ -85,8 +86,10 @@ const injectSession: Handle = async ({ event, resolve }) => {
   event.locals.isAdmin = false;
   event.locals.userProfile = null;
   event.locals.groupId = null;
+  event.locals.memberships = [];
+
   if (user) {
-    const [profileResult, membershipResult] = await Promise.all([
+    const [profileResult, membershipsResult] = await Promise.all([
       supabaseService
         .from('users')
         .select('role, display_name, avatar_key, guide_seen_at')
@@ -94,10 +97,8 @@ const injectSession: Handle = async ({ event, resolve }) => {
         .maybeSingle(),
       supabaseService
         .from('group_memberships')
-        .select('group_id, status')
+        .select('group_id, status, role, groups(name)')
         .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle()
     ]);
 
     event.locals.isAdmin = profileResult.data?.role === 'admin';
@@ -109,22 +110,40 @@ const injectSession: Handle = async ({ event, resolve }) => {
       };
     }
 
-    const membership = membershipResult.data;
+    const allMemberships = membershipsResult.data ?? [];
+    const activeMemberships = allMemberships.filter((m) => m.status === 'active');
+
+    // Build the typed memberships list for the switcher UI.
+    event.locals.memberships = activeMemberships.map((m) => ({
+      groupId: m.group_id,
+      groupName: (m.groups as { name: string } | null)?.name ?? m.group_id,
+      role: m.role
+    }));
+
     const isExemptPath =
       event.url.pathname.startsWith('/auth') ||
       event.url.pathname.startsWith('/api') ||
       event.url.pathname.startsWith('/join');
 
+    // Check for pending-only memberships (no active ones).
+    const pendingMembership = allMemberships.find((m) => m.status === 'pending');
+
     if (!isExemptPath) {
-      if (!membership) {
+      if (allMemberships.length === 0) {
         throw redirect(303, '/join');
       }
-      if (membership.status === 'pending') {
+      if (activeMemberships.length === 0 && pendingMembership) {
         throw redirect(303, '/join/pending');
       }
     }
 
-    event.locals.groupId = membership?.status === 'active' ? membership.group_id : null;
+    // Resolve the active group from the cookie, falling back to the first
+    // active membership if the cookie value is absent or no longer valid.
+    const cookieGroupId = event.cookies.get(ACTIVE_GROUP_COOKIE) ?? null;
+    event.locals.groupId = resolveActiveGroupId(
+      cookieGroupId,
+      activeMemberships.map((m) => m.group_id)
+    );
   }
 
   return resolve(event);
