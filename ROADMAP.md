@@ -15,16 +15,18 @@ migration material only.
 
 ## Release direction
 
-| Release | Outcome                                                       | State   |
-| ------- | ------------------------------------------------------------- | ------- |
-| v1.2    | Reliability, cleanup, auth unification, and quota tracking    | Shipped |
-| v1.3    | E2E safety net and Svelte 5 migration                         | Shipped |
-| v1.4    | Automated odds sync, grading, and week rollover               | Shipped |
-| v1.5    | Push notifications and player notification preferences        | Shipped |
-| v1.6    | Stats, history, and operational cleanup                       | Shipped |
-| v1.7    | Group tenancy foundation (internal; original group only)      | Shipped |
-| v1.8    | Season launch — social play and configurable gameplay rules   | Now     |
-| v2.0    | Self-service groups and scaling                               | Later   |
+| Release | Outcome                                                     | State   |
+| ------- | ----------------------------------------------------------- | ------- |
+| v1.2    | Reliability, cleanup, auth unification, and quota tracking  | Shipped |
+| v1.3    | E2E safety net and Svelte 5 migration                       | Shipped |
+| v1.4    | Automated odds sync, grading, and week rollover             | Shipped |
+| v1.5    | Push notifications and player notification preferences      | Shipped |
+| v1.6    | Stats, history, and operational cleanup                     | Shipped |
+| v1.7    | Group tenancy foundation (internal; original group only)    | Shipped |
+| v1.8    | Season launch — social play and configurable gameplay rules | Shipped |
+| v1.9    | New-player onboarding and a pre-v2 regression safety net    | Now     |
+| v2.0    | Self-service groups (create, join, invite, switch)          | Next    |
+| v2.1    | Commissioner depth, House grading, and engagement polish    | Planned |
 
 Dates belong on milestones and issues, where they can be revised without turning
 this strategy document into a second project board.
@@ -33,33 +35,52 @@ The product's defining boundary is single-group → multi-group, not the version
 number. The tenancy foundation (v1.7) lands first and invisibly so that the social
 and gameplay-rule features in v1.8 are built group-aware from the start and never
 need a later `group_id` retrofit. v2.0 marks the groups epoch, where members
-create, join, and switch between groups.
+create, join, and switch between groups; v1.9 is the deliberate on-ramp that ships
+a regression safety net and onboarding before those access paths change.
 
 ## Now
 
-### v1.8 - Season launch
+### v1.9 - Onboarding and a pre-v2 safety net
 
-Ship the 2026 launch as one combined release built on the v1.7 foundation: scale the
-original group beyond six players, reveal other players' picks after kickoff, add
-group-scoped comments and reactions, and support password authentication alongside
-magic links. Layer in configurable gameplay rules — drop-worst-week scoring, per-week
-rule overrides (special weeks) keyed by group and week, and the House/Gamer
-line-grading preset. Hold a launch-blocking cut line: social core plus the safe,
-independently shippable rules (drop-worst-week, multiplier weeks) must ship for Week 1;
-fairness-sensitive rules (line locking, catch-up mechanics) can follow during the
-season and each require an ADR before implementation with explicit examples in their
-issue acceptance criteria.
+Ship the two safe, self-contained pieces before the multi-group access paths change: a
+new-player "How to Play" onboarding guide, and a regression test suite that locks in
+current gameplay, group-isolation, and self-sign-up behavior. This is the on-ramp — it
+gives the v2.0 refactor a net to land on.
 
-## Later
+## Next
 
-### v2.0 - Self-service groups and scaling
+### v2.0 - Self-service groups
 
-Add create, join, invite, and group-switching flows once the tenancy foundation is
+Add create, join, invite, and group-switching flows now that the tenancy foundation is
 proven, using expiring single-use tokens or shareable codes rather than exposed user
-IDs. A user may belong to multiple groups; commissioners manage their group's name,
-members, and rules. Because v1.7 already established the data model, the remaining work
-is UI and access, not a schema retrofit. Bound leaderboard work with SQL summaries and
-paginated member lists, and revisit infrastructure only from measured scale.
+IDs. A user may belong to multiple groups; commissioners manage their group's name and
+members. Because v1.7 already established the data model, the remaining work is UI and
+access, not a schema retrofit: one invite table, the create/redeem RPCs, commissioner
+write policies, and a persisted active-group selection.
+
+## Planned
+
+### v2.1 - Commissioner depth, House grading, and engagement
+
+Give commissioners per-group rules editing and the membership/RLS hardening that v2.0
+deferred; add the House closing-line grading preset (every member graded on the same
+number) once its decision is Accepted; and layer in engagement polish (install and
+notification nudges, pick-and-results reminders).
+
+## Off the dated roadmap
+
+These tracks are real work but are deliberately not tied to a version, so the release
+line stays honest about what is committed.
+
+- **Scaling (measurement-gated).** Observability first to define "measured scale," then
+  response caching, bounded and paginated leaderboards, and operational alerts and
+  load-testing — each triggered by a metric crossing a threshold, not by a date. This
+  honors the guardrail that infrastructure is revisited only from measurements.
+- **Gameplay decisions and research.** Catch-up mechanics, auto-pick defaults, and the
+  more experimental scoring and side-game ideas stay in a decide-when-wanted backlog;
+  each is gated on writing and accepting its ADR before any build.
+- **AI (research spike).** A data-only "starter" exploration with a measured-cost spike
+  and a foundation ADR, pulled in only when there is appetite to invest.
 
 ## Architectural guardrails
 
@@ -79,28 +100,3 @@ supersedes the relevant prior decision.
   query-performance strategy.
 - Revisit queues or hosting only for demonstrated scale, cost, compliance, regional,
   or networking needs.
-
-## Shipped
-
-### v1.7 - Group tenancy foundation
-
-Introduced `groups` and `group_memberships` and added `group_id` to picks,
-settlements, leaderboards, and gameplay configuration while keeping canonical NFL
-games, lines, scores, and ingestion global. Membership is the RLS boundary. The
-original Sunday Bets group was backfilled with all history and standings unchanged.
-Invisible to players: the sole membership is auto-selected and group switching is
-held behind a stopgap (`DEFAULT_GROUP_ID`) until v2.0 wires `active_group_id`
-resolution.
-
-### v1.6 - Stats and history
-
-Added historical views over `pick_settlement` and a player-facing stats experience.
-Leaderboard aggregation kept in Postgres; uses `getWeeklyCumulative()` for the
-season trend.
-
-## Parked
-
-Parked work should remain a GitHub Issue with a clear reason and no active milestone.
-Current themes include legacy `results`/`totals` removal, backfill-script cleanup,
-grant hardening, and migration-generator rework. Promote an item by moving its issue
-to Ready and assigning an owner; do not expand it here.
