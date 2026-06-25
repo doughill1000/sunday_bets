@@ -4,7 +4,7 @@ A terse, newest-first log of what has shipped to `master`, one entry per merged
 issue/PR. It exists so an agent can answer **"is X already done?"** by reading this
 file instead of reverse-engineering completion from source code.
 
-**GitHub stays authoritative.** This is convenience *shipped history* (the same
+**GitHub stays authoritative.** This is convenience _shipped history_ (the same
 category as GitHub Releases), not live status. Closed Issues, merged PRs, the GitHub
 Project `Done` column, and Releases remain the sources of truth — see
 `docs/WORKFLOW.md`. For anything newer than the latest entry here, check `gh`.
@@ -35,6 +35,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-24
 
+- **#188** Pre-v2 regression test suite — locks in gameplay behavior and
+  group-isolation / self-sign-up boundaries before the v2.0 self-service-groups
+  refactor. Adds two-group + self-signup integration fixtures, cross-group
+  isolation tests (leaderboard/weekly/stats/picks), pgTAP
+  `015_cross_group_stats_isolation`, All-In per-group enforcement, self-sign-up
+  provisioning + multi-group determinism guard, admin-route authz (403 matrix +
+  add-member group targeting), drop-worst-week via `getSeasonLeaderboard`, and the
+  ATS scoring matrix. Verification only; no schema/runtime change. Bumps version to
+  1.9.0. ADR-0002/0004/0005/0006
 - **#186** PR-gated shipped changelog — adds this `docs/CHANGELOG.md` and wires it
   into `finish-pr`, `start-issue`, `AGENTS.md`, and `docs/WORKFLOW.md`.
 - **#185** ADR-0007: line-and-lock grading preset (House vs Gamer) — decision record,
