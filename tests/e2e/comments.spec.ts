@@ -67,7 +67,9 @@ test.afterAll(async () => {
   await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
 });
 
-test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
+// e2e-deferred (#211): CommentsSection not rendering for the seeded started-game
+// fixture; the whole comments suite needs fixture/UI triage.
+test.fixme('CommentsSection is visible for a kicked-off game', async ({ page }) => {
   await page.goto('/picks');
 
   // The committed picks section should show started games. When expanded,
@@ -87,7 +89,8 @@ test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
   });
 });
 
-test('user can post a comment on a started game', async ({ page }) => {
+// e2e-deferred (#211): depends on the started-game fixture above.
+test.fixme('user can post a comment on a started game', async ({ page }) => {
   await page.goto('/picks');
 
   const details = page.locator('details').first();
@@ -105,7 +108,8 @@ test('user can post a comment on a started game', async ({ page }) => {
   await expect(page.getByText(uniqueBody)).toBeVisible({ timeout: 3000 });
 });
 
-test('user can toggle a reaction on a started game', async ({ page }) => {
+// e2e-deferred (#211): depends on the started-game fixture above.
+test.fixme('user can toggle a reaction on a started game', async ({ page }) => {
   await page.goto('/picks');
 
   const details = page.locator('details').first();

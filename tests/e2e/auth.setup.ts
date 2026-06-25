@@ -10,13 +10,10 @@ const authFile = 'playwright/.auth/user.json';
 setup('authenticate', async ({ page }) => {
   await page.goto('/auth');
 
-  // Switch to the email + password method (magic link is the default). In dev
-  // the page may still be hydrating, so the first click can be dropped — retry
-  // until the conditionally-rendered password field appears.
-  await expect(async () => {
-    await page.locator('#method-password').click();
-    await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  // The sign-in form defaults to email + password, so the password field is part
+  // of the initial render (the old magic-link toggle was removed in #137). In dev
+  // the page may still be hydrating, so wait for the field before interacting.
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
 
   await page.locator('input[name="email"]').fill(E2E_USER.email);
   await page.locator('input[name="password"]').fill(E2E_USER.password);
