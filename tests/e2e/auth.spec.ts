@@ -43,6 +43,10 @@ test('password sign-in updates the header account state after auth invalidation'
 test('sign-up form submits and shows confirmation message', async ({ page }) => {
   await page.goto('/auth');
 
+  // Wait for the form to render after Svelte hydrates before clicking the
+  // JS-powered mode toggle (same guard the sign-in test uses).
+  await expect(page.locator('input[name="email"]')).toBeVisible({ timeout: 15000 });
+
   // Switch to sign-up mode. The CardTitle renders a <div data-slot="card-title">,
   // not a heading, and "Create account" also labels the submit button — so scope
   // the assertion to the card title element to stay unambiguous.
