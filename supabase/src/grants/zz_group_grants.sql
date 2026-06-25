@@ -12,6 +12,14 @@ grant execute on function public.is_member(uuid) to authenticated, service_role;
 -- inserts). It is SECURITY DEFINER and enforces the create-gate internally.
 grant execute on function public.create_group(text) to authenticated, service_role;
 
+-- Commissioner management RPCs (ADR-0006, dec. 4 + 5): SECURITY DEFINER, caller-trust
+-- verified internally; no direct client writes to groups.name or group_memberships.role.
+grant execute on function public.rename_group(uuid, text)  to authenticated, service_role;
+grant execute on function public.remove_member(uuid, uuid) to authenticated, service_role;
+grant execute on function public.promote_member(uuid, uuid) to authenticated, service_role;
+grant execute on function public.leave_group(uuid)         to authenticated, service_role;
+grant execute on function public.mint_invite(uuid, integer, timestamptz) to authenticated, service_role;
+
 -- group_config / group_week_overrides: authenticated read gated by RLS.
 -- Client writes are blocked by policy; all writes go through service_role.
 revoke all on public.group_config from public, anon;
