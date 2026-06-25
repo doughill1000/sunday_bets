@@ -9,7 +9,9 @@ import {
   lineMovementPoints,
   shouldNotifyLineShift,
   spreadRelativeToHome,
-  type NotificationPrefs
+  formatRecapBody,
+  type NotificationPrefs,
+  type RecapTally
 } from '$lib/domain/notifications';
 import type { Json } from '$lib/types/supabase';
 
@@ -22,6 +24,7 @@ const LINE_SHIFT_CAP_MS = 24 * 60 * 60 * 1000;
 
 export type ReminderSummary = { evaluated: number; sent: number; skipped: number };
 export type LineShiftSummary = { evaluated: number; sent: number };
+export type RecapSummary = { evaluated: number; sent: number; skipped: number };
 
 async function loadPrefs(userIds: string[]): Promise<Map<string, NotificationPrefs>> {
   const map = new Map<string, NotificationPrefs>();
@@ -273,4 +276,119 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
   }
 
   return { evaluated, sent };
+}
+
+/**
+ * A week is recap-ready only once every game in it has been settled (final
+ * scores present). Mirrors the completeness notion `advance_week_if_complete`
+ * enforces, so partial-week grade runs don't fire a recap early.
+ */
+export async function isWeekFullyGraded(weekId: number): Promise<boolean> {
+  const { count, error } = await supabaseService
+    .from('games')
+    .select('id', { count: 'exact', head: true })
+    .eq('week_id', weekId)
+    .is('final_scores', null);
+  if (error) throw error;
+  return (count ?? 0) === 0;
+}
+
+/**
+ * Post-grading recap: once a week is fully settled, send each opted-in user a
+ * single push summarizing their week (record + net points), aggregated across
+ * all of their groups. Deduped per (user, week) via notification_log so repeated
+ * grade-cron runs don't re-send. No-op until the week is complete.
+ */
+export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
+  if (!(await isWeekFullyGraded(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
+
+  const { data: week, error: weekErr } = await supabaseService
+    .from('weeks')
+    .select('week_number')
+    .eq('id', weekId)
+    .single();
+  if (weekErr) throw weekErr;
+
+  const { data: games, error: gamesErr } = await supabaseService
+    .from('games')
+    .select('id')
+    .eq('week_id', weekId);
+  if (gamesErr) throw gamesErr;
+  const gameIds = (games ?? []).map((g) => g.id);
+  if (gameIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+
+  const { data: allUsers, error: usersErr } = await supabaseService
+    .from('users')
+    .select('id, notification_prefs');
+  if (usersErr) throw usersErr;
+  const notifiable = (allUsers ?? [])
+    .map((u) => ({ id: u.id, prefs: parseNotificationPrefs(u.notification_prefs) }))
+    .filter((u) => u.prefs.enabled && u.prefs.results_recap);
+  if (notifiable.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  const userIds = notifiable.map((u) => u.id);
+
+  // Per-(user, week) dedup: skip anyone already recapped for this week.
+  const { data: logs, error: logsErr } = await supabaseService
+    .from('notification_log')
+    .select('user_id')
+    .eq('kind', 'results_recap')
+    .eq('week_id', weekId)
+    .in('user_id', userIds);
+  if (logsErr) throw logsErr;
+  const recapped = new Set((logs ?? []).map((l) => l.user_id));
+
+  // Aggregate each user's settlements across all groups for the week's games.
+  const { data: settlements, error: setErr } = await supabaseService
+    .from('pick_settlement')
+    .select('user_id, outcome, points_delta')
+    .in('game_id', gameIds)
+    .in('user_id', userIds);
+  if (setErr) throw setErr;
+
+  const tallies = new Map<string, RecapTally>();
+  for (const s of settlements ?? []) {
+    const t = tallies.get(s.user_id) ?? { wins: 0, losses: 0, pushes: 0, missed: 0, net: 0 };
+    if (s.outcome === 'win') t.wins++;
+    else if (s.outcome === 'loss') t.losses++;
+    else if (s.outcome === 'push') t.pushes++;
+    else if (s.outcome === 'missed') t.missed++;
+    t.net += s.points_delta ?? 0;
+    tallies.set(s.user_id, t);
+  }
+
+  let evaluated = 0;
+  let sent = 0;
+  let skipped = 0;
+
+  for (const user of notifiable) {
+    const tally = tallies.get(user.id);
+    // Nothing to report (no settlements) or already recapped this week.
+    if (!tally || recapped.has(user.id)) {
+      skipped++;
+      continue;
+    }
+    evaluated++;
+
+    await sendToUser(user.id, {
+      title: `Your Week ${week.week_number} results`,
+      body: formatRecapBody(tally),
+      url: '/leaderboard',
+      tag: `results-recap-week-${weekId}`
+    });
+    await logNotification({
+      user_id: user.id,
+      kind: 'results_recap',
+      week_id: weekId,
+      detail: {
+        wins: tally.wins,
+        losses: tally.losses,
+        pushes: tally.pushes,
+        missed: tally.missed,
+        net: tally.net
+      }
+    });
+    sent++;
+  }
+
+  return { evaluated, sent, skipped };
 }
