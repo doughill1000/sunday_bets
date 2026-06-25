@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       monitor_slug:
-        description: "Sentry cron monitor slug for check-ins (optional)"
+        description: 'Sentry cron monitor slug for check-ins (optional)'
         required: false
         type: string
         default: ''
