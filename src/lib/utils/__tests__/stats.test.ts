@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTrendSeries, formatAccuracy, headToHeadForUser, weightLabel } from '../stats';
+import { buildTrendSeries, formatAccuracy, headToHeadForUser } from '../stats';
 import type { HeadToHeadEntry, SeasonTrendEntry } from '$lib/types/server/stats';
 
 const trendRow = (
@@ -57,10 +57,9 @@ describe('stats utilities', () => {
     ]);
   });
 
-  it('formats accuracy and weight labels', () => {
+  it('formats accuracy', () => {
     expect(formatAccuracy(0.6667)).toBe('67%');
     expect(formatAccuracy(null)).toBe('--');
-    expect(weightLabel('A')).toBe('All-In');
   });
 
   it('normalizes head-to-head rows to the selected user, flipping the opponent direction', () => {

@@ -2,7 +2,8 @@
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
-  import { WEIGHTS, type WeightCode } from '$lib/types/domain';
+  import { WEIGHTS } from '$lib/domain/scoring';
+  import type { WeightCode } from '$lib/types/domain';
   import { setWeight, stageFavorite, usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { allInIntent, type AllInIntent } from '$lib/domain/rules';
