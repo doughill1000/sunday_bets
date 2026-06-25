@@ -35,7 +35,6 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-24
 
-- Increase mobile bottom tab bar height — larger vertical padding (`py-3.5`) and icons (`size-6`) for easier iPhone reach. `BottomTabBar.svelte`
 - **#186** PR-gated shipped changelog — adds this `docs/CHANGELOG.md` and wires it
   into `finish-pr`, `start-issue`, `AGENTS.md`, and `docs/WORKFLOW.md`.
 - **#185** ADR-0007: line-and-lock grading preset (House vs Gamer) — decision record,
