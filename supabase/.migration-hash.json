@@ -256,9 +256,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "264ccc7929e40d742e7fe549625e9c80994bb82fcb0549f2dfff905cc4b04fcd",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+    "hash": "b5b16d0cb735bb370eaf5c07b1922725429bea2d0b24e2d7ea62f0fe30d07291",
+    "migration": "20260625014844_create_group_flow.sql",
+    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -404,5 +404,26 @@
     "hash": "c85c7def19ea8ff787667c1f0952637e43b33c567dfe180479c190789d6a525f",
     "migration": "20260625010552_guide_seen_at.sql",
     "migrationHash": "e96a68c0d3a541038cb45b7e726545e9a699966d88d8df5d961a5a5c363b8a35"
+  },
+  "schemas/0219_settings_group_creation_mode.sql": {
+    "hash": "95b5c3bac3325057de0cc6b9c51f52ae27e227553f31084b31b96e0363ee04b6",
+    "migration": "20260625014844_create_group_flow.sql",
+    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
+  },
+  "schemas/0220_users_can_create_group.sql": {
+    "hash": "06c0b6bdb25e3b2d3966b4ebb5ccff0751c9311d097d0d6eb9a31803a418ed38",
+    "migration": "20260625014844_create_group_flow.sql",
+    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
+  },
+  "schemas/0221_groups_name_length.sql": {
+    "hash": "6791171aab41b262fe3a697465d41982ca5fd3cd395fe3281498ad9f56673690",
+    "migration": "20260625014844_create_group_flow.sql",
+    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
+  },
+  "functions/groups/create_group.sql": {
+    "hash": "297462a723c7c2ac9da33fd9ae6f758fdfda3d3a10ee3b8f5197725a743c348b",
+    "signature": "public.create_group(text)",
+    "migration": "20260625014844_create_group_flow.sql",
+    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
   }
 }
