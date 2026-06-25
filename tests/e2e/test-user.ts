@@ -14,3 +14,14 @@ export const E2E_RESET_USER = {
   password: 'e2e-reset-password-123',
   displayName: 'e2e-reset'
 };
+
+// Dedicated user for the group-switcher (#150) multi-group specs. Kept separate
+// from E2E_USER so the latter stays a single-group member (the "no switcher"
+// case) while this user belongs to TWO groups (the switcher case). Seeded into
+// both groups in global-setup; its active group is pinned to "Sunday Bets" in
+// multigroup-auth.setup.ts.
+export const E2E_MULTIGROUP_USER = {
+  email: 'e2e-multigroup@example.com',
+  password: 'e2e-multigroup-password-123',
+  displayName: 'e2e-multigroup'
+};
