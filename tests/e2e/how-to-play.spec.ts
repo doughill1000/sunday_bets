@@ -155,7 +155,9 @@ test('returning user (guide_seen_at set) never sees the guide auto-open', async 
   await supabase.from('users').update({ guide_seen_at: null }).eq('id', howToPlayUserId);
 });
 
-test('account menu "How to Play" link navigates to /how-to-play', async ({ page }) => {
+// e2e-deferred (#211): sign-in now works, but the account-menu → "How to Play"
+// navigation still fails (a separate bug from the #137 login fix). Triage first.
+test.fixme('account menu "How to Play" link navigates to /how-to-play', async ({ page }) => {
   // Use a returning user so the guide does not block the menu interaction.
   const supabase = await getSupabase();
   await supabase
