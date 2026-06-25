@@ -56,17 +56,15 @@ test.beforeAll(async () => {
   if (!creatorUserId) throw new Error('could not resolve creator user id');
 
   // Grant the capability and ensure the user starts with no membership.
-  await supabase
-    .from('users')
-    .upsert(
-      {
-        id: creatorUserId,
-        display_name: CREATOR.displayName,
-        role: 'player',
-        can_create_group: true
-      },
-      { onConflict: 'id' }
-    );
+  await supabase.from('users').upsert(
+    {
+      id: creatorUserId,
+      display_name: CREATOR.displayName,
+      role: 'player',
+      can_create_group: true
+    },
+    { onConflict: 'id' }
+  );
   await supabase.from('group_memberships').delete().eq('user_id', creatorUserId);
 });
 
