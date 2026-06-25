@@ -54,6 +54,18 @@ export async function subscribeToPush(): Promise<PushResult> {
   return { ok: true };
 }
 
+/** Returns true when this device has an active push subscription. */
+export async function hasPushSubscription(): Promise<boolean> {
+  if (!isPushSupported()) return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub !== null;
+  } catch {
+    return false;
+  }
+}
+
 /** Tear down the browser subscription and remove it server-side. */
 export async function unsubscribeFromPush(): Promise<PushResult> {
   if (!isPushSupported()) return { ok: true };

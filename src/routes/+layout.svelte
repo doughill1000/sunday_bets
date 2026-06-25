@@ -3,6 +3,7 @@
   import AppHeader from '$lib/components/app-header/AppHeader.svelte';
   import BottomTabBar from '$lib/components/app-header/BottomTabBar.svelte';
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
+  import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
@@ -55,6 +56,7 @@
   </header>
 
   <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
+    <EngagementBanner {user} />
     {@render children()}
     <Toaster />
   </main>
