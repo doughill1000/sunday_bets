@@ -40,13 +40,21 @@ INSERT INTO public.group_config (group_id, line_source, scoring_rules) VALUES
   ('00000000-0000-4000-8000-000000000ca1', 'fanduel', '{}'),
   ('00000000-0000-4000-8000-000000000cb1', 'fanduel', '{}');
 
--- Need a week to attach overrides to
-INSERT INTO public.seasons (id, year) VALUES (9901, 2026) ON CONFLICT DO NOTHING;
-INSERT INTO public.weeks (id, season_id, week_number, start_ts, end_ts) VALUES
-  (99010, 9901, 1, now(), now() + interval '7 days') ON CONFLICT DO NOTHING;
+-- Need a week to attach overrides to.
+-- Year 2077 is a sentinel with no real NFL data; explicit id= values were
+-- previously used but ON CONFLICT DO NOTHING silently skipped the insert
+-- when a real season for that year already existed, breaking the FK on weeks.
+INSERT INTO public.seasons (year) VALUES (2077) ON CONFLICT (league, year) DO NOTHING;
+INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts)
+SELECT s.id, 1, now(), now() + interval '7 days'
+FROM public.seasons s WHERE s.year = 2077
+ON CONFLICT (season_id, week_number) DO NOTHING;
 
 INSERT INTO public.group_week_overrides (group_id, week_id, overrides) VALUES
-  ('00000000-0000-4000-8000-000000000ca1', 99010, '{"double_points": true}');
+  ('00000000-0000-4000-8000-000000000ca1',
+   (SELECT w.id FROM public.weeks w JOIN public.seasons s ON s.id = w.season_id
+    WHERE s.year = 2077 AND w.week_number = 1),
+   '{"double_points": true}');
 
 -- Member A can read their own group config ----------------------------------
 SELECT tests.authenticate_as('cfg_member_a');
@@ -74,7 +82,9 @@ SELECT results_eq(
 -- Per-week override keyed correctly -----------------------------------------
 SELECT results_eq(
   $$ SELECT overrides->>'double_points' FROM public.group_week_overrides
-     WHERE group_id = '00000000-0000-4000-8000-000000000ca1' AND week_id = 99010 $$,
+     WHERE group_id = '00000000-0000-4000-8000-000000000ca1'
+       AND week_id = (SELECT w.id FROM public.weeks w JOIN public.seasons s ON s.id = w.season_id
+                      WHERE s.year = 2077 AND w.week_number = 1) $$,
   $$ VALUES ('true'::text) $$,
   'per-week override keyed by (group_id, week_id) is readable by group member'
 );
