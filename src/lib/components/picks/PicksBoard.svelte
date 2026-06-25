@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { providePicksStore } from '$lib/stores/picks';
+  import { favoriteSide } from '$lib/domain/spread';
   import type { PickGame } from '$lib/types/games';
   import type { PickEntry, GroupPickEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
@@ -35,12 +36,17 @@
     finalWeekUnlimitedAllin = true
   }: Props = $props();
 
+  // Pre-stage only the spread favorite (no weight), so agreeing with the favorite
+  // is a single tap (the weight) and the underdog is two. A staged team alone never
+  // auto-saves — a weight is still required — so nothing is saved on load and the
+  // upcoming/committed split is unchanged. Pick'em / no-line games stage no team.
   function seedPicks() {
     const seededPicks = structuredClone(initialPicks);
     for (const game of games) {
       const entry = seededPicks[game.id];
       if (!entry?.selected && !entry?.lockedPick) {
-        seededPicks[game.id] = { ...entry, selected: { team: 'home', weight: 'L' } };
+        const fav = favoriteSide(game);
+        seededPicks[game.id] = fav ? { ...entry, selected: { team: fav } } : { ...entry };
       }
     }
     return seededPicks;
@@ -103,7 +109,7 @@
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
-          <GameCard game={g} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
+          <GameCard game={g} {games} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
         </div>
       {/each}
     </div>

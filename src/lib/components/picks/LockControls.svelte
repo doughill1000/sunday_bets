@@ -1,77 +1,64 @@
 <script lang="ts">
   import type { PickGame } from '$lib/types/games';
-  import { usePicksStore } from '$lib/stores/picks';
+  import { usePicksStore, lockPick as savePick, clearPick } from '$lib/stores/picks';
+  import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { toast } from 'svelte-sonner';
-  import { lockPick as lockPickApi, unlockPick as unlockPickApi } from '$lib/api/picks';
-  import { Button } from '$lib/components/ui/button';
 
   interface Props {
     game: PickGame;
-    initialized?: boolean;
     started?: boolean;
-    locked?: boolean;
   }
-  let { game, initialized = false, started = false, locked = false }: Props = $props();
+  let { game, started = false }: Props = $props();
   const picks = usePicksStore();
 
-  async function onLock() {
-    const entry = $picks[game.id] ?? {};
-    const team = entry.selected?.team ?? entry.lockedPick?.team;
-    const weight = entry.selected?.weight ?? entry.lockedPick?.weight;
-    if (!team || !weight) {
-      toast.error('Pick a team and weight first.');
-      return;
-    }
+  const entry = $derived($picks[game.id] ?? {});
+  const saveState = $derived(entry.saveState);
+  const hasPick = $derived(
+    !!entry.selected?.team || !!entry.selected?.weight || !!entry.lockedPick
+  );
 
-    const res = await lockPickApi(game.id, team, weight);
-    if (!res.ok) {
-      toast.error(res.reason ?? 'Lock failed');
-      return;
-    }
-    picks.update((s) => ({
-      ...s,
-      [game.id]: { ...(s[game.id] ?? {}), lockedPick: { team, weight } }
-    }));
+  async function onRetry() {
+    const res = await savePick(game.id, picks);
+    if (!res.ok) toast.error(res.reason ?? 'Couldn’t save');
   }
 
-  async function onUnlock() {
-    // Prevent calling API if game already started; button should be disabled but guard adds safety
+  async function onClear() {
     if (started) return;
-    const res = await unlockPickApi(game.id);
-    if (!res.ok) {
-      toast.error('Unlock failed');
-      return;
+    // Only the server holds a row once a pick is saved; a purely-staged pick is local.
+    if (entry.lockedPick) {
+      const res = await unlockPickApi(game.id);
+      if (!res.ok) {
+        toast.error('Couldn’t clear pick');
+        return;
+      }
     }
-    picks.update((s) => ({
-      ...s,
-      [game.id]: { ...(s[game.id] ?? {}), lockedPick: undefined }
-    }));
+    clearPick(game.id, picks);
   }
 </script>
 
-<div class="mt-1 flex gap-2">
-  {#if locked}
-    <Button
-      class="h-10 w-full font-semibold
-              border-4 border-white/80 dark:border-white/60
-             shadow-sm hover:shadow border-2 transition
-             focus-visible:ring-2"
-      variant="outline"
-      onclick={onUnlock}
-      disabled={started}
+<div class="mt-1 flex min-h-[1.5rem] items-center justify-between gap-2 text-xs">
+  <div aria-live="polite" class="min-w-0">
+    {#if saveState === 'saving'}
+      <span class="text-muted-foreground">Saving…</span>
+    {:else if saveState === 'error'}
+      <span class="text-destructive">
+        Couldn’t save —
+        <button
+          type="button"
+          class="font-semibold underline underline-offset-2 hover:no-underline"
+          onclick={onRetry}>Retry</button
+        >
+      </span>
+    {/if}
+  </div>
+
+  {#if !started && hasPick}
+    <button
+      type="button"
+      class="shrink-0 rounded px-2 py-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      onclick={onClear}
     >
-      🔓 Unlock
-    </Button>
-  {:else}
-    <Button
-      class="h-10 w-full font-semibold"
-      onclick={onLock}
-      disabled={!initialized ||
-        !$picks[game.id]?.selected ||
-        // ($picks[game.id]?.selected?.weight === 'A' && !canUseAllInRule(game.id, $picks)) ||
-        started}
-    >
-      Lock Pick
-    </Button>
+      Clear pick
+    </button>
   {/if}
 </div>

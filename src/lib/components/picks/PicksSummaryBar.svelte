@@ -1,5 +1,6 @@
 <script lang="ts">
   import { usePicksStore } from '$lib/stores/picks';
+  import { findAllInHolder } from '$lib/domain/rules';
   import { WEIGHTS } from '$lib/types/domain';
   import type { WeightCode } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
@@ -15,7 +16,7 @@
     return new Date(g.kickoff).getTime();
   }
 
-  const lockedCount = $derived(games.filter((g) => !!$picks[g.id]?.lockedPick).length);
+  const savedCount = $derived(games.filter((g) => !!$picks[g.id]?.lockedPick).length);
 
   const openCount = $derived(
     games.filter((g) => !$picks[g.id]?.lockedPick && kickoffMs(g) > now).length
@@ -25,17 +26,11 @@
     games.filter((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick).length
   );
 
-  const allInLocked = $derived(games.find((g) => $picks[g.id]?.lockedPick?.weight === 'A') ?? null);
-  const allInSelected = $derived(
-    !allInLocked ? (games.find((g) => $picks[g.id]?.selected?.weight === 'A') ?? null) : null
+  // The week's single All-In, saved or staged (locked takes precedence).
+  const allIn = $derived(findAllInHolder(games, $picks));
+  const allInTeam = $derived(
+    allIn ? (allIn.team === 'home' ? allIn.game.home : allIn.game.away) : null
   );
-  const allInTeam = $derived.by(() => {
-    const g = allInLocked ?? allInSelected;
-    if (!g) return null;
-    const team =
-      (allInLocked ? $picks[g.id]?.lockedPick?.team : $picks[g.id]?.selected?.team) ?? null;
-    return team === 'home' ? g.home : team === 'away' ? g.away : null;
-  });
 
   const weightCounts = $derived(
     (Object.keys(WEIGHTS) as WeightCode[])
@@ -51,23 +46,23 @@
   class="sticky top-14 z-30 -mx-4 border-b bg-background/95 backdrop-blur-sm"
   style="padding: 0.5rem max(1rem, env(safe-area-inset-right)) 0.5rem max(1rem, env(safe-area-inset-left))"
 >
-  <!-- Primary: locked/total counter + status -->
+  <!-- Primary: saved/total counter + status -->
   <div class="flex items-center gap-2 text-sm">
-    <span class="font-semibold">{lockedCount}/{games.length} locked</span>
+    <span class="font-semibold">{savedCount}/{games.length} saved</span>
     {#if openCount > 0}
-      <span class="text-warning">· {openCount} not locked</span>
-    {:else if lockedCount > 0}
-      <span class="text-muted-foreground">✓ All locked</span>
+      <span class="text-warning">· {openCount} to pick</span>
+    {:else if savedCount > 0}
+      <span class="text-muted-foreground">✓ All saved</span>
     {/if}
   </div>
 
   <!-- Detail row: quiet secondary info -->
   <div class="mt-0.5 flex items-center gap-x-2 text-xs text-muted-foreground">
     <!-- All-In -->
-    {#if allInLocked}
+    {#if allIn?.locked}
       <span>All-In: <span class="font-medium text-foreground">{allInTeam}</span> ✓</span>
-    {:else if allInSelected}
-      <span class="text-warning">All-In: {allInTeam} · locks at kickoff</span>
+    {:else if allIn}
+      <span class="text-warning">All-In: {allInTeam} · saves at kickoff</span>
     {:else if openCount > 0}
       <span class="text-warning">No All-In</span>
     {:else}

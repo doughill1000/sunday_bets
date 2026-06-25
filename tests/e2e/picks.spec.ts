@@ -1,106 +1,115 @@
 import { test, expect } from '@playwright/test';
 
-test('user can lock a pick on the active-week board', async ({ page }) => {
-  await page.goto('/picks');
+// The seeded board has one game: BUF @ KC, with KC (home) the -3.5 favorite.
+// Auto-save replaces the old Lock button: picks save the moment a team AND a
+// weight are both chosen, then collapse into the committed section.
 
-  // The seeded board has one game (BUF @ KC). Pick a team.
-  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
-  await expect(teamGroup).toBeVisible();
-  await teamGroup.getByRole('button', { name: 'KC' }).click();
-
-  // Choose a weight (the toggle items render their label, e.g. "High").
-  await page.getByRole('radio', { name: /High/ }).first().click();
-
-  // Lock it.
-  const lockBtn = page.getByRole('button', { name: 'Lock Pick' }).first();
-  await expect(lockBtn).toBeEnabled();
-  await lockBtn.click();
-
-  // A locked pick exposes an Unlock control.
-  await expect(page.getByRole('button', { name: /Unlock/ }).first()).toBeVisible();
-});
-
-test('summary bar shows unlocked warning before any picks', async ({ page }) => {
-  await page.goto('/picks');
-
-  // The summary bar renders above the game cards.
-  // With one seeded game and no picks locked, it should warn.
-  await expect(page.getByText(/not locked/)).toBeVisible();
-  // Locked count starts at 0.
-  await expect(page.getByText('0/1')).toBeVisible();
-});
-
-test('summary bar updates after locking a pick', async ({ page }) => {
+test('pre-selects the spread favorite with no weight, saving nothing on load', async ({ page }) => {
   await page.goto('/picks');
 
   const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
   await expect(teamGroup).toBeVisible();
-  await teamGroup.getByRole('button', { name: 'KC' }).click();
-  await page.getByRole('button', { name: 'Lock Pick' }).first().click();
-  await expect(page.getByRole('button', { name: /Unlock/ }).first()).toBeVisible();
 
-  // After locking: count updates and the warning badge disappears.
-  await expect(page.getByText('1/1')).toBeVisible();
-  await expect(page.getByText(/not locked/)).not.toBeVisible();
+  // Favorite (KC) is pre-selected; the underdog is not.
+  await expect(teamGroup.getByRole('button', { name: 'KC' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  );
+  await expect(teamGroup.getByRole('button', { name: 'BUF' })).toHaveAttribute(
+    'aria-pressed',
+    'false'
+  );
+
+  // No weight chosen yet → the "action needed" hint is shown and nothing is saved.
+  await expect(page.getByText(/Choose a weight to save/)).toBeVisible();
+  await expect(page.getByText('0/1 saved')).toBeVisible();
+  await expect(page.getByText(/to pick/)).toBeVisible();
 });
 
-test('locked pick appears in the committed section and game card is removed from board', async ({
+test('agreeing with the favorite saves in a single tap and collapses to committed', async ({
   page
 }) => {
   await page.goto('/picks');
-
-  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
-  await expect(teamGroup).toBeVisible();
-  await teamGroup.getByRole('button', { name: 'KC' }).click();
-  await page.getByRole('button', { name: 'Lock Pick' }).first().click();
-  await expect(page.getByRole('button', { name: /Unlock/ }).first()).toBeVisible();
-
-  // The game card (Pick a team group) should no longer be on the board.
-  await expect(page.getByRole('group', { name: 'Pick a team' })).not.toBeVisible();
-
-  // The committed section should summarise the locked pick.
-  await expect(page.getByText(/committed pick/)).toBeVisible();
-});
-
-test('locked picks section is collapsed by default and can be expanded', async ({ page }) => {
-  await page.goto('/picks');
-
-  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
-  await expect(teamGroup).toBeVisible();
-  await teamGroup.getByRole('button', { name: 'KC' }).click();
-  await page.getByRole('button', { name: 'Lock Pick' }).first().click();
-  await expect(page.getByRole('button', { name: /Unlock/ }).first()).toBeVisible();
-
-  // The <details> summary is visible; BUF @ KC should not be readable yet.
-  const summary = page.getByText(/committed pick/);
-  await expect(summary).toBeVisible();
-  await expect(page.getByText('BUF @ KC')).not.toBeVisible();
-
-  // Expand it — the matchup row appears.
-  await summary.click();
-  await expect(page.getByText('BUF @ KC')).toBeVisible();
-});
-
-test('edit from locked section moves pick back to the active board', async ({ page }) => {
-  await page.goto('/picks');
-
-  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
-  await expect(teamGroup).toBeVisible();
-  await teamGroup.getByRole('button', { name: 'KC' }).click();
-  await page.getByRole('button', { name: 'Lock Pick' }).first().click();
-  await expect(page.getByRole('button', { name: /Unlock/ }).first()).toBeVisible();
-
-  // Expand the committed section, then click Edit.
-  const summary = page.getByText(/committed pick/);
-  await summary.click();
-  await expect(page.getByText('BUF @ KC')).toBeVisible();
-
-  const editBtn = page.getByRole('button', { name: 'Edit' }).first();
-  await expect(editBtn).toBeVisible();
-  await editBtn.click();
-
-  // Game card is back on the active board.
   await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
-  // Summary bar shows 0 locked again.
-  await expect(page.getByText('0/1')).toBeVisible();
+
+  // One tap: just the weight (favorite already staged).
+  await page.getByRole('radio', { name: /High/ }).first().click();
+
+  // The card leaves the board and the committed section summarises it.
+  await expect(page.getByRole('group', { name: 'Pick a team' })).not.toBeVisible();
+  await expect(page.getByText(/committed pick/)).toBeVisible();
+  await expect(page.getByText('1/1 saved')).toBeVisible();
+});
+
+test('switching to the underdog then a weight is a two-tap save', async ({ page }) => {
+  await page.goto('/picks');
+  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
+  await expect(teamGroup).toBeVisible();
+
+  // Tap 1: the underdog. Tap 2: a weight.
+  await teamGroup.getByRole('button', { name: 'BUF' }).click();
+  await page.getByRole('radio', { name: /Medium/ }).first().click();
+
+  await expect(page.getByText('1/1 saved')).toBeVisible();
+
+  // The committed row reflects the underdog pick.
+  await page.getByText(/committed pick/).click();
+  await expect(page.getByText('BUF @ KC')).toBeVisible();
+  await expect(page.getByText(/BUF \+3\.5/)).toBeVisible();
+});
+
+test('All-In shows an inline confirm before it saves', async ({ page }) => {
+  await page.goto('/picks');
+  await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
+
+  // Tapping All-In does not save immediately — it asks for confirmation.
+  await page.getByRole('radio', { name: /All-In/ }).first().click();
+  await expect(page.getByRole('button', { name: 'Confirm All-In' })).toBeVisible();
+  await expect(page.getByText('1/1 saved')).not.toBeVisible();
+
+  // Cancel leaves it unsaved.
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByRole('button', { name: 'Confirm All-In' })).not.toBeVisible();
+  await expect(page.getByText('0/1 saved')).toBeVisible();
+
+  // Confirm saves it as the All-In and collapses to committed.
+  await page.getByRole('radio', { name: /All-In/ }).first().click();
+  await page.getByRole('button', { name: 'Confirm All-In' }).click();
+  await expect(page.getByText('1/1 saved')).toBeVisible();
+  await expect(page.getByText(/All-In:\s*KC/)).toBeVisible();
+});
+
+test('Clear removes a staged pick', async ({ page }) => {
+  await page.goto('/picks');
+  const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
+  await expect(teamGroup).toBeVisible();
+
+  // The pre-staged favorite exposes a Clear action.
+  await page.getByRole('button', { name: 'Clear pick' }).click();
+
+  // No team remains selected.
+  await expect(teamGroup.getByRole('button', { name: 'KC' })).toHaveAttribute(
+    'aria-pressed',
+    'false'
+  );
+  await expect(teamGroup.getByRole('button', { name: 'BUF' })).toHaveAttribute(
+    'aria-pressed',
+    'false'
+  );
+});
+
+test('Edit returns a saved pick to the board', async ({ page }) => {
+  await page.goto('/picks');
+  await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
+
+  // Save in one tap, then reopen for editing.
+  await page.getByRole('radio', { name: /High/ }).first().click();
+  await expect(page.getByText('1/1 saved')).toBeVisible();
+
+  await page.getByText(/committed pick/).click();
+  await page.getByRole('button', { name: 'Edit' }).first().click();
+
+  // Card is back on the board and the counter resets.
+  await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
+  await expect(page.getByText('0/1 saved')).toBeVisible();
 });
