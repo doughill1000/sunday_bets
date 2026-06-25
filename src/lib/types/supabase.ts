@@ -291,6 +291,57 @@ export type Database = {
           }
         ];
       };
+      group_invites: {
+        Row: {
+          code: string;
+          created_at: string;
+          created_by: string;
+          expires_at: string | null;
+          group_id: string;
+          id: string;
+          max_uses: number | null;
+          revoked_at: string | null;
+          used_count: number;
+        };
+        Insert: {
+          code: string;
+          created_at?: string;
+          created_by: string;
+          expires_at?: string | null;
+          group_id: string;
+          id?: string;
+          max_uses?: number | null;
+          revoked_at?: string | null;
+          used_count?: number;
+        };
+        Update: {
+          code?: string;
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string | null;
+          group_id?: string;
+          id?: string;
+          max_uses?: number | null;
+          revoked_at?: string | null;
+          used_count?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'group_invites_created_by_fkey';
+            columns: ['created_by'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'group_invites_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       group_memberships: {
         Row: {
           group_id: string;
@@ -1405,6 +1456,7 @@ export type Database = {
       grade_season: { Args: { p_season_id: number }; Returns: undefined };
       grade_week: { Args: { p_week_id: number }; Returns: undefined };
       is_admin: { Args: never; Returns: boolean };
+      is_commissioner: { Args: { target_group_id: string }; Returns: boolean };
       is_member: { Args: { target_group_id: string }; Returns: boolean };
       lock_pick: {
         Args: {
@@ -1422,6 +1474,7 @@ export type Database = {
           weight: Database['public']['Enums']['weight_enum'];
         }[];
       };
+      redeem_invite: { Args: { p_code: string }; Returns: undefined };
       resolve_missed_penalty_for_game: {
         Args: { p_game_id: string };
         Returns: number;
