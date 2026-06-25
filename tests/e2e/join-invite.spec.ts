@@ -145,21 +145,28 @@ test.beforeAll(async () => {
       email_confirm: true,
       user_metadata: { display_name: displayName }
     });
-    if (data?.user?.id) {
-      await supabase
-        .from('users')
-        .upsert(
-          { id: data.user.id, display_name: displayName, role: 'player' },
-          { onConflict: 'id' }
-        );
-      return data.user.id;
-    }
-    if (error && /already|exists|registered/i.test(error.message)) {
+
+    let id = data?.user?.id;
+    if (!id && error && /already|exists|registered/i.test(error.message)) {
       const { data: list } = await supabase.auth.admin.listUsers();
-      const id = list?.users.find((u) => u.email === email)?.id;
-      if (id) return id;
+      id = list?.users.find((u) => u.email === email)?.id;
     }
-    throw new Error(`could not resolve user id for ${email}: ${error?.message}`);
+    if (!id) {
+      throw new Error(`could not resolve user id for ${email}: ${error?.message}`);
+    }
+
+    // Mark the welcome guide as already seen so the WelcomeGuide modal does not
+    // auto-open and intercept clicks on the /join/[code] page.
+    await supabase.from('users').upsert(
+      {
+        id,
+        display_name: displayName,
+        role: 'player',
+        guide_seen_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    );
+    return id;
   }
 
   inviteeUserId = await ensureUser(INVITEE.email, INVITEE.password, INVITEE.displayName);
@@ -322,7 +329,7 @@ test('expired invite shows a friendly error and no membership is written', async
     const page = await signInAs(context, INVITEE);
     await page.goto(`/join/${expiredCode}`);
 
-    await expect(page.getByText(/expired/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /expired/i })).toBeVisible({ timeout: 10000 });
 
     // No "Join" button should be visible for a terminal error state.
     await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
@@ -337,7 +344,7 @@ test('revoked invite shows a friendly error and no membership is written', async
     const page = await signInAs(context, INVITEE);
     await page.goto(`/join/${revokedCode}`);
 
-    await expect(page.getByText(/revoked/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /revoked/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
   } finally {
     await context.close();
@@ -350,7 +357,7 @@ test('invalid code shows a not-found message', async ({ browser }) => {
     const page = await signInAs(context, INVITEE);
     await page.goto('/join/totally-invalid-code-xyz-999');
 
-    await expect(page.getByText(/not found|not valid/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /not found/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
   } finally {
     await context.close();
@@ -368,9 +375,10 @@ test('already-a-member is routed to /picks without a duplicate row', async ({ br
     await expect(page).toHaveURL(/\/picks/, { timeout: 10000 });
 
     // Confirm there is still exactly one membership row (no duplicate).
+    // group_memberships has a composite (group_id, user_id) PK and no `id` column.
     const { data: rows } = await supabase
       .from('group_memberships')
-      .select('id')
+      .select('user_id')
       .eq('user_id', alreadyMemberId)
       .eq('group_id', testGroupId);
     expect(rows?.length).toBe(1);
