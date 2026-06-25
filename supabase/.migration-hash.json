@@ -256,9 +256,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "78bfc523840d75810b04c93d6407db4048767f3e0d17f84813985cf336a61a8e",
-    "migration": "20260624184300_add_comments_reactions.sql",
-    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
+    "hash": "264ccc7929e40d742e7fe549625e9c80994bb82fcb0549f2dfff905cc4b04fcd",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -367,5 +367,37 @@
     "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
     "migration": "20260624184155_add_group_membership_status_column.sql",
     "migrationHash": "ba90581ad8bfb385d9bca84cbe2699cbf34a61634a8cad865dd65df9380501bf"
+  },
+  "schemas/0218_group_invites.sql": {
+    "hash": "00e6e86e995672eb9a1b32676a759e14ec40ec41e1370fd76ed432a7656c3fa2",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "indexes/idx_group_invites_code.sql": {
+    "hash": "077593d4d66ef2d2e3540320309002a6a64575bf98d286112447850081ae14a9",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "indexes/idx_group_invites_group_id.sql": {
+    "hash": "b204f35e8e4393f1b3a2493be30c0e17de6effde2df6eeea453a8b9c0e93db58",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "functions/auth/is_commissioner.sql": {
+    "hash": "8b267c11d51d1aa2ea9fb8840efef2a70021f4fbff5497dc8cda910c42dd7bc2",
+    "signature": "public.is_commissioner(uuid)",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "functions/groups/redeem_invite.sql": {
+    "hash": "4814f2a1387a4debc729a3652cc2e80ecaa75835498291a7246a851b0cec8eb0",
+    "signature": "public.redeem_invite(text)",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
+  },
+  "policies/27_policies_group_invites.sql": {
+    "hash": "d08b619c709eadfe95515811e4f55566a7fcc4bc0982f5b30d1b1fff9e761f3e",
+    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
+    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
   }
 }

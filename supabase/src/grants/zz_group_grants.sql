@@ -16,6 +16,14 @@ revoke all on public.group_week_overrides from public, anon;
 grant select on public.group_config to authenticated;
 grant select on public.group_week_overrides to authenticated;
 
+-- group_invites: commissioners manage invites, gated by RLS; no anon access.
+revoke all on public.group_invites from public, anon;
+
+grant select, insert, update on public.group_invites to authenticated;
+
+grant execute on function public.is_commissioner(uuid) to authenticated, service_role;
+grant execute on function public.redeem_invite(text) to authenticated, service_role;
+
 -- comments / reactions: members read+write their group's rows, gated by RLS.
 -- Strip default anon/public ACLs first (defense in depth alongside RLS).
 revoke all on public.comments  from public, anon;
