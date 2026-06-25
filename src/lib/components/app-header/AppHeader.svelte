@@ -39,6 +39,16 @@
     <a href="/stats" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Stats</a>
   </nav>
 
+  <!-- Group switcher (multi-group only; renders nothing otherwise). A single instance
+       repositioned by breakpoint via auto-margins:
+         mobile  — far-left slot (the desktop nav is hidden here, so the left is free,
+                   and this keeps the multi-group chip from colliding with the centered
+                   logo); `mr-auto` pushes the avatar to the far right.
+         desktop — grouped on the right next to the avatar (`sm:ml-auto` + `sm:mr-2`). -->
+  <div class="mr-auto sm:ml-auto sm:mr-2">
+    <GroupSwitcher {memberships} {activeGroupId} />
+  </div>
+
   <!-- Centered logo (absolute so it doesn't push the nav) -->
   <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
     <a
@@ -54,9 +64,6 @@
     </a>
   </div>
 
-  <!-- Right side: group switcher (multi-group only) + avatar dropdown -->
-  <div class="ml-auto flex items-center gap-2">
-    <GroupSwitcher {memberships} {activeGroupId} />
-    <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} />
-  </div>
+  <!-- Avatar dropdown — always far right -->
+  <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} />
 </div>
