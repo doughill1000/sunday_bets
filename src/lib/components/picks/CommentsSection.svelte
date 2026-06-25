@@ -7,13 +7,15 @@
     comments: CommentRow[];
     reactions: ReactionRow[];
     currentUserId: string | null;
+    currentUserDisplayName?: string | null;
   }
 
   let {
     gameId,
     comments: initialComments,
     reactions: initialReactions,
-    currentUserId
+    currentUserId,
+    currentUserDisplayName = null
   }: Props = $props();
 
   // Local copies so we can update optimistically
@@ -23,6 +25,7 @@
   let commentInput = $state('');
   let submittingComment = $state(false);
   let commentError = $state('');
+  let deletingId = $state<string | null>(null);
 
   const ALLOWED_EMOJIS = ['👍', '👎', '🔥', '😬', '🎯'];
 
@@ -62,7 +65,7 @@
           game_id: gameId,
           body: result.comment.body,
           created_at: result.comment.created_at,
-          display_name: null
+          display_name: currentUserDisplayName
         }
       ];
       commentInput = '';
@@ -70,6 +73,33 @@
       commentError = 'Network error — try again.';
     } finally {
       submittingComment = false;
+    }
+  }
+
+  async function deleteComment(commentId: string) {
+    if (deletingId) return;
+
+    deletingId = commentId;
+    commentError = '';
+
+    const prev = comments;
+    comments = comments.filter((c) => c.id !== commentId);
+
+    try {
+      const res = await fetch(`/api/comments/${gameId}?commentId=${commentId}`, {
+        method: 'DELETE'
+      });
+      const result = await res.json();
+
+      if (!res.ok || !result.ok) {
+        comments = prev; // roll back
+        commentError = result?.reason ?? 'Could not delete comment.';
+      }
+    } catch {
+      comments = prev; // roll back
+      commentError = 'Network error — try again.';
+    } finally {
+      deletingId = null;
     }
   }
 
@@ -85,7 +115,7 @@
       if (!res.ok) reactions = prev; // roll back on failure
     } else {
       // Optimistic add
-      const tempId = crypto.randomUUID();
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const prev = reactions;
       reactions = [
         ...reactions,
@@ -147,9 +177,24 @@
   {#if comments.length > 0}
     <ul class="space-y-1.5" aria-label="Comments">
       {#each comments as comment (comment.id)}
-        <li class="text-sm">
-          <span class="font-medium">{comment.display_name ?? 'Member'}:</span>
-          <span class="ml-1 text-foreground/80">{comment.body}</span>
+        <li class="group flex items-start gap-1.5 text-sm">
+          <span class="min-w-0 flex-1">
+            <span class="font-medium">{comment.display_name ?? 'Member'}:</span>
+            <span class="ml-1 text-foreground/80">{comment.body}</span>
+          </span>
+          {#if comment.user_id === currentUserId}
+            <button
+              type="button"
+              onclick={() => deleteComment(comment.id)}
+              disabled={deletingId === comment.id}
+              aria-label="Delete comment"
+              class="shrink-0 rounded p-0.5 text-xs text-muted-foreground opacity-60
+                     transition-opacity hover:text-destructive hover:opacity-100
+                     focus-visible:opacity-100 disabled:opacity-30"
+            >
+              ✕
+            </button>
+          {/if}
         </li>
       {/each}
     </ul>

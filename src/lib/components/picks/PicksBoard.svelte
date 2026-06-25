@@ -22,6 +22,7 @@
     social?: Record<string, SocialData>;
     groupPicks?: GroupPickEntry[];
     userId?: string | null;
+    currentUserDisplayName?: string | null;
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
   }
@@ -32,6 +33,7 @@
     social = {},
     groupPicks = [],
     userId = null,
+    currentUserDisplayName = null,
     isLastWeek = false,
     finalWeekUnlimitedAllin = true
   }: Props = $props();
@@ -115,5 +117,5 @@
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} {social} {groupPicks} {userId} />
+  <LockedPicksSection games={committed} {now} {social} {groupPicks} {userId} {currentUserDisplayName} />
 {/if}

@@ -28,6 +28,15 @@ export const load: PageServerLoad = async (event) => {
   const { groupId } = event.locals;
   if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
 
+  const displayNameResult = userId
+    ? await event.locals.supabase
+        .from('users')
+        .select('display_name')
+        .eq('id', userId)
+        .maybeSingle()
+    : null;
+  const currentUserDisplayName = displayNameResult?.data?.display_name ?? null;
+
   const week = await findActiveWeek();
   if (!week)
     return {
@@ -37,6 +46,7 @@ export const load: PageServerLoad = async (event) => {
       social: {},
       groupPicks: [],
       userId,
+      currentUserDisplayName,
       isLastWeek: false,
       finalWeekUnlimitedAllin: true
     };
@@ -71,6 +81,7 @@ export const load: PageServerLoad = async (event) => {
     social,
     groupPicks,
     userId,
+    currentUserDisplayName,
     isLastWeek: lastWeek,
     finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin
   };
