@@ -25,10 +25,7 @@ export async function getMyPicks(
     if (!r.game_id) continue;
 
     byGame[r.game_id] = {
-      lockedPick:
-        r.picked_side && r.weight
-          ? { team: r.picked_side, weight: r.weight }
-          : undefined,
+      lockedPick: r.picked_side && r.weight ? { team: r.picked_side, weight: r.weight } : undefined,
       lockedAt: r.locked_at ?? undefined,
       lockedSpreadValue: r.locked_spread_value ?? undefined,
       lockedSpreadTeamId: r.locked_spread_team_id ?? undefined

@@ -44,7 +44,8 @@ vi.mock('$lib/supabase/service', () => {
 });
 
 // Helper to control the mocked maybeSingle() return value
-const mockMaybeSingle = (supabaseService as unknown as { maybeSingle: ReturnType<typeof vi.fn> }).maybeSingle;
+const mockMaybeSingle = (supabaseService as unknown as { maybeSingle: ReturnType<typeof vi.fn> })
+  .maybeSingle;
 
 describe('syncOddsForActiveWeek', () => {
   beforeEach(() => {

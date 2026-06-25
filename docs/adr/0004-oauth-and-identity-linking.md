@@ -14,19 +14,19 @@ The app already has two sign-in methods, both cookie-based via `@supabase/ssr`
   `GET /auth/confirm` (`src/routes/auth/confirm/+server.ts`) which calls `verifyOtp()` and sets the
   session cookie.
 - **Email + password** — `signInWithPassword()` in the same form action; already shipped (the work
-  scoped by issue #105, which explicitly *excluded* OAuth).
+  scoped by issue #105, which explicitly _excluded_ OAuth).
 
 Magic link costs an email round-trip on every sign-in, which is the main friction on mobile;
 password reduces it but still requires typing credentials. For a ~6-person PWA installed on phones,
 **one-tap third-party sign-in is the lowest-friction option**, especially on iOS. This ADR decides
 how to add it.
 
-Adding OAuth crosses the authentication/trust boundary and introduces a new *identity type*, so per
+Adding OAuth crosses the authentication/trust boundary and introduces a new _identity type_, so per
 `docs/adr/README.md` it requires an ADR before implementation. The decision drivers are:
 
 1. **Which providers** to support at launch.
 2. **Account continuity** — every existing user currently signs in with a Gmail magic link. When
-   they instead tap "Continue with Google" (or Apple), they must land in their *existing* account,
+   they instead tap "Continue with Google" (or Apple), they must land in their _existing_ account,
    not a duplicate. How identities collapse to one person is the core decision.
 3. **Preserving the existing trust model** — sessions are **cookie-based** and must stay that way
    (localStorage breaks the iOS standalone PWA; see `docs/agent-context/auth.md`), and
@@ -94,26 +94,26 @@ orphan the account.
 ### 6. Magic-link sign-in is deprecated after OAuth rollout
 
 Once OAuth is live and current users have a one-tap path in (Google covers every existing Gmail
-user; Apple and password cover the rest), **magic link is removed as a *sign-in option*** in favor
+user; Apple and password cover the rest), **magic link is removed as a _sign-in option_** in favor
 of **password + OAuth**. The `signInWithOtp` button and the `magic` branch of the method toggle on
 `src/routes/auth/+page.svelte` are dropped.
 
 This is a sequencing constraint, not a same-PR change: every current user signs in with a Gmail
-magic link today, so removing it *before* OAuth ships would strand them. Order is therefore OAuth
+magic link today, so removing it _before_ OAuth ships would strand them. Order is therefore OAuth
 ships (Issue A) → users confirmed able to sign in via Google/Apple/password → magic-link sign-in
 removed (Issue D).
 
 **The email-OTP path stays.** `verifyOtp` at `GET /auth/confirm` also backs **email confirmation on
 signup** and **password reset** (a reset link is itself a one-time email link), and the verified-email
 guarantee in decision 4 depends on confirmation remaining on. Deprecating magic link removes a
-*sign-in method*, not the email/OTP subsystem.
+_sign-in method_, not the email/OTP subsystem.
 
 ### 7. Merging two already-distinct accounts is not self-serve initially
 
 Automatic linking (decision 4) handles the realistic case. True **merge** — collapsing two separate
-`auth.users` rows that have *each* already accumulated gameplay data — is treated as an
+`auth.users` rows that have _each_ already accumulated gameplay data — is treated as an
 **admin-assisted, service-role operation, deferred behind a sizing spike** (see Consequences and the
-follow-up issue). Self-serve merge is deliberately *not* built at launch; this is a recorded
+follow-up issue). Self-serve merge is deliberately _not_ built at launch; this is a recorded
 tradeoff, not an omission. The realistic trigger (a user whose provider email differs from their
 magic-link email, producing a duplicate) is expected to be rare for this group.
 

@@ -9,11 +9,38 @@ const FUTURE = new Date(Date.now() + 24 * 3600_000).toISOString();
 
 const games = [
   // home favorite
-  { id: 'g1', home: 'CIN', away: 'JAX', kickoff: FUTURE, homeTeamId: 1, awayTeamId: 2, spreadTeamId: 1, spreadValue: -3 },
+  {
+    id: 'g1',
+    home: 'CIN',
+    away: 'JAX',
+    kickoff: FUTURE,
+    homeTeamId: 1,
+    awayTeamId: 2,
+    spreadTeamId: 1,
+    spreadValue: -3
+  },
   // away favorite
-  { id: 'g2', home: 'GB', away: 'WAS', kickoff: FUTURE, homeTeamId: 3, awayTeamId: 4, spreadTeamId: 4, spreadValue: -2.5 },
+  {
+    id: 'g2',
+    home: 'GB',
+    away: 'WAS',
+    kickoff: FUTURE,
+    homeTeamId: 3,
+    awayTeamId: 4,
+    spreadTeamId: 4,
+    spreadValue: -2.5
+  },
   // no line
-  { id: 'g3', home: 'NE', away: 'NYJ', kickoff: FUTURE, homeTeamId: 5, awayTeamId: 6, spreadTeamId: null, spreadValue: null }
+  {
+    id: 'g3',
+    home: 'NE',
+    away: 'NYJ',
+    kickoff: FUTURE,
+    homeTeamId: 5,
+    awayTeamId: 6,
+    spreadTeamId: null,
+    spreadValue: null
+  }
 ] as any;
 
 describe('PicksBoard', () => {

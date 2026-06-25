@@ -48,7 +48,10 @@ test('switching to the underdog then a weight is a two-tap save', async ({ page 
 
   // Tap 1: the underdog. Tap 2: a weight.
   await teamGroup.getByRole('button', { name: 'BUF' }).click();
-  await page.getByRole('radio', { name: /Medium/ }).first().click();
+  await page
+    .getByRole('radio', { name: /Medium/ })
+    .first()
+    .click();
 
   await expect(page.getByText('1/1 saved')).toBeVisible();
 
@@ -63,7 +66,10 @@ test('All-In shows an inline confirm before it saves', async ({ page }) => {
   await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
 
   // Tapping All-In does not save immediately — it asks for confirmation.
-  await page.getByRole('radio', { name: /All-In/ }).first().click();
+  await page
+    .getByRole('radio', { name: /All-In/ })
+    .first()
+    .click();
   await expect(page.getByRole('button', { name: 'Confirm All-In' })).toBeVisible();
   await expect(page.getByText('1/1 saved')).not.toBeVisible();
 
@@ -73,7 +79,10 @@ test('All-In shows an inline confirm before it saves', async ({ page }) => {
   await expect(page.getByText('0/1 saved')).toBeVisible();
 
   // Confirm saves it as the All-In and collapses to committed.
-  await page.getByRole('radio', { name: /All-In/ }).first().click();
+  await page
+    .getByRole('radio', { name: /All-In/ })
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Confirm All-In' }).click();
   await expect(page.getByText('1/1 saved')).toBeVisible();
   await expect(page.getByText(/All-In:\s*KC/)).toBeVisible();

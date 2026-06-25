@@ -31,8 +31,8 @@ governing ADR already settled. Read those, then interview around them.
    - acceptance criteria that **imply an action not in the explicit list** (e.g. a guard AC
      implying a demote action);
    - anything whose answer changes sequencing or **removes/adds a dependency**.
-   For everything a default or the ADR already settles, pick the obvious option and just
-   state it — don't ask.
+     For everything a default or the ADR already settles, pick the obvious option and just
+     state it — don't ask.
 4. **Interview with `AskUserQuestion`.** Lead with the highest-leverage decisions. Give a
    recommendation (first option, "(Recommended)"). Use `preview` ASCII mockups for
    layout/IA/UI choices so Doug can compare side by side. Use `multiSelect` for "pick

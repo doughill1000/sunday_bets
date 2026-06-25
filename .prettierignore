@@ -21,3 +21,10 @@ yarn.lock
 supabase/migrations/**
 *.sql
 
+# Vendored agent skill packages (managed by `npx skills add` — keep upstream
+# formatting so updates don't churn and re-break the lint gate).
+.agents/skills/supabase/
+.agents/skills/supabase-postgres-best-practices/
+.claude/skills/supabase/
+.claude/skills/supabase-postgres-best-practices/
+

@@ -15,7 +15,7 @@ remains for self-service is **UI and access** — and the access rules are a tru
 decision, not an implementation detail.
 
 The chosen growth model is **hybrid**: joining a group via an invite is open to everyone,
-while *creating* a group is gated behind a toggle that can later flip fully open. This
+while _creating_ a group is gated behind a toggle that can later flip fully open. This
 introduces two things `ADR-0002` does not cover — a new **invite-redemption trust type**, and
 a new **commissioner write tier** above plain membership — plus the create-gate mechanism. Per
 `docs/adr/README.md` (a change to authorization/RLS/trust boundary, and a constraint that
@@ -26,8 +26,8 @@ The decision drivers are:
 
 1. **Security** — token replay/abuse, account-takeover via redemption, and RLS correctness on
    a new table and a new write tier.
-2. **Operational reversibility** — the create-gate must flip from gated to open *without a
-   migration*, so the model can open up on a business decision rather than an engineering one.
+2. **Operational reversibility** — the create-gate must flip from gated to open _without a
+   migration_, so the model can open up on a business decision rather than an engineering one.
 3. **Fairness** — a commissioner's authority must be bounded and distinct from the global admin
    role (`public.users.role`), which stays orthogonal.
 4. **Simplicity** — the smallest safe surface for a friends-scale app; abuse controls are
@@ -37,7 +37,7 @@ The decision drivers are:
 
 ### 1. Hybrid growth: open join, gated create
 
-Joining an existing group is open to anyone who holds a valid invite. Creating a *new* group is
+Joining an existing group is open to anyone who holds a valid invite. Creating a _new_ group is
 gated. This lets the product grow member-driven first, then open up deliberately, without
 rebuilding either path.
 
@@ -67,7 +67,7 @@ extends, and stays consistent with, the membership-is-the-RLS-boundary rule from
 ### 5. Multiple commissioners; the last-commissioner guard is transfer-required
 
 A group may have more than one commissioner. The last-commissioner guard is **transfer-required**:
-a commissioner cannot be removed, demoted, or leave while they are the *only* commissioner —
+a commissioner cannot be removed, demoted, or leave while they are the _only_ commissioner —
 another member must be promoted first. Block-only (refusing the action with no promotion path)
 was rejected because it strands a sole commissioner who wants to leave, with no exit.
 
@@ -109,7 +109,7 @@ two tiers do not collapse into one another.
 
 ## Alternatives considered
 
-- **Single-use-only token links** *or* **reusable-code-only** as the invite primitive. Rejected:
+- **Single-use-only token links** _or_ **reusable-code-only** as the invite primitive. Rejected:
   each forces a second mechanism later; the unified `expires_at` + `max_uses` row expresses both.
 - **App-layer commissioner checks** instead of RLS. Rejected: bypassable through the Data API;
   the durable boundary must be in the database, consistent with `ADR-0002`.
