@@ -1,6 +1,6 @@
 <script lang="ts">
   import UserAvatar from '$lib/components/UserAvatar.svelte';
-  import { WEIGHTS } from '$lib/types/domain';
+  import { weightPoints } from '$lib/domain/scoring';
   import type { GroupPickEntry } from '$lib/types/picks';
 
   interface Props {
@@ -9,15 +9,15 @@
   }
   let { picks, myUserId }: Props = $props();
 
-  function weightPoints(w: GroupPickEntry['weight']) {
-    return w ? WEIGHTS[w].points : 0;
+  function pointsOf(w: GroupPickEntry['weight']) {
+    return w ? weightPoints(w) : 0;
   }
 
   // Within a team: the current user first, then heaviest weight, then name.
   function sortMembers(a: GroupPickEntry, b: GroupPickEntry) {
     if (a.userId === myUserId) return -1;
     if (b.userId === myUserId) return 1;
-    const byWeight = weightPoints(b.weight) - weightPoints(a.weight);
+    const byWeight = pointsOf(b.weight) - pointsOf(a.weight);
     if (byWeight !== 0) return byWeight;
     return (a.displayName ?? '').localeCompare(b.displayName ?? '');
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findAllInHolder, allInIntent } from '../rules';
+import { findAllInHolder, allInIntent, kickoffPassed, pickStatus } from '../rules';
 import type { PickEntry } from '$lib/types/picks';
 import type { PickGame } from '$lib/types/games';
 
@@ -24,6 +24,38 @@ function picks(o: Record<string, Partial<PickEntry>> = {}): Record<string, PickE
   return o as Record<string, PickEntry>;
 }
 
+describe('kickoffPassed', () => {
+  const now = Date.parse('2026-01-01T12:00:00Z');
+
+  it('is true once kickoff is at or before the reference time', () => {
+    expect(kickoffPassed('2026-01-01T11:59:00Z', now)).toBe(true);
+    expect(kickoffPassed('2026-01-01T12:00:00Z', now)).toBe(true);
+  });
+
+  it('is false for a future kickoff', () => {
+    expect(kickoffPassed('2026-01-01T12:00:01Z', now)).toBe(false);
+  });
+});
+
+describe('pickStatus', () => {
+  const now = Date.parse('2026-01-01T12:00:00Z');
+  const future = '2026-01-01T12:00:01Z';
+  const past = '2026-01-01T11:59:00Z';
+
+  it('reports saved even after kickoff has passed', () => {
+    expect(pickStatus({ lockedPick: { team: 'home', weight: 'M' } }, past, now)).toBe('saved');
+  });
+
+  it('reports missed when kickoff passed without a saved pick', () => {
+    expect(pickStatus({ selected: { team: 'home', weight: 'M' } }, past, now)).toBe('missed');
+    expect(pickStatus(undefined, past, now)).toBe('missed');
+  });
+
+  it('reports open before kickoff without a saved pick', () => {
+    expect(pickStatus(undefined, future, now)).toBe('open');
+  });
+});
+
 describe('findAllInHolder', () => {
   it('returns null when no game holds an All-In', () => {
     const games = [game('g1'), game('g2')];
@@ -34,7 +66,10 @@ describe('findAllInHolder', () => {
 
   it('finds a staged All-In', () => {
     const games = [game('g1'), game('g2')];
-    const holder = findAllInHolder(games, picks({ g2: { selected: { team: 'away', weight: 'A' } } }));
+    const holder = findAllInHolder(
+      games,
+      picks({ g2: { selected: { team: 'away', weight: 'A' } } })
+    );
     expect(holder).toMatchObject({ game: { id: 'g2' }, team: 'away', locked: false });
   });
 
@@ -54,16 +89,16 @@ describe('findAllInHolder', () => {
 describe('allInIntent', () => {
   it('is a simple confirm when no other game holds All-In', () => {
     const games = [game('g1'), game('g2')];
-    expect(allInIntent('g1', games, picks({ g2: { selected: { team: 'home', weight: 'M' } } }))).toEqual(
-      { kind: 'confirm' }
-    );
+    expect(
+      allInIntent('g1', games, picks({ g2: { selected: { team: 'home', weight: 'M' } } }))
+    ).toEqual({ kind: 'confirm' });
   });
 
   it('is a confirm when this very game already holds the All-In', () => {
     const games = [game('g1')];
-    expect(allInIntent('g1', games, picks({ g1: { selected: { team: 'home', weight: 'A' } } }))).toEqual(
-      { kind: 'confirm' }
-    );
+    expect(
+      allInIntent('g1', games, picks({ g1: { selected: { team: 'home', weight: 'A' } } }))
+    ).toEqual({ kind: 'confirm' });
   });
 
   it('is a move when another pre-kickoff game holds the All-In', () => {

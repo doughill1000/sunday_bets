@@ -3,8 +3,21 @@ import type { PickEntry } from '$lib/types/picks';
 import type { PickGame } from '$lib/types/games';
 import type { TeamSide } from '$lib/types/domain';
 
-export function kickoffPassed(iso: string) {
-  return new Date(iso).getTime() <= Date.now();
+export function kickoffPassed(iso: string, now = Date.now()) {
+  return new Date(iso).getTime() <= now;
+}
+
+export type PickStatus = 'saved' | 'open' | 'missed';
+
+/** Status of a single game's pick: saved wins even past kickoff, then missed, else open. */
+export function pickStatus(
+  entry: PickEntry | undefined,
+  kickoff: string,
+  now = Date.now()
+): PickStatus {
+  if (entry?.lockedPick) return 'saved';
+  if (kickoffPassed(kickoff, now)) return 'missed';
+  return 'open';
 }
 
 /** The game currently holding the week's single All-In (saved or merely staged). */

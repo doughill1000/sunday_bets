@@ -22,7 +22,8 @@
     TableRow
   } from '$lib/components/ui/table';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import { formatAccuracy, headToHeadForUser, weightLabel } from '$lib/utils/stats';
+  import { formatAccuracy, headToHeadForUser } from '$lib/utils/stats';
+  import { weightLabel } from '$lib/domain/scoring';
 
   let { data }: { data: PageData } = $props();
 
