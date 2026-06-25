@@ -1,3 +1,4 @@
+# .github/workflows/cron-sync-schedule.yml
 name: 'Cron: Sync Schedule'
 
 on:
@@ -7,22 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync_schedule_production:
-    runs-on: ubuntu-latest
-    environment:
-      name: Production
-    steps:
-      - uses: actions/checkout@v6
-      - name: Call sync-schedule endpoint
-        run: |
-          response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json" \
-            "${{ vars.DEPLOY_URL }}/api/cron/sync-schedule")
-          http_code=$(echo "$response" | tail -1)
-          body=$(echo "$response" | head -n -1)
-          echo "Response: $body"
-          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "Cron job failed with HTTP $http_code"
-            exit 1
-          fi
+  sync_schedule:
+    uses: ./.github/workflows/_cron-call.yml
+    with:
+      endpoint: sync-schedule
+      monitor_slug: sync-schedule
+    secrets: inherit

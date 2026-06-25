@@ -256,9 +256,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "b5b16d0cb735bb370eaf5c07b1922725429bea2d0b24e2d7ea62f0fe30d07291",
-    "migration": "20260625014844_create_group_flow.sql",
-    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
+    "hash": "4eed9a066cd9db6df29dceaefadbde6a8d5f04320ae9d2befb3e504a6757176c",
+    "migration": "20260625124948_members_commissioner_basics.sql",
+    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -425,5 +425,35 @@
     "signature": "public.create_group(text)",
     "migration": "20260625014844_create_group_flow.sql",
     "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
+  },
+  "functions/groups/leave_group.sql": {
+    "hash": "63250ed8c125d7acd662158abcab775a6b1982edb9f22cf253325dc4f58be35d",
+    "signature": "public.leave_group(uuid)",
+    "migration": "20260625124948_members_commissioner_basics.sql",
+    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
+  },
+  "functions/groups/mint_invite.sql": {
+    "hash": "42c029618f91446146cdc3da1192c1e3cecd0d4cc489a0376da44cf79358421d",
+    "signature": "public.mint_invite(uuid, integer, timestamptz)",
+    "migration": "20260625125121_mint_invite_fix_code_gen.sql",
+    "migrationHash": "da4e83a8dc0a125285670295678ae159003c2bc48e434af351f52108232ce753"
+  },
+  "functions/groups/promote_member.sql": {
+    "hash": "27e9ee1cd14baa5f3e370151b4e605340ef3398a1d9834b1bb819b35548b9cfe",
+    "signature": "public.promote_member(uuid, uuid)",
+    "migration": "20260625124948_members_commissioner_basics.sql",
+    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
+  },
+  "functions/groups/remove_member.sql": {
+    "hash": "817167e5ff8a4b698b2f52c72611bc7c21718b5107edd5411e59fc154b06078e",
+    "signature": "public.remove_member(uuid, uuid)",
+    "migration": "20260625124948_members_commissioner_basics.sql",
+    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
+  },
+  "functions/groups/rename_group.sql": {
+    "hash": "b9eaeabef535b00e2cc86eb8972c52b7b9b3afb0e27020e645f1ed0a9e725328",
+    "signature": "public.rename_group(uuid, text)",
+    "migration": "20260625124948_members_commissioner_basics.sql",
+    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
   }
 }
