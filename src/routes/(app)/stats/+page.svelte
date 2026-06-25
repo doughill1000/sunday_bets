@@ -63,7 +63,7 @@
       ? data.currentUserId
       : (data.allTimeTotals[0]?.user_id ?? null)
   );
-  let selectedSeasonYear = $state(String(data.seasonYear));
+  let selectedSeasonYear = $derived(String(data.seasonYear));
 
   const selected = $derived(data.totals.find((t) => t.user_id === selectedUserId) ?? null);
   const selectedCareer = $derived(
@@ -186,10 +186,6 @@
       .filter((r) => r.user_id === selectedUserId)
       .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
   );
-
-  $effect(() => {
-    selectedSeasonYear = String(data.seasonYear);
-  });
 
   function onSeasonChange(e: Event) {
     const year = (e.target as HTMLSelectElement).value;

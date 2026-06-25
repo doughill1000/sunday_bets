@@ -15,7 +15,7 @@
   class="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
   style="padding-bottom: env(safe-area-inset-bottom)"
 >
-  {#each tabs as { href, label, Icon }}
+  {#each tabs as { href, label, Icon } (href)}
     {@const active = page.url.pathname.startsWith(href)}
     <a
       {href}

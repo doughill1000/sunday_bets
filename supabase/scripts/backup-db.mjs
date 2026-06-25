@@ -27,7 +27,9 @@ const ts = new Date()
 let sha = '';
 try {
   sha = execSync('git rev-parse --short HEAD').toString().trim();
-} catch {}
+} catch {
+  /* not a git repo / git unavailable — leave sha empty */
+}
 const short = sha ? `_${sha}` : '';
 const fileName = `${BACKUP_PREFIX}_${ts}${short}.dump`;
 
