@@ -63,9 +63,7 @@
     open = false;
   }
 
-  const effectiveDisplayName = $derived(
-    displayName || (user?.email ?? 'User')
-  );
+  const effectiveDisplayName = $derived(displayName || (user?.email ?? 'User'));
 </script>
 
 {#if user}
@@ -85,6 +83,9 @@
       <DropdownMenuSeparator />
       <DropdownMenuItem>
         <a href="/settings" class="w-full">Settings</a>
+      </DropdownMenuItem>
+      <DropdownMenuItem>
+        <a href="/how-to-play" class="w-full">How to Play</a>
       </DropdownMenuItem>
       {#if canSeeAdmin}
         <DropdownMenuItem>

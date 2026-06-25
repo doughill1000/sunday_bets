@@ -2,6 +2,7 @@
   import '../app.css';
   import AppHeader from '$lib/components/app-header/AppHeader.svelte';
   import BottomTabBar from '$lib/components/app-header/BottomTabBar.svelte';
+  import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
@@ -56,5 +57,6 @@
 
   {#if user}
     <BottomTabBar />
+    <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
   {/if}
 </div>
