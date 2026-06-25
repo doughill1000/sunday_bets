@@ -27,8 +27,15 @@ export default defineConfig({
 
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // Up to 2 retries in CI to absorb cold-start flake (the first Vite dep-optimize
+  // reload can slow the very first navigation); 0 locally for fast feedback.
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  // Shorter per-test cap than the 30s default. Healthy tests finish in a few
+  // seconds; 20s still leaves headroom for the explicit 15s hydration waits in the
+  // sign-in helpers while failing fast on a genuine hang. The `setup` project
+  // overrides this because the first cold Vite dep-optimize + reload is slower.
+  timeout: 20_000,
   reporter: 'html',
 
   use: {
@@ -37,8 +44,10 @@ export default defineConfig({
   },
 
   projects: [
-    // Logs in once via the real UI and saves the session to storageState.
-    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    // Logs in once via the real UI and saves the session to storageState. Gets a
+    // longer timeout because the first navigation triggers Vite's cold dep-optimize
+    // + full reload, which the global 20s cap could otherwise clip.
+    { name: 'setup', testMatch: /.*\.setup\.ts/, timeout: 30_000 },
     {
       name: 'chromium',
       use: {
