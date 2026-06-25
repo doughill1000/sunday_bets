@@ -89,7 +89,7 @@ const injectSession: Handle = async ({ event, resolve }) => {
     const [profileResult, membershipResult] = await Promise.all([
       supabaseService
         .from('users')
-        .select('role, display_name, avatar_key')
+        .select('role, display_name, avatar_key, guide_seen_at')
         .eq('id', user.id)
         .maybeSingle(),
       supabaseService
@@ -104,7 +104,8 @@ const injectSession: Handle = async ({ event, resolve }) => {
     if (profileResult.data) {
       event.locals.userProfile = {
         displayName: profileResult.data.display_name ?? '',
-        avatarKey: profileResult.data.avatar_key ?? null
+        avatarKey: profileResult.data.avatar_key ?? null,
+        guideSeenAt: profileResult.data.guide_seen_at ?? null
       };
     }
 

@@ -367,5 +367,10 @@
     "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
     "migration": "20260624184155_add_group_membership_status_column.sql",
     "migrationHash": "ba90581ad8bfb385d9bca84cbe2699cbf34a61634a8cad865dd65df9380501bf"
+  },
+  "schemas/0218_guide_seen_at.sql": {
+    "hash": "c85c7def19ea8ff787667c1f0952637e43b33c567dfe180479c190789d6a525f",
+    "migration": "20260625010552_guide_seen_at.sql",
+    "migrationHash": "e96a68c0d3a541038cb45b7e726545e9a699966d88d8df5d961a5a5c363b8a35"
   }
 }
