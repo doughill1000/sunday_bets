@@ -2,7 +2,7 @@
   import { usePicksStore } from '$lib/stores/picks';
   import { Card, CardHeader, CardContent } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
-  import { kickoffPassed, canUseAllInRule } from '$lib/domain/rules';
+  import { kickoffPassed } from '$lib/domain/rules';
   import { formatKickoff } from '$lib/ui/format';
   import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
   import TeamSelect from './TeamSelect.svelte';
@@ -12,12 +12,14 @@
 
   interface Props {
     game: PickGame;
+    games?: PickGame[];
     initialized?: boolean;
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
   }
   let {
     game,
+    games = [],
     initialized = false,
     isLastWeek = false,
     finalWeekUnlimitedAllin = true
@@ -29,11 +31,11 @@
   const started = $derived(kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
   const canChange = $derived(initialized && !started && !locked);
-  const canUseAllIn = $derived(
-    canUseAllInRule(game.id, $picks, isLastWeek, finalWeekUnlimitedAllin)
-  );
 
-  const weightValue = $derived(current?.weight ?? 'L');
+  // Undefined when no weight is chosen yet, so no chip looks pre-selected.
+  const weightValue = $derived(current?.weight);
+  // A staged team with no weight is the "action needed" cue.
+  const needsWeight = $derived(canChange && !!current?.team && !current?.weight);
   const lineText = $derived(spreadLine(game));
   const kickoffText = $derived(formatKickoff(game.kickoff));
 </script>
@@ -70,9 +72,20 @@
   <CardContent class="space-y-3">
     <TeamSelect {game} {canChange} />
 
-    <WeightSelect gameId={game.id} {canChange} selectedWeight={weightValue} {canUseAllIn} />
+    <WeightSelect
+      gameId={game.id}
+      {games}
+      {canChange}
+      selectedWeight={weightValue}
+      {isLastWeek}
+      {finalWeekUnlimitedAllin}
+    />
 
-    <LockControls {game} {initialized} {started} {locked} />
+    {#if needsWeight}
+      <p class="text-xs text-muted-foreground">Choose a weight to save.</p>
+    {/if}
+
+    <LockControls {game} {started} />
 
     {#if started}
       <p class="mt-2 text-xs text-muted-foreground">Kickoff passed — picks locked.</p>

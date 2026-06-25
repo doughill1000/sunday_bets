@@ -5,7 +5,8 @@ import { setPicks } from '../../../stores/picks';
 
 vi.mock('$lib/domain/rules', () => ({
   kickoffPassed: vi.fn(() => false),
-  canUseAllInRule: vi.fn(() => true)
+  findAllInHolder: vi.fn(() => null),
+  allInIntent: vi.fn(() => ({ kind: 'confirm' }))
 }));
 
 const game = {
@@ -33,6 +34,18 @@ describe('GameCard', () => {
     render(GameCard, { props: { game, initialized: true } });
     expect(screen.getByText('Locked')).toBeInTheDocument();
     expect(screen.getByText(/CIN -3.5 @ H/)).toBeInTheDocument(); // “@ H” because weight renders after @
+  });
+
+  it('prompts for a weight when a team is staged with no weight', () => {
+    setPicks({ g1: { selected: { team: 'home' } } as any });
+    render(GameCard, { props: { game, initialized: true } });
+    expect(screen.getByText(/Choose a weight to save/)).toBeInTheDocument();
+  });
+
+  it('does not prompt for a weight once one is chosen', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' } } as any });
+    render(GameCard, { props: { game, initialized: true } });
+    expect(screen.queryByText(/Choose a weight to save/)).not.toBeInTheDocument();
   });
 
   it('shows “Kickoff passed” message when rules say started', async () => {

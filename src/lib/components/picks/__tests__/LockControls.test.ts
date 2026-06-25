@@ -1,113 +1,76 @@
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import LockControls from '../LockControls.svelte';
 import { setPicks, picks } from '../../../stores/picks';
 import { get } from 'svelte/store';
 
-// Mock the API module
 vi.mock('$lib/api/picks', () => ({
-  lockPick: vi.fn(async () => ({ ok: true })),
+  lockPick: vi.fn(async () => ({ ok: true, locked_at: '2024-01-01T00:00:00Z' })),
   unlockPick: vi.fn(async () => ({ ok: true }))
-}));
-
-vi.mock('$lib/domain/rules', () => ({
-  canUseAllInRule: vi.fn(() => true)
 }));
 
 const game = { id: 'g1' } as any;
 
-describe('LockControls', () => {
+describe('LockControls (save indicator + clear)', () => {
   beforeEach(() => {
     setPicks({});
     vi.clearAllMocks();
   });
 
-  it('locks a pick (calls API and updates store)', async () => {
+  it('shows the Saving… indicator while a save is in flight', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' }, saveState: 'saving' } });
+    render(LockControls, { props: { game, started: false } });
+    expect(screen.getByText('Saving…')).toBeInTheDocument();
+  });
+
+  it('shows Couldn’t save — Retry on failure and re-saves on Retry', async () => {
     setPicks({
-      g1: { selected: { team: 'home', weight: 'M' } } as any
+      g1: { selected: { team: 'home', weight: 'M' }, saveState: 'error', saveError: 'boom' }
     });
     const { lockPick } = await import('$lib/api/picks');
 
-    render(LockControls, {
-      props: { game, initialized: true, started: false, locked: false }
-    });
+    render(LockControls, { props: { game, started: false } });
+    expect(screen.getByText(/Couldn.t save/)).toBeInTheDocument();
 
-    const btn = screen.getByRole('button', { name: /Lock Pick/i });
-    expect(btn).toBeEnabled();
+    await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-    await fireEvent.click(btn);
-
-    expect(lockPick).toHaveBeenCalledWith('g1', 'home', 'M');
-    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' });
+    await waitFor(() => expect(lockPick).toHaveBeenCalledWith('g1', 'home', 'M'));
+    await waitFor(() => expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' }));
+    expect(get(picks).g1.saveState).toBeUndefined();
   });
 
-  it('unlocks a pick (calls API and clears lockedPick) - fixed text match', async () => {
-    setPicks({
-      g1: { lockedPick: { team: 'home', weight: 'M' } } as any
-    });
-    const { unlockPick } = await import('$lib/api/picks');
-
-    render(LockControls, {
-      props: { game, initialized: true, started: false, locked: true }
-    });
-
-    // Match button with emoji prefix using accessible name
-    const btn = screen.getByRole('button', { name: /Unlock/i });
-    expect(btn).toBeEnabled();
-
-    await fireEvent.click(btn);
-
-    expect(unlockPick).toHaveBeenCalledWith('g1');
-    expect(get(picks).g1.lockedPick).toBeUndefined();
+  it('renders no indicator when idle', () => {
+    setPicks({ g1: { selected: { team: 'home' } } });
+    render(LockControls, { props: { game, started: false } });
+    expect(screen.queryByText('Saving…')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Couldn.t save/)).not.toBeInTheDocument();
   });
 
-  it('does not unlock when started (button disabled)', async () => {
-    setPicks({
-      g1: { lockedPick: { team: 'home', weight: 'M' } } as any
-    });
+  it('Clear pick removes a purely-staged pick without calling unlock', async () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' } } });
     const { unlockPick } = await import('$lib/api/picks');
 
-    render(LockControls, {
-      props: { game, initialized: true, started: true, locked: true }
-    });
+    render(LockControls, { props: { game, started: false } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear pick' }));
 
-    const btn = screen.getByRole('button', { name: /Unlock/i });
-    expect(btn).toBeDisabled();
-
-    await fireEvent.click(btn);
     expect(unlockPick).not.toHaveBeenCalled();
-    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' });
+    expect(get(picks).g1).toEqual({});
   });
 
-  it('disables lock when not initialized', async () => {
-    const { lockPick } = await import('$lib/api/picks');
+  it('Clear pick unlocks server-side then clears a saved pick', async () => {
+    setPicks({ g1: { lockedPick: { team: 'home', weight: 'M' } } });
+    const { unlockPick } = await import('$lib/api/picks');
 
-    render(LockControls, {
-      props: { game, initialized: false, started: false, locked: false }
-    });
+    render(LockControls, { props: { game, started: false } });
+    await fireEvent.click(screen.getByRole('button', { name: 'Clear pick' }));
 
-    const btn = screen.getByRole('button', { name: /Lock Pick/i });
-    expect(btn).toBeDisabled();
-    await fireEvent.click(btn);
-    expect(lockPick).not.toHaveBeenCalled();
+    await waitFor(() => expect(unlockPick).toHaveBeenCalledWith('g1'));
+    await waitFor(() => expect(get(picks).g1).toEqual({}));
   });
 
-  it('allows locking an All-In pick from the UI (lock_pick enforces the weekly rule server-side)', async () => {
-    const { lockPick } = await import('$lib/api/picks');
-
-    setPicks({
-      g1: { selected: { team: 'home', weight: 'A' } } as any
-    });
-
-    render(LockControls, {
-      props: { game, initialized: true, started: false, locked: false }
-    });
-
-    const btn = screen.getByRole('button', { name: /Lock Pick/i });
-    expect(btn).toBeEnabled();
-
-    await fireEvent.click(btn);
-    expect(lockPick).toHaveBeenCalledWith('g1', 'home', 'A');
-    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'A' });
+  it('hides Clear pick once the game has started', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' } } });
+    render(LockControls, { props: { game, started: true } });
+    expect(screen.queryByRole('button', { name: 'Clear pick' })).not.toBeInTheDocument();
   });
 });
