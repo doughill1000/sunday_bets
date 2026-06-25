@@ -17,6 +17,8 @@ declare global {
         guideSeenAt: string | null;
       } | null;
       groupId: string | null;
+      /** All active group memberships for the authenticated user (empty for guests). */
+      memberships: Array<{ groupId: string; groupName: string; role: string }>;
     }
   }
 }
