@@ -40,7 +40,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          # Node 22 ships a stable global WebSocket (no --experimental-websocket),
+          # which @supabase/realtime-js needs at dev-server boot; also matches the
+          # Node 22 used by the lint/unit/build jobs in ci-tests.yml.
+          node-version: 22
           cache: pnpm
           cache-dependency-path: ./pnpm-lock.yaml
 

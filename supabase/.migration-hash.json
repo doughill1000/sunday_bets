@@ -256,9 +256,9 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "4eed9a066cd9db6df29dceaefadbde6a8d5f04320ae9d2befb3e504a6757176c",
-    "migration": "20260625124948_members_commissioner_basics.sql",
-    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
+    "hash": "a3a93aa3b7ff8aa8a071e65d47d3ec330a89cf522c61d472af122906e1c14312",
+    "migration": "20260625142627_add_preview_invite_rpc.sql",
+    "migrationHash": "22ef357e4b6000554f5d2d202f125ed5bde30450bcac37bf26f1da6cdbbf7725"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -455,5 +455,11 @@
     "signature": "public.rename_group(uuid, text)",
     "migration": "20260625124948_members_commissioner_basics.sql",
     "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
+  },
+  "functions/groups/preview_invite.sql": {
+    "hash": "80b787d511162cb395dcd7aeeb44541e186fd9213ca33cb48e8da6007ab0254f",
+    "signature": "public.preview_invite(text)",
+    "migration": "20260625142627_add_preview_invite_rpc.sql",
+    "migrationHash": "22ef357e4b6000554f5d2d202f125ed5bde30450bcac37bf26f1da6cdbbf7725"
   }
 }
