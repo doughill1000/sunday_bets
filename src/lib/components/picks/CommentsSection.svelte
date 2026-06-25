@@ -7,13 +7,15 @@
     comments: CommentRow[];
     reactions: ReactionRow[];
     currentUserId: string | null;
+    currentUserDisplayName?: string | null;
   }
 
   let {
     gameId,
     comments: initialComments,
     reactions: initialReactions,
-    currentUserId
+    currentUserId,
+    currentUserDisplayName = null
   }: Props = $props();
 
   // Local copies so we can update optimistically
@@ -62,7 +64,7 @@
           game_id: gameId,
           body: result.comment.body,
           created_at: result.comment.created_at,
-          display_name: null
+          display_name: currentUserDisplayName
         }
       ];
       commentInput = '';
@@ -85,7 +87,7 @@
       if (!res.ok) reactions = prev; // roll back on failure
     } else {
       // Optimistic add
-      const tempId = crypto.randomUUID();
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const prev = reactions;
       reactions = [
         ...reactions,

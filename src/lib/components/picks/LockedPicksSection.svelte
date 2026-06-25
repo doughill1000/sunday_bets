@@ -18,8 +18,9 @@
     social?: Record<string, SocialData>;
     groupPicks?: GroupPickEntry[];
     userId?: string | null;
+    currentUserDisplayName?: string | null;
   }
-  let { games, now, social = {}, groupPicks = [], userId = null }: Props = $props();
+  let { games, now, social = {}, groupPicks = [], userId = null, currentUserDisplayName = null }: Props = $props();
   const picks = usePicksStore();
 
   function kickoffMs(g: PickGame) {
@@ -117,6 +118,7 @@
               comments={social[g.id].comments}
               reactions={social[g.id].reactions}
               currentUserId={userId}
+              {currentUserDisplayName}
             />
           </div>
         {/if}
