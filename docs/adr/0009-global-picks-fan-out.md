@@ -58,7 +58,7 @@ Fan-out is implemented as two new SQL functions in `supabase/src/functions/picks
 be **SECURITY INVOKER** (not SECURITY DEFINER) so RLS enforces `(group_id, user_id, game_id)`
 write permission on each group membership row individually. The functions:
 
-- enumerate all *active* memberships of `auth.uid()` (inactive/pending memberships are skipped);
+- enumerate all _active_ memberships of `auth.uid()` (inactive/pending memberships are skipped);
 - for each group, resolve the active line from that group's `line_source` (via `group_config`);
 - enforce the per-group All-In rule exactly as `lock_pick.sql` does today;
 - upsert `on conflict (group_id, user_id, game_id) do update` (idempotent re-locks);
