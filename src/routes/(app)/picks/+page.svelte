@@ -16,6 +16,7 @@
   social={data.social}
   groupPicks={data.groupPicks}
   userId={data.userId}
+  currentUserDisplayName={data.currentUserDisplayName}
   isLastWeek={data.isLastWeek}
   finalWeekUnlimitedAllin={data.finalWeekUnlimitedAllin}
 />
