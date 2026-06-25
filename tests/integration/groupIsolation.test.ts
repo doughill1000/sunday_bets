@@ -37,7 +37,7 @@ beforeAll(async () => {
 
 describe('getSeasonLeaderboard — per-group isolation', () => {
   it('returns only group A members with correct win outcomes', async () => {
-    const rows = await getSeasonLeaderboard(fx.seasonId as unknown as number, fx.groupAId);
+    const rows = await getSeasonLeaderboard(fx.seasonYear, fx.groupAId);
 
     // Only the two group-A members should appear.
     const userIds = rows.map((r) => r.user_id);
@@ -56,7 +56,7 @@ describe('getSeasonLeaderboard — per-group isolation', () => {
   });
 
   it('returns only group B members with correct loss outcomes', async () => {
-    const rows = await getSeasonLeaderboard(fx.seasonId as unknown as number, fx.groupBId);
+    const rows = await getSeasonLeaderboard(fx.seasonYear, fx.groupBId);
 
     const userIds = rows.map((r) => r.user_id);
     expect(userIds).toContain(fx.sharedUserId);
@@ -75,8 +75,8 @@ describe('getSeasonLeaderboard — per-group isolation', () => {
 
   it('shared user has OPPOSITE outcomes in group A vs group B', async () => {
     const [rowsA, rowsB] = await Promise.all([
-      getSeasonLeaderboard(fx.seasonId as unknown as number, fx.groupAId),
-      getSeasonLeaderboard(fx.seasonId as unknown as number, fx.groupBId)
+      getSeasonLeaderboard(fx.seasonYear, fx.groupAId),
+      getSeasonLeaderboard(fx.seasonYear, fx.groupBId)
     ]);
 
     const inA = rowsA.find((r) => r.user_id === fx.sharedUserId);
@@ -94,7 +94,7 @@ describe('getSeasonLeaderboard — per-group isolation', () => {
 
   it('returns zero rows when querying a group the user is not a member of (non-existent group)', async () => {
     const PHANTOM_GROUP = '00000000-0000-4000-8000-000000000ffe';
-    const rows = await getSeasonLeaderboard(fx.seasonId as unknown as number, PHANTOM_GROUP);
+    const rows = await getSeasonLeaderboard(fx.seasonYear, PHANTOM_GROUP);
     expect(rows).toHaveLength(0);
   });
 });
@@ -105,7 +105,7 @@ describe('getSeasonLeaderboard — per-group isolation', () => {
 
 describe('getWeeklyCumulative — per-group isolation', () => {
   it('group A trend rows contain only group A member IDs', async () => {
-    const rows = await getWeeklyCumulative(fx.seasonId as unknown as number, fx.groupAId);
+    const rows = await getWeeklyCumulative(fx.seasonYear, fx.groupAId);
 
     const userIds = [...new Set(rows.map((r) => r.user_id))];
     expect(userIds).toContain(fx.sharedUserId);
@@ -114,7 +114,7 @@ describe('getWeeklyCumulative — per-group isolation', () => {
   });
 
   it('group B trend rows contain only group B member IDs', async () => {
-    const rows = await getWeeklyCumulative(fx.seasonId as unknown as number, fx.groupBId);
+    const rows = await getWeeklyCumulative(fx.seasonYear, fx.groupBId);
 
     const userIds = [...new Set(rows.map((r) => r.user_id))];
     expect(userIds).toContain(fx.sharedUserId);
@@ -124,8 +124,8 @@ describe('getWeeklyCumulative — per-group isolation', () => {
 
   it('shared user cumulative_points reflects group-specific outcome', async () => {
     const [rowsA, rowsB] = await Promise.all([
-      getWeeklyCumulative(fx.seasonId as unknown as number, fx.groupAId),
-      getWeeklyCumulative(fx.seasonId as unknown as number, fx.groupBId)
+      getWeeklyCumulative(fx.seasonYear, fx.groupAId),
+      getWeeklyCumulative(fx.seasonYear, fx.groupBId)
     ]);
 
     const inA = rowsA.find((r) => r.user_id === fx.sharedUserId);
@@ -146,7 +146,7 @@ describe('getWeeklyCumulative — per-group isolation', () => {
 
 describe('getStatsForSeason — per-group isolation', () => {
   it('group A team accuracy contains only group A member IDs', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupAId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupAId);
 
     const userIds = [...new Set(stats.teamAccuracy.map((r) => r.user_id))];
     expect(userIds).not.toContain(fx.exclusiveUserBId);
@@ -157,7 +157,7 @@ describe('getStatsForSeason — per-group isolation', () => {
   });
 
   it('group B team accuracy contains only group B member IDs', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupBId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupBId);
 
     const userIds = [...new Set(stats.teamAccuracy.map((r) => r.user_id))];
     expect(userIds).not.toContain(fx.exclusiveUserAId);
@@ -167,7 +167,7 @@ describe('getStatsForSeason — per-group isolation', () => {
   });
 
   it('group A weight accuracy reflects wins for all group A members', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupAId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupAId);
 
     // All picks use weight 'M' in the fixture.
     const mRows = stats.weightAccuracy.filter((r) => r.weight === 'M');
@@ -181,7 +181,7 @@ describe('getStatsForSeason — per-group isolation', () => {
   });
 
   it('group B weight accuracy reflects losses for all group B members', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupBId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupBId);
 
     const mRows = stats.weightAccuracy.filter((r) => r.weight === 'M');
     const sharedRow = mRows.find((r) => r.user_id === fx.sharedUserId);
@@ -194,7 +194,7 @@ describe('getStatsForSeason — per-group isolation', () => {
   });
 
   it('group A H2H shows wins for shared user (not losses)', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupAId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupAId);
 
     // The H2H row where shared user is the "user_id" side should show positive points.
     const sharedH2H = stats.headToHead.filter((r) => r.user_id === fx.sharedUserId);
@@ -213,7 +213,7 @@ describe('getStatsForSeason — per-group isolation', () => {
   });
 
   it('group B H2H does not contain group A exclusive member', async () => {
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, fx.groupBId);
+    const stats = await getStatsForSeason(fx.seasonYear, fx.groupBId);
 
     const hasExclA = stats.headToHead.some(
       (r) => r.user_id === fx.exclusiveUserAId || r.opponent_user_id === fx.exclusiveUserAId
@@ -223,7 +223,7 @@ describe('getStatsForSeason — per-group isolation', () => {
 
   it('returns empty stats when querying a non-existent group', async () => {
     const PHANTOM_GROUP = '00000000-0000-4000-8000-000000000ffe';
-    const stats = await getStatsForSeason(fx.seasonId as unknown as number, PHANTOM_GROUP);
+    const stats = await getStatsForSeason(fx.seasonYear, PHANTOM_GROUP);
 
     expect(stats.teamAccuracy).toHaveLength(0);
     expect(stats.weightAccuracy).toHaveLength(0);

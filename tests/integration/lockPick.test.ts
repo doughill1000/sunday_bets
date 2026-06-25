@@ -236,8 +236,11 @@ describe('lock_pick RPC integration', () => {
 //   - userGroupA: only member of groupA → always resolves to groupA
 //   - userGroupB: only member of groupB → always resolves to groupB
 //
-// This suite owns week 5 of the 2024 season and two stable group UUIDs
-// so it never collides with the original suite (week 3) or other test files.
+// This suite owns season 2096 (weeks 1 and 18) and two stable group UUIDs so it
+// never collides with the original suite (2024 week 3) or other test files.
+// It deliberately uses a NON-final week (1, with a later week 18 present) so the
+// final-week-unlimited-all-in exception in lock_pick does NOT skip the per-week
+// All-In enforcement this suite asserts.
 
 describe('All-In constraint — within-group and cross-group independence', () => {
   const GROUP_A_ID = '00000000-0000-4000-8000-000000001a05';
@@ -250,6 +253,11 @@ describe('All-In constraint — within-group and cross-group independence', () =
   let weekId: number;
   let homeTeamId: number;
   let awayTeamId: number;
+  // game2 uses a DIFFERENT matchup (Eagles/Cowboys) — uq_games_matchup is
+  // order-independent (LEAST/GREATEST of the team ids), so reusing the KC/BUF
+  // pair (even with sides swapped) in the same week would collide.
+  let altHomeTeamId: number;
+  let altAwayTeamId: number;
   // Two games in the same week — needed to test "second All-In rejected within group"
   let gameId1: string;
   let gameId2: string;
@@ -324,16 +332,21 @@ describe('All-In constraint — within-group and cross-group independence', () =
     if (tErr) throw tErr;
     homeTeamId = teams!.find((t) => t.name === 'Kansas City Chiefs')!.id as number;
     awayTeamId = teams!.find((t) => t.name === 'Buffalo Bills')!.id as number;
+    altHomeTeamId = teams!.find((t) => t.name === 'Philadelphia Eagles')!.id as number;
+    altAwayTeamId = teams!.find((t) => t.name === 'Dallas Cowboys')!.id as number;
 
-    // Season + week 5 of 2024 (distinct from week 3 used by the original suite)
-    weekId = (await ensureSeasonAndWeek(admin, 2024, 5)).weekId;
+    // Dedicated season 2096. Seed a LATER week (18) first so the test week (1) is
+    // not the season's final week — otherwise lock_pick's final-week-unlimited
+    // exception would skip the All-In-per-week check this suite verifies.
+    await ensureSeasonAndWeek(admin, 2096, 18);
+    weekId = (await ensureSeasonAndWeek(admin, 2096, 1)).weekId;
 
     // Clear stale games from this week before creating new ones
     await clearWeekGames(admin, weekId);
 
     const kickoff = new Date(Date.now() + 10 * 60_000).toISOString(); // +10 min
     gameId1 = await insertGameWithLine(weekId, homeTeamId, awayTeamId, EXT_ID_1, kickoff);
-    gameId2 = await insertGameWithLine(weekId, awayTeamId, homeTeamId, EXT_ID_2, kickoff);
+    gameId2 = await insertGameWithLine(weekId, altHomeTeamId, altAwayTeamId, EXT_ID_2, kickoff);
   }, 60_000);
 
   afterAll(async () => {
