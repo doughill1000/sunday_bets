@@ -36,14 +36,18 @@ ON CONFLICT (group_id, user_id) DO NOTHING;
 --   Week 1 = non-final (All-In restricted)
 --   Week 2 = non-final (used for final-week-disabled tests)
 --   Week 3 = final week of the season
-INSERT INTO public.seasons (year) VALUES (2025)
+-- Year 2088 is a sentinel with no real NFL data; using a real year risks
+-- ON CONFLICT DO NOTHING reusing an existing season that has more than 3
+-- weeks, which would cause max(week_number) > 3 and break the final-week
+-- detection in lock_pick.
+INSERT INTO public.seasons (year) VALUES (2088)
 ON CONFLICT (league, year) DO NOTHING;
 
 INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts)
 VALUES
-  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 1, now(),                     now() + interval '7 days'),
-  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 2, now() + interval '7 days', now() + interval '14 days'),
-  ((SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1), 3, now() + interval '14 days', now() + interval '21 days')
+  ((SELECT id FROM public.seasons WHERE year = 2088 LIMIT 1), 1, now(),                     now() + interval '7 days'),
+  ((SELECT id FROM public.seasons WHERE year = 2088 LIMIT 1), 2, now() + interval '7 days', now() + interval '14 days'),
+  ((SELECT id FROM public.seasons WHERE year = 2088 LIMIT 1), 3, now() + interval '14 days', now() + interval '21 days')
 ON CONFLICT (season_id, week_number) DO NOTHING;
 
 -- Teams for the various games.
@@ -59,7 +63,7 @@ SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
 FROM (
   SELECT id AS week_id FROM public.weeks
   WHERE week_number = 1
-    AND season_id = (SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1)
+    AND season_id = (SELECT id FROM public.seasons WHERE year = 2088 LIMIT 1)
 ) wk
 CROSS JOIN (
   VALUES
@@ -78,7 +82,7 @@ SELECT wk.week_id, g.external_game_id, g.commence_time, home.id, away.id
 FROM (
   SELECT id AS week_id FROM public.weeks
   WHERE week_number = 3
-    AND season_id = (SELECT id FROM public.seasons WHERE year = 2025 LIMIT 1)
+    AND season_id = (SELECT id FROM public.seasons WHERE year = 2088 LIMIT 1)
 ) wk
 CROSS JOIN (
   VALUES
