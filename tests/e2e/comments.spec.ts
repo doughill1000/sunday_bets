@@ -48,14 +48,33 @@ test.beforeAll(async () => {
   const { data: teams } = await supabase.from('teams').select('id').limit(2);
   if (!teams || teams.length < 2) return;
 
-  // Seed a past game for the comments feature
+  // Seed a past game for the comments feature, capturing its id so we can attach
+  // an active line. The picks page reads the ui_games view, which only surfaces
+  // games that have an active game_lines row — without one the game never reaches
+  // /picks and CommentsSection (gated on started && social[g.id]) never renders.
   await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
-  await supabase.from('games').insert({
-    week_id: week.id,
-    external_game_id: PAST_GAME_TAG,
-    commence_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    home_team_id: teams[0].id,
-    away_team_id: teams[1].id
+  const { data: insertedGame, error: gameErr } = await supabase
+    .from('games')
+    .insert({
+      week_id: week.id,
+      external_game_id: PAST_GAME_TAG,
+      commence_time: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      home_team_id: teams[0].id,
+      away_team_id: teams[1].id
+    })
+    .select('id')
+    .single();
+  if (gameErr || !insertedGame) return;
+
+  // Active line (home favored) so the game appears in ui_games. afterAll deletes
+  // the game by tag; the line is removed by the game_lines → games cascade.
+  await supabase.from('game_lines').insert({
+    game_id: insertedGame.id,
+    source: 'fanduel',
+    spread_team_id: teams[0].id,
+    spread_value: -3.5,
+    is_active_line: true,
+    fetched_at: new Date().toISOString()
   });
 });
 
@@ -67,9 +86,7 @@ test.afterAll(async () => {
   await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
 });
 
-// e2e-deferred (#211): CommentsSection not rendering for the seeded started-game
-// fixture; the whole comments suite needs fixture/UI triage.
-test.fixme('CommentsSection is visible for a kicked-off game', async ({ page }) => {
+test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
   await page.goto('/picks');
 
   // The committed picks section should show started games. When expanded,
@@ -89,8 +106,7 @@ test.fixme('CommentsSection is visible for a kicked-off game', async ({ page }) 
   });
 });
 
-// e2e-deferred (#211): depends on the started-game fixture above.
-test.fixme('user can post a comment on a started game', async ({ page }) => {
+test('user can post a comment on a started game', async ({ page }) => {
   await page.goto('/picks');
 
   const details = page.locator('details').first();
@@ -108,8 +124,7 @@ test.fixme('user can post a comment on a started game', async ({ page }) => {
   await expect(page.getByText(uniqueBody)).toBeVisible({ timeout: 3000 });
 });
 
-// e2e-deferred (#211): depends on the started-game fixture above.
-test.fixme('user can toggle a reaction on a started game', async ({ page }) => {
+test('user can toggle a reaction on a started game', async ({ page }) => {
   await page.goto('/picks');
 
   const details = page.locator('details').first();

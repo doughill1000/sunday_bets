@@ -10,11 +10,9 @@ test('unauthenticated visit to a protected route redirects to /auth', async ({ p
   await expect(page).toHaveURL(/\/auth/);
 });
 
-// e2e-deferred (#211): asserts removed magic-link copy ("Use a magic link or your
-// password.") — auth page changed in #137. Re-enable once the assertion is updated.
-test.fixme('auth page renders the sign-in form', async ({ page }) => {
+test('auth page renders the sign-in form', async ({ page }) => {
   await page.goto('/auth');
-  await expect(page.getByText('Use a magic link or your password.')).toBeVisible();
+  await expect(page.getByText('Use your password or continue with Google.')).toBeVisible();
   await expect(page.locator('input[name="email"]')).toBeVisible();
   await expect(page.locator('form').getByRole('button', { name: 'Sign in' })).toBeVisible();
 });
@@ -42,13 +40,14 @@ test('password sign-in updates the header account state after auth invalidation'
   await expect(page.getByText('E2')).toBeVisible();
 });
 
-// e2e-deferred (#211): sign-up confirmation flow/copy changed after #137.
-test.fixme('sign-up form submits and shows confirmation message', async ({ page }) => {
+test('sign-up form submits and shows confirmation message', async ({ page }) => {
   await page.goto('/auth');
 
-  // Switch to sign-up mode
+  // Switch to sign-up mode. The CardTitle renders a <div data-slot="card-title">,
+  // not a heading, and "Create account" also labels the submit button — so scope
+  // the assertion to the card title element to stay unambiguous.
   await page.getByRole('button', { name: 'Create an account' }).click();
-  await expect(page.getByRole('heading', { name: 'Create account' })).toBeVisible();
+  await expect(page.locator('[data-slot="card-title"]')).toHaveText('Create account');
 
   // Fill in a unique email so repeated runs don't collide
   const uniqueEmail = `e2e-signup-${Date.now()}@example.com`;
@@ -61,12 +60,15 @@ test.fixme('sign-up form submits and shows confirmation message', async ({ page 
   await page.locator('form').getByRole('button', { name: 'Create account' }).click();
   await submitted;
 
-  // Confirmation message appears (email not yet confirmed, so no redirect)
-  await expect(page.getByText('Check your email for a confirmation link')).toBeVisible();
+  // Confirmation message appears via a svelte-sonner toast (email not yet
+  // confirmed, so no redirect). Give it a timeout to absorb the post-response
+  // toast render before it auto-dismisses.
+  await expect(page.getByText('Check your email for a confirmation link')).toBeVisible({
+    timeout: 5000
+  });
 });
 
-// e2e-deferred (#211): password-reset token-exchange flow failing; needs triage.
-test.fixme('password reset: token exchange lands on set-new-password page and redirects after update', async ({
+test('password reset: token exchange lands on set-new-password page and redirects after update', async ({
   page
 }) => {
   const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
@@ -88,7 +90,8 @@ test.fixme('password reset: token exchange lands on set-new-password page and re
 
   // After token exchange the server redirects to the clean /auth/reset URL
   await expect(page).toHaveURL('/auth/reset');
-  await expect(page.getByRole('heading', { name: 'Set new password' })).toBeVisible();
+  // CardTitle renders a <div>, not a heading — assert by text.
+  await expect(page.getByText('Set new password')).toBeVisible();
 
   // Set the new password
   const newPassword = 'e2e-new-password-456';

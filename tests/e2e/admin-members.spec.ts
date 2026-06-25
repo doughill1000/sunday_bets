@@ -15,8 +15,7 @@ test.describe('admin add-member flow', () => {
     await expect(page.getByText('Admin • Add Member')).toBeVisible();
   });
 
-  // e2e-deferred (#211): "Member added" confirmation box not rendering after submit.
-  test.fixme('admin can add a new member and receive credentials', async ({ page }) => {
+  test('admin can add a new member and receive credentials', async ({ page }) => {
     await page.goto('/admin');
 
     // Fill in the Add Member form
@@ -31,9 +30,7 @@ test.describe('admin add-member flow', () => {
     await expect(page.getByText(NEW_MEMBER_EMAIL)).toBeVisible();
   });
 
-  // e2e-deferred (#211): "Member added" box missing; also still clicks the removed
-  // #method-password toggle (below) — needs the #137 sign-in fix too.
-  test.fixme('new member can sign in and sees empty picks', async ({ page, browser }) => {
+  test('new member can sign in and sees empty picks', async ({ page, browser }) => {
     // Use admin session to add member and capture credentials
     await page.goto('/admin');
     await page.locator('#member-email').fill(NEW_MEMBER_EMAIL + '2');
@@ -48,10 +45,9 @@ test.describe('admin add-member flow', () => {
 
     await newPage.goto('/auth');
 
-    await expect(async () => {
-      await newPage.locator('#method-password').click();
-      await expect(newPage.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-    }).toPass({ timeout: 15000 });
+    // Password is the default sign-in method (the magic-link toggle was removed
+    // in #137); wait for the always-rendered field once the page hydrates.
+    await expect(newPage.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
 
     await newPage.locator('input[name="email"]').fill(NEW_MEMBER_EMAIL + '2');
     await newPage.locator('input[name="password"]').fill('TestMember123!');

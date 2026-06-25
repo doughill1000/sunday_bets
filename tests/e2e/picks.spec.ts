@@ -26,9 +26,7 @@ test('pre-selects the spread favorite with no weight, saving nothing on load', a
   await expect(page.getByText(/to pick/)).toBeVisible();
 });
 
-// e2e-deferred (#211): pick auto-save interactions failing (likely the
-// <button>-in-<button> SSR nesting / hydration mismatch). Triage before re-enabling.
-test.fixme('agreeing with the favorite saves in a single tap and collapses to committed', async ({
+test('agreeing with the favorite saves in a single tap and collapses to committed', async ({
   page
 }) => {
   await page.goto('/picks');
@@ -37,14 +35,14 @@ test.fixme('agreeing with the favorite saves in a single tap and collapses to co
   // One tap: just the weight (favorite already staged).
   await page.getByRole('radio', { name: /High/ }).first().click();
 
-  // The card leaves the board and the committed section summarises it.
+  // Gate on the save-complete counter first (auto-save is a ~700 ms debounce +
+  // RPC), then assert the card has left the board and committed summarises it.
+  await expect(page.getByText('1/1 saved')).toBeVisible();
   await expect(page.getByRole('group', { name: 'Pick a team' })).not.toBeVisible();
   await expect(page.getByText(/committed pick/)).toBeVisible();
-  await expect(page.getByText('1/1 saved')).toBeVisible();
 });
 
-// e2e-deferred (#211): pick auto-save interaction failing.
-test.fixme('switching to the underdog then a weight is a two-tap save', async ({ page }) => {
+test('switching to the underdog then a weight is a two-tap save', async ({ page }) => {
   await page.goto('/picks');
   const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
   await expect(teamGroup).toBeVisible();
@@ -64,8 +62,7 @@ test.fixme('switching to the underdog then a weight is a two-tap save', async ({
   await expect(page.getByText(/BUF \+3\.5/)).toBeVisible();
 });
 
-// e2e-deferred (#211): pick auto-save interaction failing.
-test.fixme('All-In shows an inline confirm before it saves', async ({ page }) => {
+test('All-In shows an inline confirm before it saves', async ({ page }) => {
   await page.goto('/picks');
   await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
 
@@ -92,8 +89,7 @@ test.fixme('All-In shows an inline confirm before it saves', async ({ page }) =>
   await expect(page.getByText(/All-In:\s*KC/)).toBeVisible();
 });
 
-// e2e-deferred (#211): pick auto-save interaction failing.
-test.fixme('Clear removes a staged pick', async ({ page }) => {
+test('Clear removes a staged pick', async ({ page }) => {
   await page.goto('/picks');
   const teamGroup = page.getByRole('group', { name: 'Pick a team' }).first();
   await expect(teamGroup).toBeVisible();
@@ -112,8 +108,7 @@ test.fixme('Clear removes a staged pick', async ({ page }) => {
   );
 });
 
-// e2e-deferred (#211): pick auto-save interaction failing.
-test.fixme('Edit returns a saved pick to the board', async ({ page }) => {
+test('Edit returns a saved pick to the board', async ({ page }) => {
   await page.goto('/picks');
   await expect(page.getByRole('group', { name: 'Pick a team' }).first()).toBeVisible();
 
