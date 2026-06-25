@@ -7,6 +7,7 @@ import { getCommentsForGame } from '$lib/server/db/queries/getCommentsForGame';
 import { getReactionsForGame } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getGameplaySettings } from '$lib/server/admin';
+import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
 
 async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise<boolean> {
@@ -50,7 +51,7 @@ export const load: PageServerLoad = async (event) => {
 
   // Load comments and reactions for started games only (RLS also enforces this gate).
   const now = Date.now();
-  const startedGameIds = games.filter((g) => new Date(g.kickoff).getTime() <= now).map((g) => g.id);
+  const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
 
   const socialEntries = await Promise.all(
     startedGameIds.map(async (gameId) => {

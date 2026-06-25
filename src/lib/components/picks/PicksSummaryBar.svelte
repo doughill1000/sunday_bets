@@ -1,7 +1,7 @@
 <script lang="ts">
   import { usePicksStore } from '$lib/stores/picks';
-  import { findAllInHolder } from '$lib/domain/rules';
-  import { WEIGHTS } from '$lib/types/domain';
+  import { findAllInHolder, pickStatus } from '$lib/domain/rules';
+  import { WEIGHTS } from '$lib/domain/scoring';
   import type { WeightCode } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
 
@@ -12,19 +12,10 @@
   let { games, now }: Props = $props();
   const picks = usePicksStore();
 
-  function kickoffMs(g: PickGame) {
-    return new Date(g.kickoff).getTime();
-  }
-
-  const savedCount = $derived(games.filter((g) => !!$picks[g.id]?.lockedPick).length);
-
-  const openCount = $derived(
-    games.filter((g) => !$picks[g.id]?.lockedPick && kickoffMs(g) > now).length
-  );
-
-  const missedCount = $derived(
-    games.filter((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick).length
-  );
+  const statuses = $derived(games.map((g) => pickStatus($picks[g.id], g.kickoff, now)));
+  const savedCount = $derived(statuses.filter((s) => s === 'saved').length);
+  const openCount = $derived(statuses.filter((s) => s === 'open').length);
+  const missedCount = $derived(statuses.filter((s) => s === 'missed').length);
 
   // The week's single All-In, saved or staged (locked takes precedence).
   const allIn = $derived(findAllInHolder(games, $picks));

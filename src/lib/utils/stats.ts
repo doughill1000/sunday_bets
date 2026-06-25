@@ -1,4 +1,3 @@
-import { WEIGHTS, type WeightCode } from '$lib/types/domain';
 import type { HeadToHeadEntry, SeasonTrendEntry } from '$lib/types/server/stats';
 
 export type TrendPoint = {
@@ -87,8 +86,4 @@ export function headToHeadForUser(rows: HeadToHeadEntry[], userId: string): H2HR
 
 export function formatAccuracy(accuracy: number | null): string {
   return accuracy == null ? '--' : `${Math.round(accuracy * 100)}%`;
-}
-
-export function weightLabel(weight: WeightCode): string {
-  return WEIGHTS[weight].label;
 }
