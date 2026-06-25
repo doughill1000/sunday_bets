@@ -8,6 +8,10 @@ grant select, insert on public.group_memberships to authenticated;
 
 grant execute on function public.is_member(uuid) to authenticated, service_role;
 
+-- create_group is the only insert path into groups (RLS blocks direct client
+-- inserts). It is SECURITY DEFINER and enforces the create-gate internally.
+grant execute on function public.create_group(text) to authenticated, service_role;
+
 -- group_config / group_week_overrides: authenticated read gated by RLS.
 -- Client writes are blocked by policy; all writes go through service_role.
 revoke all on public.group_config from public, anon;
