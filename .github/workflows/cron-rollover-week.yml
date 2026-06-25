@@ -8,22 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  rollover_week_production:
-    runs-on: ubuntu-latest
-    environment:
-      name: Production
-    steps:
-      - uses: actions/checkout@v6
-      - name: Call rollover-week endpoint
-        run: |
-          response=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            -H "Content-Type: application/json" \
-            "${{ vars.DEPLOY_URL }}/api/cron/rollover-week")
-          http_code=$(echo "$response" | tail -1)
-          body=$(echo "$response" | head -n -1)
-          echo "Response: $body"
-          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "Cron job failed with HTTP $http_code"
-            exit 1
-          fi
+  rollover_week:
+    uses: ./.github/workflows/_cron-call.yml
+    with:
+      endpoint: rollover-week
+      monitor_slug: rollover-week
+    secrets: inherit

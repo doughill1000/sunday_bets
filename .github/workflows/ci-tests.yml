@@ -29,15 +29,15 @@ jobs:
       ODDS_API_KEY1: lint-placeholder
       ODDS_API_KEY2: lint-placeholder
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: ./pnpm-lock.yaml
 
@@ -53,18 +53,46 @@ jobs:
       run:
         working-directory: ./
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: 'pnpm'
           cache-dependency-path: ./pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec svelte-kit sync
       - run: pnpm run test:unit
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      PUBLIC_SUPABASE_ANON_KEY: build-placeholder
+      PUBLIC_ODDS_API_BASE: https://api.the-odds-api.com/v4
+      SUPABASE_SERVICE_ROLE: build-placeholder
+      CRON_SECRET: build-placeholder
+      ODDS_API_KEY1: build-placeholder
+      ODDS_API_KEY2: build-placeholder
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: ./pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec svelte-kit sync
+      - run: pnpm run build

@@ -1465,6 +1465,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean };
       is_commissioner: { Args: { target_group_id: string }; Returns: boolean };
       is_member: { Args: { target_group_id: string }; Returns: boolean };
+      leave_group: { Args: { p_group_id: string }; Returns: undefined };
       lock_pick: {
         Args: {
           p_game_id: string;
@@ -1481,7 +1482,23 @@ export type Database = {
           weight: Database['public']['Enums']['weight_enum'];
         }[];
       };
+      mint_invite: {
+        Args: { p_expires_at?: string; p_group_id: string; p_max_uses?: number };
+        Returns: string;
+      };
+      promote_member: {
+        Args: { p_group_id: string; p_user_id: string };
+        Returns: undefined;
+      };
       redeem_invite: { Args: { p_code: string }; Returns: undefined };
+      remove_member: {
+        Args: { p_group_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      rename_group: {
+        Args: { p_group_id: string; p_name: string };
+        Returns: undefined;
+      };
       resolve_missed_penalty_for_game: {
         Args: { p_game_id: string };
         Returns: number;
