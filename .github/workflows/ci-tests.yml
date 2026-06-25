@@ -16,6 +16,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # `svelte-check` (via `pnpm run check`) types the `$env/static/{public,private}`
+      # virtual modules from the environment present at `svelte-kit sync`. CI has no
+      # .env files, so define the imported vars here. These are throwaway placeholders
+      # for type generation only — no real secrets, no network access.
+      PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      PUBLIC_SUPABASE_ANON_KEY: lint-placeholder
+      PUBLIC_ODDS_API_BASE: https://api.the-odds-api.com/v4
+      SUPABASE_SERVICE_ROLE: lint-placeholder
+      CRON_SECRET: lint-placeholder
+      ODDS_API_KEY1: lint-placeholder
+      ODDS_API_KEY2: lint-placeholder
     steps:
       - uses: actions/checkout@v6
 
