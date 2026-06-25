@@ -82,6 +82,9 @@
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuItem>
+        <a href="/group" class="w-full">Group</a>
+      </DropdownMenuItem>
+      <DropdownMenuItem>
         <a href="/settings" class="w-full">Settings</a>
       </DropdownMenuItem>
       <DropdownMenuItem>
