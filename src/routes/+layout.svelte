@@ -15,6 +15,8 @@
   const user = $derived(data.user);
   const isAdmin = $derived(data.isAdmin);
   const userProfile = $derived(data.userProfile ?? null);
+  const memberships = $derived(data.memberships ?? []);
+  const groupId = $derived(data.groupId ?? null);
 
   onMount(() => {
     const updateSW = registerSW({
@@ -47,6 +49,8 @@
         canSeeAdmin={isAdmin}
         displayName={userProfile?.displayName ?? ''}
         avatarKey={userProfile?.avatarKey ?? null}
+        {memberships}
+        activeGroupId={groupId}
       />
     </div>
   </header>

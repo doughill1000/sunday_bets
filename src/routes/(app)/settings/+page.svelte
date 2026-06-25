@@ -387,7 +387,7 @@
               variant="outline"
               disabled={linkBusy === provider}
               onclick={() => void linkProvider(provider)}
-              aria-label="Connect {PROVIDER_LABELS[provider]}"
+              aria-label="Connect with {PROVIDER_LABELS[provider]}"
             >
               {linkBusy === provider ? 'Redirecting…' : `Connect with ${PROVIDER_LABELS[provider]}`}
             </Button>

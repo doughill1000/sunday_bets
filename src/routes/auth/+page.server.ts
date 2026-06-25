@@ -3,9 +3,17 @@ import type { Actions } from './$types';
 
 export const actions: Actions = {
   google: async ({ locals, url }) => {
+    // Forward a `next` param into the callback so post-auth redirects survive
+    // the OAuth round-trip (e.g. /join/[code] → Google → /auth/callback?next=…
+    // → /join/[code]).
+    const next = url.searchParams.get('next');
+    const callbackUrl = next
+      ? `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : `${url.origin}/auth/callback`;
+
     const { data, error } = await locals.supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${url.origin}/auth/callback` }
+      options: { redirectTo: callbackUrl }
     });
 
     if (error || !data.url) {
@@ -15,7 +23,7 @@ export const actions: Actions = {
     throw redirect(303, data.url);
   },
 
-  signin: async ({ request, locals }) => {
+  signin: async ({ request, locals, url }) => {
     const form = await request.formData();
     const email = String(form.get('email') ?? '').trim();
     const password = String(form.get('password') ?? '').trim();
@@ -37,7 +45,11 @@ export const actions: Actions = {
     }
 
     if (data?.session) {
-      throw redirect(303, '/picks');
+      // Honor a `next` param so post-auth redirects (e.g. /join/[code]) land
+      // the user in the right place after sign-in. Guard against open redirects.
+      const next = url.searchParams.get('next') ?? '/picks';
+      const safePath = next.startsWith('/') && !next.startsWith('//') ? next : '/picks';
+      throw redirect(303, safePath);
     }
 
     return { ok: true, message: 'Signed in (no session returned)' };

@@ -57,17 +57,17 @@
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuItem>
-        <a href="/group" class="w-full">Group</a>
+        <a href="/group" class="block w-full">Group</a>
       </DropdownMenuItem>
       <DropdownMenuItem>
-        <a href="/settings" class="w-full">Settings</a>
+        <a href="/settings" class="block w-full">Settings</a>
       </DropdownMenuItem>
       <DropdownMenuItem>
-        <a href="/how-to-play" class="w-full">How to Play</a>
+        <a href="/how-to-play" class="block w-full">How to Play</a>
       </DropdownMenuItem>
       {#if canSeeAdmin}
         <DropdownMenuItem>
-          <a href="/admin" class="w-full">Admin</a>
+          <a href="/admin" class="block w-full">Admin</a>
         </DropdownMenuItem>
       {/if}
       {#if installStore.canInstall}
@@ -78,7 +78,7 @@
       {/if}
       <DropdownMenuSeparator />
       <DropdownMenuItem>
-        <a href="/auth/signout" class="w-full">Sign out</a>
+        <a href="/auth/signout" class="block w-full">Sign out</a>
       </DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

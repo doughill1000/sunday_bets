@@ -104,8 +104,7 @@ async function signInAs(
   return page;
 }
 
-// e2e-deferred (#211): create-group form on /join not reaching /picks; needs triage.
-test.fixme('capable no-membership user creates a group from /join and reaches the app', async ({
+test('capable no-membership user creates a group from /join and reaches the app', async ({
   browser
 }) => {
   const context = await browser.newContext();

@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// e2e-deferred (#211): "Sign-in methods" heading assertion stale after settings UI change.
-test.fixme('settings page shows the sign-in methods section', async ({ page }) => {
+test('settings page shows the sign-in methods section', async ({ page }) => {
   await page.goto('/settings');
-  await expect(page.getByRole('heading', { name: 'Sign-in methods' })).toBeVisible();
+  // CardTitle renders a <div>, not a heading — assert by text.
+  await expect(page.getByText('Sign-in methods')).toBeVisible();
 });
 
 test('email identity is listed under sign-in methods', async ({ page }) => {
@@ -23,8 +23,7 @@ test('disconnect is disabled when email is the only sign-in method', async ({ pa
   await expect(disconnectBtn).toBeDisabled();
 });
 
-// e2e-deferred (#211): "Connect with Google" button assertion stale.
-test.fixme('connect Google button is shown when Google is not linked', async ({ page }) => {
+test('connect Google button is shown when Google is not linked', async ({ page }) => {
   await page.goto('/settings');
   await expect(page.getByRole('button', { name: 'Connect with Google' })).toBeVisible();
 });

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { E2E_USER, E2E_RESET_USER } from './test-user';
+import { E2E_USER, E2E_RESET_USER, E2E_MULTIGROUP_USER } from './test-user';
 
 /**
  * Seeds the deterministic fixtures the E2E flows need into the LOCAL Supabase
@@ -11,6 +11,13 @@ const SEASON_YEAR = 2026;
 const WEEK_NUMBER = 1;
 const GAME_TAG = 'e2e-game-1';
 const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
+
+// Dedicated second group for the group-switcher (#150) multi-group specs. A
+// fixed id/name owned by this setup (not reused from another spec's fixture) so
+// the switcher tests stay deterministic. The E2E_MULTIGROUP_USER belongs to
+// both this group and the original; E2E_USER stays single-group.
+const SWITCHER_SECOND_GROUP_ID = '00000000-0000-4000-8000-000000000150';
+const SWITCHER_SECOND_GROUP_NAME = 'E2E Switcher B';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -76,6 +83,68 @@ export default async function globalSetup() {
   });
   if (resetUserErr && !/already|exists|registered/i.test(resetUserErr.message)) {
     throw new Error('seed e2e reset user: ' + resetUserErr.message);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Group-switcher (#150) multi-group fixture
+  //
+  // The switcher only renders for users in >1 group, so it needs a user with
+  // two active memberships and a distinct second group. E2E_USER deliberately
+  // stays single-group (the "no switcher" case), so a dedicated multi-group
+  // user is used instead. Its active group is pinned to the original group
+  // ("Sunday Bets") in multigroup-auth.setup.ts so the default is deterministic
+  // regardless of membership ordering.
+  // ---------------------------------------------------------------------------
+
+  // Second group (idempotent by fixed id).
+  const { error: secondGroupErr } = await supabase
+    .from('groups')
+    .upsert(
+      { id: SWITCHER_SECOND_GROUP_ID, name: SWITCHER_SECOND_GROUP_NAME },
+      { onConflict: 'id' }
+    );
+  if (secondGroupErr) throw new Error('seed switcher group: ' + secondGroupErr.message);
+
+  // group_config may be required by leaderboard/scoring reads; seed it best-effort.
+  await supabase
+    .from('group_config')
+    .upsert({ group_id: SWITCHER_SECOND_GROUP_ID }, { onConflict: 'group_id' })
+    .then(() => null);
+
+  // Multi-group user — created via the admin API so it can password-login.
+  const { data: mgData, error: mgErr } = await supabase.auth.admin.createUser({
+    email: E2E_MULTIGROUP_USER.email,
+    password: E2E_MULTIGROUP_USER.password,
+    email_confirm: true,
+    user_metadata: { display_name: E2E_MULTIGROUP_USER.displayName }
+  });
+  if (mgErr && !/already|exists|registered/i.test(mgErr.message)) {
+    throw new Error('seed e2e multigroup user: ' + mgErr.message);
+  }
+  let mgUserId: string | undefined = mgData?.user?.id;
+  if (!mgUserId) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    mgUserId = list?.users.find((u) => u.email === E2E_MULTIGROUP_USER.email)?.id;
+  }
+  if (mgUserId) {
+    await supabase.from('users').upsert(
+      {
+        id: mgUserId,
+        display_name: E2E_MULTIGROUP_USER.displayName,
+        role: 'player',
+        // Suppress the welcome guide so it never intercepts switcher clicks.
+        guide_seen_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    );
+    // Member of BOTH groups → the switcher renders.
+    await supabase.from('group_memberships').upsert(
+      [
+        { group_id: ORIGINAL_GROUP_ID, user_id: mgUserId, role: 'member' },
+        { group_id: SWITCHER_SECOND_GROUP_ID, user_id: mgUserId, role: 'member' }
+      ],
+      { onConflict: 'group_id,user_id' }
+    );
   }
 
   // Teams

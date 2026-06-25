@@ -1,15 +1,31 @@
 <script lang="ts">
   import type { User } from '@supabase/supabase-js';
   import HeaderAccount from '$lib/components/app-header/HeaderAccount.svelte';
+  import GroupSwitcher from '$lib/components/app-header/GroupSwitcher.svelte';
+
+  interface Membership {
+    groupId: string;
+    groupName: string;
+    role: string;
+  }
 
   interface Props {
     user?: User | null;
     canSeeAdmin?: boolean;
     displayName?: string;
     avatarKey?: string | null;
+    memberships?: Membership[];
+    activeGroupId?: string | null;
   }
 
-  let { user = null, canSeeAdmin = false, displayName = '', avatarKey = null }: Props = $props();
+  let {
+    user = null,
+    canSeeAdmin = false,
+    displayName = '',
+    avatarKey = null,
+    memberships = [],
+    activeGroupId = null
+  }: Props = $props();
 </script>
 
 <!-- Fills the h-14 container row provided by +layout.svelte -->
@@ -38,8 +54,9 @@
     </a>
   </div>
 
-  <!-- Right side: avatar dropdown -->
-  <div class="ml-auto">
+  <!-- Right side: group switcher (multi-group only) + avatar dropdown -->
+  <div class="ml-auto flex items-center gap-2">
+    <GroupSwitcher {memberships} {activeGroupId} />
     <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} />
   </div>
 </div>

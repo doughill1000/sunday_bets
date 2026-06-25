@@ -1,6 +1,6 @@
 # ADR-0007: Line and lock grading preset (House vs Gamer)
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-24
 - Issue: #108
 - Supersedes: None
