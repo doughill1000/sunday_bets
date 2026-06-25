@@ -212,10 +212,19 @@ export default async function globalSetup() {
   const commenceTime = new Date(Date.now() + 2 * DAY).toISOString();
   let gameId: string;
   {
+    // Find-or-create by *matchup*, not by external_game_id. uq_games_matchup is
+    // unique on (week_id, unordered team pair), so a game cloned from prod (or a
+    // pre-constraint run) sharing this week + team pair but carrying a different
+    // external_game_id would otherwise miss this lookup and collide on insert.
+    // Match either orientation since the constraint is order-independent.
     const { data: existing } = await supabase
       .from('games')
       .select('id')
-      .eq('external_game_id', GAME_TAG)
+      .eq('week_id', weekId)
+      .or(
+        `and(home_team_id.eq.${home.id},away_team_id.eq.${away.id}),` +
+          `and(home_team_id.eq.${away.id},away_team_id.eq.${home.id})`
+      )
       .maybeSingle();
     const payload = {
       week_id: weekId,
