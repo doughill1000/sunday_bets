@@ -50,7 +50,7 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   `/preview` comment — not one per push. **Merging does not ship**; production deploys
   only on a `package.json` `"version"` bump or a manual dispatch (see
   `docs/WORKFLOW.md` §"Cutting a release").
-- **Confirm before any GitHub write** (push, PR, issue, gist) — see user-level AGENTS.md.
+- **Confirm before any GitHub write** (push, PR, issue, gist) — per your user-level agent instructions.
 - **Database changes** use the hash-ledger flow (full steps in README): edit
   `supabase/src/**`, run `pnpm db:migration --name=describe_the_change`, then commit
   the source change, the migration, and the ledger **together**. **Never** edit
@@ -120,12 +120,14 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   explicit integration order exists.
 - Pull requests close their issue, link relevant ADRs, and list verification that
   actually ran. Confirm before every GitHub write.
-- **Record shipped work in `docs/CHANGELOG.md` as part of the PR** (a `finish-pr`
-  step): one terse, newest-first entry per merged issue. Because it rides inside the
-  PR it lands in `master` exactly when the code does and cannot drift. To decide
-  whether something is **already done**, read that file first (then `gh` for anything
-  newer) — do not reverse-engineer completion from source. GitHub (closed issues,
-  merged PRs, Releases) stays authoritative.
+- **Record shipped work in `docs/CHANGELOG.md` as part of the PR** (a required
+  `finish-pr` step): one terse, newest-first entry per merged PR — keyed by issue
+  number, or by PR number (`PR #NNN`) when the PR closes no issue, so chores, skills,
+  and infra stay visible. Because it rides inside the PR it lands in `master` exactly
+  when the code does and cannot drift. To decide whether something is **already done**,
+  read that file first (then `gh` for anything newer) — do not reverse-engineer
+  completion from source. GitHub (closed issues, merged PRs, Releases) stays
+  authoritative.
 - **If the issue includes a target version number**, bump `package.json` `"version"`
   to that value as part of the implementation commit. Note this is now also the
   **production-release trigger** (ADR-0010): merging a version bump to `master` deploys

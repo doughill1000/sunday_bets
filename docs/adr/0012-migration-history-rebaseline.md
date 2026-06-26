@@ -2,7 +2,7 @@
 
 - Status: Proposed
 - Date: 2026-06-26
-- Issue: # (pending — "Squash migration history to a single baseline")
+- Issue: None (approved migration-rebaseline plan; no tracking issue)
 - Supersedes: ADR-0011 (Decision §8 and the incremental-apply CI gate only; the
   closed-by-default design in §1–7 is retained)
 

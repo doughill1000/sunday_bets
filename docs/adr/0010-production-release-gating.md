@@ -1,6 +1,6 @@
 # ADR-0010: Gate deploys behind version bumps via GitHub Actions
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-26
 - Issue: None (approved release-strategy plan; no tracking issue)
 - Supersedes: None
