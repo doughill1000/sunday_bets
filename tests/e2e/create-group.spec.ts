@@ -12,7 +12,8 @@
 // with email_confirm:true so they can password-login.
 
 import { test, expect, type BrowserContext } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { makeServiceClient } from './helpers/seed';
 
 const CREATOR = {
   email: 'e2e-create-group-capable@example.com',
@@ -26,14 +27,7 @@ let supabase: SupabaseClient;
 let creatorUserId: string;
 
 test.beforeAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'create-group.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  supabase = makeServiceClient();
 
   // Gated mode is the default; assert it explicitly so the form is shown only
   // because the user is capable, not because creation is open to everyone.

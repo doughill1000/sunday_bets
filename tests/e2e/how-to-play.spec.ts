@@ -11,8 +11,8 @@
 // whose guide_seen_at is pre-set in global-setup.ts) remain unaffected.
 
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
 import { howToPlay } from './helpers/how-to-play';
+import { makeServiceClient } from './helpers/seed';
 
 const HOW_TO_PLAY_USER = {
   email: 'e2e-howtoplay@example.com',
@@ -26,14 +26,7 @@ const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 test.use({ storageState: { cookies: [], origins: [] } });
 
 async function getSupabase() {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'how-to-play.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  return createClient(url, serviceRole, { auth: { persistSession: false } });
+  return makeServiceClient();
 }
 
 async function signIn(page: import('@playwright/test').Page, email: string, password: string) {
