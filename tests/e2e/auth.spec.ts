@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { E2E_USER, E2E_RESET_USER } from './test-user';
+import { authPage } from './helpers/auth-page';
 
 // These run without the stored session.
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -11,58 +12,60 @@ test('unauthenticated visit to a protected route redirects to /auth', async ({ p
 });
 
 test('auth page renders the sign-in form', async ({ page }) => {
-  await page.goto('/auth');
-  await expect(page.getByText('Use your password or continue with Google.')).toBeVisible();
-  await expect(page.locator('input[name="email"]')).toBeVisible();
-  await expect(page.locator('form').getByRole('button', { name: 'Sign in' })).toBeVisible();
+  const auth = authPage(page);
+  await auth.goto();
+  await expect(auth.description()).toBeVisible();
+  await expect(auth.emailInput()).toBeVisible();
+  await expect(auth.submitButton()).toBeVisible();
 });
 
 test('password sign-in updates the header account state after auth invalidation', async ({
   page
 }) => {
-  await page.goto('/auth');
+  const auth = authPage(page);
+  await auth.goto();
 
   // Password is the default sign-in method (the magic-link toggle was removed in
   // #137); wait for the always-rendered field once the page hydrates.
-  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
+  await expect(auth.passwordInput()).toBeVisible({ timeout: 15000 });
 
-  await page.locator('input[name="email"]').fill(E2E_USER.email);
-  await page.locator('input[name="password"]').fill(E2E_USER.password);
+  await auth.emailInput().fill(E2E_USER.email);
+  await auth.passwordInput().fill(E2E_USER.password);
 
   const signIn = page.waitForResponse(
     (response) => response.url().includes('/auth') && response.request().method() === 'POST'
   );
-  await page.locator('form').getByRole('button', { name: 'Sign in' }).click();
+  await auth.submitButton().click();
   await signIn;
 
   await expect(page).toHaveURL(/\/picks/);
   await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+  // 'E2' is the real fixture user's display initial — content under test, not chrome.
   await expect(page.getByText('E2')).toBeVisible();
 });
 
 test('sign-up form submits and shows confirmation message', async ({ page }) => {
-  await page.goto('/auth');
+  const auth = authPage(page);
+  await auth.goto();
 
-  // Switch to sign-up mode. The CardTitle renders a <div data-slot="card-title">,
-  // not a heading, and "Create account" also labels the submit button — so scope
-  // the assertion to the card title element to stay unambiguous.
-  await page.getByRole('button', { name: 'Create an account' }).click();
-  await expect(page.locator('[data-slot="card-title"]')).toHaveText('Create account');
+  // Switch to sign-up mode via the mode-switch button.
+  await auth.switchToSignUp().click();
+  await auth.expectTitle('Create account');
 
   // Fill in a unique email so repeated runs don't collide
   const uniqueEmail = `e2e-signup-${Date.now()}@example.com`;
-  await page.locator('input[name="email"]').fill(uniqueEmail);
-  await page.locator('input[name="password"]').fill('e2e-signup-pw-ok');
+  await auth.emailInput().fill(uniqueEmail);
+  await auth.passwordInput().fill('e2e-signup-pw-ok');
 
   const submitted = page.waitForResponse(
     (r) => r.url().includes('/auth') && r.request().method() === 'POST'
   );
-  await page.locator('form').getByRole('button', { name: 'Create account' }).click();
+  await auth.submitButton().click();
   await submitted;
 
   // Confirmation message appears via a svelte-sonner toast (email not yet
-  // confirmed, so no redirect). Give it a timeout to absorb the post-response
-  // toast render before it auto-dismisses.
+  // confirmed, so no redirect). The toast text IS the content under test here —
+  // it's the user-facing outcome, not chrome.
   await expect(page.getByText('Check your email for a confirmation link')).toBeVisible({
     timeout: 5000
   });
@@ -71,6 +74,8 @@ test('sign-up form submits and shows confirmation message', async ({ page }) => 
 test('password reset: token exchange lands on set-new-password page and redirects after update', async ({
   page
 }) => {
+  const auth = authPage(page);
+
   const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE!;
   const supabase = createClient(supabaseUrl, serviceRole, { auth: { persistSession: false } });
@@ -90,17 +95,17 @@ test('password reset: token exchange lands on set-new-password page and redirect
 
   // After token exchange the server redirects to the clean /auth/reset URL
   await expect(page).toHaveURL('/auth/reset');
-  // CardTitle renders a <div>, not a heading — assert by text.
-  await expect(page.getByText('Set new password')).toBeVisible();
+  // CardTitle on the reset page — assert via testid, not text.
+  await auth.expectResetTitle('Set new password');
 
   // Set the new password
   const newPassword = 'e2e-new-password-456';
-  await page.locator('input[name="password"]').fill(newPassword);
+  await auth.passwordInput().fill(newPassword);
 
   const submitted = page.waitForResponse(
     (r) => r.url().includes('/auth/reset') && r.request().method() === 'POST'
   );
-  await page.locator('form').getByRole('button', { name: 'Update password' }).click();
+  await auth.resetSubmitButton().click();
   await submitted;
 
   // Successful reset ends in a valid session and lands on /picks

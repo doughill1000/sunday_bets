@@ -16,6 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { commentsSection } from './helpers/comments';
 
 const PAST_GAME_TAG = 'e2e-comments-past-game';
 
@@ -87,58 +88,37 @@ test.afterAll(async () => {
 });
 
 test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
-  await page.goto('/picks');
-
-  // The committed picks section should show started games. When expanded,
-  // the CommentsSection (with reaction buttons) should be visible.
-  const details = page.locator('details').first();
-  await expect(details).toBeVisible();
-
-  // Open the committed section if it isn't already
-  const summary = details.locator('summary');
-  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
-  if (!isOpen) await summary.click();
-
+  const comments = commentsSection(page);
+  await comments.goto();
+  await comments.openStartedGame();
   // Reaction buttons are rendered by CommentsSection for started games.
-  // We look for at least one reaction toggle button (aria-label includes "reaction").
-  await expect(page.getByRole('button', { name: /reaction/i }).first()).toBeVisible({
-    timeout: 5000
-  });
+  await comments.expectVisible();
 });
 
 test('user can post a comment on a started game', async ({ page }) => {
-  await page.goto('/picks');
+  const comments = commentsSection(page);
+  await comments.goto();
+  await comments.openStartedGame();
 
-  const details = page.locator('details').first();
-  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
-  if (!isOpen) await details.locator('summary').click();
-
-  const commentInput = page.getByRole('textbox', { name: /comment/i }).first();
-  await expect(commentInput).toBeVisible({ timeout: 5000 });
+  await expect(comments.commentInput()).toBeVisible({ timeout: 5000 });
 
   const uniqueBody = `E2E test comment ${Date.now()}`;
-  await commentInput.fill(uniqueBody);
-  await page.getByRole('button', { name: 'Post' }).first().click();
+  await comments.commentInput().fill(uniqueBody);
+  await comments.submitButton().click();
 
-  // The comment should appear in the list immediately (optimistic update)
-  await expect(page.getByText(uniqueBody)).toBeVisible({ timeout: 3000 });
+  // The comment body is real data the test typed — assert on the content itself.
+  await comments.expectCommentVisible(uniqueBody);
 });
 
 test('user can toggle a reaction on a started game', async ({ page }) => {
-  await page.goto('/picks');
-
-  const details = page.locator('details').first();
-  const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open);
-  if (!isOpen) await details.locator('summary').click();
+  const comments = commentsSection(page);
+  await comments.goto();
+  await comments.openStartedGame();
 
   // Click the 👍 reaction button
-  const thumbsUp = page.getByRole('button', { name: /👍/ }).first();
-  await expect(thumbsUp).toBeVisible({ timeout: 5000 });
-  await thumbsUp.click();
+  await comments.expectVisible();
+  await comments.reactionButton('👍').click();
 
   // After toggling, the button should show a count ≥ 1
-  await expect(async () => {
-    const text = await thumbsUp.textContent();
-    expect(text).toMatch(/1/);
-  }).toPass({ timeout: 3000 });
+  await comments.expectReactionCount('👍', /1/);
 });

@@ -44,7 +44,13 @@
 {#if user}
   <DropdownMenu bind:open>
     <DropdownMenuTrigger>
-      <Button variant="ghost" size="icon" class="rounded-full" aria-label="Account menu">
+      <Button
+        variant="ghost"
+        size="icon"
+        class="rounded-full"
+        aria-label="Account menu"
+        data-testid="account-menu-trigger"
+      >
         <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
       </Button>
     </DropdownMenuTrigger>
@@ -62,7 +68,7 @@
       <DropdownMenuItem>
         <a href="/settings" class="block w-full">Settings</a>
       </DropdownMenuItem>
-      <DropdownMenuItem>
+      <DropdownMenuItem data-testid="nav-how-to-play">
         <a href="/how-to-play" class="block w-full">How to Play</a>
       </DropdownMenuItem>
       {#if canSeeAdmin}

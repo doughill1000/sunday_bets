@@ -20,6 +20,7 @@
 
 import { test, expect, type BrowserContext } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import { joinPage } from './helpers/join-page';
 
 // ---------------------------------------------------------------------------
 // Stable test-user definitions (distinct from the main E2E user so
@@ -204,7 +205,9 @@ test('no-membership user can access /join without being redirected again', async
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, SELF_SIGNUP_NO_MEMBER);
-    await page.goto('/join');
+    const jb = joinPage(page);
+
+    await jb.goto();
     // /join is an exempt path — no further redirect.
     await expect(page).toHaveURL(/\/join/);
     // The page should not bounce to /auth or /join/pending.
@@ -243,8 +246,10 @@ test('pending-membership user can access /join paths without being redirected', 
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, SELF_SIGNUP_PENDING);
+    const jb = joinPage(page);
+
     // /join/pending is under the exempt /join prefix.
-    await page.goto('/join/pending');
+    await jb.gotoPending();
     await expect(page).toHaveURL(/\/join\/pending/);
     await expect(page).not.toHaveURL(/\/auth/);
   } finally {
