@@ -42,4 +42,4 @@ end
 $$;
 
 grant execute on function public.attach_line_to_matchup(int,int,int,text)
-  to authenticated, service_role;
+  to service_role;

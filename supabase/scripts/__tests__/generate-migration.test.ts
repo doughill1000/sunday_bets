@@ -91,15 +91,17 @@ describe('generate-migration', () => {
     );
   });
 
-  it('requires tracked legacy bundles to be split before modification', () => {
+  it('no longer exempts formerly-legacy multi-object bundles (ADR-0012 rebaseline)', () => {
     const { options, root } = fixture();
     fs.rmSync(path.join(root, 'functions'), { recursive: true });
     fs.mkdirSync(path.join(root, 'schemas'));
     const legacyPath = path.join(root, 'schemas', '0200_tables.sql');
     fs.writeFileSync(legacyPath, 'create table first(id int);\ncreate table second(id int);\n');
-    runGenerator({ ...options, bootstrap: true });
-    fs.appendFileSync(legacyPath, '-- changed\n');
 
+    // The ADR-0012 history squash emptied LEGACY_MULTI_OBJECT_SOURCES: the formerly
+    // frozen bundle paths (0100_enums, 0200_tables, handle_new_auth_user) were split
+    // into one-object files, so no path is exempt from the one-primary-object rule —
+    // they now throw even on bootstrap, just like any other multi-object file.
     expect(() => runGenerator({ ...options, bootstrap: true })).toThrow(
       'SQL source files must define at most one primary table, type, view, or function'
     );

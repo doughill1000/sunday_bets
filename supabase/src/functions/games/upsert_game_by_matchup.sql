@@ -40,4 +40,4 @@ end
 $$;
 
 grant execute on function public.upsert_game_by_matchup(int,int,int,timestamptz,text,text)
-  to authenticated, service_role;
+  to service_role;
