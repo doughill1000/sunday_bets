@@ -13,3 +13,9 @@ as $$
     true
   );
 $$;
+
+-- Reachable by `authenticated` through lock_pick / lock_pick_all_groups (SECURITY
+-- INVOKER), so the caller needs EXECUTE even though this is SECURITY DEFINER. The
+-- closed-by-default baseline (ADR-0011) revokes PUBLIC, so this grant is the sole path.
+grant execute on function public._get_final_week_unlimited_allin()
+  to authenticated, service_role;

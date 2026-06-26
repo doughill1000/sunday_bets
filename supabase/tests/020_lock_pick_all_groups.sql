@@ -235,8 +235,8 @@ SELECT throws_ok(
   $$ SELECT public.lock_pick_all_groups(
        '00000000-0000-0000-0000-000000000000'::uuid,
        'home'::public.side_enum, 'M'::public.weight_enum) $$,
-  'P0001', 'unauthorized',
-  'anon call to lock_pick_all_groups is rejected'
+  '42501', NULL,
+  'anon cannot execute lock_pick_all_groups -- no PUBLIC grant'
 );
 RESET ROLE;
 
@@ -277,8 +277,8 @@ SET ROLE anon;
 SELECT throws_ok(
   $$ SELECT public.unlock_pick_all_groups(
        '00000000-0000-0000-0000-000000000000'::uuid) $$,
-  'P0001', 'unauthorized',
-  'anon call to unlock_pick_all_groups is rejected'
+  '42501', NULL,
+  'anon cannot execute unlock_pick_all_groups -- no PUBLIC grant'
 );
 RESET ROLE;
 

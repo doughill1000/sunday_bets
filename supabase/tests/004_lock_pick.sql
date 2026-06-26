@@ -207,8 +207,8 @@ SELECT throws_ok(
   $$ SELECT public.lock_pick(
        '00000000-0000-0000-0000-000000000000'::uuid,
        'home'::public.side_enum, 'M'::public.weight_enum) $$,
-  'P0001', 'unauthorized',
-  'anon (no auth.uid) is rejected as unauthorized'
+  '42501', NULL,
+  'anon cannot execute lock_pick -- no PUBLIC grant (closed-by-default baseline)'
 );
 RESET ROLE;
 

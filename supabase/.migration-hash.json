@@ -85,8 +85,10 @@
     "signature": "public.audit_log_action(uuid, text, jsonb)"
   },
   "functions/_private/game_has_started.sql": {
-    "hash": "cd3ffc5b909d6bbdb2e19bcb3a1aabcbea248f24808b1ca5b8deda3b37aee88a",
-    "signature": "public.game_has_started(uuid)"
+    "hash": "0e97494349047d1282af708f38761ad3d1b3710fdec0d8e748d26e4d3596cf54",
+    "signature": "public.game_has_started(uuid)",
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
   },
   "functions/_private/grade_games_by_ids.sql": {
     "hash": "58f497475f8ae328582f9752072216a51885e505c33f920f3133b1eee478efcf",
@@ -106,8 +108,10 @@
     "hash": "cab661b70dd99907b2ca7ed76ff2864f876f61a9e1dc57a5497d90eaf399bc11"
   },
   "functions/auth/is_admin.sql": {
-    "hash": "0278cb4f0d60f916268f7e03995ea01b2bb01b7ff3e8e928338ff1202f4d990c",
-    "signature": "public.is_admin()"
+    "hash": "690fa0201c8319bd801ad045f4fd076a6454e2fe3a3ecc5c2fc801e51ceaa2b4",
+    "signature": "public.is_admin()",
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
   },
   "functions/games/upsert_game_by_external_id.sql": {
     "hash": "8c550b3de9108fd8ec73d4d7fd6f6ba87b2cb96504838d8e04d34fab2a084bb4",
@@ -174,9 +178,9 @@
     "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
   },
   "grants/player_grants.sql": {
-    "hash": "3437f2bbb1d11ccafa1b95c5592e76cc5051c358f5a89fa94c71cdea7a929ea6",
-    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
-    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
+    "hash": "e5002ae560be9c3a5607c6f48c08453fbd8386e2192a6c2f992aea7f99185362",
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
   },
   "functions/grade/advance_week_if_complete.sql": {
     "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
@@ -353,10 +357,10 @@
     "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
   },
   "functions/_private/get_final_week_unlimited_allin.sql": {
-    "hash": "da89ee7880e312321c0b1e4b41c4caa7b264112125b5cf8e40f5a4cdc998023e",
+    "hash": "0721d32c8b130d1fa6c0191d1b3b7f7fcb1402ac0147b401b3e10b249e7aade5",
     "signature": "public._get_final_week_unlimited_allin()",
-    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
-    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
   },
   "schemas/0103_group_membership_status.sql": {
     "hash": "711c1d530f168565a6d02c89deb34fb89dbaae9f487ba4cadbe0b4653898cb5b",
@@ -483,5 +487,16 @@
     "hash": "7fbb842bf8d2b7bc2607331b36f1cce07a8ee9afda00e1e50fa825631751132a",
     "migration": "20260626132500_global_picks_fanout_rpcs.sql",
     "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
+  },
+  "schemas/0000_function_acl_guard.sql": {
+    "hash": "fe4d490bfba43b8ce0325c560ad9023cd3e0eb3a13a26c2ed783db68d9a9fd68",
+    "signature": "public._close_new_fn_acl()",
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
+  },
+  "schemas/0001_role_baseline.sql": {
+    "hash": "6f0389c5624177d1853af543f6e154b9d6e74f1a79d026a8b32f9c73eaaa93bd",
+    "migration": "20260626152357_closed_by_default_baseline.sql",
+    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
   }
 }
