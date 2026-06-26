@@ -34,8 +34,8 @@ workflow") and `docs/WORKFLOW.md` ("Claim and isolate work") for the full rule.
 
 ```sh
 pnpm dev                          # dev server at http://localhost:5173
-pnpm lint                         # prettier + eslint (not run in CI — run this yourself)
-pnpm check                        # svelte-check type checking (not run in CI)
+pnpm lint                         # prettier + eslint (also enforced by the CI `lint` job — run locally first)
+pnpm check                        # svelte-check type checking (also enforced by the CI `lint` job)
 pnpm format                       # auto-format with prettier (run repo-wide before committing — see AGENTS.md "Formatting")
 
 pnpm test:unit                    # Vitest unit tests (src/**/__tests__), jsdom, no Docker needed

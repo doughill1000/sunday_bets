@@ -149,9 +149,10 @@ function used in RLS. RLS is enforced everywhere; the service-role client
 - Layers: unit (`pnpm test:unit`, jsdom) · integration (`pnpm test:integration` —
   needs **Docker + local Supabase running**) · pgTAP (`npx supabase test db`) · e2e
   (`pnpm test:e2e`, Playwright).
-- **CI only runs unit tests on PRs to `master`. Lint never runs in CI** — run
-  `pnpm lint` and `pnpm check` yourself; green CI does not mean lint-clean.
-  Playwright runs e2e against a local Supabase stack.
+- On PRs to `master`, `ci-tests.yml` runs **lint** (`pnpm lint` + `pnpm check`),
+  **unit** (`pnpm test:unit`), and **build** (`pnpm build`) jobs — lint and
+  svelte-check are enforced in CI. Run `pnpm lint` and `pnpm check` locally first
+  to avoid a CI round-trip. Playwright runs e2e against a local Supabase stack.
 - `@typescript-eslint/no-explicit-any` is `error` under `src/lib` + `src/routes`
   (use real types); it is **off** for tests and `supabase/scripts/**`.
 
