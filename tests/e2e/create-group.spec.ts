@@ -12,7 +12,8 @@
 // with email_confirm:true so they can password-login.
 
 import { test, expect, type BrowserContext } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { makeServiceClient } from './helpers/seed';
 
 const CREATOR = {
   email: 'e2e-create-group-capable@example.com',
@@ -22,18 +23,13 @@ const CREATOR = {
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ timeout: 25_000 });
+
 let supabase: SupabaseClient;
 let creatorUserId: string;
 
 test.beforeAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'create-group.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  supabase = makeServiceClient();
 
   // Gated mode is the default; assert it explicitly so the form is shown only
   // because the user is capable, not because creation is open to everyone.
@@ -61,7 +57,11 @@ test.beforeAll(async () => {
       id: creatorUserId,
       display_name: CREATOR.displayName,
       role: 'player',
-      can_create_group: true
+      can_create_group: true,
+      // Suppress the welcome guide; once signed in on /join its modal overlay
+      // would intercept the "Create group" click (shouldAutoOpenGuide fires for
+      // any path when guide_seen_at is null).
+      guide_seen_at: new Date().toISOString()
     },
     { onConflict: 'id' }
   );

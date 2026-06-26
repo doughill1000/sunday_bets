@@ -4,7 +4,8 @@ import {
   DEFAULT_NOTIFICATION_PREFS,
   spreadRelativeToHome,
   lineMovementPoints,
-  shouldNotifyLineShift
+  shouldNotifyLineShift,
+  formatRecapBody
 } from '../notifications';
 
 describe('parseNotificationPrefs', () => {
@@ -24,6 +25,39 @@ describe('parseNotificationPrefs', () => {
   it('rejects non-positive thresholds', () => {
     expect(parseNotificationPrefs({ line_shift: { threshold: 0 } }).line_shift.threshold).toBe(2);
     expect(parseNotificationPrefs({ line_shift: { threshold: -5 } }).line_shift.threshold).toBe(2);
+  });
+
+  it('defaults results_recap when absent and parses it when present', () => {
+    // Rows written before the field existed fall back to the default (true).
+    expect(parseNotificationPrefs({ enabled: true }).results_recap).toBe(true);
+    expect(parseNotificationPrefs({ results_recap: false }).results_recap).toBe(false);
+    expect(parseNotificationPrefs({ results_recap: 'yes' }).results_recap).toBe(true);
+  });
+});
+
+describe('formatRecapBody', () => {
+  it('summarizes record, pushes/missed, and net points', () => {
+    expect(formatRecapBody({ wins: 3, losses: 1, pushes: 1, missed: 0, net: 7 })).toBe(
+      '3-1 with 1 push · +7 points this week. Tap for standings.'
+    );
+  });
+
+  it('omits push/missed clauses when zero', () => {
+    expect(formatRecapBody({ wins: 2, losses: 2, pushes: 0, missed: 0, net: 0 })).toBe(
+      '2-2 · 0 points this week. Tap for standings.'
+    );
+  });
+
+  it('combines pushes and missed and pluralizes', () => {
+    expect(formatRecapBody({ wins: 0, losses: 4, pushes: 2, missed: 1, net: -4 })).toBe(
+      '0-4 with 2 pushes and 1 missed · -4 points this week. Tap for standings.'
+    );
+  });
+
+  it('uses singular "point" for ±1', () => {
+    expect(formatRecapBody({ wins: 1, losses: 0, pushes: 0, missed: 0, net: 1 })).toBe(
+      '1-0 · +1 point this week. Tap for standings.'
+    );
   });
 });
 

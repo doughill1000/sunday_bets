@@ -36,7 +36,7 @@
   }
 </script>
 
-<div class="space-y-4">
+<div class="space-y-4" data-testid="weekly-breakdown">
   <!-- Week navigator -->
   <div class="flex items-center justify-between gap-2">
     <Button variant="outline" size="sm" onclick={prev} disabled={!hasPrev}>◀</Button>

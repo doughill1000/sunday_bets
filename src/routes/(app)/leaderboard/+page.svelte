@@ -49,19 +49,33 @@
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
   <div>
-    <h1 id="leaderboard-heading" class="text-3xl font-bold tracking-tight">Leaderboard</h1>
+    <h1
+      id="leaderboard-heading"
+      data-testid="leaderboard-heading"
+      class="text-3xl font-bold tracking-tight"
+    >
+      Leaderboard
+    </h1>
     <p class="mt-1 text-muted-foreground">{data.seasonYear} season.</p>
   </div>
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
     <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-      <TabsTrigger value="standings" class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger>
-      <TabsTrigger value="weekly" class={ACTIVE_TAB_TRIGGER_CLASS}>Weekly</TabsTrigger>
+      <TabsTrigger
+        value="standings"
+        data-testid="leaderboard-tab-standings"
+        class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
+      >
+      <TabsTrigger
+        value="weekly"
+        data-testid="leaderboard-tab-weekly"
+        class={ACTIVE_TAB_TRIGGER_CLASS}>Weekly</TabsTrigger
+      >
     </TabsList>
 
-    <TabsContent value="standings">
+    <TabsContent value="standings" data-testid="standings-panel">
       {#if data.totals.length === 0}
-        <Card class="border-dashed">
+        <Card class="border-dashed" data-testid="standings-empty">
           <CardHeader>
             <CardTitle>No standings yet</CardTitle>
             <CardDescription>
@@ -75,7 +89,7 @@
             <CardTitle>{data.seasonYear} standings</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table data-testid="standings-table">
               <TableHeader>
                 <TableRow>
                   <TableHead class="w-12 text-center">#</TableHead>
@@ -131,7 +145,7 @@
       {/if}
     </TabsContent>
 
-    <TabsContent value="weekly">
+    <TabsContent value="weekly" data-testid="weekly-panel">
       {#if data.view === 'weekly' && data.weeks != null && data.breakdown != null}
         <WeeklyPicksBreakdown
           weeks={data.weeks}

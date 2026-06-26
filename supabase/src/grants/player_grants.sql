@@ -13,6 +13,19 @@ alter default privileges in schema public revoke execute on functions from authe
 grant usage on type public.weight_enum to authenticated;
 grant usage on type public.side_enum  to authenticated;
 
+-- Defense in depth: strip Supabase's default anon/PUBLIC ACL on every table that has
+-- no anon RLS policy. Supabase auto-grants ALL on new public tables to anon/PUBLIC;
+-- RLS already blocks rows, but revoking the grant closes Data API reachability too
+-- (the same revoke-before-grant pattern already applied to cron_run_log /
+-- push_subscriptions / notification_log below and the group-owned tables). Runs before
+-- the explicit `authenticated` grants below, which survive (revoke targets only
+-- anon/PUBLIC); service_role keeps access via admin_grants.sql.
+revoke all on
+  public.games, public.game_lines, public.results, public.totals,
+  public.users, public.weeks, public.seasons, public.teams,
+  public.picks, public.pick_settlement, public.settings, public.audit_log
+from public, anon;
+
 -- Base table privileges (RLS still enforces row/column rules)
 grant select on public.games,
                public.game_lines,

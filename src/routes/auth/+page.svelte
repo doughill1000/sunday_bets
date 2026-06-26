@@ -60,8 +60,8 @@
     class="relative z-10 w-full max-w-md rounded-2xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl"
   >
     <CardHeader class="space-y-1">
-      <CardTitle class="text-3xl">{titles[mode]}</CardTitle>
-      <CardDescription>{descriptions[mode]}</CardDescription>
+      <CardTitle class="text-3xl" data-testid="auth-card-title">{titles[mode]}</CardTitle>
+      <CardDescription data-testid="auth-description">{descriptions[mode]}</CardDescription>
     </CardHeader>
 
     <CardContent>
@@ -142,7 +142,7 @@
         {/if}
 
         <!-- Submit -->
-        <Button type="submit" class="w-full" disabled={submitting}>
+        <Button type="submit" class="w-full" disabled={submitting} data-testid="auth-submit">
           {submitting ? submitLabels[mode][1] : submitLabels[mode][0]}
         </Button>
       </form>
@@ -189,6 +189,7 @@
           <button
             type="button"
             class="underline underline-offset-4 hover:text-foreground"
+            data-testid="auth-switch-signup"
             onclick={() => switchMode('signup')}
           >
             Create an account

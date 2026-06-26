@@ -75,7 +75,7 @@ export default async function globalSetup() {
 
   // E2E password-reset user — kept separate from E2E_USER so the reset test can
   // change this password without breaking auth.setup.ts on subsequent runs.
-  const { data: resetUserData, error: resetUserErr } = await supabase.auth.admin.createUser({
+  const { data: resetData, error: resetUserErr } = await supabase.auth.admin.createUser({
     email: E2E_RESET_USER.email,
     password: E2E_RESET_USER.password,
     email_confirm: true,
@@ -84,16 +84,25 @@ export default async function globalSetup() {
   if (resetUserErr && !/already|exists|registered/i.test(resetUserErr.message)) {
     throw new Error('seed e2e reset user: ' + resetUserErr.message);
   }
-  // Set guide_seen_at to prevent WelcomeGuide dialog blocking pointer events after reset.
-  let resetUserId: string | undefined = resetUserData?.user?.id;
+
+  // Pre-set guide_seen_at for the reset user too. The reset test signs this user
+  // in via a recovery token, landing on an authenticated /auth/reset; without
+  // this, shouldAutoOpenGuide() fires and the welcome-guide modal overlays and
+  // intercepts the "Update password" click, so the reset never submits.
+  let resetUserId: string | undefined = resetData?.user?.id;
   if (!resetUserId) {
     const { data: list } = await supabase.auth.admin.listUsers();
     resetUserId = list?.users.find((u) => u.email === E2E_RESET_USER.email)?.id;
   }
   if (resetUserId) {
-    await supabase
-      .from('users')
-      .upsert({ id: resetUserId, guide_seen_at: new Date().toISOString() }, { onConflict: 'id' });
+    await supabase.from('users').upsert(
+      {
+        id: resetUserId,
+        display_name: E2E_RESET_USER.displayName,
+        guide_seen_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -223,10 +232,19 @@ export default async function globalSetup() {
   const commenceTime = new Date(Date.now() + 2 * DAY).toISOString();
   let gameId: string;
   {
+    // Find-or-create by *matchup*, not by external_game_id. uq_games_matchup is
+    // unique on (week_id, unordered team pair), so a game cloned from prod (or a
+    // pre-constraint run) sharing this week + team pair but carrying a different
+    // external_game_id would otherwise miss this lookup and collide on insert.
+    // Match either orientation since the constraint is order-independent.
     const { data: existing } = await supabase
       .from('games')
       .select('id')
-      .eq('external_game_id', GAME_TAG)
+      .eq('week_id', weekId)
+      .or(
+        `and(home_team_id.eq.${home.id},away_team_id.eq.${away.id}),` +
+          `and(home_team_id.eq.${away.id},away_team_id.eq.${home.id})`
+      )
       .maybeSingle();
     const payload = {
       week_id: weekId,

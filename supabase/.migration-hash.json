@@ -174,9 +174,9 @@
     "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
   },
   "grants/player_grants.sql": {
-    "hash": "cbb4472a1c0d2aabf9021c36788b450e6a6f6ffe65af1a637da7a8d818e2d9c7",
-    "migration": "20260623132455_restore_is_member_grant.sql",
-    "migrationHash": "dce201d4630e3b1cda6eae1bce235bb169e72dc7a6195043eb7e99ff1794dd81"
+    "hash": "3437f2bbb1d11ccafa1b95c5592e76cc5051c358f5a89fa94c71cdea7a929ea6",
+    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
+    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
   },
   "functions/grade/advance_week_if_complete.sql": {
     "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
@@ -251,14 +251,14 @@
     "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
   },
   "policies/25_policies_groups.sql": {
-    "hash": "9a460a8646f28cd7108e2bde0a68bb9752803e2abc77292777cb089adb254cfd",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
+    "hash": "b31eab3a9ce529d5d6adecf5f9ad0733a03c14a12a5a2593a31bd4cd409849f3",
+    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
+    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
   },
   "grants/zz_group_grants.sql": {
-    "hash": "a3a93aa3b7ff8aa8a071e65d47d3ec330a89cf522c61d472af122906e1c14312",
-    "migration": "20260625142627_add_preview_invite_rpc.sql",
-    "migrationHash": "22ef357e4b6000554f5d2d202f125ed5bde30450bcac37bf26f1da6cdbbf7725"
+    "hash": "19157b87f1b251c8b1bce0ed9aad6ccafe4636a9ec5a128c03244f9f51b61cff",
+    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
+    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
   },
   "schemas/0210_pick_group_foreign_keys.sql": {
     "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
@@ -461,5 +461,10 @@
     "signature": "public.preview_invite(text)",
     "migration": "20260625142627_add_preview_invite_rpc.sql",
     "migrationHash": "22ef357e4b6000554f5d2d202f125ed5bde30450bcac37bf26f1da6cdbbf7725"
+  },
+  "indexes/idx_picks_group_game_user.sql": {
+    "hash": "83220964e987f8b8f81ba484bdb6bc3f7e67b0ccb1d892da97ce64cb26981d24",
+    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
+    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
   }
 }

@@ -59,8 +59,9 @@
 </script>
 
 {#if games.length > 0}
-  <details open={hasMissed} class="group mt-4">
+  <details open={hasMissed} class="group mt-4" data-testid="committed-section">
     <summary
+      data-testid="committed-summary"
       class="flex cursor-pointer select-none list-none items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
     >
       <svg
@@ -84,17 +85,21 @@
         {@const entry = $picks[g.id]}
         {@const started = kickoffMs(g) <= now}
         {@const lp = entry?.lockedPick}
-        <div class="px-3 py-2 text-sm">
+        <div class="px-3 py-2 text-sm" data-testid="committed-row" data-game-id={g.id}>
           <div class="flex items-center justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <p class="truncate font-medium">{g.away} @ {g.home}</p>
+              <p class="truncate font-medium" data-testid="committed-matchup">
+                {g.away} @ {g.home}
+              </p>
               {#if lp}
-                <p class="truncate text-xs text-muted-foreground">
+                <p class="truncate text-xs text-muted-foreground" data-testid="committed-detail">
                   {lp.team === 'home' ? g.home : g.away}{signedSpreadForTeam(g, lp.team)}
                   · {lp.weight}
                 </p>
               {:else}
-                <p class="text-xs font-medium text-destructive">No pick recorded</p>
+                <p class="text-xs font-medium text-destructive" data-testid="committed-detail">
+                  No pick recorded
+                </p>
               {/if}
             </div>
 
@@ -105,6 +110,7 @@
                 <span class="text-xs text-primary">🔒 Locked</span>
                 <button
                   class="rounded px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  data-testid="edit-pick"
                   onclick={() => onEdit(g)}
                 >
                   Edit

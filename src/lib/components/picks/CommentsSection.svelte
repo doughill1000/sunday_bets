@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
   import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
@@ -19,8 +20,8 @@
   }: Props = $props();
 
   // Local copies so we can update optimistically
-  let comments = $state<CommentRow[]>(initialComments);
-  let reactions = $state<ReactionRow[]>(initialReactions);
+  let comments = $state<CommentRow[]>(untrack(() => initialComments));
+  let reactions = $state<ReactionRow[]>(untrack(() => initialReactions));
 
   let commentInput = $state('');
   let submittingComment = $state(false);
@@ -28,6 +29,14 @@
   let deletingId = $state<string | null>(null);
 
   const ALLOWED_EMOJIS = ['👍', '👎', '🔥', '😬', '🎯'];
+
+  const EMOJI_SLUG: Record<string, string> = {
+    '👍': 'thumbsup',
+    '👎': 'thumbsdown',
+    '🔥': 'fire',
+    '😬': 'grimace',
+    '🎯': 'dart'
+  };
 
   function reactionCount(emoji: string): number {
     return reactions.filter((r) => r.emoji === emoji).length;
@@ -148,7 +157,7 @@
   }
 </script>
 
-<div class="border-t pt-3 space-y-3">
+<div class="border-t pt-3 space-y-3" data-testid="comments-section">
   <!-- Reactions -->
   <div class="flex flex-wrap gap-1" aria-label="Reactions">
     {#each ALLOWED_EMOJIS as emoji (emoji)}
@@ -159,6 +168,7 @@
         onclick={() => toggleReaction(emoji)}
         aria-label="{emoji} {count} reaction{count !== 1 ? 's' : ''}"
         aria-pressed={active}
+        data-testid="comment-reaction-{EMOJI_SLUG[emoji]}"
         class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm
                transition-colors
                {active
@@ -177,7 +187,7 @@
   {#if comments.length > 0}
     <ul class="space-y-1.5" aria-label="Comments">
       {#each comments as comment (comment.id)}
-        <li class="group flex items-start gap-1.5 text-sm">
+        <li class="group flex items-start gap-1.5 text-sm" data-testid="comment-row">
           <span class="min-w-0 flex-1">
             <span class="font-medium">{comment.display_name ?? 'Member'}:</span>
             <span class="ml-1 text-foreground/80">{comment.body}</span>
@@ -215,6 +225,7 @@
       placeholder="Add a comment…"
       maxlength="500"
       aria-label="Comment text"
+      data-testid="comment-composer"
       class="flex-1 min-w-0 rounded-md border border-input bg-background px-3 py-1.5
              text-sm placeholder:text-muted-foreground focus-visible:outline-none
              focus-visible:ring-1 focus-visible:ring-ring"
@@ -222,6 +233,7 @@
     <button
       type="submit"
       disabled={!commentInput.trim() || submittingComment}
+      data-testid="comment-submit"
       class="shrink-0 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground
              disabled:opacity-50"
     >

@@ -11,7 +11,8 @@
 // whose guide_seen_at is pre-set in global-setup.ts) remain unaffected.
 
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { howToPlay } from './helpers/how-to-play';
+import { makeServiceClient } from './helpers/seed';
 
 const HOW_TO_PLAY_USER = {
   email: 'e2e-howtoplay@example.com',
@@ -24,22 +25,17 @@ const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 // Each test gets a fresh browser context — no shared storageState.
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ mode: 'serial', timeout: 25_000 });
+
 async function getSupabase() {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'how-to-play.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  return createClient(url, serviceRole, { auth: { persistSession: false } });
+  return makeServiceClient();
 }
 
 async function signIn(page: import('@playwright/test').Page, email: string, password: string) {
   await page.goto('/auth');
   // Password is the default sign-in method (the magic-link toggle was removed in
   // #137); wait for the always-rendered field once the page hydrates.
-  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 8000 });
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   const signIn = page.waitForResponse(
@@ -101,44 +97,44 @@ test.beforeAll(async () => {
 });
 
 test('fresh user sees the How to Play guide auto-open on first load', async ({ page }) => {
+  const htp = howToPlay(page);
+
   await signIn(page, HOW_TO_PLAY_USER.email, HOW_TO_PLAY_USER.password);
   await expect(page).toHaveURL(/\/picks/);
 
-  // The guide should be visible — look for the title inside the Sheet/Dialog.
+  // The guide overlay should become visible once the page hydrates.
   await expect(async () => {
-    await expect(page.getByRole('heading', { name: 'How to Play' })).toBeVisible({
-      timeout: 2000
-    });
-  }).toPass({ timeout: 15000 });
+    await htp.expectGuideVisible();
+  }).toPass({ timeout: 8000 });
 });
 
 test('dismissing the guide persists across reload', async ({ page }) => {
+  const htp = howToPlay(page);
+
   await signIn(page, HOW_TO_PLAY_USER.email, HOW_TO_PLAY_USER.password);
   await expect(page).toHaveURL(/\/picks/);
 
   // Wait for the guide to appear.
   await expect(async () => {
-    await expect(page.getByRole('heading', { name: 'How to Play' })).toBeVisible({
-      timeout: 2000
-    });
-  }).toPass({ timeout: 15000 });
+    await htp.expectGuideVisible();
+  }).toPass({ timeout: 8000 });
 
   // Dismiss via the "Got it" button.
   await expect(async () => {
-    await page.getByRole('button', { name: 'Got it' }).click();
-    await expect(page.getByRole('heading', { name: 'How to Play' })).not.toBeVisible({
-      timeout: 1000
-    });
+    await htp.dismissButton().click();
+    await htp.expectGuideHidden();
   }).toPass({ timeout: 10000 });
 
   // Reload — guide must not reappear.
   await page.reload();
   await expect(page).toHaveURL(/\/picks/);
   await page.waitForLoadState('networkidle');
-  await expect(page.getByRole('heading', { name: 'How to Play' })).not.toBeVisible();
+  await htp.expectGuideHidden();
 });
 
 test('returning user (guide_seen_at set) never sees the guide auto-open', async ({ page }) => {
+  const htp = howToPlay(page);
+
   // Pre-set guide_seen_at so this user is "returning".
   const supabase = await getSupabase();
   await supabase
@@ -149,13 +145,15 @@ test('returning user (guide_seen_at set) never sees the guide auto-open', async 
   await signIn(page, HOW_TO_PLAY_USER.email, HOW_TO_PLAY_USER.password);
   await expect(page).toHaveURL(/\/picks/);
   await page.waitForLoadState('networkidle');
-  await expect(page.getByRole('heading', { name: 'How to Play' })).not.toBeVisible();
+  await htp.expectGuideHidden();
 
   // Reset for next run of the suite.
   await supabase.from('users').update({ guide_seen_at: null }).eq('id', howToPlayUserId);
 });
 
 test('account menu "How to Play" link navigates to /how-to-play', async ({ page }) => {
+  const htp = howToPlay(page);
+
   // Use a returning user so the guide does not block the menu interaction.
   const supabase = await getSupabase();
   await supabase
@@ -166,15 +164,13 @@ test('account menu "How to Play" link navigates to /how-to-play', async ({ page 
   await signIn(page, HOW_TO_PLAY_USER.email, HOW_TO_PLAY_USER.password);
   await expect(page).toHaveURL(/\/picks/);
 
-  // Open the account dropdown.
+  // Open the account dropdown and wait for the menu item to appear.
   await expect(async () => {
-    await page.getByRole('button', { name: 'Account menu' }).click();
-    await expect(page.getByRole('menuitem', { name: 'How to Play' })).toBeVisible({
-      timeout: 1000
-    });
+    await htp.accountMenuTrigger().click();
+    await expect(htp.howToPlayMenuItem()).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 10000 });
 
-  await page.getByRole('menuitem', { name: 'How to Play' }).click();
+  await htp.howToPlayMenuItem().click();
   await expect(page).toHaveURL(/\/how-to-play/);
-  await expect(page.getByRole('heading', { name: 'How to Play', level: 1 })).toBeVisible();
+  await expect(htp.pageHeading()).toBeVisible();
 });

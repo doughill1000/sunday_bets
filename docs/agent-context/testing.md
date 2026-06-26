@@ -46,6 +46,88 @@
   `await expect(async () => { ... }).toPass()` retry blocks.
 - Seeding must be idempotent.
 
+The E2E suite is governed by five pillars. They exist because a red e2e run was
+historically ignorable (the workflow runs on every PR but the full suite is not a
+required check) and the suite was flaky and high-maintenance. The pillars make
+core flows a hard gate and keep the rest stable and cheap to maintain.
+
+#### Pillar 1 — Selector discipline: anchor on `data-testid`, not copy
+
+E2E specs used to break every time a feature PR tweaked UI copy, because they
+asserted on literal strings (`'0/1 saved'`, `getByText('committed pick')`). To
+keep specs stable:
+
+- **Address chrome through `data-testid` anchors**, not visible text. A copy or
+  markup change should not require touching a spec. Reserve text/role assertions
+  for cases where the _content itself_ is what's under test (team abbreviations,
+  spread values — real fixture data, not chrome).
+- **Put the locators in a page object** under `tests/e2e/helpers/` (see
+  `helpers/picks-board.ts` and `helpers/leaderboard-page.ts` for the pattern).
+  Specs call the helper; the helper owns the testids. When the UI changes, you
+  fix one file, not ten specs.
+- **Testid naming**: kebab-case, scoped to the feature
+  (`game-card`, `saved-counter`, `weight-item-${code}`, `committed-row`,
+  `edit-pick`). Add testids to the stable structural anchors a flow needs, not to
+  every element.
+- The shadcn wrappers (`Button`, `ToggleGroupItem`, `Card`, `Tabs*`, …) forward
+  `...restProps`, so a `data-testid` on the component lands on the DOM element.
+- **If you change a route/flow that an e2e spec covers, update its spec (and any
+  testids it needs) in the same PR** — don't leave it for a follow-up.
+
+#### Pillar 2 — Test isolation & data hygiene
+
+Auto-save and other write paths persist server-side, so a test can see rows a
+previous test left behind. The once-only global clear in `global-setup.ts` only
+protects whichever test runs first.
+
+- **Every spec resets the mutable data it touches in `beforeEach`** — no spec may
+  depend on another's leftover DB state or on the order tests run in.
+- **Use the shared service-role helper** `tests/e2e/helpers/seed.ts`:
+  `makeServiceClient()` builds the RLS-bypassing client (throws if the local
+  env is missing); `resolveSeededGameId()` / `resetPicksForGame()` look up and
+  reset the seeded fixtures. Don't rebuild `createClient(...)` inline in a spec.
+- A spec that seeds its own fixtures (a past game, an isolated group, extra
+  users) still owns its `beforeAll`/`afterAll` teardown — keep it idempotent.
+
+#### Pillar 3 — Deterministic runner
+
+- **CI serves a built `vite preview`, not the dev server** (`playwright.config.ts`
+  switches on `process.env.CI`: `pnpm build && pnpm preview` on port 4173 in CI,
+  `pnpm dev` on 5173 locally). This removes the Vite dep-optimize cold-start flake
+  class, which is why CI retries are down to 1.
+- The CI `webServer.timeout` is raised because the cold `vite build` runs inside
+  the webServer command before `vite preview` answers the health check.
+- `pnpm build` cannot complete locally on Windows (adapter-vercel EPERM), so the
+  preview path is validated by CI, not locally — run the suite against `pnpm dev`
+  locally.
+
+#### Pillar 4 — CI gating (smoke required / full informational)
+
+`.github/workflows/playwright.yml` runs two jobs:
+
+- **`smoke`** — only `@smoke`-tagged core flows (`pnpm exec playwright test --grep
+@smoke`). This is the check meant to be **required** in branch protection: a red
+  core flow blocks merge. Keep it small (~5–6 tests) and fast.
+- **`full`** — every spec, as an **informational** (non-required) safety net, so
+  deep-flow flake is visible without blocking merges.
+
+Tag a test with Playwright's tag API:
+`test('…', { tag: '@smoke' }, async ({ page }) => { … })`. The current smoke set
+covers password sign-in, the core picks write path, the leaderboard, the stats
+page, and active-member routing. Marking the `smoke` check "required" is a GitHub
+branch-protection setting, not a workflow flag.
+
+#### Pillar 5 — Triage & maintenance
+
+- Traces are captured `on-first-retry`, screenshots `only-on-failure`; the HTML
+  report uploads as the `playwright-report-{smoke,full}` artifact for triage.
+- **Authoring checklist** when you add or change a route/flow an e2e spec covers:
+  1. Add `data-testid` anchors to the structural elements the flow needs and put
+     the locators in a page object under `tests/e2e/helpers/`.
+  2. Reset any mutable data the spec touches in `beforeEach` via `helpers/seed.ts`.
+  3. If it is a core flow, tag one test `@smoke` (and keep the smoke set lean).
+  4. Update the covering spec (and its testids) in the **same PR** as the change.
+
 ## Lint is not in CI
 
 **CI only runs unit tests. Lint never runs in CI.** Always run both locally before a PR:

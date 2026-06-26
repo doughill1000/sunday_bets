@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { page } from '$app/state';
   import { invalidateAll } from '$app/navigation';
@@ -19,7 +20,9 @@
 
   const isDesktop = new MediaQuery('(min-width: 640px)');
 
-  let open = $state(shouldAutoOpenGuide({ guideSeenAt, pathname: page.url.pathname }));
+  let open = $state(
+    untrack(() => shouldAutoOpenGuide({ guideSeenAt, pathname: page.url.pathname }))
+  );
 
   async function dismiss() {
     if (!open) return;
@@ -36,26 +39,30 @@
 
 {#if isDesktop.current}
   <Dialog bind:open onOpenChange={handleOpenChange}>
-    <DialogContent class="max-h-[85vh] max-w-lg overflow-y-auto">
+    <DialogContent data-testid="welcome-guide" class="max-h-[85vh] max-w-lg overflow-y-auto">
       <DialogHeader>
         <DialogTitle class="text-2xl">How to Play</DialogTitle>
       </DialogHeader>
       <HowToPlay />
       <div class="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
         <Button variant="ghost" size="sm" onclick={dismiss}>Skip for now</Button>
-        <Button onclick={dismiss}>Got it</Button>
+        <Button data-testid="guide-dismiss" onclick={dismiss}>Got it</Button>
       </div>
     </DialogContent>
   </Dialog>
 {:else}
   <Sheet bind:open onOpenChange={handleOpenChange}>
-    <SheetContent side="bottom" class="max-h-[90vh] overflow-y-auto rounded-t-xl pb-8">
+    <SheetContent
+      data-testid="welcome-guide"
+      side="bottom"
+      class="max-h-[90vh] overflow-y-auto rounded-t-xl pb-8"
+    >
       <SheetHeader class="pb-4">
         <SheetTitle class="text-2xl">How to Play</SheetTitle>
       </SheetHeader>
       <HowToPlay />
       <div class="flex flex-col gap-2 pt-4">
-        <Button onclick={dismiss}>Got it</Button>
+        <Button data-testid="guide-dismiss" onclick={dismiss}>Got it</Button>
         <Button variant="ghost" onclick={dismiss}>Skip for now</Button>
       </div>
     </SheetContent>

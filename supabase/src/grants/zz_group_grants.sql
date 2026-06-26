@@ -4,7 +4,9 @@ revoke all on public.groups from public, anon;
 revoke all on public.group_memberships from public, anon;
 
 grant select on public.groups to authenticated;
-grant select, insert on public.group_memberships to authenticated;
+-- SELECT only: all membership writes go through SECURITY DEFINER RPCs / service role.
+-- Direct client INSERT is blocked by the no-client-write policy (25_policies_groups.sql).
+grant select on public.group_memberships to authenticated;
 
 grant execute on function public.is_member(uuid) to authenticated, service_role;
 
