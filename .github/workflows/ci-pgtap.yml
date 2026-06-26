@@ -27,6 +27,8 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
       - name: Supabase Start
-        run: supabase start
+        # Exclude services pgTAP doesn't need (matches ci-integration/playwright)
+        # to cut startup time — only Postgres is required to run `supabase test db`.
+        run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Run Tests
         run: supabase test db

@@ -10,7 +10,9 @@
 - Framework: Vitest + jsdom.
 - Location: `__tests__/` directories next to the code they cover.
 - Scope: pure functions, domain rules (`src/lib/domain/`), isolated server utilities.
-- **This is the only layer CI runs on PRs to `master`.**
+- **This is the only _test_ layer CI runs on PRs to `master`** (integration, pgTAP,
+  and e2e run only against a local stack — but see "Lint and svelte-check in CI" below
+  for the lint/`check`/build jobs that also gate PRs).
 - Mock fragility: unit tests mock `fetch` without `headers` and stub `$env` with only
   the keys each spec needs. Server code that touches response headers or reads new env
   vars must be defensive or the specs break. See `recordUsage()` in
@@ -128,16 +130,19 @@ branch-protection setting, not a workflow flag.
   3. If it is a core flow, tag one test `@smoke` (and keep the smoke set lean).
   4. Update the covering spec (and its testids) in the **same PR** as the change.
 
-## Lint is not in CI
+## Lint and svelte-check in CI
 
-**CI only runs unit tests. Lint never runs in CI.** Always run both locally before a PR:
+On PRs to `master`, `ci-tests.yml` runs three jobs: a `lint` job (which runs both
+`pnpm run lint` and `pnpm run check`), a `unit` job (`pnpm run test:unit`), and a
+`build` job (`pnpm run build`). Lint and svelte-check are therefore **enforced in
+CI** — a lint or type error blocks the PR.
+
+Still run both locally before pushing so you catch failures without a CI round-trip:
 
 ```sh
 pnpm lint    # Prettier + ESLint
 pnpm check   # svelte-check (type-checks .svelte files)
 ```
-
-Green CI on a PR does not mean lint-clean. A PR with lint failures will be returned.
 
 ## TypeScript strictness
 
