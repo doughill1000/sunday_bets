@@ -33,6 +33,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-26
+
+- **#245** set_active_line src↔prod reconcile — realigned `supabase/src/functions/odds/set_active_line.sql` to prod's deployed state on two axes: (1) **body** — restored prod's declare/begin version (game/spread validation + favorite-sign normalization + plain INSERT), replacing a stale src-only upsert/`ON CONFLICT` rewrite that was never a deployed migration; (2) **grant** — tightened the inline grant to `service_role` only, dropping a stale `authenticated` grant that a later blanket `revoke execute … from authenticated` (migration `20260625204117`) had already stripped from prod. The generated `reconcile_set_active_line` migration is a true no-op on prod (`create or replace` of the identical body; `service_role` already granted; `authenticated` already revoked) — it only re-syncs `src/` so a from-empty regen reproduces prod, and makes the pgTAP `tests/021` set_active_line negative control pass locally. Dev-infra, no app behavior change — set_active_line is invoked only via the service-role client (`src/lib/server/db/commands/setActiveLine.ts`). function: `set_active_line` · ADR-0011
+
 ## 2026-06-25
 
 - **#178** Results-recap notification — once a week is fully graded, the grade cron sends each opted-in user one push summarizing their record and net points (aggregated across all their groups), deep-linking to `/leaderboard`. New `results_recap` notification pref (default on) with a settings toggle; deduped per (user, week) via `notification_log` (`kind='results_recap'`). No schema change. files: `sendResultsRecap`/`isWeekFullyGraded` in `src/lib/server/notifications.ts`, `formatRecapBody` in `src/lib/domain/notifications.ts`, cron `api/cron/grade`, settings page
