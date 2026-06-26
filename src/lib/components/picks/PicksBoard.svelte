@@ -25,6 +25,7 @@
     currentUserDisplayName?: string | null;
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
+    membershipCount?: number;
   }
   let {
     week = null,
@@ -35,7 +36,8 @@
     userId = null,
     currentUserDisplayName = null,
     isLastWeek = false,
-    finalWeekUnlimitedAllin = true
+    finalWeekUnlimitedAllin = true,
+    membershipCount = 1
   }: Props = $props();
 
   // Pre-stage only the spread favorite (no weight), so agreeing with the favorite
@@ -115,6 +117,13 @@
       <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
     </Alert>
   {:else}
+    {#if membershipCount > 1}
+      <Alert class="mt-4" data-testid="multi-group-banner">
+        <AlertDescription>
+          Your picks apply to all {membershipCount} of your groups.
+        </AlertDescription>
+      </Alert>
+    {/if}
     <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">

@@ -25,8 +25,9 @@ export const load: PageServerLoad = async (event) => {
   const { session } = await event.locals.safeGetSession();
   const userId = session?.user.id ?? null;
 
-  const { groupId } = event.locals;
+  const { groupId, memberships } = event.locals;
   if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+  const membershipCount = memberships.length;
 
   const displayNameResult = userId
     ? await event.locals.supabase
@@ -48,7 +49,8 @@ export const load: PageServerLoad = async (event) => {
       userId,
       currentUserDisplayName,
       isLastWeek: false,
-      finalWeekUnlimitedAllin: true
+      finalWeekUnlimitedAllin: true,
+      membershipCount
     };
 
   const [games, picks, groupPicks, gameplay, lastWeek] = await Promise.all([
@@ -83,6 +85,7 @@ export const load: PageServerLoad = async (event) => {
     userId,
     currentUserDisplayName,
     isLastWeek: lastWeek,
-    finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin
+    finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin,
+    membershipCount
   };
 };

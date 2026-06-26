@@ -34,3 +34,15 @@ create policy upd_picks_pre
     and user_id = (select auth.uid())
     and not public.game_has_started(game_id)
   );
+
+-- Delete own pre-kickoff picks (required for unlock_pick_all_groups SECURITY INVOKER).
+-- Mirrors the update guard: member, own row, before kickoff only.
+drop policy if exists del_picks_own_pre on public.picks;
+create policy del_picks_own_pre
+  on public.picks for delete
+  to authenticated
+  using (
+    public.is_member(group_id)
+    and user_id = (select auth.uid())
+    and not public.game_has_started(game_id)
+  );

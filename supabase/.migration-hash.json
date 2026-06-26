@@ -160,9 +160,9 @@
     "hash": "3e04c236ac4f8530e83794282e8b8d29922cda3727398be45f1370f7e36fd4b7"
   },
   "policies/40_policies_picks.sql": {
-    "hash": "058399c40272f99fb14837538e975b865e0ed174515543220727a2e2b5b10d88",
-    "migration": "20260623132044_add_group_id_picks_settlement.sql",
-    "migrationHash": "449ef94269e6718e01e77d3d1a50c101b0b3a21a11bcbf0156b0b7198fcc639e"
+    "hash": "b660b0964133e93fcc03ba9e6665f4e70f0dbb1633cab37f4abfa65092a0dbf4",
+    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
+    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
   },
   "policies/50_policies_admin.sql": {
     "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a"
@@ -466,5 +466,22 @@
     "hash": "83220964e987f8b8f81ba484bdb6bc3f7e67b0ccb1d892da97ce64cb26981d24",
     "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
     "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
+  },
+  "functions/picks/lock_pick_all_groups.sql": {
+    "hash": "d54056f362e9e1ca89670258dc9f3ce03a5dd5045f48e674b6b48d21a6310c12",
+    "signature": "public.lock_pick_all_groups(uuid, public.side_enum, public.weight_enum)",
+    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
+    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
+  },
+  "functions/picks/unlock_pick_all_groups.sql": {
+    "hash": "191fd3b9ad541645f4a4032a16d3a1722cec761858f74b0c0fd676ccb8d4f683",
+    "signature": "public.unlock_pick_all_groups(uuid)",
+    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
+    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
+  },
+  "grants/zz_picks_fanout_grants.sql": {
+    "hash": "7fbb842bf8d2b7bc2607331b36f1cce07a8ee9afda00e1e50fa825631751132a",
+    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
+    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
   }
 }

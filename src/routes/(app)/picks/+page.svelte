@@ -19,4 +19,5 @@
   currentUserDisplayName={data.currentUserDisplayName}
   isLastWeek={data.isLastWeek}
   finalWeekUnlimitedAllin={data.finalWeekUnlimitedAllin}
+  membershipCount={data.membershipCount}
 />
