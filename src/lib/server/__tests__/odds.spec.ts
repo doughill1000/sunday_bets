@@ -6,9 +6,11 @@ async function loadSut() {
   vi.resetModules();
 
   // Mock SvelteKit env modules BEFORE importing SUT
-  vi.mock('$env/static/private', () => ({
-    ODDS_API_KEY1: 'k1',
-    ODDS_API_KEY2: 'k2'
+  vi.mock('$env/dynamic/private', () => ({
+    env: {
+      ODDS_API_KEY1: 'k1',
+      ODDS_API_KEY2: 'k2'
+    }
   }));
   vi.mock('$env/static/public', () => ({
     PUBLIC_ODDS_API_BASE: 'https://api.example.com'

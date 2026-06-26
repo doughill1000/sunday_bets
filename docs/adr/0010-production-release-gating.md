@@ -50,6 +50,17 @@ Production / Preview environments (Supabase, VAPID, etc.), so builds get correct
 config without duplicating secrets in GitHub. The only new GitHub secrets are
 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`.
 
+**Server secrets are read at runtime, not inlined at build:** because `vercel build`
+now runs on the GitHub runner — and **Sensitive** Vercel vars cannot be downloaded by
+`vercel pull` — server-only secrets must be read at _runtime_ via
+`$env/dynamic/private`, read _lazily_ (inside the consuming function, or behind a
+singleton/`Proxy`), and **never** via `$env/static/private`, which SvelteKit inlines
+at build time. A build-inlined secret crashes SvelteKit's post-build `analyse` step
+(it imports server modules, which throw when the secret is absent) and would bake the
+secret into the prebuilt artifact uploaded from the runner. Modules that follow this:
+`src/lib/server/push.ts`, `src/lib/supabase/service.ts`, `src/lib/server/odds.ts`, and
+`src/lib/server/cron.ts`. (Public, non-secret config may still use `$env/static/public`.)
+
 **Boundary future work must preserve:** a version bump is the production-release
 signal. App changes that must ship together with a merged schema change should bump
 `package.json` `version` in that same PR so app and DB ship together.

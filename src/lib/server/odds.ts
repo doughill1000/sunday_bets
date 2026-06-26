@@ -1,15 +1,18 @@
 // lib/server/odds.ts
-import { ODDS_API_KEY1, ODDS_API_KEY2 } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { PUBLIC_ODDS_API_BASE } from '$env/static/public';
 import type { WeekWindow } from '$lib/types/server';
 import { isoNoMs } from '$lib/utils/dates';
 import type { OddsGame, OddsScore } from '../types/oddsApi';
 
-const API_KEYS = [ODDS_API_KEY1!, ODDS_API_KEY2!];
+// Keys are read from the runtime environment ($env/dynamic) at call time, not
+// inlined at build time, so the CI `vercel build` does not require them. See
+// ADR-0010 / src/lib/supabase/service.ts.
 let keyIndex = 0;
-function getNextApiKey() {
-  const key = API_KEYS[keyIndex];
-  keyIndex = (keyIndex + 1) % API_KEYS.length;
+function getNextApiKey(): string {
+  const apiKeys = [env.ODDS_API_KEY1, env.ODDS_API_KEY2];
+  const key = apiKeys[keyIndex] ?? '';
+  keyIndex = (keyIndex + 1) % apiKeys.length;
   return key;
 }
 

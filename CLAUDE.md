@@ -12,6 +12,13 @@ rules here; that would allow the two agent workflows to drift.
 The natural-language issue-creation triggers and draft-before-write approval gate in
 `AGENTS.md` apply to Claude unchanged.
 
+> **TEMPORARY — app not in active use (as of 2026-06-26).** There are no live users
+> right now, so DB migrations and updates (including against prod) need not coordinate
+> around live traffic or downtime — disruptive or destructive changes are acceptable on
+> the user-impact axis. This does NOT relax normal migration discipline (ledger
+> integrity, type regeneration, RLS/grants, pgTAP coverage). **Remove this note when
+> active use resumes** (Doug will say so).
+
 Docker Desktop is assumed to be running locally; integration tests and `supabase`
 commands can run without manually starting it.
 

@@ -10,10 +10,10 @@ const { captureException, mockSentryModule } = vi.hoisted(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Mock $env/static/private before importing the SUT
+// Mock $env/dynamic/private before importing the SUT
 // ---------------------------------------------------------------------------
-vi.mock('$env/static/private', () => ({
-  CRON_SECRET: 'test-secret'
+vi.mock('$env/dynamic/private', () => ({
+  env: { CRON_SECRET: 'test-secret' }
 }));
 
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ describe('requireCronSecret', () => {
     // A blank secret makes `expected` collapse to "Bearer "; a request sending
     // exactly that must still be rejected, not authenticated.
     vi.resetModules();
-    vi.doMock('$env/static/private', () => ({ CRON_SECRET: '' }));
+    vi.doMock('$env/dynamic/private', () => ({ env: { CRON_SECRET: '' } }));
     try {
       const { requireCronSecret: guard } = await import('../cron');
       const res = guard(makeEvent('Bearer '));
@@ -131,7 +131,7 @@ describe('requireCronSecret', () => {
       const body = await res!.json();
       expect(body).toEqual({ ok: false, reason: 'Unauthorized' });
     } finally {
-      vi.doUnmock('$env/static/private');
+      vi.doUnmock('$env/dynamic/private');
       vi.resetModules();
     }
   });

@@ -48,3 +48,5 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 | [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                               | Accepted |
 | [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                      | Accepted |
 | [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        | Proposed |
+| [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                | Proposed |
+| [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                | Proposed |
