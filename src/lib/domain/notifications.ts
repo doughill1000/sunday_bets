@@ -11,12 +11,15 @@ export type NotificationPrefs = {
   /** Master switch — when false, no notifications of any kind are sent. */
   enabled: boolean;
   pick_reminders: boolean;
+  /** Post-grading recap of the user's week (wins/losses/net). */
+  results_recap: boolean;
   line_shift: LineShiftPrefs;
 };
 
 export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   enabled: false,
   pick_reminders: true,
+  results_recap: true,
   line_shift: { enabled: true, threshold: 2 }
 };
 
@@ -49,6 +52,7 @@ export function parseNotificationPrefs(raw: unknown): NotificationPrefs {
     enabled: typeof obj.enabled === 'boolean' ? obj.enabled : base.enabled,
     pick_reminders:
       typeof obj.pick_reminders === 'boolean' ? obj.pick_reminders : base.pick_reminders,
+    results_recap: typeof obj.results_recap === 'boolean' ? obj.results_recap : base.results_recap,
     line_shift: {
       enabled: typeof lsRaw.enabled === 'boolean' ? lsRaw.enabled : base.line_shift.enabled,
       threshold:
@@ -98,4 +102,32 @@ export function shouldNotifyLineShift(args: {
   if (args.movement < args.threshold) return false;
   if (args.recentlyNotified) return false;
   return true;
+}
+
+/** Tally of a single user's settled picks for a week. */
+export type RecapTally = {
+  wins: number;
+  losses: number;
+  pushes: number;
+  missed: number;
+  /** Sum of points_delta across the week's settlements. */
+  net: number;
+};
+
+/**
+ * One-line push body summarizing a user's week. Pure so it can be unit-tested
+ * without a database. Push/missed clauses are omitted when zero.
+ *   e.g. "3-1 with 1 push · +7 points this week. Tap for standings."
+ */
+export function formatRecapBody(t: RecapTally): string {
+  let record = `${t.wins}-${t.losses}`;
+  const extras: string[] = [];
+  if (t.pushes > 0) extras.push(`${t.pushes} push${t.pushes === 1 ? '' : 'es'}`);
+  if (t.missed > 0) extras.push(`${t.missed} missed`);
+  if (extras.length > 0) record += ` with ${extras.join(' and ')}`;
+
+  const sign = t.net > 0 ? '+' : '';
+  const points = `${sign}${t.net} point${Math.abs(t.net) === 1 ? '' : 's'} this week`;
+
+  return `${record} · ${points}. Tap for standings.`;
 }

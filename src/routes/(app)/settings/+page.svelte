@@ -146,6 +146,7 @@
 
   let enabled = $state(data.prefs.enabled);
   let pickReminders = $state(data.prefs.pick_reminders);
+  let resultsRecap = $state(data.prefs.results_recap);
   let lineShiftEnabled = $state(data.prefs.line_shift.enabled);
   let threshold = $state(data.prefs.line_shift.threshold);
 
@@ -173,6 +174,7 @@
       body: JSON.stringify({
         enabled,
         pick_reminders: pickReminders,
+        results_recap: resultsRecap,
         line_shift: { enabled: lineShiftEnabled, threshold: Number(threshold) }
       })
     });
@@ -456,6 +458,22 @@
             <span class="font-medium">Pick reminders</span>
             <p class="text-sm text-muted-foreground">
               A nudge when you still have unpicked games kicking off within about 3 hours.
+            </p>
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3">
+          <input
+            type="checkbox"
+            class="mt-1 size-4"
+            bind:checked={resultsRecap}
+            onchange={onSubPrefChange}
+            disabled={!enabled}
+          />
+          <span>
+            <span class="font-medium">Results recap</span>
+            <p class="text-sm text-muted-foreground">
+              A summary of your record and points once the week is fully graded.
             </p>
           </span>
         </label>
