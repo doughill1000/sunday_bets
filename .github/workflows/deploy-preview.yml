@@ -45,6 +45,12 @@ jobs:
       - name: Check out PR head
         run: gh pr checkout ${{ steps.pr.outputs.number }}
 
+      # `vercel build` spawns `pnpm` to install deps (project uses pnpm-lock.yaml).
+      # Vercel's own infra provides pnpm; here the build runs in CI, so we must too.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
       - uses: actions/setup-node@v6
         with:
           node-version: 22
