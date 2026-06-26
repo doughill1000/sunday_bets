@@ -1,11 +1,14 @@
 #!/bin/sh
-# Run Prettier on staged files before committing so formatter drift never
-# produces uncommitted changes after a commit.
+# Format the ENTIRE repo before committing so formatter drift never survives a
+# commit — including files unrelated to the change being committed. Team
+# decision: unrelated formatting drift is swept into the current commit so the
+# tree is always Prettier-clean (see AGENTS.md "Formatting").
 
-STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|svelte|js|json|css|html|md)$')
-if [ -z "$STAGED" ]; then
+# Files anywhere in the repo that Prettier would reformat (respects .prettierignore).
+CHANGED=$(npx prettier --list-different . --ignore-unknown 2>/dev/null)
+if [ -z "$CHANGED" ]; then
   exit 0
 fi
 
-echo "$STAGED" | xargs npx prettier --write --ignore-unknown
-echo "$STAGED" | xargs git add
+echo "$CHANGED" | xargs npx prettier --write --ignore-unknown
+echo "$CHANGED" | xargs git add
