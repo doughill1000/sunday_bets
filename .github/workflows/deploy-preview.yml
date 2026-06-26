@@ -56,7 +56,9 @@ jobs:
           node-version: 22
 
       - name: Install Vercel CLI
-        run: npm install -g vercel@latest
+        # Pin the major (kept in lockstep with deploy-prod.yml) so a breaking CLI
+        # release can't silently change preview/production behavior.
+        run: npm install -g vercel@54
 
       - name: Pull Vercel preview environment
         env:

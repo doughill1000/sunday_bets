@@ -5,12 +5,11 @@ name: CI - Migration Drift (src reproduces migrations)
 # (ledger hashes only) cannot see. See supabase/scripts/verify-src-reproduces-migrations.ts
 # and ADR-0011/ADR-0012.
 #
-# NON-BLOCKING ON PURPOSE. Until the deferred ADR-0012 history squash lands, the
-# from-empty baseline legitimately fails to apply (inline RLS policies in schema-phase
-# files reference functions emitted in the later functions phase), so this job reports the
-# drift without failing the PR (`continue-on-error` on the verify step). To PROMOTE it to a
-# required gate post-squash: remove `continue-on-error` below and add this job to the
-# branch's required status checks.
+# REQUIRED GATE. The ADR-0012 history squash landed (the from-empty baseline now applies:
+# the RLS helper functions it depends on are emitted in the schemas phase, ahead of the
+# inline policies that call them), so this job blocks the PR on any src↔migration drift.
+# Add "CI - Migration Drift (src reproduces migrations)" to the branch's required status
+# checks in GitHub branch protection to enforce it on merge.
 
 on:
   pull_request:
@@ -59,15 +58,8 @@ jobs:
       - name: Start local Supabase
         run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
 
-      - name: Verify src reproduces migrations (non-blocking until ADR-0012 squash)
-        id: verify
-        continue-on-error: true
+      - name: Verify src reproduces migrations
         run: pnpm db:migration:verify
-
-      - name: Surface drift status in the PR
-        if: steps.verify.outcome != 'success'
-        run: |
-          echo "::warning title=Migration drift::supabase/src/** does not yet reproduce the migration schema from empty. This is expected until the ADR-0012 squash lands; see the 'Verify src reproduces migrations' step log."
 
       - name: Stop Supabase
         if: always()

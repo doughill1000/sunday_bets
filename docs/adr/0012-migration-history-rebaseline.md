@@ -1,6 +1,6 @@
 # ADR-0012: Migration history rebaseline (squash) and simplified rollout
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-26
 - Issue: None (approved migration-rebaseline plan; no tracking issue)
 - Supersedes: ADR-0011 (Decision §8 and the incremental-apply CI gate only; the
@@ -157,6 +157,13 @@ accordingly.
   under explicit confirmation; as-run record at
   `docs/runbooks/adr-0012-prod-reconciliation.md`.
 - src==prod precondition check recorded on the issue before the squash.
-- pgTAP offline-bootstrap hardening (ADR-0011 follow-up) remains separable and lands
-  under the same epic.
-- Set status to `Accepted` once PR1 is in prod and the squash precondition is verified.
+- pgTAP offline-bootstrap hardening (ADR-0011 follow-up). **Done (2026-06-26):** the
+  basejump `supabase_test_helpers` v0.0.6 helpers are vendored into
+  `supabase/tests/000_setup.sql`, dropping the per-run `api.database.dev` fetch
+  (`http`/`pg_tle`/dbdev).
+- The `db:migration:verify` drift guard is promoted to a required gate now that the
+  squashed `src/**` reproduces the single baseline from empty: `continue-on-error` is
+  removed from `.github/workflows/ci-migration-verify.yml`.
+- **Status set to `Accepted` (2026-06-26):** PR1 is in prod (the §4 reconciliation
+  record at `docs/runbooks/adr-0012-prod-reconciliation.md`), the squash baseline is the
+  committed history, and the from-empty drift guard is green and now blocking.

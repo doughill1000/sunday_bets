@@ -43,10 +43,27 @@ jobs:
 
       # If supabase/** changed, migrate-db.yml is also running on this SHA.
       # Wait for it to finish so staging gets the post-migration schema.
+      #
+      # A bare `pending == 0` is ambiguous: it's true both when a migration has
+      # finished AND when none was ever triggered (supabase/** unchanged). So we
+      # first count whether any migrate-db run exists for this SHA, and only poll
+      # when one does. If the poll ceiling is hit while a run is still in flight we
+      # fail loudly rather than cloning a half-migrated (or pre-migration) schema.
       - name: Wait for production migration (if triggered)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          TOTAL=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow=migrate-db.yml \
+            --commit "$GITHUB_SHA" \
+            --json databaseId \
+            --jq 'length')
+          if [ "$TOTAL" = "0" ]; then
+            echo "No migrate-db run for $GITHUB_SHA (supabase/** unchanged) — nothing to wait for."
+            exit 0
+          fi
+          echo "$TOTAL migrate-db run(s) found for this SHA — waiting for completion..."
           for i in $(seq 1 20); do
             PENDING=$(gh run list \
               --repo "$GITHUB_REPOSITORY" \
@@ -54,10 +71,12 @@ jobs:
               --commit "$GITHUB_SHA" \
               --json status \
               --jq '[.[] | select(.status != "completed")] | length')
-            [ "$PENDING" = "0" ] && { echo "No pending migration runs."; break; }
+            [ "$PENDING" = "0" ] && { echo "Migration run(s) completed."; exit 0; }
             echo "Waiting for migrate-db ($i/20, ${PENDING} pending)..."
             sleep 30
           done
+          echo "::error::migrate-db still running after 10 min — aborting staging clone to avoid cloning a pre-migration schema."
+          exit 1
 
       - name: Abort if production migration failed
         env:
