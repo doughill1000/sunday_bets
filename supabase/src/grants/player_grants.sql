@@ -2,12 +2,17 @@
 -- PLAYER (authenticated, non-admin)
 -- =========================
 
--- Basic resolution
+-- Basic resolution (also granted by the closed-by-default baseline; restated here so
+-- this file reads on its own).
 grant usage on schema public to authenticated;
 
--- Start from zero function access for users
-revoke execute on all functions in schema public from authenticated;
-alter default privileges in schema public revoke execute on functions from authenticated;
+-- NOTE: function access starts closed in schemas/0001_role_baseline.sql, which revokes
+-- EXECUTE from PUBLIC (the implicit grant authenticated actually rode) and sets the
+-- born-closed default for future functions. There is intentionally no blanket
+-- `revoke execute ... from authenticated` here: it never closed the real door (PUBLIC
+-- did), and -- because this file is emitted in the grants phase, after the functions
+-- phase -- it would strip the explicit per-function grants made in the function source
+-- files (the closure helpers, get-only RPCs, etc.). Each function re-opens itself.
 
 -- Enums used by player RPCs
 grant usage on type public.weight_enum to authenticated;
@@ -63,11 +68,10 @@ grant select, insert, update, delete on public.push_subscriptions to authenticat
 revoke all on public.notification_log from public, anon;
 grant select on public.notification_log to authenticated;
 
--- Player-facing RPCs: must be re-granted here after the blanket revoke above.
--- The "revoke execute on all functions ... from authenticated" at the top of this
--- file strips these, and if player_grants.sql is re-emitted in a migration without
--- the function files, the revoke would otherwise silently strip them until the next
--- db:reset. Re-grant explicitly so they survive a standalone re-emit.
+-- Player-facing RPCs whose source files do not append their own grant. The baseline
+-- revokes EXECUTE from PUBLIC, so these explicit grants are the sole path for
+-- authenticated. lock_pick/unlock_pick/is_member live here (rather than self-granting in
+-- their function files) by long-standing convention; keep them co-located.
 grant execute on function public.lock_pick(uuid, public.side_enum, public.weight_enum, text)
   to authenticated, service_role;
 grant execute on function public.unlock_pick(uuid)
@@ -79,5 +83,3 @@ grant execute on function public.is_member(uuid)
 -- grants in their own source files:
 --   - public get-only RPCs (e.g., get_active_week_games): GRANT to anon, authenticated
 --   - admin RPCs: handled via service_role or guarded is_admin() (see admin_grants.sql)
--- lock_pick/unlock_pick are the exception above because the blanket revoke in this
--- file races their per-file grants whenever player_grants.sql is re-emitted alone.

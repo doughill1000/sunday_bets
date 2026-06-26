@@ -45,16 +45,17 @@ SELECT results_eq(
   'regular user returns false for is_admin()'
 );
 
--- Isolate the function's no-auth behavior from environment-specific grants.
--- This test-only grant is rolled back with the transaction.
-RESET ROLE;
-GRANT SELECT ON public.users TO anon;
+-- Under the closed-by-default baseline (ADR-0011) anon has no EXECUTE on is_admin()
+-- (PUBLIC was revoked), so the call is denied at the privilege layer, not by the function
+-- body. The non-admin -> false path is covered by the regular_user case above.
 SELECT tests.clear_authentication();
-SELECT results_eq(
+SET ROLE anon;
+SELECT throws_ok(
   $$ SELECT public.is_admin() $$,
-  $$ VALUES (FALSE) $$,
-  'anon session returns false for is_admin()'
+  '42501', NULL,
+  'anon cannot execute is_admin() -- no PUBLIC grant'
 );
+RESET ROLE;
 
 -- Finish & rollback
 SELECT * FROM finish();
