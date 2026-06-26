@@ -37,7 +37,7 @@
   const homeVars = $derived(teamVars(game.home));
 </script>
 
-<div class="flex gap-2" role="group" aria-label="Pick a team">
+<div class="flex gap-2" role="group" aria-label="Pick a team" data-testid="team-select">
   <Button
     variant="secondary"
     class={`team-btn flex-1 ${selAway ? 'selected' : ''}`}

@@ -46,6 +46,28 @@
   `await expect(async () => { ... }).toPass()` retry blocks.
 - Seeding must be idempotent.
 
+#### Selectors: anchor on `data-testid`, not copy
+
+E2E specs used to break every time a feature PR tweaked UI copy, because they
+asserted on literal strings (`'0/1 saved'`, `getByText('committed pick')`). To
+keep specs stable:
+
+- **Address chrome through `data-testid` anchors**, not visible text. A copy or
+  markup change should not require touching a spec. Reserve text/role assertions
+  for cases where the _content itself_ is what's under test (team abbreviations,
+  spread values — real fixture data, not chrome).
+- **Put the locators in a page object** under `tests/e2e/helpers/` (see
+  `helpers/picks-board.ts` for the pattern). Specs call the helper; the helper
+  owns the testids. When the UI changes, you fix one file, not ten specs.
+- **Testid naming**: kebab-case, scoped to the feature
+  (`game-card`, `saved-counter`, `weight-item-${code}`, `committed-row`,
+  `edit-pick`). Add testids to the stable structural anchors a flow needs, not to
+  every element.
+- The shadcn wrappers (`Button`, `ToggleGroupItem`, `Card`, …) forward
+  `...restProps`, so a `data-testid` on the component lands on the DOM element.
+- **If you change a route/flow that an e2e spec covers, update its spec (and any
+  testids it needs) in the same PR** — don't leave it for a follow-up.
+
 ## Lint is not in CI
 
 **CI only runs unit tests. Lint never runs in CI.** Always run both locally before a PR:
