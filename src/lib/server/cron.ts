@@ -1,7 +1,7 @@
 // src/lib/server/cron.ts
 import { timingSafeEqual } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
-import { CRON_SECRET } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
 import type { Json } from '$lib/types/supabase';
@@ -14,13 +14,17 @@ import type { Json } from '$lib/types/supabase';
 export function requireCronSecret(event: RequestEvent): Response | null {
   const authHeader = event.request.headers.get('Authorization') ?? '';
 
+  // Read at call time from the runtime environment ($env/dynamic) so the build
+  // does not require the secret. See ADR-0010 / src/lib/supabase/service.ts.
+  const cronSecret = env.CRON_SECRET;
+
   // Fail closed if the secret is unset/blank — otherwise `expected` collapses to
   // "Bearer " (or "Bearer undefined") and a matching header would authenticate.
-  if (!CRON_SECRET || CRON_SECRET.trim().length === 0) {
+  if (!cronSecret || cronSecret.trim().length === 0) {
     return new Response(JSON.stringify({ ok: false, reason: 'Unauthorized' }), { status: 401 });
   }
 
-  const expected = `Bearer ${CRON_SECRET}`;
+  const expected = `Bearer ${cronSecret}`;
 
   const expectedBuf = Buffer.from(expected, 'utf8');
   const actualBuf = Buffer.from(authHeader, 'utf8');
