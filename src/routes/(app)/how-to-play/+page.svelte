@@ -7,6 +7,8 @@
 </svelte:head>
 
 <section class="mx-auto max-w-lg py-6">
-  <h1 class="mb-6 text-3xl font-bold tracking-tight">How to Play</h1>
+  <h1 class="mb-6 text-3xl font-bold tracking-tight" data-testid="how-to-play-heading">
+    How to Play
+  </h1>
   <HowToPlay />
 </section>
