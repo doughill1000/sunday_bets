@@ -75,7 +75,7 @@ export default async function globalSetup() {
 
   // E2E password-reset user — kept separate from E2E_USER so the reset test can
   // change this password without breaking auth.setup.ts on subsequent runs.
-  const { error: resetUserErr } = await supabase.auth.admin.createUser({
+  const { data: resetData, error: resetUserErr } = await supabase.auth.admin.createUser({
     email: E2E_RESET_USER.email,
     password: E2E_RESET_USER.password,
     email_confirm: true,
@@ -83,6 +83,26 @@ export default async function globalSetup() {
   });
   if (resetUserErr && !/already|exists|registered/i.test(resetUserErr.message)) {
     throw new Error('seed e2e reset user: ' + resetUserErr.message);
+  }
+
+  // Pre-set guide_seen_at for the reset user too. The reset test signs this user
+  // in via a recovery token, landing on an authenticated /auth/reset; without
+  // this, shouldAutoOpenGuide() fires and the welcome-guide modal overlays and
+  // intercepts the "Update password" click, so the reset never submits.
+  let resetUserId: string | undefined = resetData?.user?.id;
+  if (!resetUserId) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    resetUserId = list?.users.find((u) => u.email === E2E_RESET_USER.email)?.id;
+  }
+  if (resetUserId) {
+    await supabase.from('users').upsert(
+      {
+        id: resetUserId,
+        display_name: E2E_RESET_USER.displayName,
+        guide_seen_at: new Date().toISOString()
+      },
+      { onConflict: 'id' }
+    );
   }
 
   // ---------------------------------------------------------------------------

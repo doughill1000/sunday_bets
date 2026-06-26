@@ -25,6 +25,8 @@ const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 // Each test gets a fresh browser context — no shared storageState.
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ mode: 'serial', timeout: 25_000 });
+
 async function getSupabase() {
   return makeServiceClient();
 }
@@ -33,7 +35,7 @@ async function signIn(page: import('@playwright/test').Page, email: string, pass
   await page.goto('/auth');
   // Password is the default sign-in method (the magic-link toggle was removed in
   // #137); wait for the always-rendered field once the page hydrates.
-  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 8000 });
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   const signIn = page.waitForResponse(
@@ -103,7 +105,7 @@ test('fresh user sees the How to Play guide auto-open on first load', async ({ p
   // The guide overlay should become visible once the page hydrates.
   await expect(async () => {
     await htp.expectGuideVisible();
-  }).toPass({ timeout: 15000 });
+  }).toPass({ timeout: 8000 });
 });
 
 test('dismissing the guide persists across reload', async ({ page }) => {
@@ -115,7 +117,7 @@ test('dismissing the guide persists across reload', async ({ page }) => {
   // Wait for the guide to appear.
   await expect(async () => {
     await htp.expectGuideVisible();
-  }).toPass({ timeout: 15000 });
+  }).toPass({ timeout: 8000 });
 
   // Dismiss via the "Got it" button.
   await expect(async () => {

@@ -67,7 +67,7 @@ export function leaderboardPage(page: Page) {
       await expect(async () => {
         await api.weeklyTab().click();
         await expect(api.weeklyBreakdown()).toBeVisible({ timeout: 5000 });
-      }).toPass({ timeout: 15000 });
+      }).toPass({ timeout: 8000 });
     }
   };
 

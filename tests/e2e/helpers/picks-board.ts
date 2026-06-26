@@ -23,6 +23,11 @@ export function picksBoard(page: Page) {
     async goto() {
       await page.goto('/picks');
       await expect(api.card()).toBeVisible();
+      // The board disables its pick controls until it mounts client-side, so an
+      // early interaction can't be silently dropped before hydration wires up the
+      // handlers. Waiting for the first team button to become enabled guarantees
+      // the board is interactive before any spec taps a team/weight/clear control.
+      await expect(api.teamSelect().getByRole('button').first()).toBeEnabled();
     },
 
     // --- open board ---------------------------------------------------------

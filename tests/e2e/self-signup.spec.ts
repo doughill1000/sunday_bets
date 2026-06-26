@@ -51,6 +51,8 @@ const E2E_SELF_SIGNUP_GROUP_ID = '00000000-0000-4000-8000-000000009e2e';
 // Each test runs in a fresh browser context (no persisted auth cookies).
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ timeout: 25_000 });
+
 // ---------------------------------------------------------------------------
 // Shared setup: ensure users and membership state exist before any test runs.
 // ---------------------------------------------------------------------------
@@ -158,7 +160,7 @@ async function signInAs(
 
   // Password is the default sign-in method (the magic-link toggle was removed in
   // #137); wait for the always-rendered field once the page hydrates.
-  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 15000 });
+  await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 8000 });
 
   await page.locator('input[name="email"]').fill(credentials.email);
   await page.locator('input[name="password"]').fill(credentials.password);
