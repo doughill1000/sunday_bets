@@ -152,6 +152,10 @@ accordingly.
   and PR2 (history squash + prod reconciliation), flagged as serialized DB work.
 - Prod reconciliation runbook (exact `migration repair` commands, verified against the
   `#238`/`#239` deploy gating) authored in PR2 and run only with explicit confirmation.
+  **Done (2026-06-26):** the §4 reconciliation — `migration repair`, the two orphan-function
+  drops, and the `authenticated` table-grant tightening — ran against prod **and** staging
+  under explicit confirmation; as-run record at
+  `docs/runbooks/adr-0012-prod-reconciliation.md`.
 - src==prod precondition check recorded on the issue before the squash.
 - pgTAP offline-bootstrap hardening (ADR-0011 follow-up) remains separable and lands
   under the same epic.
