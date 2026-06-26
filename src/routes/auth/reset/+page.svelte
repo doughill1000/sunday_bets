@@ -22,7 +22,7 @@
     class="relative z-10 w-full max-w-md rounded-2xl border border-border/60 bg-card/90 shadow-2xl backdrop-blur-xl"
   >
     <CardHeader class="space-y-1">
-      <CardTitle class="text-3xl">Set new password</CardTitle>
+      <CardTitle class="text-3xl" data-testid="reset-card-title">Set new password</CardTitle>
       <CardDescription>Choose a password for your account.</CardDescription>
     </CardHeader>
 
@@ -58,7 +58,7 @@
           <p class="text-xs text-muted-foreground">At least 8 characters.</p>
         </div>
 
-        <Button type="submit" class="w-full" disabled={submitting}>
+        <Button type="submit" class="w-full" disabled={submitting} data-testid="reset-submit">
           {submitting ? 'Updating…' : 'Update password'}
         </Button>
       </form>

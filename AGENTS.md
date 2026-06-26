@@ -146,6 +146,17 @@ function used in RLS. RLS is enforced everywhere; the service-role client
 - `@typescript-eslint/no-explicit-any` is `error` under `src/lib` + `src/routes`
   (use real types); it is **off** for tests and `supabase/scripts/**`.
 
+## Formatting
+
+- Run `pnpm format` (whole repo, `prettier --write .`) before committing — not
+  just on the files you touched. If it reformats files unrelated to your change,
+  **include that drift in your commit**; do not exclude it to keep the diff
+  scoped. The tree must always be Prettier-clean.
+- The `.githooks/pre-commit` hook enforces this: it formats every drifted file in
+  the repo (not just staged ones) and stages them, so unrelated drift is swept
+  into the current commit automatically. The hook is wired up by `pnpm prepare`
+  (`git config core.hooksPath .githooks`).
+
 ## Agent context packs
 
 Targeted deep-reference for the areas agents most often get wrong. Each pack links
