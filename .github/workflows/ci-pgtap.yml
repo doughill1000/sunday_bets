@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  pgTap:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
