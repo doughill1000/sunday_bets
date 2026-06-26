@@ -122,13 +122,21 @@ export async function lockPick(
   }
 
   if (!result.ok) {
-    // Per-game restore so one failed save can't clobber other games' state.
+    // Per-game restore so one failed save can’t clobber other games’ state.
     store.update((s) => ({
       ...s,
-      [gameId]: { ...before, saveState: 'error', saveError: result.reason ?? 'Couldn’t save' }
+      [gameId]: { ...before, saveState: 'error', saveError: result.reason ?? 'Could not save' }
     }));
     return { ok: false, reason: result.reason ?? 'Lock failed' };
   }
+
+  // Partial-apply: at least one group succeeded but some were skipped.
+  // Commit lockedPick (the active group saved) and surface a non-blocking warning.
+  const skippedCount = result.skipped?.length ?? 0;
+  const saveError =
+    skippedCount > 0
+      ? `Saved — couldn’t apply to ${skippedCount} group${skippedCount === 1 ? '' : 's'}`
+      : undefined;
 
   store.update((s) => {
     const e = s[gameId] ?? {};
@@ -139,7 +147,7 @@ export async function lockPick(
         lockedPick: { team, weight },
         lockedAt: result.locked_at ?? e.lockedAt ?? new Date().toISOString(),
         saveState: undefined,
-        saveError: undefined
+        saveError
       }
     };
   });

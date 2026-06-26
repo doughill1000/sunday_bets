@@ -1482,6 +1482,19 @@ export type Database = {
           weight: Database['public']['Enums']['weight_enum'];
         }[];
       };
+      lock_pick_all_groups: {
+        Args: {
+          p_game_id: string;
+          p_side: Database['public']['Enums']['side_enum'];
+          p_weight: Database['public']['Enums']['weight_enum'];
+        };
+        Returns: {
+          group_id: string;
+          locked_at: string;
+          ok: boolean;
+          reason: string;
+        }[];
+      };
       mint_invite: {
         Args: { p_expires_at?: string; p_group_id: string; p_max_uses?: number };
         Returns: string;
@@ -1520,6 +1533,14 @@ export type Database = {
           ok: boolean;
           unlocked_at: string;
           user_id: string;
+        }[];
+      };
+      unlock_pick_all_groups: {
+        Args: { p_game_id: string };
+        Returns: {
+          group_id: string;
+          ok: boolean;
+          reason: string;
         }[];
       };
       upsert_game_by_external_id: {
