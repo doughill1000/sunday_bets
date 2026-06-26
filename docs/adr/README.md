@@ -25,8 +25,9 @@ an ADR merely to restate the implementation.
 
 1. Copy `0000-template.md` to the next available four-digit number and a short
    kebab-case title.
-2. Set the status to `Proposed`, link the driving issue, and open it with or before
-   the implementation PR.
+2. Set the status to `Proposed`, link the driving issue (or, when there is none,
+   record an explicit "no issue — approved plan" rationale on the `Issue:` line, as
+   ADR-0010 does), and open it with or before the implementation PR.
 3. Resolve material design feedback before implementation becomes hard to unwind.
 4. Set the status to `Accepted` when maintainers approve the decision.
 5. Do not rewrite an accepted decision to match new reality. Add a new ADR with
@@ -37,16 +38,23 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 
 ## Index
 
-| ADR                                                        | Decision                                                                    | Status   |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------- | -------- |
-| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md)        | Use issue-led delivery and ADRs                                             | Accepted |
-| [ADR-0002](0002-group-tenancy-boundary.md)                 | Group tenancy boundary and data model                                       | Accepted |
-| [ADR-0003](0003-schedule-source-and-game-identity.md)      | Schedule source and game-identity / reconciliation model                    | Accepted |
-| [ADR-0004](0004-oauth-and-identity-linking.md)             | Third-party (OAuth) sign-in and the single-identity / account-linking model | Accepted |
-| [ADR-0005](0005-drop-worst-week-scoring.md)                | Drop-worst-week scoring (configurable per group)                            | Accepted |
-| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management       | Accepted |
-| [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                               | Accepted |
-| [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                      | Accepted |
-| [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        | Proposed |
-| [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                | Proposed |
-| [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                | Proposed |
+Each ADR's authoritative **status lives in its own file header** (the `- Status:`
+line); this index intentionally does not repeat it, so the two cannot drift — per the
+"don't duplicate live status" rule in `docs/WORKFLOW.md`. Open the linked ADR for its
+current status.
+
+| ADR                                                        | Decision                                                                    |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------- |
+| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md)        | Use issue-led delivery and ADRs                                             |
+| [ADR-0002](0002-group-tenancy-boundary.md)                 | Group tenancy boundary and data model                                       |
+| [ADR-0003](0003-schedule-source-and-game-identity.md)      | Schedule source and game-identity / reconciliation model                    |
+| [ADR-0004](0004-oauth-and-identity-linking.md)             | Third-party (OAuth) sign-in and the single-identity / account-linking model |
+| [ADR-0005](0005-drop-worst-week-scoring.md)                | Drop-worst-week scoring (configurable per group)                            |
+| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management       |
+| [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                               |
+| [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                      |
+| [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        |
+| [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                |
+| [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                |
+
+_ADR-0008 was never used — the number was skipped, so there is no `0008-*.md` record._

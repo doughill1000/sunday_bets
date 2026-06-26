@@ -1,6 +1,6 @@
 # ADR-0002: Group tenancy boundary and data model
 
-- Status: Approved
+- Status: Accepted
 - Date: 2026-06-23
 - Issue: None (pending v1.7 tenancy issues)
 - Supersedes: None

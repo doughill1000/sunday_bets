@@ -15,13 +15,15 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
 2. If the branch is based on older trunk, refresh from `origin/master`, reverify, and
    regenerate any artifacts (types, migration ledger) from the **combined** state —
    never resolve a ledger conflict by taking one side wholesale.
-3. **Add the shipped-history entry to `docs/CHANGELOG.md`** and commit it on the
-   branch so it travels inside this PR (it then lands in `master` exactly when the
-   code does — no separate write, no drift). Newest-first, under a `## YYYY-MM-DD`
-   heading: `- **#NNN** <short title> — <what changed>` plus notable
-   tables/views/routes and the governing ADR when useful. See the format note at the
-   top of `docs/CHANGELOG.md`. It's a shared file: if the top conflicts with another
-   in-flight PR, keep both entries.
+3. **Add the shipped-history entry to `docs/CHANGELOG.md`** (required — do not open the
+   PR without it) and commit it on the branch so it travels inside this PR (it then
+   lands in `master` exactly when the code does — no separate write, no drift).
+   Newest-first, under a `## YYYY-MM-DD` heading: `- **#NNN** <short title> — <what
+changed>` plus notable tables/views/routes and the governing ADR when useful. If the
+   PR closes no issue (chore/skill/CI/infra/docs), still add an entry, keyed by PR
+   number as `- **PR #NNN** …`. See the format note at the top of `docs/CHANGELOG.md`.
+   It's a shared file: if the top conflicts with another in-flight PR, keep both
+   entries.
 4. Draft the PR body:
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
