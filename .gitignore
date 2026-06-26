@@ -44,6 +44,8 @@ vite.config.ts.timestamp-*
 
 # Supabase
 /supabase/.temp
+# Transient backup created by db:migration:verify while it swaps in a from-empty baseline
+/supabase/.migrations-verify-backup
 /data/*
 # Real account list for provision-users.ts (emails/passwords) — keep the .example
 /supabase/scripts/users.json

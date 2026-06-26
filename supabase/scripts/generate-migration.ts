@@ -12,7 +12,7 @@ export type LedgerEntry = {
 
 export type Ledger = Record<string, LedgerEntry>;
 
-type SourceFile = {
+export type SourceFile = {
   key: string;
   content: string;
   hash: string;
@@ -30,7 +30,7 @@ export type GeneratorOptions = {
   now?: Date;
 };
 
-const SOURCE_ORDER = [
+export const SOURCE_ORDER = [
   'schemas',
   'indexes',
   'views',
@@ -110,7 +110,7 @@ function countPrimaryObjects(sql: string) {
   return patterns.reduce((count, pattern) => count + (sql.match(pattern)?.length ?? 0), 0);
 }
 
-function collectSources(root: string): SourceFile[] {
+export function collectSources(root: string): SourceFile[] {
   const absoluteFiles = SOURCE_ORDER.flatMap((folder) => walkSqlFiles(path.join(root, folder)));
 
   return absoluteFiles.map((absolutePath) => {

@@ -33,6 +33,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-26
+
+- **#246** Migration drift guard — new `pnpm db:migration:verify` (`supabase/scripts/verify-src-reproduces-migrations.ts`) plus a non-blocking CI job (`.github/workflows/ci-migration-verify.yml`) that applies `supabase/src/**` from empty and diffs the resulting `public` schema against the full migration chain, normalizing away ACL / owner / `\restrict` / column-order noise (the local CLI's legacy table `GRANT ALL` differs from prod, so ACLs must be ignored). Closes the blind spot in `db:migration:check` (ledger-hash only) that let `src/` silently drift from prod. Informational until the deferred ADR-0012 history squash fixes the inline-policy→function apply ordering (the from-empty baseline currently fails on `is_member` not existing yet); promote to a required gate once green. Dev-infra, no app change. files: `verify-src-reproduces-migrations.ts`, `generate-migration.ts` (exports `SOURCE_ORDER`/`collectSources`) · ADR-0011 · ADR-0012
+
 ## 2026-06-25
 
 - **#178** Results-recap notification — once a week is fully graded, the grade cron sends each opted-in user one push summarizing their record and net points (aggregated across all their groups), deep-linking to `/leaderboard`. New `results_recap` notification pref (default on) with a settings toggle; deduped per (user, week) via `notification_log` (`kind='results_recap'`). No schema change. files: `sendResultsRecap`/`isWeekFullyGraded` in `src/lib/server/notifications.ts`, `formatRecapBody` in `src/lib/domain/notifications.ts`, cron `api/cron/grade`, settings page
