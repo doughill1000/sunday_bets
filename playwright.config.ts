@@ -17,7 +17,11 @@ const appEnv = {
   PUBLIC_ODDS_API_BASE: process.env.PUBLIC_ODDS_API_BASE ?? 'https://api.the-odds-api.com/v4',
   ODDS_API_KEY1: process.env.ODDS_API_KEY1 ?? 'e2e-unused',
   ODDS_API_KEY2: process.env.ODDS_API_KEY2 ?? 'e2e-unused',
-  JWT_SECRET: process.env.JWT_SECRET ?? ''
+  JWT_SECRET: process.env.JWT_SECRET ?? '',
+  // Inlined by `$env/static/private` at build time (src/lib/server/cron.ts). The
+  // CI webServer runs `pnpm build`, which fails with MISSING_EXPORT if it's unset;
+  // cron isn't exercised by E2E, so a dummy is fine (mirrors the ODDS keys).
+  CRON_SECRET: process.env.CRON_SECRET ?? 'e2e-unused'
 };
 
 // CI runs a built `vite preview` (deterministic, no dep-optimize cold start);
