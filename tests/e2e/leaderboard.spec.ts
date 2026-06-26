@@ -1,30 +1,21 @@
 import { test, expect } from '@playwright/test';
+import { leaderboardPage } from './helpers/leaderboard-page';
 
-test('leaderboard renders Standings and Weekly tabs', async ({ page }) => {
-  await page.goto('/leaderboard');
+// Selectors live in the leaderboardPage page object (helpers/leaderboard-page.ts)
+// and key off data-testid anchors, so tab/column copy changes don't ripple here.
 
-  await expect(page.getByRole('heading', { name: 'Leaderboard' })).toBeVisible();
+test('leaderboard renders Standings and Weekly tabs', { tag: '@smoke' }, async ({ page }) => {
+  const lb = leaderboardPage(page);
+  await lb.goto();
 
   // Both tabs are present.
-  await expect(page.getByRole('tab', { name: 'Standings' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Weekly' })).toBeVisible();
+  await expect(lb.standingsTab()).toBeVisible();
+  await expect(lb.weeklyTab()).toBeVisible();
 
-  // Standings is the default tab: table headers or empty state visible.
-  const hasStandings = await page.getByRole('columnheader', { name: 'Player' }).isVisible();
-  if (hasStandings) {
-    await expect(page.getByRole('columnheader', { name: 'Player' })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: 'Total' })).toBeVisible();
-  } else {
-    await expect(page.getByText('No standings yet')).toBeVisible();
-  }
+  // Standings is the default tab: the results table or the empty state renders.
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
 
-  // Switch to Weekly tab and confirm a week label or empty state renders.
-  const weeklyTab = page.getByRole('tab', { name: 'Weekly' });
-  await expect(async () => {
-    await weeklyTab.click();
-    // Either a week label, a game card, or an empty-state message should be visible.
-    await expect(
-      page.locator('text=/Week \\d+|No weeks have started|No games this week/')
-    ).toBeVisible({ timeout: 5000 });
-  }).toPass({ timeout: 15000 });
+  // Switching to Weekly loads the weekly breakdown (handles the async navigation).
+  await lb.openWeekly();
+  await expect(lb.weeklyBreakdown()).toBeVisible();
 });

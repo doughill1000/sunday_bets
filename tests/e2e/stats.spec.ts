@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('authenticated player can open the stats experience', async ({ page }) => {
+test('authenticated player can open the stats experience', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/stats');
 
   await expect(page).toHaveURL(/\/stats/);

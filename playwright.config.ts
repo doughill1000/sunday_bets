@@ -6,8 +6,10 @@ import dotenv from 'dotenv';
 // when the file is absent and never overrides already-set process.env values.
 dotenv.config({ path: '.env.test' });
 
-// Forwarded to the dev server so E2E always runs against the LOCAL Supabase
+// Forwarded to the app server so E2E always runs against the LOCAL Supabase
 // stack — never accidentally against staging/prod from a stray .env.local.
+// In CI these also reach the `pnpm build` half of the webServer command, so the
+// statically-inlined $env values come from the local stack too.
 const appEnv = {
   PUBLIC_SUPABASE_URL: process.env.PUBLIC_SUPABASE_URL ?? '',
   PUBLIC_SUPABASE_ANON_KEY: process.env.PUBLIC_SUPABASE_ANON_KEY ?? '',
@@ -18,6 +20,13 @@ const appEnv = {
   JWT_SECRET: process.env.JWT_SECRET ?? ''
 };
 
+// CI runs a built `vite preview` (deterministic, no dep-optimize cold start);
+// locally we use the dev server for fast feedback. Each runs on its own port so
+// a stray local dev server never satisfies the CI preview's health check.
+const isCI = !!process.env.CI;
+const port = isCI ? 4173 : 5173;
+const baseURL = `http://localhost:${port}`;
+
 export default defineConfig({
   testDir: './tests/e2e',
 
@@ -27,26 +36,27 @@ export default defineConfig({
 
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  // Up to 2 retries in CI to absorb cold-start flake (the first Vite dep-optimize
-  // reload can slow the very first navigation); 0 locally for fast feedback.
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // CI serves a deterministic built preview, so cold-start flake is gone; a
+  // single retry only absorbs rare infra blips. 0 locally for fast feedback.
+  retries: isCI ? 1 : 0,
+  workers: isCI ? 1 : undefined,
   // Shorter per-test cap than the 30s default. Healthy tests finish in a few
-  // seconds; 20s still leaves headroom for the explicit 15s hydration waits in the
-  // sign-in helpers while failing fast on a genuine hang. The `setup` project
-  // overrides this because the first cold Vite dep-optimize + reload is slower.
+  // seconds; 20s still leaves headroom for the explicit 15s hydration waits in
+  // the sign-in helpers while failing fast on a genuine hang.
   timeout: 20_000,
-  reporter: 'html',
+  // `list` keeps CI logs readable; `html` is uploaded as the triage artifact.
+  reporter: [['list'], ['html']],
 
   use: {
-    baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry'
+    baseURL,
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure'
   },
 
   projects: [
-    // Logs in once via the real UI and saves the session to storageState. Gets a
-    // longer timeout because the first navigation triggers Vite's cold dep-optimize
-    // + full reload, which the global 20s cap could otherwise clip.
+    // Logs in once via the real UI and saves the session to storageState. Kept at
+    // the 30s default (a notch above the global 20s) because it does a real login
+    // navigation before the suite proper; harmless headroom.
     { name: 'setup', testMatch: /.*\.setup\.ts/, timeout: 30_000 },
     {
       name: 'chromium',
@@ -59,9 +69,14 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    // CI: build once then serve the static preview (deterministic). Local: dev
+    // server for fast iteration. `--port` pins preview to the CI baseURL port.
+    command: isCI ? 'pnpm build && pnpm preview --port 4173' : 'pnpm dev',
+    url: baseURL,
+    reuseExistingServer: !isCI,
+    // The CI build runs inside this command, so allow well beyond the 60s default
+    // for a cold `vite build` before `vite preview` answers the health check.
+    timeout: isCI ? 180_000 : 120_000,
     stdout: 'pipe',
     stderr: 'pipe',
     env: appEnv

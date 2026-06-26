@@ -19,8 +19,8 @@
 // auth.identities and cannot use the password flow).
 
 import { test, expect, type BrowserContext } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
 import { joinPage } from './helpers/join-page';
+import { makeServiceClient } from './helpers/seed';
 
 // ---------------------------------------------------------------------------
 // Stable test-user definitions (distinct from the main E2E user so
@@ -60,14 +60,7 @@ let pendingUserId: string;
 let activeUserId: string;
 
 test.beforeAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'self-signup.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  const supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  const supabase = makeServiceClient();
 
   // Ensure the group exists.
   await supabase
@@ -261,20 +254,26 @@ test('pending-membership user can access /join paths without being redirected', 
 // State 3: active membership → reaches the app
 // ---------------------------------------------------------------------------
 
-test('active-membership user reaches /picks without being redirected', async ({ browser }) => {
-  const context = await browser.newContext();
-  try {
-    const page = await signInAs(context, SELF_SIGNUP_ACTIVE);
+test(
+  'active-membership user reaches /picks without being redirected',
+  {
+    tag: '@smoke'
+  },
+  async ({ browser }) => {
+    const context = await browser.newContext();
+    try {
+      const page = await signInAs(context, SELF_SIGNUP_ACTIVE);
 
-    // After sign-in the server resolves an active membership — no redirect.
-    // The default post-login destination may vary; navigate explicitly to /picks.
-    await page.goto('/picks');
-    await expect(page).toHaveURL(/\/picks/);
+      // After sign-in the server resolves an active membership — no redirect.
+      // The default post-login destination may vary; navigate explicitly to /picks.
+      await page.goto('/picks');
+      await expect(page).toHaveURL(/\/picks/);
 
-    // Should not have been bounced to /join or /auth.
-    await expect(page).not.toHaveURL(/\/join/);
-    await expect(page).not.toHaveURL(/\/auth/);
-  } finally {
-    await context.close();
+      // Should not have been bounced to /join or /auth.
+      await expect(page).not.toHaveURL(/\/join/);
+      await expect(page).not.toHaveURL(/\/auth/);
+    } finally {
+      await context.close();
+    }
   }
-});
+);

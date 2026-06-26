@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
 import { E2E_USER, E2E_RESET_USER } from './test-user';
 import { authPage } from './helpers/auth-page';
+import { makeServiceClient } from './helpers/seed';
 
 // These run without the stored session.
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -19,30 +19,34 @@ test('auth page renders the sign-in form', async ({ page }) => {
   await expect(auth.submitButton()).toBeVisible();
 });
 
-test('password sign-in updates the header account state after auth invalidation', async ({
-  page
-}) => {
-  const auth = authPage(page);
-  await auth.goto();
+test(
+  'password sign-in updates the header account state after auth invalidation',
+  {
+    tag: '@smoke'
+  },
+  async ({ page }) => {
+    const auth = authPage(page);
+    await auth.goto();
 
-  // Password is the default sign-in method (the magic-link toggle was removed in
-  // #137); wait for the always-rendered field once the page hydrates.
-  await expect(auth.passwordInput()).toBeVisible({ timeout: 15000 });
+    // Password is the default sign-in method (the magic-link toggle was removed in
+    // #137); wait for the always-rendered field once the page hydrates.
+    await expect(auth.passwordInput()).toBeVisible({ timeout: 15000 });
 
-  await auth.emailInput().fill(E2E_USER.email);
-  await auth.passwordInput().fill(E2E_USER.password);
+    await auth.emailInput().fill(E2E_USER.email);
+    await auth.passwordInput().fill(E2E_USER.password);
 
-  const signIn = page.waitForResponse(
-    (response) => response.url().includes('/auth') && response.request().method() === 'POST'
-  );
-  await auth.submitButton().click();
-  await signIn;
+    const signIn = page.waitForResponse(
+      (response) => response.url().includes('/auth') && response.request().method() === 'POST'
+    );
+    await auth.submitButton().click();
+    await signIn;
 
-  await expect(page).toHaveURL(/\/picks/);
-  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
-  // 'E2' is the real fixture user's display initial — content under test, not chrome.
-  await expect(page.getByText('E2')).toBeVisible();
-});
+    await expect(page).toHaveURL(/\/picks/);
+    await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+    // 'E2' is the real fixture user's display initial — content under test, not chrome.
+    await expect(page.getByText('E2')).toBeVisible();
+  }
+);
 
 test('sign-up form submits and shows confirmation message', async ({ page }) => {
   const auth = authPage(page);
@@ -76,9 +80,7 @@ test('password reset: token exchange lands on set-new-password page and redirect
 }) => {
   const auth = authPage(page);
 
-  const supabaseUrl = process.env.PUBLIC_SUPABASE_URL!;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE!;
-  const supabase = createClient(supabaseUrl, serviceRole, { auth: { persistSession: false } });
+  const supabase = makeServiceClient();
 
   // Generate a recovery token directly (bypasses email delivery)
   const { data, error } = await supabase.auth.admin.generateLink({

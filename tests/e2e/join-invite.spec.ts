@@ -17,8 +17,9 @@
 // Users are created via the GoTrue admin API so they can password-login.
 
 import { test, expect, type BrowserContext } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { joinPage } from './helpers/join-page';
+import { makeServiceClient } from './helpers/seed';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -63,14 +64,7 @@ let alreadyMemberId: string;
 // ---------------------------------------------------------------------------
 
 test.beforeAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) {
-    throw new Error(
-      'join-invite.spec.ts: PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE must be set'
-    );
-  }
-  supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  supabase = makeServiceClient();
 
   // Create a fresh isolated group for these tests so we don't collide with
   // other specs that rely on the original group.

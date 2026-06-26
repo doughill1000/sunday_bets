@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { picksBoard } from './helpers/picks-board';
+import { makeServiceClient, resolveSeededGameId, resetPicksForGame } from './helpers/seed';
 
 // The seeded board has one game: BUF @ KC, with KC (home) the -3.5 favorite.
 // Auto-save replaces the old Lock button: picks save the moment a team AND a
@@ -7,6 +9,22 @@ import { picksBoard } from './helpers/picks-board';
 //
 // Selectors live in the picksBoard page object (helpers/picks-board.ts) and key
 // off data-testid anchors, so UI copy changes don't ripple into these specs.
+//
+// Per-test isolation: auto-save persists rows server-side, so each test clears
+// the seeded game's picks in beforeEach. Every test therefore starts from a
+// "0 saved" board regardless of run order (the global clear only runs once).
+
+let supabase: SupabaseClient;
+let gameId: string;
+
+test.beforeAll(async () => {
+  supabase = makeServiceClient();
+  gameId = await resolveSeededGameId(supabase);
+});
+
+test.beforeEach(async () => {
+  await resetPicksForGame(supabase, gameId);
+});
 
 test('pre-selects the spread favorite with no weight, saving nothing on load', async ({ page }) => {
   const board = picksBoard(page);
@@ -22,21 +40,25 @@ test('pre-selects the spread favorite with no weight, saving nothing on load', a
   await expect(board.openCount()).toBeVisible();
 });
 
-test('agreeing with the favorite saves in a single tap and collapses to committed', async ({
-  page
-}) => {
-  const board = picksBoard(page);
-  await board.goto();
+test(
+  'agreeing with the favorite saves in a single tap and collapses to committed',
+  {
+    tag: '@smoke'
+  },
+  async ({ page }) => {
+    const board = picksBoard(page);
+    await board.goto();
 
-  // One tap: just the weight (favorite already staged).
-  await board.weight('High').click();
+    // One tap: just the weight (favorite already staged).
+    await board.weight('High').click();
 
-  // Gate on the save-complete counter first (auto-save is a ~700 ms debounce +
-  // RPC), then assert the card has left the board and committed summarises it.
-  await board.expectSaved(1, 1);
-  await expect(board.card()).not.toBeVisible();
-  await expect(board.committedSummary()).toContainText('committed pick');
-});
+    // Gate on the save-complete counter first (auto-save is a ~700 ms debounce +
+    // RPC), then assert the card has left the board and committed summarises it.
+    await board.expectSaved(1, 1);
+    await expect(board.card()).not.toBeVisible();
+    await expect(board.committedSummary()).toContainText('committed pick');
+  }
+);
 
 test('switching to the underdog then a weight is a two-tap save', async ({ page }) => {
   const board = picksBoard(page);

@@ -15,8 +15,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
 import { commentsSection } from './helpers/comments';
+import { makeServiceClient } from './helpers/seed';
 
 const PAST_GAME_TAG = 'e2e-comments-past-game';
 
@@ -25,11 +25,7 @@ const PAST_GAME_TAG = 'e2e-comments-past-game';
 test.use({ storageState: 'playwright/.auth/user.json' });
 
 test.beforeAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) return;
-
-  const supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  const supabase = makeServiceClient();
 
   // Look up the week seeded by global-setup
   const { data: season } = await supabase
@@ -80,10 +76,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  const url = process.env.PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE;
-  if (!url || !serviceRole) return;
-  const supabase = createClient(url, serviceRole, { auth: { persistSession: false } });
+  const supabase = makeServiceClient();
   await supabase.from('games').delete().eq('external_game_id', PAST_GAME_TAG);
 });
 
