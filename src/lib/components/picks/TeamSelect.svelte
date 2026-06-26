@@ -60,19 +60,3 @@
     <span class="font-semibold tracking-wide">{game.home}</span>
   </Button>
 </div>
-
-<style>
-  :global(.team-btn) {
-    --c1: #64748b;
-    --c2: #94a3b8;
-    --fg: #000;
-    background: linear-gradient(135deg, var(--c1), var(--c2));
-    color: var(--fg);
-    border: 1px solid hsl(var(--border));
-  }
-  :global(.team-btn.selected) {
-    outline: 2px solid white;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--c1) 60%, white 40%) inset;
-  }
-</style>

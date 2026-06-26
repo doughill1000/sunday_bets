@@ -17,6 +17,7 @@
   }
   let { settings, activeWeek, onNote }: Props = $props();
 
+  let localSettings = $state({ ...settings });
   let syncing = $state(false);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
@@ -29,10 +30,11 @@
       const body = await syncOddsApi();
       const count = typeof body.count === 'number' ? body.count : 'unknown';
       note('success', `Synced odds. Updated ${count} games.`);
-      // Optimistically update the UI
-      settings.used += 1;
-      settings.remaining = Math.max(settings.cap - settings.used, 0);
-      settings.usagePct = settings.cap ? Math.min(settings.used / settings.cap, 1) : 1;
+      localSettings.used += 1;
+      localSettings.remaining = Math.max(localSettings.cap - localSettings.used, 0);
+      localSettings.usagePct = localSettings.cap
+        ? Math.min(localSettings.used / localSettings.cap, 1)
+        : 1;
     } catch (err) {
       // The generic helper preserves the status code on the thrown Error
       const e = err as { status?: number; message?: string };
@@ -48,8 +50,8 @@
     }
   }
 
-  const usage80 = $derived(settings.usagePct >= 0.8);
-  const capReached = $derived(settings.remaining <= 0);
+  const usage80 = $derived(localSettings.usagePct >= 0.8);
+  const capReached = $derived(localSettings.remaining <= 0);
 </script>
 
 <Card class="p-6">
@@ -63,20 +65,20 @@
     <div class="mb-5 grid grid-cols-1 gap-4 text-center sm:grid-cols-3">
       <div>
         <div class="text-xs opacity-70">Monthly Cap</div>
-        <div class="text-2xl font-semibold">{settings.cap}</div>
+        <div class="text-2xl font-semibold">{localSettings.cap}</div>
       </div>
       <div>
         <div class="text-xs opacity-70">Calls Used</div>
-        <div class="text-2xl font-semibold">{settings.used}</div>
+        <div class="text-2xl font-semibold">{localSettings.used}</div>
       </div>
       <div>
         <div class="text-xs opacity-70">Remaining</div>
-        <div class="text-2xl font-semibold">{settings.remaining}</div>
+        <div class="text-2xl font-semibold">{localSettings.remaining}</div>
       </div>
     </div>
 
     <div class="mb-4 flex items-center gap-3">
-      <Progress value={settings.usagePct * 100} max={100} class="h-3 w-32" />
+      <Progress value={localSettings.usagePct * 100} max={100} class="h-3 w-32" />
       <div class="text-sm opacity-85">
         {#if capReached}
           <span class="font-medium text-destructive">Cap reached.</span>

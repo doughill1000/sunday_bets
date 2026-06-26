@@ -24,6 +24,7 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { formatAccuracy, headToHeadForUser } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
+  import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
   let { data }: { data: PageData } = $props();
 
@@ -39,8 +40,6 @@
     points: 'desc'
   };
   const SHOW_HEAD_TO_HEAD = false;
-  const ACTIVE_TAB_TRIGGER_CLASS =
-    'data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:border-primary dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground';
 
   let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
     key: 'accuracy',
