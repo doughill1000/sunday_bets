@@ -124,7 +124,7 @@
         </AlertDescription>
       </Alert>
     {/if}
-    <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div class="picks-board mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
           <GameCard game={g} {games} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />

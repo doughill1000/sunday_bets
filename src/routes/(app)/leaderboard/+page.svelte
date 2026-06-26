@@ -19,9 +19,7 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
-
-  const ACTIVE_TAB_TRIGGER_CLASS =
-    'data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground dark:data-[state=active]:border-primary dark:data-[state=active]:bg-primary dark:data-[state=active]:text-primary-foreground';
+  import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
   let { data }: { data: PageData } = $props();
 
