@@ -47,3 +47,4 @@ Allowed statuses are `Proposed`, `Accepted`, `Rejected`, and
 | [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management       | Accepted |
 | [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                               | Accepted |
 | [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                      | Accepted |
+| [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        | Proposed |
