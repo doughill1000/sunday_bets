@@ -44,15 +44,18 @@
 {#if user}
   <DropdownMenu bind:open>
     <DropdownMenuTrigger>
-      <Button
-        variant="ghost"
-        size="icon"
-        class="rounded-full"
-        aria-label="Account menu"
-        data-testid="account-menu-trigger"
-      >
-        <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
-      </Button>
+      {#snippet child({ props })}
+        <Button
+          variant="ghost"
+          size="icon"
+          class="rounded-full"
+          aria-label="Account menu"
+          data-testid="account-menu-trigger"
+          {...props}
+        >
+          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
+        </Button>
+      {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="w-56">
       <DropdownMenuLabel class="font-normal">
