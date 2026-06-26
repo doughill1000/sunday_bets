@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { page } from '$app/state';
   import { invalidateAll } from '$app/navigation';
@@ -19,7 +20,9 @@
 
   const isDesktop = new MediaQuery('(min-width: 640px)');
 
-  let open = $state(shouldAutoOpenGuide({ guideSeenAt, pathname: page.url.pathname }));
+  let open = $state(
+    untrack(() => shouldAutoOpenGuide({ guideSeenAt, pathname: page.url.pathname }))
+  );
 
   async function dismiss() {
     if (!open) return;
