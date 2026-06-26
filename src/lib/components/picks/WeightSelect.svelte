@@ -33,6 +33,8 @@
 
   // Local mirror of the committed weight so an un-confirmed All-In tap doesn't
   // visually "stick" before the user confirms (cancel restores this value).
+  // Writable $derived (Svelte 5.25+): reads from selectedWeight but can be
+  // temporarily overridden in handlers; resets whenever selectedWeight changes.
   let value = $derived<WeightCode | undefined>(selectedWeight);
 
   // null = no open prompt; otherwise the resolved All-In intent awaiting the user.
