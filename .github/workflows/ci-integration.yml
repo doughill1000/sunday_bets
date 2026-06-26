@@ -42,7 +42,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          # Match the Node 22 used by every other CI workflow (ci-tests, playwright,
+          # migrate-*). A version skew between integration and unit runs can hide
+          # Node-version-specific bugs.
+          node-version: 22
           cache: pnpm
 
       - name: Install deps
