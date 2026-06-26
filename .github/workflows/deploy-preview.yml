@@ -1,0 +1,75 @@
+# .github/workflows/deploy-preview.yml
+# Previews are deliberate, not per-push: one preview when a PR is opened / marked
+# ready / reopened, plus on-demand via a `/preview` comment from an authorized author.
+# Vercel's automatic Git previews are off (vercel.json), so this is the only path.
+# Previews use the Vercel "Preview" environment (backed by staging Supabase). See ADR-0010.
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened]
+    branches: [master]
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write # post the preview URL as a PR comment
+
+jobs:
+  preview:
+    # Non-draft PR events, OR a `/preview` comment on a PR by an authorized author.
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       startsWith(github.event.comment.body, '/preview') &&
+       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Resolve PR number
+        id: pr
+        run: echo "number=${{ github.event.pull_request.number || github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+
+      - name: Check out PR head
+        run: gh pr checkout ${{ steps.pr.outputs.number }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel preview environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Deploy preview
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          url=$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL
+        run: |
+          gh pr comment ${{ steps.pr.outputs.number }} --body "🔎 Preview deployed: ${{ steps.deploy.outputs.url }}"

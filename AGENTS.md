@@ -44,9 +44,12 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   explicitly necessary.
 - **Branches:** trunk-based — PRs target `master` (production); there is no
   long-lived `develop` branch. **Branch from `origin/master` after `git fetch`** —
-  the local clone can be months stale (Doug works across multiple machines). Per-PR
-  Vercel preview deployments (backed by the staging Supabase project) replace a
-  shared staging environment.
+  the local clone can be months stale (Doug works across multiple machines). Vercel
+  auto-deploys are off (ADR-0010): a PR gets **one** preview deployment on open / ready
+  / reopen (backed by the staging Supabase project) plus on-demand previews via a
+  `/preview` comment — not one per push. **Merging does not ship**; production deploys
+  only on a `package.json` `"version"` bump or a manual dispatch (see
+  `docs/WORKFLOW.md` §"Cutting a release").
 - **Confirm before any GitHub write** (push, PR, issue, gist) — see user-level AGENTS.md.
 - **Database changes** use the hash-ledger flow (full steps in README): edit
   `supabase/src/**`, run `pnpm db:migration --name=describe_the_change`, then commit
@@ -124,7 +127,11 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   newer) — do not reverse-engineer completion from source. GitHub (closed issues,
   merged PRs, Releases) stays authoritative.
 - **If the issue includes a target version number**, bump `package.json` `"version"`
-  to that value as part of the implementation commit.
+  to that value as part of the implementation commit. Note this is now also the
+  **production-release trigger** (ADR-0010): merging a version bump to `master` deploys
+  to prod and tags a release, so only bump when the change is meant to ship. Conversely,
+  bump the version when a merged schema change needs new app code, so app and DB ship
+  together.
 
 ## Auth & admin
 

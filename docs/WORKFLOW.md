@@ -174,5 +174,23 @@ git worktree remove ..\sunday_bets-codex-123
 git worktree prune
 ```
 
-At release time, close the milestone and publish a GitHub Release. Update the roadmap
-only when the direction or ordering changed, not to mirror completed issue status.
+## Cutting a release
+
+Production is gated (ADR-0010): Vercel's automatic Git deploys are off, so a plain
+merge to `master` does **not** ship. Production deploys only on a `package.json`
+`"version"` change or a manual dispatch.
+
+- **Normal release:** bump `package.json` `"version"` in the PR that completes the
+  release (or in a dedicated bump PR), then merge. `deploy-prod.yml` detects the
+  changed version, deploys to production, and tags a `v<version>` GitHub Release.
+- **Off-cycle cut:** run **Deploy Production → Run workflow** (`workflow_dispatch`) to
+  ship current `master` without a version change (no tag is created).
+- **App + DB together:** because `supabase/**` migrations deploy on merge independently
+  of the app, bump the version in the **same PR** as any schema change that needs new
+  app code, so app and DB ship together.
+- **Previews:** opening / readying / reopening a PR deploys one preview; comment
+  `/preview` for an updated preview mid-PR.
+
+At release time, close the milestone and publish a GitHub Release (the prod deploy
+auto-creates the `v<version>` release notes to refine). Update the roadmap only when
+the direction or ordering changed, not to mirror completed issue status.

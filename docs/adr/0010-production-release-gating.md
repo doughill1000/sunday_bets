@@ -1,0 +1,102 @@
+# ADR-0010: Gate deploys behind version bumps via GitHub Actions
+
+- Status: Proposed
+- Date: 2026-06-26
+- Issue: None (approved release-strategy plan; no tracking issue)
+- Supersedes: None
+
+## Context
+
+The app deployed through Vercel's **default Git integration** (there was no
+`vercel.json`). Every merge to `master` created a **production** deployment and every
+push to any PR branch created a **preview** deployment. With one maintainer running
+two coding agents (Claude and Codex) across many PRs — each with many pushes — this
+routinely exceeded Vercel's **Hobby plan cap of 100 deployments per day**.
+
+The cap counts **deployment creations**, not builds. The obvious lever — a Vercel
+"Ignored Build Step" (`ignoreCommand`) that exits non-zero unless `package.json`
+`version` changed — does **not** help: a skipped build still **creates a counted
+deployment**. Confirmed against Vercel's git-configuration docs and community
+guidance. The only setting that prevents a deployment from being _created_ (and thus
+from counting) is `git.deploymentEnabled: false`.
+
+Most of the daily count comes from previews (many PRs × many pushes), so reducing
+both production and preview creations is required to get under the cap.
+
+## Decision
+
+Move the deploy pipeline out of Vercel's Git integration and drive it explicitly from
+GitHub Actions, which is free for this repo.
+
+1. **Disable Vercel automatic Git deploys** via `vercel.json`:
+   `{ "git": { "deploymentEnabled": false } }`. Vercel now only creates a deployment
+   when the Vercel CLI is invoked.
+2. **Production deploys only on a deliberate release** — a `package.json` `version`
+   change on a push to `master`, or a manual `workflow_dispatch` (off-cycle cut).
+   `.github/workflows/deploy-prod.yml` compares the version at `HEAD` vs `HEAD^` and
+   runs `vercel pull --environment=production` → `vercel build --prod` →
+   `vercel deploy --prebuilt --prod` only when it changed. On a version-bump deploy it
+   also creates the `v<version>` tag + GitHub Release, tying into the existing
+   milestone → Release ritual.
+3. **Previews are deliberate, not per-push** — one preview when a PR is opened, marked
+   ready, or reopened (drafts skipped), plus on demand via a `/preview` comment from an
+   authorized author (`OWNER`/`MEMBER`/`COLLABORATOR`).
+   `.github/workflows/deploy-preview.yml` runs
+   `vercel pull --environment=preview` → `vercel build` →
+   `vercel deploy --prebuilt` and posts the URL as a PR comment.
+
+`vercel pull` fetches the env vars already configured in the Vercel project's
+Production / Preview environments (Supabase, VAPID, etc.), so builds get correct
+config without duplicating secrets in GitHub. The only new GitHub secrets are
+`VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`.
+
+**Boundary future work must preserve:** a version bump is the production-release
+signal. App changes that must ship together with a merged schema change should bump
+`package.json` `version` in that same PR so app and DB ship together.
+
+## Consequences
+
+Helpful:
+
+- Daily deployment count drops to roughly (releases) + (PRs opened) + (explicit
+  `/preview`s), comfortably under 100/day.
+- Production releases become intentional and self-documenting: a version bump is the
+  release, and it auto-tags a GitHub Release.
+- Installed PWAs refresh per release rather than on every merge (content-hash service
+  worker + `registerType: 'autoUpdate'`).
+
+Harmful / costs:
+
+- `vercel.json` is now the single point of failure for deploys: if its secrets are
+  missing or the workflows break, **nothing deploys**. The secrets must exist before
+  this lands (the merge itself will not auto-deploy).
+- A merge to `master` no longer updates production by itself; whoever merges must bump
+  the version (or run the manual dispatch) to actually ship.
+- Because `migrate-db.yml` still runs on push to `master`, the **prod database can run
+  ahead of the deployed prod app** between releases. This is safe for the repo's
+  additive/idempotent migration style but must be kept in mind.
+- Slightly slower feedback: a preview is no longer produced on every push, so a
+  `/preview` comment is needed for an updated preview mid-PR.
+
+## Alternatives considered
+
+- **`ignoreCommand` / Ignored Build Step keyed on the version bump.** Rejected: a
+  skipped build still creates a counted deployment, so it does not relieve a
+  deployment-_count_ cap. (This was the initially chosen direction, reversed after
+  confirming the counting behavior.)
+- **Upgrade to a paid Vercel plan.** Rejected for now: the deployment volume is
+  almost entirely automation noise, not real release demand; gating removes the noise
+  at $0.
+- **Keep auto-production-on-merge, gate previews only.** Rejected: production deploys
+  alone (one per merge across an active multi-agent workflow) plus previews still risk
+  the cap, and "every merge ships to prod" is undesirable independent of the cap.
+
+## Follow-up
+
+- One-time setup: add `VERCEL_TOKEN` / `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` to GitHub,
+  then run the prod workflow once via **Run workflow** to establish the baseline
+  production deployment under the new pipeline.
+- Revisit if release cadence rises enough that manual version bumps become friction
+  (e.g. automate the bump), or if a paid plan is adopted for other reasons.
+- Optionally pass `package.json` `version` as the Sentry release for nicer
+  release-health grouping (currently auto-tagged by git commit).
