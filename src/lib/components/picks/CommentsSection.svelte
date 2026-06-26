@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
   import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
@@ -19,8 +20,8 @@
   }: Props = $props();
 
   // Local copies so we can update optimistically
-  let comments = $state<CommentRow[]>(initialComments);
-  let reactions = $state<ReactionRow[]>(initialReactions);
+  let comments = $state<CommentRow[]>(untrack(() => initialComments));
+  let reactions = $state<ReactionRow[]>(untrack(() => initialReactions));
 
   let commentInput = $state('');
   let submittingComment = $state(false);
