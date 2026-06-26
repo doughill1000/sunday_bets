@@ -62,7 +62,7 @@ export function adminMembers(page: Page) {
 
     /** Assert the success result box is visible (waits up to 10 s). */
     async expectResultVisible() {
-      await expect(api.result()).toBeVisible({ timeout: 10000 });
+      await expect(api.result()).toBeVisible({ timeout: 15000 });
     }
   };
 

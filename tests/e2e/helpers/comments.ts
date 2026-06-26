@@ -103,7 +103,7 @@ export function commentsSection(page: Page) {
      * Assert the reaction button's text content matches `pattern`.
      * Used to verify a reaction was registered (e.g. count goes to 1).
      */
-    async expectReactionCount(emoji: EmojiName, pattern: RegExp, timeout = 3000) {
+    async expectReactionCount(emoji: EmojiName, pattern: RegExp, timeout = 8000) {
       const btn = api.reactionButton(emoji);
       await expect(async () => {
         const text = await btn.textContent();

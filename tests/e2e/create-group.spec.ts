@@ -23,6 +23,8 @@ const CREATOR = {
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ timeout: 25_000 });
+
 let supabase: SupabaseClient;
 let creatorUserId: string;
 
@@ -55,7 +57,11 @@ test.beforeAll(async () => {
       id: creatorUserId,
       display_name: CREATOR.displayName,
       role: 'player',
-      can_create_group: true
+      can_create_group: true,
+      // Suppress the welcome guide; once signed in on /join its modal overlay
+      // would intercept the "Create group" click (shouldAutoOpenGuide fires for
+      // any path when guide_seen_at is null).
+      guide_seen_at: new Date().toISOString()
     },
     { onConflict: 'id' }
   );

@@ -23,6 +23,8 @@ import { makeServiceClient } from './helpers/seed';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+test.describe.configure({ mode: 'serial', timeout: 25_000 });
+
 // ---------------------------------------------------------------------------
 // Deterministic test identities and helpers
 // ---------------------------------------------------------------------------
@@ -220,7 +222,7 @@ async function signInAs(
 
   await expect(async () => {
     await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  }).toPass({ timeout: 8000 });
 
   await page.locator('input[name="email"]').fill(credentials.email);
   await page.locator('input[name="password"]').fill(credentials.password);
@@ -253,7 +255,7 @@ test('signed-in user redeems a valid invite and reaches /picks', async ({ browse
     await expect(async () => {
       await jb.joinButton().click();
       await expect(page).toHaveURL(/\/picks/, { timeout: 2000 });
-    }).toPass({ timeout: 15000 });
+    }).toPass({ timeout: 8000 });
 
     // Verify the membership row was created.
     const { data: membership } = await supabase
@@ -286,7 +288,7 @@ test('signed-out user is sent to /auth, signs in, and completes join', async ({ 
     // Sign in on the auth page — the server reads ?next= and redirects back.
     await expect(async () => {
       await expect(page.locator('input[name="password"]')).toBeVisible({ timeout: 1000 });
-    }).toPass({ timeout: 15000 });
+    }).toPass({ timeout: 8000 });
 
     await page.locator('input[name="email"]').fill(INVITEE_SIGNEDOUT.email);
     await page.locator('input[name="password"]').fill(INVITEE_SIGNEDOUT.password);
@@ -305,7 +307,7 @@ test('signed-out user is sent to /auth, signs in, and completes join', async ({ 
     await expect(async () => {
       await jb.joinButton().click();
       await expect(page).toHaveURL(/\/picks/, { timeout: 2000 });
-    }).toPass({ timeout: 15000 });
+    }).toPass({ timeout: 8000 });
 
     const { data: membership } = await supabase
       .from('group_memberships')

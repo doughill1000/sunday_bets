@@ -55,12 +55,19 @@
   }
   const picks = providePicksStore(seedPicks());
 
-  const initialized = true;
+  // Keep the pick controls disabled until the board mounts client-side. Before
+  // hydration the handlers aren't attached, so an early tap (a real user on a
+  // slow connection, or a fast E2E click) would be silently dropped. Gating on
+  // `initialized` disables the controls until `onMount`, which also gives
+  // Playwright an "enabled" state to wait on. (The hydration guard was lost when
+  // e54e1c9 hardcoded this to `true`.)
+  let initialized = $state(false);
   let now = $state(Date.now());
 
   let ticker: ReturnType<typeof setInterval>;
 
   onMount(() => {
+    initialized = true;
     ticker = setInterval(() => {
       now = Date.now();
     }, 1000);

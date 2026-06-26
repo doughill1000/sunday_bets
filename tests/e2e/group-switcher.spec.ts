@@ -30,9 +30,11 @@ async function openSwitcher(page: Page) {
   await expect(async () => {
     await trigger.click();
     await expect(page.getByTestId('group-switcher-option').first()).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 15000 });
+  }).toPass({ timeout: 8000 });
   return trigger;
 }
+
+test.describe.configure({ timeout: 25_000 });
 
 test.describe('Group switcher', () => {
   test('single-group user sees no group switcher', async ({ page }) => {
