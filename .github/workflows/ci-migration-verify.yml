@@ -1,0 +1,74 @@
+name: CI - Migration Drift (src reproduces migrations)
+
+# Verifies that applying supabase/src/** FROM EMPTY reproduces the schema the committed
+# migration chain (= production) produces — the integrity check `pnpm db:migration:check`
+# (ledger hashes only) cannot see. See supabase/scripts/verify-src-reproduces-migrations.ts
+# and ADR-0011/ADR-0012.
+#
+# NON-BLOCKING ON PURPOSE. Until the deferred ADR-0012 history squash lands, the
+# from-empty baseline legitimately fails to apply (inline RLS policies in schema-phase
+# files reference functions emitted in the later functions phase), so this job reports the
+# drift without failing the PR (`continue-on-error` on the verify step). To PROMOTE it to a
+# required gate post-squash: remove `continue-on-error` below and add this job to the
+# branch's required status checks.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/ci-migration-verify.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      SUPABASE_CLI_VERSION: 2.107.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Start local Supabase
+        run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Verify src reproduces migrations (non-blocking until ADR-0012 squash)
+        id: verify
+        continue-on-error: true
+        run: pnpm db:migration:verify
+
+      - name: Surface drift status in the PR
+        if: steps.verify.outcome != 'success'
+        run: |
+          echo "::warning title=Migration drift::supabase/src/** does not yet reproduce the migration schema from empty. This is expected until the ADR-0012 squash lands; see the 'Verify src reproduces migrations' step log."
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop || true
