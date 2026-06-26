@@ -20,7 +20,14 @@
     userId?: string | null;
     currentUserDisplayName?: string | null;
   }
-  let { games, now, social = {}, groupPicks = [], userId = null, currentUserDisplayName = null }: Props = $props();
+  let {
+    games,
+    now,
+    social = {},
+    groupPicks = [],
+    userId = null,
+    currentUserDisplayName = null
+  }: Props = $props();
   const picks = usePicksStore();
 
   function kickoffMs(g: PickGame) {
