@@ -134,8 +134,10 @@
     "signature": "public.grade_week(int)"
   },
   "functions/odds/set_active_line.sql": {
-    "hash": "483653e38ba2f94f105f57cabf30c052d02607c730e452613c6750dc10951b21",
-    "signature": "public.set_active_line(uuid, int, numeric, text)"
+    "hash": "ffb25676d08fa709cdaa07587f4c8e8dcc150ebac6966b98d856a00db8ba6d3a",
+    "signature": "public.set_active_line(uuid, int, numeric, text)",
+    "migration": "20260626173537_reconcile_set_active_line.sql",
+    "migrationHash": "f08db2173fb35ec65e2418388160583c0590dfa8bc987414018c5d9e729d9472"
   },
   "functions/picks/lock_pick.sql": {
     "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
