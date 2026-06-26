@@ -117,5 +117,12 @@
     </div>
   {/if}
 
-  <LockedPicksSection games={committed} {now} {social} {groupPicks} {userId} {currentUserDisplayName} />
+  <LockedPicksSection
+    games={committed}
+    {now}
+    {social}
+    {groupPicks}
+    {userId}
+    {currentUserDisplayName}
+  />
 {/if}

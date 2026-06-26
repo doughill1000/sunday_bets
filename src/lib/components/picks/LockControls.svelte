@@ -56,6 +56,7 @@
     <button
       type="button"
       class="shrink-0 rounded px-2 py-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      data-testid="clear-pick"
       onclick={onClear}
     >
       Clear pick

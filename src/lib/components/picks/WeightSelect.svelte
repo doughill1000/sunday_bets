@@ -116,6 +116,7 @@
       {#each Object.entries(WEIGHTS) as [code, w] (code)}
         <ToggleGroupItem
           value={code}
+          data-testid={`weight-item-${code}`}
           disabled={code === 'A' && allInBlocked}
           class="flex-1 rounded-md border bg-muted/40 px-3 py-[6px] leading-none transition
                  hover:bg-muted/60
@@ -136,10 +137,19 @@
       <div class="mt-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
         <p class="mb-2 font-medium">Confirm All-In? That's 10 points riding on one game.</p>
         <div class="flex gap-2">
-          <Button class="h-8 flex-1 text-xs font-semibold" onclick={confirmAllIn}>
+          <Button
+            class="h-8 flex-1 text-xs font-semibold"
+            data-testid="all-in-confirm"
+            onclick={confirmAllIn}
+          >
             Confirm All-In
           </Button>
-          <Button variant="outline" class="h-8 flex-1 text-xs" onclick={cancelAllIn}>Cancel</Button>
+          <Button
+            variant="outline"
+            class="h-8 flex-1 text-xs"
+            data-testid="all-in-cancel"
+            onclick={cancelAllIn}>Cancel</Button
+          >
         </div>
       </div>
     {:else if pending?.kind === 'move'}
@@ -148,8 +158,17 @@
           Move All-In from {heldName} to {thisName}? {heldName}'s pick will be cleared.
         </p>
         <div class="flex gap-2">
-          <Button class="h-8 flex-1 text-xs font-semibold" onclick={moveAllIn}>Move All-In</Button>
-          <Button variant="outline" class="h-8 flex-1 text-xs" onclick={cancelAllIn}>Cancel</Button>
+          <Button
+            class="h-8 flex-1 text-xs font-semibold"
+            data-testid="all-in-move"
+            onclick={moveAllIn}>Move All-In</Button
+          >
+          <Button
+            variant="outline"
+            class="h-8 flex-1 text-xs"
+            data-testid="all-in-cancel"
+            onclick={cancelAllIn}>Cancel</Button
+          >
         </div>
       </div>
     {:else if canChange && allInBlocked && blockedBy}

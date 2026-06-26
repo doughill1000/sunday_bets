@@ -40,7 +40,7 @@
   const kickoffText = $derived(formatKickoff(game.kickoff));
 </script>
 
-<Card class="relative rounded-2xl">
+<Card class="relative rounded-2xl" data-testid="game-card" data-game-id={game.id}>
   {#if locked}
     <Badge
       variant="secondary"
@@ -82,7 +82,9 @@
     />
 
     {#if needsWeight}
-      <p class="text-xs text-muted-foreground">Choose a weight to save.</p>
+      <p class="text-xs text-muted-foreground" data-testid="needs-weight-hint">
+        Choose a weight to save.
+      </p>
     {/if}
 
     <LockControls {game} {started} />

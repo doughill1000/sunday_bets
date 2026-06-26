@@ -18,6 +18,7 @@
 
 import { test, expect, type BrowserContext } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { joinPage } from './helpers/join-page';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -247,15 +248,16 @@ test('signed-in user redeems a valid invite and reaches /picks', async ({ browse
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, INVITEE);
+    const jb = joinPage(page);
 
     // No membership yet → hook sends to /join; navigate directly to the invite URL.
-    await page.goto(`/join/${validCode}`);
+    await jb.gotoInvite(validCode);
 
-    // The invite page should show the join form with a "Join" button.
-    await expect(page.getByRole('button', { name: /Join/i })).toBeVisible({ timeout: 10000 });
+    // The invite page should show the join form with an actionable join button.
+    await jb.expectJoinButtonVisible(10000);
 
     await expect(async () => {
-      await page.getByRole('button', { name: /Join/i }).click();
+      await jb.joinButton().click();
       await expect(page).toHaveURL(/\/picks/, { timeout: 2000 });
     }).toPass({ timeout: 15000 });
 
@@ -277,12 +279,14 @@ test('signed-out user is sent to /auth, signs in, and completes join', async ({ 
   const context = await browser.newContext();
   try {
     const page = await context.newPage();
+    const jb = joinPage(page);
 
     // Visit the invite URL without being signed in.
-    await page.goto(`/join/${validCode}`);
+    await jb.gotoInvite(validCode);
 
     // Should be redirected to /auth with next param preserved.
     await expect(page).toHaveURL(/\/auth/, { timeout: 10000 });
+    // The invite code in the next param is real fixture data — keep this assertion.
     expect(page.url()).toContain(encodeURIComponent(`/join/${validCode}`));
 
     // Sign in on the auth page — the server reads ?next= and redirects back.
@@ -303,9 +307,9 @@ test('signed-out user is sent to /auth, signs in, and completes join', async ({ 
     await expect(page).toHaveURL(new RegExp(`/join/${validCode}`), { timeout: 10000 });
 
     // Complete the join.
-    await expect(page.getByRole('button', { name: /Join/i })).toBeVisible({ timeout: 10000 });
+    await jb.expectJoinButtonVisible(10000);
     await expect(async () => {
-      await page.getByRole('button', { name: /Join/i }).click();
+      await jb.joinButton().click();
       await expect(page).toHaveURL(/\/picks/, { timeout: 2000 });
     }).toPass({ timeout: 15000 });
 
@@ -327,12 +331,14 @@ test('expired invite shows a friendly error and no membership is written', async
     // Sign in as the invitee (already a member so the hook lets them through,
     // but they are NOT a member of the test group).
     const page = await signInAs(context, INVITEE);
-    await page.goto(`/join/${expiredCode}`);
+    const jb = joinPage(page);
 
-    await expect(page.getByRole('heading', { name: /expired/i })).toBeVisible({ timeout: 10000 });
+    await jb.gotoInvite(expiredCode);
 
-    // No "Join" button should be visible for a terminal error state.
-    await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
+    await jb.expectExpiredVisible(10000);
+
+    // No join button should be visible for a terminal error state.
+    await jb.expectJoinButtonNotVisible();
   } finally {
     await context.close();
   }
@@ -342,10 +348,12 @@ test('revoked invite shows a friendly error and no membership is written', async
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, INVITEE);
-    await page.goto(`/join/${revokedCode}`);
+    const jb = joinPage(page);
 
-    await expect(page.getByRole('heading', { name: /revoked/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
+    await jb.gotoInvite(revokedCode);
+
+    await jb.expectRevokedVisible(10000);
+    await jb.expectJoinButtonNotVisible();
   } finally {
     await context.close();
   }
@@ -355,10 +363,12 @@ test('invalid code shows a not-found message', async ({ browser }) => {
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, INVITEE);
-    await page.goto('/join/totally-invalid-code-xyz-999');
+    const jb = joinPage(page);
 
-    await expect(page.getByRole('heading', { name: /not found/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /Join/i })).not.toBeVisible();
+    await jb.gotoInvite('totally-invalid-code-xyz-999');
+
+    await jb.expectInvalidVisible(10000);
+    await jb.expectJoinButtonNotVisible();
   } finally {
     await context.close();
   }
@@ -368,10 +378,11 @@ test('already-a-member is routed to /picks without a duplicate row', async ({ br
   const context = await browser.newContext();
   try {
     const page = await signInAs(context, INVITEE_ALREADY_MEMBER);
+    const jb = joinPage(page);
 
     // Navigate to the invite URL — the load should detect existing membership
     // and redirect straight to /picks.
-    await page.goto(`/join/${validCode}`);
+    await jb.gotoInvite(validCode);
     await expect(page).toHaveURL(/\/picks/, { timeout: 10000 });
 
     // Confirm there is still exactly one membership row (no duplicate).

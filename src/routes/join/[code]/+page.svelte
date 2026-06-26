@@ -10,7 +10,7 @@
 
 <section class="container mx-auto max-w-lg space-y-6 p-6">
   {#if data.status === 'valid'}
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="invite-valid-view">
       <h1 class="text-2xl font-bold">
         You're invited{data.groupName ? ` to ${data.groupName}` : ''}
       </h1>
@@ -35,31 +35,31 @@
         };
       }}
     >
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting} data-testid="invite-join-button">
         {submitting ? 'Joining…' : `Join${data.groupName ? ` ${data.groupName}` : ' group'}`}
       </Button>
     </form>
   {:else if data.status === 'invalid'}
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="invite-invalid-view">
       <h1 class="text-2xl font-bold">Invite not found</h1>
       <p class="text-muted-foreground">
         This invite link is not valid. Double-check the URL or ask your commissioner for a new one.
       </p>
     </div>
   {:else if data.status === 'revoked'}
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="invite-revoked-view">
       <h1 class="text-2xl font-bold">Invite revoked</h1>
       <p class="text-muted-foreground">This invite has been revoked by the group commissioner.</p>
     </div>
   {:else if data.status === 'expired'}
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="invite-expired-view">
       <h1 class="text-2xl font-bold">Invite expired</h1>
       <p class="text-muted-foreground">
         This invite link has expired. Ask your commissioner for a new one.
       </p>
     </div>
   {:else if data.status === 'exhausted'}
-    <div class="space-y-2">
+    <div class="space-y-2" data-testid="invite-exhausted-view">
       <h1 class="text-2xl font-bold">Invite fully used</h1>
       <p class="text-muted-foreground">
         This invite has already been used the maximum number of times. Ask your commissioner for a

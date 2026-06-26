@@ -39,9 +39,9 @@
 >
   <!-- Primary: saved/total counter + status -->
   <div class="flex items-center gap-2 text-sm">
-    <span class="font-semibold">{savedCount}/{games.length} saved</span>
+    <span class="font-semibold" data-testid="saved-counter">{savedCount}/{games.length} saved</span>
     {#if openCount > 0}
-      <span class="text-warning">· {openCount} to pick</span>
+      <span class="text-warning" data-testid="open-count">· {openCount} to pick</span>
     {:else if savedCount > 0}
       <span class="text-muted-foreground">✓ All saved</span>
     {/if}
@@ -51,13 +51,17 @@
   <div class="mt-0.5 flex items-center gap-x-2 text-xs text-muted-foreground">
     <!-- All-In -->
     {#if allIn?.locked}
-      <span>All-In: <span class="font-medium text-foreground">{allInTeam}</span> ✓</span>
+      <span data-testid="all-in-summary"
+        >All-In: <span class="font-medium text-foreground">{allInTeam}</span> ✓</span
+      >
     {:else if allIn}
-      <span class="text-warning">All-In: {allInTeam} · saves at kickoff</span>
+      <span class="text-warning" data-testid="all-in-summary"
+        >All-In: {allInTeam} · saves at kickoff</span
+      >
     {:else if openCount > 0}
-      <span class="text-warning">No All-In</span>
+      <span class="text-warning" data-testid="all-in-summary">No All-In</span>
     {:else}
-      <span>No All-In</span>
+      <span data-testid="all-in-summary">No All-In</span>
     {/if}
 
     <!-- Missed -->
