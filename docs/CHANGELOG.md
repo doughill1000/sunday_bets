@@ -26,6 +26,10 @@ Project `Done` column, and Releases remain the sources of truth — see
     week. tables: group_rules · view: season_leaderboard · ADR-0006
   ```
 
+- **Every merged PR gets an entry — including issue-less ones.** Chores, skills,
+  CI/infra, and docs PRs that close no issue are still logged, keyed by PR number and
+  written `**PR #NNN**` to distinguish them from issue numbers (`**#NNN**`). This keeps
+  the log a complete answer to "is X already done?" rather than a features-only subset.
 - This is a shared file: top-of-file edits from two in-flight PRs can conflict.
   Resolve by **keeping both entries** (never take one side wholesale), consistent
   with the serialize-shared-files rule in `docs/WORKFLOW.md`.
@@ -35,8 +39,26 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-26
 
+- **#248** Reconcile delivery/process governance drift — promote ADR-0010/0011 to `Accepted`; make each ADR header the sole status source (drop the index `Status` column, add a 0008-gap note); backfill this day's missing CHANGELOG entries (incl. #214 / ADR-0009 global picks); standardize the ADR-0011/0012 `Issue:` rationale; extend the changelog convention to issue-less PRs (`PR #NNN`) and mark the entry a hard `finish-pr` gate; fix the `AGENTS.md` user-level dangling pointer; normalize ADR-0002 status. Docs-only, no runtime change. files: `docs/adr/`, `docs/CHANGELOG.md`, `AGENTS.md`, `docs/WORKFLOW.md`, `.claude/skills/finish-pr/` · ADR-0001
+- **PR #247** Pattern audit — layered, parallel grading of the repo's established patterns against its own standards (AGENTS.md, ADRs, agent-context packs): nine lanes scored on conformance + pattern-quality (maturity 1–5). Report only, no runtime change. file: `docs/audits/2026-06-26-pattern-audit.md`
 - **#246** Migration drift guard — new `pnpm db:migration:verify` (`supabase/scripts/verify-src-reproduces-migrations.ts`) plus a non-blocking CI job (`.github/workflows/ci-migration-verify.yml`) that applies `supabase/src/**` from empty and diffs the resulting `public` schema against the full migration chain, normalizing away ACL / owner / `\restrict` / column-order noise (the local CLI's legacy table `GRANT ALL` differs from prod, so ACLs must be ignored). Closes the blind spot in `db:migration:check` (ledger-hash only) that let `src/` silently drift from prod. Informational until the deferred ADR-0012 history squash fixes the inline-policy→function apply ordering (the from-empty baseline currently fails on `is_member` not existing yet); promote to a required gate once green. Dev-infra, no app change. files: `verify-src-reproduces-migrations.ts`, `generate-migration.ts` (exports `SOURCE_ORDER`/`collectSources`) · ADR-0011 · ADR-0012
 - **#245** set_active_line src↔prod reconcile — realigned `supabase/src/functions/odds/set_active_line.sql` to prod's deployed state on two axes: (1) **body** — restored prod's declare/begin version (game/spread validation + favorite-sign normalization + plain INSERT), replacing a stale src-only upsert/`ON CONFLICT` rewrite that was never a deployed migration; (2) **grant** — tightened the inline grant to `service_role` only, dropping a stale `authenticated` grant that a later blanket `revoke execute … from authenticated` (migration `20260625204117`) had already stripped from prod. The generated `reconcile_set_active_line` migration is a true no-op on prod (`create or replace` of the identical body; `service_role` already granted; `authenticated` already revoked) — it only re-syncs `src/` so a from-empty regen reproduces prod, and makes the pgTAP `tests/021` set_active_line negative control pass locally. Dev-infra, no app behavior change — set_active_line is invoked only via the service-role client (`src/lib/server/db/commands/setActiveLine.ts`). function: `set_active_line` · ADR-0011
+- **PR #244** Pattern-audit skill — adds the `pattern-audit` skill (fans out a subagent per repo layer, writes a maturity-scored report to `docs/audits/`). Dev-infra, no runtime change. dir: `.claude/skills/pattern-audit/`
+- **PR #243** Closed-by-default function/table grant baseline — born-closed ACL: event-trigger function-ACL guard + one-time reconcile in `0001_role_baseline`, grants re-open only to named roles; pgTAP `021_function_grant_baseline` proves no PUBLIC/anon function surface. schemas: `0000_function_acl_guard`, `0001_role_baseline` · ADR-0011
+- **PR #242** CI Vercel build fix — make the gated Vercel build run in CI (pnpm install + runtime secrets) so the version-gated deploy path works end-to-end. workflows: `deploy-prod`/`deploy-preview` · ADR-0010
+- **PR #240** ADR records — adds ADR-0011 (closed-by-default grant/RLS baseline) and ADR-0012 (migration-history rebaseline/squash). Decision records, no runtime change. ADR-0011 · ADR-0012
+- **PR #241** Docs — mark the app as not in active use during migration work (relaxes the live-traffic constraint on disruptive DB changes; migration discipline otherwise unchanged).
+- **#214** Global picks — a pick made once is fanned out at write time to all the player's active groups, so it counts in every group (replaces single-group writes). function: `lock_pick_all_groups` · ADR-0009
+- **PR #238** Gate prod deploys behind version bumps — Vercel auto-deploy off; production ships only on a `package.json` `"version"` bump (or manual dispatch), and a PR gets one preview on open/ready/reopen plus on-demand `/preview`. workflows: `deploy-prod`/`deploy-preview` · ADR-0010
+- **PR #218** Comments — show the author's display name optimistically right after posting (was briefly blank until reload). component: `CommentsSection`
+- **PR #237** E2E — stabilize the Playwright suite and fix a picks hydration regression it surfaced.
+- **PR #236** Fix a UI button regression.
+- **PR #235** Fix Svelte 5 `$state`/runes warnings flagged by `svelte-check`.
+- **PR #234** E2E pipeline — per-test isolation (`resetPicksForGame` in `beforeEach`), deterministic built-preview CI runner, and smoke/full gating. dir: `tests/e2e/`
+- **PR #233** E2E — decouple remaining specs from UI copy via `data-testid` anchors.
+- **PR #232** E2E — decouple picks specs from UI copy via `data-testid` anchors.
+- **PR #228** Update dependencies.
+- **PR #227** E2E — seed games by matchup so the `uq_games_matchup` unique constraint can't collide across specs.
 
 ## 2026-06-25
 

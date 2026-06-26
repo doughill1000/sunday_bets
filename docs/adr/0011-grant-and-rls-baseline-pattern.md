@@ -1,8 +1,8 @@
 # ADR-0011: Closed-by-default grant/RLS baseline pattern
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-26
-- Issue: # (pending — "Refactor grant/revoke pattern: closed-by-default baseline")
+- Issue: None (approved grant/RLS-baseline plan; no tracking issue) — implemented by PR #243
 - Supersedes: None
 - Note: Decision §8 (the additive-first/subtractive-second rollout and the
   incremental-apply CI gate) is narrowed by [ADR-0012](0012-migration-history-rebaseline.md),

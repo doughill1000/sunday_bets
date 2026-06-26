@@ -161,7 +161,8 @@ migration-ledger conflict by choosing one side wholesale.
 
 1. Add a newest-first entry to [`docs/CHANGELOG.md`](CHANGELOG.md) on the branch so
    shipped history merges atomically with the PR (it lands in `master` only when the
-   code does), then open one PR for the issue and use `Closes #NNN`.
+   code does) — keyed by issue number, or by PR number (`PR #NNN`) when the PR closes
+   no issue — then open one PR and use `Closes #NNN` when there is a driving issue.
 2. Link the governing or proposed ADR and explain any deviation from it.
 3. Record commands that actually ran and explain skipped checks.
 4. Move the Project item to Review.
