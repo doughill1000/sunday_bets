@@ -41,11 +41,11 @@ export const SOURCE_ORDER = [
   'comments'
 ] as const;
 
-const LEGACY_MULTI_OBJECT_SOURCES = new Set([
-  'schemas/0100_enums.sql',
-  'schemas/0200_tables.sql',
-  'functions/auth/handle_new_auth_user.sql'
-]);
+// Emptied by the ADR-0012 migration rebaseline (PR2): the three formerly-frozen
+// multi-object sources (0100_enums, 0200_tables, handle_new_auth_user) were split
+// into one-object-per-file, so no source is exempt from the one-primary-object rule
+// anymore. Kept as the single switch if a future bulk import ever needs the exemption.
+const LEGACY_MULTI_OBJECT_SOURCES = new Set<string>();
 
 function sha(content: string) {
   return crypto.createHash('sha256').update(content.replace(/\r\n?/g, '\n')).digest('hex');

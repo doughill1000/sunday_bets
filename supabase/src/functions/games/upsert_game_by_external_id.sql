@@ -31,4 +31,4 @@ end
 $$;
 
 grant execute on function public.upsert_game_by_external_id(text,int,timestamptz,int,int)
-  to authenticated, service_role;
+  to service_role;

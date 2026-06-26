@@ -1,504 +1,616 @@
 {
   "schemas/0000_extensions.sql": {
-    "hash": "f03173791657d71475f4a7d3b8d68cacc33ed95ef97a5861ac7888199716503d"
-  },
-  "schemas/0100_enums.sql": {
-    "hash": "9ebc0fec3a9ac4abc2040659a67b0b079f5b8e470a8b1712f0775cc524949e45"
-  },
-  "schemas/0101_cover_side.sql": {
-    "hash": "c5b326209a40c0b0e016578cce2ec02947c59cd642c4af47c8d741d38ef343c0"
-  },
-  "schemas/0101_pick_outcome.sql": {
-    "hash": "1d4a6923afb73b7e77aaedef37fbe889b046ff80dfb58892b9bd9682788c98ed"
-  },
-  "schemas/0200_tables.sql": {
-    "hash": "17f2219cdbd12fbd7b55e25e422be6554fd06c3aca444e4e4642a2a47bf0d101"
-  },
-  "schemas/0201_picks.sql": {
-    "hash": "053989cbe1debed92d97195b58c3758fb68e4bc6432521075391401342fa4659",
-    "migration": "20260623132044_add_group_id_picks_settlement.sql",
-    "migrationHash": "449ef94269e6718e01e77d3d1a50c101b0b3a21a11bcbf0156b0b7198fcc639e"
-  },
-  "schemas/0202_pick_settlement.sql": {
-    "hash": "1dfa165c0d9c245043b85b0b81710270c5d9e5c93475aa47c1edf6c9f718eb14",
-    "migration": "20260623132044_add_group_id_picks_settlement.sql",
-    "migrationHash": "449ef94269e6718e01e77d3d1a50c101b0b3a21a11bcbf0156b0b7198fcc639e"
-  },
-  "schemas/0203_sync_refactor.sql": {
-    "hash": "be8c71170c2ff5889be6dc18141cc4133348bf6dd75d8bca67b9ce2db2203227"
-  },
-  "schemas/0204_require_locks.sql": {
-    "hash": "717b365ba83c62d05adbde3b8cd193d85b43a338befb2c29c751f40d0f43a27e"
-  },
-  "schemas/0300_rls.sql": {
-    "hash": "56fc25d65bded3f674f9c3cacc1fd41bd3f846ed556d482cf510c98352612665",
-    "migration": "20260623132044_add_group_id_picks_settlement.sql",
-    "migrationHash": "449ef94269e6718e01e77d3d1a50c101b0b3a21a11bcbf0156b0b7198fcc639e"
-  },
-  "schemas/0400_constraints.sql": {
-    "hash": "beceabf321db45ee65d46236475b28aa9b3fcee614722f7fe2d2372ef39fffbd"
-  },
-  "schemas/0401_unique_game_external.sql": {
-    "hash": "1201b2eda6d9afab3c29e39f10855287b1f9a8e3fc35c9f22a14405f19e33186"
-  },
-  "schemas/0402_fix_active_line_uq.sql": {
-    "hash": "1280e8189b0166c56572dba1395ba4bc3d79403b0c3996afb4b08944a98c2e28"
-  },
-  "indexes/idx_pick_settlement_game.sql": {
-    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6"
-  },
-  "indexes/ux_active_line_per_game.sql": {
-    "hash": "2aaf84274f176ddad61e792ebe504464a785e785f272e1c833ccd2d555cc9629"
-  },
-  "views/current_season_year.sql": {
-    "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f"
-  },
-  "views/leaderboard_season_totals.sql": {
-    "hash": "13e7d2193e0fa63e2256cc94795ddc03268826af13d2d396b7750e79e4ae099e",
-    "migration": "20260624142715_drop_worst_week_season_total.sql",
-    "migrationHash": "f3696a917d7ae70fc34cd5711c1777cd3b8df368b493f928ad2cd771ac963504"
-  },
-  "views/leaderboard_weekly_cumulative.sql": {
-    "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/picks_status_view_admin.sql": {
-    "hash": "1ac8796c4fffc311b1fb16e23701f821e441e2c9c76e70954affb11f02421fbb",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/picks_status_view_user.sql": {
-    "hash": "dd1f1f8b6436b8d919529da891422a1a6f2151cefce76e14fc6d766cc8deb89f",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/ui_games.sql": {
-    "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4"
-  },
-  "functions/_private/ats_margin_at_lock.sql": {
-    "hash": "84ef81ba0a6f37a4a7ad2645b076686597be06de13c1b421c86eb709c03e945c",
-    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)"
-  },
-  "functions/_private/audit_log_action.sql": {
-    "hash": "861f11438db018b7d1cc32b8462bffc022d5cb0872a67831b55766ee6b479f5d",
-    "signature": "public.audit_log_action(uuid, text, jsonb)"
-  },
-  "functions/_private/game_has_started.sql": {
-    "hash": "0e97494349047d1282af708f38761ad3d1b3710fdec0d8e748d26e4d3596cf54",
-    "signature": "public.game_has_started(uuid)",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
-  },
-  "functions/_private/grade_games_by_ids.sql": {
-    "hash": "58f497475f8ae328582f9752072216a51885e505c33f920f3133b1eee478efcf",
-    "signature": "public._grade_games_by_ids(uuid[])",
-    "migration": "20260623132324_group_aware_pick_functions.sql",
-    "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
-  },
-  "functions/_private/resolve_missed_penalty.sql": {
-    "hash": "07b53c5384738da54de036156b15b57a5c2e9230875253059490414a3bb90a06",
-    "signature": "public.resolve_missed_penalty_for_game(uuid)"
-  },
-  "functions/_private/weight_points.sql": {
-    "hash": "719cf000db2430414b70c958dff53e3686324d11a0be85867d3821988483ad34",
-    "signature": "public.weight_points(text)"
-  },
-  "functions/auth/handle_new_auth_user.sql": {
-    "hash": "cab661b70dd99907b2ca7ed76ff2864f876f61a9e1dc57a5497d90eaf399bc11"
-  },
-  "functions/auth/is_admin.sql": {
-    "hash": "690fa0201c8319bd801ad045f4fd076a6454e2fe3a3ecc5c2fc801e51ceaa2b4",
-    "signature": "public.is_admin()",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
-  },
-  "functions/games/upsert_game_by_external_id.sql": {
-    "hash": "8c550b3de9108fd8ec73d4d7fd6f6ba87b2cb96504838d8e04d34fab2a084bb4",
-    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)"
-  },
-  "functions/grade/grade_game.sql": {
-    "hash": "62b9dba22ffed92be25d3ea5a1b1dfc9acab61ee6aa56949d0b6635bc9653667",
-    "signature": "public.grade_game(uuid)"
-  },
-  "functions/grade/grade_pick.sql": {
-    "hash": "13d8f625bede1e7f5a9a92bd46ea321a4d33980fc8f2a765d399cfafdfcf52ad",
-    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)"
-  },
-  "functions/grade/grade_season.sql": {
-    "hash": "063be5c3e75c701ff86088aac021e6d4f1078fa06f3ea8bee825df3b77f3143c",
-    "signature": "public.grade_season(int)"
-  },
-  "functions/grade/grade_week.sql": {
-    "hash": "c3f42b2af009fe35a67f5b2598b015dfc187f8b3873a5f197fd3d184693dd435",
-    "signature": "public.grade_week(int)"
-  },
-  "functions/odds/set_active_line.sql": {
-    "hash": "ffb25676d08fa709cdaa07587f4c8e8dcc150ebac6966b98d856a00db8ba6d3a",
-    "signature": "public.set_active_line(uuid, int, numeric, text)",
-    "migration": "20260626173537_reconcile_set_active_line.sql",
-    "migrationHash": "f08db2173fb35ec65e2418388160583c0590dfa8bc987414018c5d9e729d9472"
-  },
-  "functions/picks/lock_pick.sql": {
-    "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
-    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
-    "migration": "20260624160318_add_get_final_week_allin_helper.sql",
-    "migrationHash": "533c5fc0d8989852d446811a3e2b79c626bb9cf74bafac27b7c8eaa9be6abd54"
-  },
-  "functions/picks/unlock_pick.sql": {
-    "hash": "07a52e195364b7b6ba0dccf8166e7e278773a8c3a090a910d29f706f04c9fa45",
-    "signature": "public.unlock_pick(uuid)",
-    "migration": "20260623132324_group_aware_pick_functions.sql",
-    "migrationHash": "b3546a02a6464676fee29c4cf950266cacf4640e2d17c33a8afcc694274a6d40"
-  },
-  "policies/10_rls_enable.sql": {
-    "hash": "e07f0ec5c9560e98eedef5757d52e0c7db7fdeea0139832a6423da41b855b1bc",
-    "migration": "20260624184300_add_comments_reactions.sql",
-    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
-  },
-  "policies/20_policies_read_core.sql": {
-    "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0"
-  },
-  "policies/21_policies_read_lookup.sql": {
-    "hash": "a281b1ce08cdb55cd607a44f4af1c9b9742269943ea426f898ff74d8aa1837ca"
-  },
-  "policies/30_policies_users.sql": {
-    "hash": "3e04c236ac4f8530e83794282e8b8d29922cda3727398be45f1370f7e36fd4b7"
-  },
-  "policies/40_policies_picks.sql": {
-    "hash": "b660b0964133e93fcc03ba9e6665f4e70f0dbb1633cab37f4abfa65092a0dbf4",
-    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
-    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
-  },
-  "policies/50_policies_admin.sql": {
-    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a"
-  },
-  "grants/admin_grants.sql": {
-    "hash": "59cd97277566e8fe4096d5fde1c49c456aba2323e9f869a49874dd725a284b7c"
-  },
-  "grants/anon_grants.sql": {
-    "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe"
-  },
-  "grants/player_grants.sql": {
-    "hash": "e5002ae560be9c3a5607c6f48c08453fbd8386e2192a6c2f992aea7f99185362",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
-  },
-  "functions/grade/advance_week_if_complete.sql": {
-    "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
-    "signature": "public.advance_week_if_complete()",
-    "migration": "20260618165050_advance_week_if_complete.sql",
-    "migrationHash": "9461cf5d92a31cb57c02cb6d00df6ae587ffcfb9bcdfe7c3afac39a03b3aa3ef"
-  },
-  "schemas/0205_push_subscriptions.sql": {
-    "hash": "e91a141bf6f5be77369c44956da405d0903eacc2e68f8570a8a54c66b5f87837",
-    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
-    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
-  },
-  "schemas/0206_notification_log.sql": {
-    "hash": "bc3007d36ddcfcb2b20ceb3e36655cb9b6d96c8134b906cb47b9906eead94158",
-    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
-    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
-  },
-  "schemas/0207_notification_prefs.sql": {
-    "hash": "0a70d05f26a1234307cc176d09c833d6daf31fe1409fd69dab8b6b69863d0ad1",
-    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
-    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
-  },
-  "policies/45_policies_push_notifications.sql": {
-    "hash": "a0d8ab8dd841512dee602d5f058b9a6a88f3be96a9cea8d5e3942450a1c9ead7",
-    "migration": "20260619153646_push_subscriptions_and_notification_prefs.sql",
-    "migrationHash": "bdc004da0e4a2caa5f959e5aff7c34550fdd59ad7e0bdeb1d6bdc745aa908aaa"
-  },
-  "views/stats_accuracy_by_team.sql": {
-    "hash": "59b373eaf84994213fc9a4d951a8af26addfab6459623ae098fcdbab366d8a39",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/stats_accuracy_by_weight.sql": {
-    "hash": "71ec5ff1c468b46663f833c6ba77ca9417684a72cd89c499469b68d0f59df15e",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/stats_head_to_head.sql": {
-    "hash": "643831739ef83abf840ccf1fdde14365f37fcd1d3cd7b8b566d667f95b936a93",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "views/stats_season_trend.sql": {
-    "hash": "6ebd53a5ff3490dfad0bc20ebf164271ac21110cf8d467ad119a3bc8bfcffe77",
-    "migration": "20260623155353_group_aware_leaderboard_views.sql",
-    "migrationHash": "accbf22974d43df60eac6461524b45c0386d03e1bad5522ae443be2fab7b7aa8"
-  },
-  "schemas/0102_group_membership_role.sql": {
-    "hash": "3073a793222a9081f234f8645e49aefb8be0a0f3f6424d8d6d88e693a5a69310",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
-  },
-  "schemas/0208_groups.sql": {
-    "hash": "4683f7ab0393bbb9ceb27f77a92da1b53f496ba71f7061d017087ecbba15a283",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
-  },
-  "schemas/0209_group_memberships.sql": {
-    "hash": "d6f80c86e7a3d67add95cbaf05adc0872885c82ee3d28a53c6ec2ac7a644ae53",
-    "migration": "20260624183925_add_group_membership_status.sql",
-    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
-  },
-  "indexes/idx_group_memberships_user_group.sql": {
-    "hash": "0617d23e299557fc42fb5b0ddbb77cbbc90579cb0e5d504df143cd3c347dbb68",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
-  },
-  "functions/auth/is_member.sql": {
-    "hash": "b9cd5267184131c134cc07b3c1e0e349ae576260bef15983031de4b1044ebc33",
-    "signature": "public.is_member(uuid)",
-    "migration": "20260623125249_add_groups_and_memberships.sql",
-    "migrationHash": "409725e559037090b41c4e7c77c8564b42b61390cee8767f85890e0f23905250"
-  },
-  "policies/25_policies_groups.sql": {
-    "hash": "b31eab3a9ce529d5d6adecf5f9ad0733a03c14a12a5a2593a31bd4cd409849f3",
-    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
-    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
-  },
-  "grants/zz_group_grants.sql": {
-    "hash": "19157b87f1b251c8b1bce0ed9aad6ccafe4636a9ec5a128c03244f9f51b61cff",
-    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
-    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
-  },
-  "schemas/0210_pick_group_foreign_keys.sql": {
-    "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
-    "migration": "20260623132537_drop_legacy_pick_uniqueness.sql",
-    "migrationHash": "6c1dabb60c82fcafbbf3891a893dd7d746ae28437e8e391b6f83a656375c96cd"
-  },
-  "schemas/0211_group_config.sql": {
-    "hash": "bcf7ef78532ca4a573cc65e63eaeb43321a99bef8fe9d819fb3f547157b30a87",
-    "migration": "20260623160737_group_owned_config_split.sql",
-    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
-  },
-  "schemas/0212_group_week_overrides.sql": {
-    "hash": "2bfbfb16b50f1d368e38ca0bb299cf01447f237f376e5c153dd3172bb21dd243",
-    "migration": "20260623160737_group_owned_config_split.sql",
-    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
-  },
-  "policies/26_policies_group_config.sql": {
-    "hash": "edf046dceeb9f028977e7aa100af893aa9565dd55916d1759aed9145ec2b0bcd",
-    "migration": "20260623160737_group_owned_config_split.sql",
-    "migrationHash": "f898680942de023b0a130cb6dc61619b9b34dc62592f5ef229c1e209ac60f642"
-  },
-  "schemas/0213_seed_original_group_config.sql": {
-    "hash": "e8927039292071f416edffb7f8c7997e80d06d27f81e1d2f872d89509b705080",
-    "migration": "20260623162921_seed_original_group_config.sql",
-    "migrationHash": "9de32ea5f3b1ab1d41ebd403e81870c0afe43dfd85363a785ab1fc1fd24bdf53"
-  },
-  "schemas/0214_avatar_key.sql": {
-    "hash": "147a270be5b42d40918d2500401e182e9528cdddd12527789a9657047dc59521",
-    "migration": "20260623183834_add_avatar_key.sql",
-    "migrationHash": "3f3863dee485dfd764cc04c7fc29ed32595cc81d8ca94eb0cbba6fba6108231c"
-  },
-  "views/stats_accuracy_by_team_alltime.sql": {
-    "hash": "9217543f3d31b2a246b7cf369a3178221d19b3717d7c5d29916b1372e38582d8",
-    "migration": "20260623230458_add_alltime_stats_views.sql",
-    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
-  },
-  "views/stats_accuracy_by_weight_alltime.sql": {
-    "hash": "9ca7d45061babfb97a6d4d4767c07d74b0e8a234999f664b2610ed1e72f77e2f",
-    "migration": "20260623230458_add_alltime_stats_views.sql",
-    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
-  },
-  "views/stats_alltime_totals.sql": {
-    "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
-    "migration": "20260623230458_add_alltime_stats_views.sql",
-    "migrationHash": "699facc742d20883cea8c48639a6efcbb9e63837e95f0238188b0326f09b04bf"
-  },
-  "schemas/0215_schedule_game_id.sql": {
-    "hash": "3c1aab3b6a847ff0741c019f9eb291c22555254d814b18b422e64b0dc874943b",
-    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
-    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
-  },
-  "functions/games/attach_line_to_matchup.sql": {
-    "hash": "9b3886fed46dade3549dcffb5cceb37fce8af757a3e014c2fd842767439d696e",
-    "signature": "public.attach_line_to_matchup(int, int, int, text)",
-    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
-    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
-  },
-  "functions/games/upsert_game_by_matchup.sql": {
-    "hash": "df07bf3e9d1e7df5525dcc77389acbb2e6dd99ee48fc10647542a916891fbfba",
-    "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
-    "migration": "20260624124739_add_schedule_game_id_and_matchup_key.sql",
-    "migrationHash": "8111424d9177c26212c78079310d65f5381c42757126ff14c86a0f2ade9ff814"
-  },
-  "schemas/0215_comments.sql": {
-    "hash": "a6d4a61ded3445709f65fe39b3a3a77ca4739fe6cb2077beb1875fb96c0c8fe0",
-    "migration": "20260624184300_add_comments_reactions.sql",
-    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
-  },
-  "schemas/0216_reactions.sql": {
-    "hash": "2b3736f5ebdc6472d4cfd9eda22b36964db4923de7c3016e4f61b024808ee549",
-    "migration": "20260624184300_add_comments_reactions.sql",
-    "migrationHash": "36c16b13022f924c2f69b24821347bc6739972d502e8af38c3177840c8f64b98"
-  },
-  "policies/41_policies_comments_reactions.sql": {
-    "hash": "5e8c78f3fdfbc11bcb0547ee7c0f22a21e8beca8f0b4a4b0c598708b307a55ef",
-    "migration": "20260624185624_add_deleted_at_to_comments.sql",
-    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
-  },
-  "schemas/0217_comments_deleted_at.sql": {
-    "hash": "7726edcc8cfc276b0f46a660c80795aa819196a1b47b913eba5925940354eb38",
-    "migration": "20260624185624_add_deleted_at_to_comments.sql",
-    "migrationHash": "0f51bb0288b0ee7c447b20f7784720062a9e9c854e9d96572c3718151cc37cbc"
-  },
-  "views/picks_group_view.sql": {
-    "hash": "3fab816ab9c924ddb133d45eab3276b4eabeae84ce34840c930e385c18fb44ed",
-    "migration": "20260624160630_picks_group_view_avatar_key.sql",
-    "migrationHash": "59b4448c2262a42a03af116e8a625ac97d9c1cbd8f3068f2389b5ef6dbc6e0ba"
-  },
-  "schemas/0216_settings_final_week_allin.sql": {
-    "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
-    "migration": "20260624154446_settings_final_week_unlimited_allin.sql",
-    "migrationHash": "f4dc62d3b46d9c633edb6ab56dd64ba3e05388eadd34c13eb3da222d4bbdf5fa"
-  },
-  "functions/_private/get_final_week_unlimited_allin.sql": {
-    "hash": "0721d32c8b130d1fa6c0191d1b3b7f7fcb1402ac0147b401b3e10b249e7aade5",
-    "signature": "public._get_final_week_unlimited_allin()",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
-  },
-  "schemas/0103_group_membership_status.sql": {
-    "hash": "711c1d530f168565a6d02c89deb34fb89dbaae9f487ba4cadbe0b4653898cb5b",
-    "migration": "20260624183925_add_group_membership_status.sql",
-    "migrationHash": "5a1e65091a30074318c1b4fab05365d2da95ffaa8646298ebf853fa3bbd0fa3e"
-  },
-  "schemas/0217_group_membership_status_column.sql": {
-    "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
-    "migration": "20260624184155_add_group_membership_status_column.sql",
-    "migrationHash": "ba90581ad8bfb385d9bca84cbe2699cbf34a61634a8cad865dd65df9380501bf"
-  },
-  "schemas/0218_group_invites.sql": {
-    "hash": "00e6e86e995672eb9a1b32676a759e14ec40ec41e1370fd76ed432a7656c3fa2",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "indexes/idx_group_invites_code.sql": {
-    "hash": "077593d4d66ef2d2e3540320309002a6a64575bf98d286112447850081ae14a9",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "indexes/idx_group_invites_group_id.sql": {
-    "hash": "b204f35e8e4393f1b3a2493be30c0e17de6effde2df6eeea453a8b9c0e93db58",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "functions/auth/is_commissioner.sql": {
-    "hash": "8b267c11d51d1aa2ea9fb8840efef2a70021f4fbff5497dc8cda910c42dd7bc2",
-    "signature": "public.is_commissioner(uuid)",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "functions/groups/redeem_invite.sql": {
-    "hash": "4814f2a1387a4debc729a3652cc2e80ecaa75835498291a7246a851b0cec8eb0",
-    "signature": "public.redeem_invite(text)",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "policies/27_policies_group_invites.sql": {
-    "hash": "d08b619c709eadfe95515811e4f55566a7fcc4bc0982f5b30d1b1fff9e761f3e",
-    "migration": "20260625011134_group_invites_schema_rls_redeem_rpc.sql",
-    "migrationHash": "68fc06ae4aaa54badb51ddd2bb38adacbffa93aef393493e1f29ba90b330d640"
-  },
-  "schemas/0218_guide_seen_at.sql": {
-    "hash": "c85c7def19ea8ff787667c1f0952637e43b33c567dfe180479c190789d6a525f",
-    "migration": "20260625010552_guide_seen_at.sql",
-    "migrationHash": "e96a68c0d3a541038cb45b7e726545e9a699966d88d8df5d961a5a5c363b8a35"
-  },
-  "schemas/0219_settings_group_creation_mode.sql": {
-    "hash": "95b5c3bac3325057de0cc6b9c51f52ae27e227553f31084b31b96e0363ee04b6",
-    "migration": "20260625014844_create_group_flow.sql",
-    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
-  },
-  "schemas/0220_users_can_create_group.sql": {
-    "hash": "06c0b6bdb25e3b2d3966b4ebb5ccff0751c9311d097d0d6eb9a31803a418ed38",
-    "migration": "20260625014844_create_group_flow.sql",
-    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
-  },
-  "schemas/0221_groups_name_length.sql": {
-    "hash": "6791171aab41b262fe3a697465d41982ca5fd3cd395fe3281498ad9f56673690",
-    "migration": "20260625014844_create_group_flow.sql",
-    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
-  },
-  "functions/groups/create_group.sql": {
-    "hash": "297462a723c7c2ac9da33fd9ae6f758fdfda3d3a10ee3b8f5197725a743c348b",
-    "signature": "public.create_group(text)",
-    "migration": "20260625014844_create_group_flow.sql",
-    "migrationHash": "f489e5946805add051db8c726bf5c136b80cc57c600b12bc5511dff858ce3d88"
-  },
-  "functions/groups/leave_group.sql": {
-    "hash": "63250ed8c125d7acd662158abcab775a6b1982edb9f22cf253325dc4f58be35d",
-    "signature": "public.leave_group(uuid)",
-    "migration": "20260625124948_members_commissioner_basics.sql",
-    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
-  },
-  "functions/groups/mint_invite.sql": {
-    "hash": "42c029618f91446146cdc3da1192c1e3cecd0d4cc489a0376da44cf79358421d",
-    "signature": "public.mint_invite(uuid, integer, timestamptz)",
-    "migration": "20260625125121_mint_invite_fix_code_gen.sql",
-    "migrationHash": "da4e83a8dc0a125285670295678ae159003c2bc48e434af351f52108232ce753"
-  },
-  "functions/groups/promote_member.sql": {
-    "hash": "27e9ee1cd14baa5f3e370151b4e605340ef3398a1d9834b1bb819b35548b9cfe",
-    "signature": "public.promote_member(uuid, uuid)",
-    "migration": "20260625124948_members_commissioner_basics.sql",
-    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
-  },
-  "functions/groups/remove_member.sql": {
-    "hash": "817167e5ff8a4b698b2f52c72611bc7c21718b5107edd5411e59fc154b06078e",
-    "signature": "public.remove_member(uuid, uuid)",
-    "migration": "20260625124948_members_commissioner_basics.sql",
-    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
-  },
-  "functions/groups/rename_group.sql": {
-    "hash": "b9eaeabef535b00e2cc86eb8972c52b7b9b3afb0e27020e645f1ed0a9e725328",
-    "signature": "public.rename_group(uuid, text)",
-    "migration": "20260625124948_members_commissioner_basics.sql",
-    "migrationHash": "169f1bf8d6500a597e05687844876e5bb1b51fdf631875592a643887f07a9e68"
-  },
-  "functions/groups/preview_invite.sql": {
-    "hash": "80b787d511162cb395dcd7aeeb44541e186fd9213ca33cb48e8da6007ab0254f",
-    "signature": "public.preview_invite(text)",
-    "migration": "20260625142627_add_preview_invite_rpc.sql",
-    "migrationHash": "22ef357e4b6000554f5d2d202f125ed5bde30450bcac37bf26f1da6cdbbf7725"
-  },
-  "indexes/idx_picks_group_game_user.sql": {
-    "hash": "83220964e987f8b8f81ba484bdb6bc3f7e67b0ccb1d892da97ce64cb26981d24",
-    "migration": "20260625204117_commissioner_rls_hardening_grant_audit.sql",
-    "migrationHash": "04826381ac97a49327905e3137dc7065d41472061659b031a821c355acda3eed"
-  },
-  "functions/picks/lock_pick_all_groups.sql": {
-    "hash": "d54056f362e9e1ca89670258dc9f3ce03a5dd5045f48e674b6b48d21a6310c12",
-    "signature": "public.lock_pick_all_groups(uuid, public.side_enum, public.weight_enum)",
-    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
-    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
-  },
-  "functions/picks/unlock_pick_all_groups.sql": {
-    "hash": "191fd3b9ad541645f4a4032a16d3a1722cec761858f74b0c0fd676ccb8d4f683",
-    "signature": "public.unlock_pick_all_groups(uuid)",
-    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
-    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
-  },
-  "grants/zz_picks_fanout_grants.sql": {
-    "hash": "7fbb842bf8d2b7bc2607331b36f1cce07a8ee9afda00e1e50fa825631751132a",
-    "migration": "20260626132500_global_picks_fanout_rpcs.sql",
-    "migrationHash": "273669f745f24b707fd22492f6c9d5bcab2f80880447409e1ab360f76de29d17"
+    "hash": "f03173791657d71475f4a7d3b8d68cacc33ed95ef97a5861ac7888199716503d",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "schemas/0000_function_acl_guard.sql": {
     "hash": "fe4d490bfba43b8ce0325c560ad9023cd3e0eb3a13a26c2ed783db68d9a9fd68",
     "signature": "public._close_new_fn_acl()",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "schemas/0001_role_baseline.sql": {
     "hash": "6f0389c5624177d1853af543f6e154b9d6e74f1a79d026a8b32f9c73eaaa93bd",
-    "migration": "20260626152357_closed_by_default_baseline.sql",
-    "migrationHash": "e491d8d8ea41c45c4ad3a00eb0c36e88a61c3043d441e238c826c21720440236"
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0050_is_member.sql": {
+    "hash": "e9808dc5f121463ae62a4f1bf2a3c50ed7a54ecdb8514e7d22ed8049980b8ad9",
+    "signature": "public.is_member(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0051_game_has_started.sql": {
+    "hash": "353a958712bf3619f885bbb873b7d8e460a75a82c00ec456c99681c88b800c5f",
+    "signature": "public.game_has_started(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0052_is_admin.sql": {
+    "hash": "aa28b71c281f57197a197348908f85141d911aaa3b68fde939190743348a8c31",
+    "signature": "public.is_admin()",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0100_00_weight_enum.sql": {
+    "hash": "df486ee29e2871e2670e237221ac3e50c14b35d3335ff91c28bf34ede82933f6",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0100_01_side_enum.sql": {
+    "hash": "b958752f929e2a140b2b8153871f5a56faeef54b859ec1c149248c7d0fb21eff",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0101_cover_side.sql": {
+    "hash": "c5b326209a40c0b0e016578cce2ec02947c59cd642c4af47c8d741d38ef343c0",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0101_pick_outcome.sql": {
+    "hash": "1d4a6923afb73b7e77aaedef37fbe889b046ff80dfb58892b9bd9682788c98ed",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0102_group_membership_role.sql": {
+    "hash": "3073a793222a9081f234f8645e49aefb8be0a0f3f6424d8d6d88e693a5a69310",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0103_group_membership_status.sql": {
+    "hash": "711c1d530f168565a6d02c89deb34fb89dbaae9f487ba4cadbe0b4653898cb5b",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_00_users.sql": {
+    "hash": "e41389eed57cdb89f5736b0622d37b81779d7428d07511975c90fb5a985f6e21",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_01_seasons.sql": {
+    "hash": "18ba1f7253d5f615afb4140cc0ec89a35a9dc552fb8bc1631d2a2184aa9a7142",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_02_weeks.sql": {
+    "hash": "95307ddd54413278a02feb3366586e19124c1073d893219d64ff524d6871e653",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_03_teams.sql": {
+    "hash": "e699614a83c05ba20fd0ed56030b5cdf7046e98e467462a5117d251fb9c28d8e",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_04_games.sql": {
+    "hash": "214b7148b89192a090bf57f19f1e4676487fdccad0c7160fa374cee9893713a8",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_05_game_lines.sql": {
+    "hash": "8afc387eb86f5aa8a9c5a258309341faf17eb4bc39bba19e810e00d3bb1d6296",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_06_picks.sql": {
+    "hash": "ee4d2439d1971165c4ef95a1981207316b3000ae467dd728795f16a690d7ad97",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_07_results.sql": {
+    "hash": "cdba942c16537ad1b28247cdea4aed4faadb4196d6fe96e46670e44cd5ec4d4a",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_08_totals.sql": {
+    "hash": "867036b74de4069278910a5846510d569ecead40be575bd2266fa1a172bebdd1",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_09_settings.sql": {
+    "hash": "a0a8ea01f71cdfef9f06c160208bceb19bec2c4825ffe8081f7ccb7205442904",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_10_audit_log.sql": {
+    "hash": "045dfd2a0e83fbb0ac92d4f984126c34f883767e0a4d190af4fbaec7ce2bb437",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0200_11_cron_run_log.sql": {
+    "hash": "91a4a065fb4594e192fa0046596c69c08474cec8be6d43fd336631bb5361d7e3",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0201_picks.sql": {
+    "hash": "053989cbe1debed92d97195b58c3758fb68e4bc6432521075391401342fa4659",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0202_pick_settlement.sql": {
+    "hash": "1dfa165c0d9c245043b85b0b81710270c5d9e5c93475aa47c1edf6c9f718eb14",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0204_require_locks.sql": {
+    "hash": "717b365ba83c62d05adbde3b8cd193d85b43a338befb2c29c751f40d0f43a27e",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0205_push_subscriptions.sql": {
+    "hash": "e91a141bf6f5be77369c44956da405d0903eacc2e68f8570a8a54c66b5f87837",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0206_notification_log.sql": {
+    "hash": "bc3007d36ddcfcb2b20ceb3e36655cb9b6d96c8134b906cb47b9906eead94158",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0207_notification_prefs.sql": {
+    "hash": "0a70d05f26a1234307cc176d09c833d6daf31fe1409fd69dab8b6b69863d0ad1",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0208_groups.sql": {
+    "hash": "4683f7ab0393bbb9ceb27f77a92da1b53f496ba71f7061d017087ecbba15a283",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0209_group_memberships.sql": {
+    "hash": "d6f80c86e7a3d67add95cbaf05adc0872885c82ee3d28a53c6ec2ac7a644ae53",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0210_pick_group_foreign_keys.sql": {
+    "hash": "03616baa256233190b28dcbe682b989fd504ee8576626aa43bfbbb45f934ccbb",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0211_group_config.sql": {
+    "hash": "bcf7ef78532ca4a573cc65e63eaeb43321a99bef8fe9d819fb3f547157b30a87",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0212_group_week_overrides.sql": {
+    "hash": "2bfbfb16b50f1d368e38ca0bb299cf01447f237f376e5c153dd3172bb21dd243",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0213_seed_original_group_config.sql": {
+    "hash": "e8927039292071f416edffb7f8c7997e80d06d27f81e1d2f872d89509b705080",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0214_avatar_key.sql": {
+    "hash": "147a270be5b42d40918d2500401e182e9528cdddd12527789a9657047dc59521",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0215_comments.sql": {
+    "hash": "a6d4a61ded3445709f65fe39b3a3a77ca4739fe6cb2077beb1875fb96c0c8fe0",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0215_schedule_game_id.sql": {
+    "hash": "3c1aab3b6a847ff0741c019f9eb291c22555254d814b18b422e64b0dc874943b",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0216_reactions.sql": {
+    "hash": "2b3736f5ebdc6472d4cfd9eda22b36964db4923de7c3016e4f61b024808ee549",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0216_settings_final_week_allin.sql": {
+    "hash": "12d2139f903b894c2f7b0d5c6287db402d43c9eb3449664418ccf5afdbe93ab2",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0217_comments_deleted_at.sql": {
+    "hash": "7726edcc8cfc276b0f46a660c80795aa819196a1b47b913eba5925940354eb38",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0217_group_membership_status_column.sql": {
+    "hash": "a99c6cde7a34665e79eafbd84c0d60fde5bca29bab7d97e5b766a7a546c1adf7",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0218_group_invites.sql": {
+    "hash": "00e6e86e995672eb9a1b32676a759e14ec40ec41e1370fd76ed432a7656c3fa2",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0218_guide_seen_at.sql": {
+    "hash": "c85c7def19ea8ff787667c1f0952637e43b33c567dfe180479c190789d6a525f",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0219_settings_group_creation_mode.sql": {
+    "hash": "95b5c3bac3325057de0cc6b9c51f52ae27e227553f31084b31b96e0363ee04b6",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0220_users_can_create_group.sql": {
+    "hash": "06c0b6bdb25e3b2d3966b4ebb5ccff0751c9311d097d0d6eb9a31803a418ed38",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0221_groups_name_length.sql": {
+    "hash": "6791171aab41b262fe3a697465d41982ca5fd3cd395fe3281498ad9f56673690",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0300_rls.sql": {
+    "hash": "56fc25d65bded3f674f9c3cacc1fd41bd3f846ed556d482cf510c98352612665",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0400_constraints.sql": {
+    "hash": "1b2c8069fb5a679c7a885c11199a4516e957a252febfce1367813f59dcc9b816",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "schemas/0401_unique_game_external.sql": {
+    "hash": "1201b2eda6d9afab3c29e39f10855287b1f9a8e3fc35c9f22a14405f19e33186",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "indexes/idx_group_invites_code.sql": {
+    "hash": "077593d4d66ef2d2e3540320309002a6a64575bf98d286112447850081ae14a9",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "indexes/idx_group_invites_group_id.sql": {
+    "hash": "b204f35e8e4393f1b3a2493be30c0e17de6effde2df6eeea453a8b9c0e93db58",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "indexes/idx_group_memberships_user_group.sql": {
+    "hash": "0617d23e299557fc42fb5b0ddbb77cbbc90579cb0e5d504df143cd3c347dbb68",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "indexes/idx_pick_settlement_game.sql": {
+    "hash": "cfec6ce92ebe055c4fdf980021a2e8beae9ccea519ddbf5d64c7789259ea3ad6",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "indexes/idx_picks_group_game_user.sql": {
+    "hash": "83220964e987f8b8f81ba484bdb6bc3f7e67b0ccb1d892da97ce64cb26981d24",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/current_season_year.sql": {
+    "hash": "b74c0b18e26e3133ca6930956e9b58f951cfb24657157e7b1e6fe5f5b9fccc4f",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/leaderboard_season_totals.sql": {
+    "hash": "13e7d2193e0fa63e2256cc94795ddc03268826af13d2d396b7750e79e4ae099e",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/leaderboard_weekly_cumulative.sql": {
+    "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/picks_group_view.sql": {
+    "hash": "3fab816ab9c924ddb133d45eab3276b4eabeae84ce34840c930e385c18fb44ed",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/picks_status_view_admin.sql": {
+    "hash": "1ac8796c4fffc311b1fb16e23701f821e441e2c9c76e70954affb11f02421fbb",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/picks_status_view_user.sql": {
+    "hash": "dd1f1f8b6436b8d919529da891422a1a6f2151cefce76e14fc6d766cc8deb89f",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_accuracy_by_team_alltime.sql": {
+    "hash": "9217543f3d31b2a246b7cf369a3178221d19b3717d7c5d29916b1372e38582d8",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_accuracy_by_team.sql": {
+    "hash": "59b373eaf84994213fc9a4d951a8af26addfab6459623ae098fcdbab366d8a39",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_accuracy_by_weight_alltime.sql": {
+    "hash": "9ca7d45061babfb97a6d4d4767c07d74b0e8a234999f664b2610ed1e72f77e2f",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_accuracy_by_weight.sql": {
+    "hash": "71ec5ff1c468b46663f833c6ba77ca9417684a72cd89c499469b68d0f59df15e",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_alltime_totals.sql": {
+    "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_head_to_head.sql": {
+    "hash": "643831739ef83abf840ccf1fdde14365f37fcd1d3cd7b8b566d667f95b936a93",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/stats_season_trend.sql": {
+    "hash": "6ebd53a5ff3490dfad0bc20ebf164271ac21110cf8d467ad119a3bc8bfcffe77",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "views/ui_games.sql": {
+    "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/ats_margin_at_lock.sql": {
+    "hash": "84ef81ba0a6f37a4a7ad2645b076686597be06de13c1b421c86eb709c03e945c",
+    "signature": "public.ats_margin_at_lock(int, int, int, int, int, numeric)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/audit_log_action.sql": {
+    "hash": "861f11438db018b7d1cc32b8462bffc022d5cb0872a67831b55766ee6b479f5d",
+    "signature": "public.audit_log_action(uuid, text, jsonb)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/get_final_week_unlimited_allin.sql": {
+    "hash": "0721d32c8b130d1fa6c0191d1b3b7f7fcb1402ac0147b401b3e10b249e7aade5",
+    "signature": "public._get_final_week_unlimited_allin()",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/grade_games_by_ids.sql": {
+    "hash": "58f497475f8ae328582f9752072216a51885e505c33f920f3133b1eee478efcf",
+    "signature": "public._grade_games_by_ids(uuid[])",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/resolve_missed_penalty.sql": {
+    "hash": "07b53c5384738da54de036156b15b57a5c2e9230875253059490414a3bb90a06",
+    "signature": "public.resolve_missed_penalty_for_game(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/_private/weight_points.sql": {
+    "hash": "719cf000db2430414b70c958dff53e3686324d11a0be85867d3821988483ad34",
+    "signature": "public.weight_points(text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/auth/handle_new_auth_user.sql": {
+    "hash": "b1238dd9684c9a38c6af173b1cec944d7432e088c8763d77b7003a4522aa5784",
+    "signature": "public.handle_new_auth_user()",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/auth/handle_updated_auth_user.sql": {
+    "hash": "5789d83a0c7c8c0ae79442fc81d6ad1931f0e1d0552e1e7bc60339eb366428a0",
+    "signature": "public.handle_updated_auth_user()",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/auth/is_commissioner.sql": {
+    "hash": "8b267c11d51d1aa2ea9fb8840efef2a70021f4fbff5497dc8cda910c42dd7bc2",
+    "signature": "public.is_commissioner(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/games/attach_line_to_matchup.sql": {
+    "hash": "3e15886d5c55206805abf518f2ddc9b7928975cc311c920e9a588974c34737be",
+    "signature": "public.attach_line_to_matchup(int, int, int, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/games/upsert_game_by_external_id.sql": {
+    "hash": "ad65180f3a5f3375764f2913197e0dbd985eb1dc3932e2cfe619d0681e7f3e02",
+    "signature": "public.upsert_game_by_external_id(text, int, timestamptz, int, int)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/games/upsert_game_by_matchup.sql": {
+    "hash": "aeb4abe3299938b4356b09d9c4bc0e158a8055fd0a3e481e5cf92f33b5f1156f",
+    "signature": "public.upsert_game_by_matchup(int, int, int, timestamptz, text, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/grade/advance_week_if_complete.sql": {
+    "hash": "5f42d288c7a79dedd4452b96365f5760c26e55d19e3ae8808b15303bedef8993",
+    "signature": "public.advance_week_if_complete()",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/grade/grade_game.sql": {
+    "hash": "62b9dba22ffed92be25d3ea5a1b1dfc9acab61ee6aa56949d0b6635bc9653667",
+    "signature": "public.grade_game(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/grade/grade_pick.sql": {
+    "hash": "13d8f625bede1e7f5a9a92bd46ea321a4d33980fc8f2a765d399cfafdfcf52ad",
+    "signature": "public.grade_pick(int, int, int, int, int, int, numeric, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/grade/grade_season.sql": {
+    "hash": "063be5c3e75c701ff86088aac021e6d4f1078fa06f3ea8bee825df3b77f3143c",
+    "signature": "public.grade_season(int)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/grade/grade_week.sql": {
+    "hash": "c3f42b2af009fe35a67f5b2598b015dfc187f8b3873a5f197fd3d184693dd435",
+    "signature": "public.grade_week(int)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/create_group.sql": {
+    "hash": "297462a723c7c2ac9da33fd9ae6f758fdfda3d3a10ee3b8f5197725a743c348b",
+    "signature": "public.create_group(text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/leave_group.sql": {
+    "hash": "63250ed8c125d7acd662158abcab775a6b1982edb9f22cf253325dc4f58be35d",
+    "signature": "public.leave_group(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/mint_invite.sql": {
+    "hash": "42c029618f91446146cdc3da1192c1e3cecd0d4cc489a0376da44cf79358421d",
+    "signature": "public.mint_invite(uuid, integer, timestamptz)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/preview_invite.sql": {
+    "hash": "80b787d511162cb395dcd7aeeb44541e186fd9213ca33cb48e8da6007ab0254f",
+    "signature": "public.preview_invite(text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/promote_member.sql": {
+    "hash": "27e9ee1cd14baa5f3e370151b4e605340ef3398a1d9834b1bb819b35548b9cfe",
+    "signature": "public.promote_member(uuid, uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/redeem_invite.sql": {
+    "hash": "4814f2a1387a4debc729a3652cc2e80ecaa75835498291a7246a851b0cec8eb0",
+    "signature": "public.redeem_invite(text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/remove_member.sql": {
+    "hash": "817167e5ff8a4b698b2f52c72611bc7c21718b5107edd5411e59fc154b06078e",
+    "signature": "public.remove_member(uuid, uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/groups/rename_group.sql": {
+    "hash": "b9eaeabef535b00e2cc86eb8972c52b7b9b3afb0e27020e645f1ed0a9e725328",
+    "signature": "public.rename_group(uuid, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/odds/set_active_line.sql": {
+    "hash": "ffb25676d08fa709cdaa07587f4c8e8dcc150ebac6966b98d856a00db8ba6d3a",
+    "signature": "public.set_active_line(uuid, int, numeric, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/picks/lock_pick_all_groups.sql": {
+    "hash": "d54056f362e9e1ca89670258dc9f3ce03a5dd5045f48e674b6b48d21a6310c12",
+    "signature": "public.lock_pick_all_groups(uuid, public.side_enum, public.weight_enum)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/picks/lock_pick.sql": {
+    "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
+    "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/picks/unlock_pick_all_groups.sql": {
+    "hash": "191fd3b9ad541645f4a4032a16d3a1722cec761858f74b0c0fd676ccb8d4f683",
+    "signature": "public.unlock_pick_all_groups(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "functions/picks/unlock_pick.sql": {
+    "hash": "07a52e195364b7b6ba0dccf8166e7e278773a8c3a090a910d29f706f04c9fa45",
+    "signature": "public.unlock_pick(uuid)",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/10_rls_enable.sql": {
+    "hash": "e07f0ec5c9560e98eedef5757d52e0c7db7fdeea0139832a6423da41b855b1bc",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/20_policies_read_core.sql": {
+    "hash": "1c42bef747ec7fb4a38e1822e33708f01a995b2cdd8b7b170e1a1fdb857c39b0",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/21_policies_read_lookup.sql": {
+    "hash": "a281b1ce08cdb55cd607a44f4af1c9b9742269943ea426f898ff74d8aa1837ca",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/25_policies_groups.sql": {
+    "hash": "b31eab3a9ce529d5d6adecf5f9ad0733a03c14a12a5a2593a31bd4cd409849f3",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/26_policies_group_config.sql": {
+    "hash": "edf046dceeb9f028977e7aa100af893aa9565dd55916d1759aed9145ec2b0bcd",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/27_policies_group_invites.sql": {
+    "hash": "d08b619c709eadfe95515811e4f55566a7fcc4bc0982f5b30d1b1fff9e761f3e",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/30_policies_users.sql": {
+    "hash": "3e04c236ac4f8530e83794282e8b8d29922cda3727398be45f1370f7e36fd4b7",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/40_policies_picks.sql": {
+    "hash": "b660b0964133e93fcc03ba9e6665f4e70f0dbb1633cab37f4abfa65092a0dbf4",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/41_policies_comments_reactions.sql": {
+    "hash": "5e8c78f3fdfbc11bcb0547ee7c0f22a21e8beca8f0b4a4b0c598708b307a55ef",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/45_policies_push_notifications.sql": {
+    "hash": "a0d8ab8dd841512dee602d5f058b9a6a88f3be96a9cea8d5e3942450a1c9ead7",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "policies/50_policies_admin.sql": {
+    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "grants/admin_grants.sql": {
+    "hash": "59cd97277566e8fe4096d5fde1c49c456aba2323e9f869a49874dd725a284b7c",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "grants/anon_grants.sql": {
+    "hash": "47417979209145c2232e6420401202324f5b3741b8f8065cd857addc7944c9fe",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "grants/group_grants.sql": {
+    "hash": "19157b87f1b251c8b1bce0ed9aad6ccafe4636a9ec5a128c03244f9f51b61cff",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "grants/picks_fanout_grants.sql": {
+    "hash": "def61327db9284563b9334f36bb237027b2b9ec5299975eae818a4015821a0df",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+  },
+  "grants/player_grants.sql": {
+    "hash": "e5002ae560be9c3a5607c6f48c08453fbd8386e2192a6c2f992aea7f99185362",
+    "migration": "20260626184826_baseline.sql",
+    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   }
 }
