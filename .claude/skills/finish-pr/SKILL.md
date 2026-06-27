@@ -24,13 +24,18 @@ changed>` plus notable tables/views/routes and the governing ADR when useful. If
    number as `- **PR #NNN** …`. See the format note at the top of `docs/CHANGELOG.md`.
    It's a shared file: if the top conflicts with another in-flight PR, keep both
    entries.
-4. Draft the PR body:
+4. **Carry version intent (ADR-0015).** Confirm the closed issue has a `semver:` label
+   and a target milestone (set by `issue-author`); inherit both onto the PR. For an
+   issue-less PR (chore/skill/CI/infra/docs), apply `semver:patch` and attach the active
+   milestone. **Do not bump `package.json`** — the version is computed and bumped only by
+   `cut-release` at release time, not in feature PRs.
+5. Draft the PR body:
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
    - list the verification that **actually ran** (from step 1)
-5. **Confirm before the GitHub write**, then open with `gh pr create`.
-6. Move the GitHub Project item to **Review**.
-7. After the branch merges and is no longer needed, clean up:
+6. **Confirm before the GitHub write**, then open with `gh pr create`.
+7. Move the GitHub Project item to **Review**.
+8. After the branch merges and is no longer needed, clean up:
    ```powershell
    git worktree remove ..\sunday_bets-claude-NNN
    git worktree prune
@@ -38,5 +43,7 @@ changed>` plus notable tables/views/routes and the governing ADR when useful. If
 
 ## See also
 
-- `docs/WORKFLOW.md` §"Pull request and merge"
-- Sibling skills: `test-gate` (the checks), `db-pr-review` (DB-diff review).
+- `docs/WORKFLOW.md` §"Pull request and merge" and §"Versioning"
+- `docs/adr/0015-versioning-and-release-policy.md` (why no `package.json` bump here)
+- Sibling skills: `test-gate` (the checks), `db-pr-review` (DB-diff review),
+  `cut-release` (bumps the version + cuts the release).
