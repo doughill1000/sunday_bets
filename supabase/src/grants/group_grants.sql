@@ -22,6 +22,14 @@ grant execute on function public.promote_member(uuid, uuid) to authenticated, se
 grant execute on function public.leave_group(uuid)         to authenticated, service_role;
 grant execute on function public.mint_invite(uuid, integer, timestamptz) to authenticated, service_role;
 
+-- update_group_config (issue #154): commissioner edits per-group league rules
+-- (grading_preset, scoring_rules.drop_worst_week). SECURITY DEFINER; commissioner
+-- check + ADR-0007 season-freeze enforced internally. No direct client writes to
+-- group_config (upd_group_config_no_client policy stays intact). group_active_season_settled
+-- is the shared freeze helper, also called by the group page load to lock the UI selector.
+grant execute on function public.update_group_config(uuid, text, boolean) to authenticated, service_role;
+grant execute on function public.group_active_season_settled(uuid)        to authenticated, service_role;
+
 -- group_config / group_week_overrides: authenticated read gated by RLS.
 -- Client writes are blocked by policy; all writes go through service_role.
 revoke all on public.group_config from public, anon;
