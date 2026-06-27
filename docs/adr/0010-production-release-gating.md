@@ -1,9 +1,42 @@
 # ADR-0010: Gate deploys behind version bumps via GitHub Actions
 
-- Status: Accepted
+- Status: Accepted (amended 2026-06-27)
 - Date: 2026-06-26
 - Issue: None (approved release-strategy plan; no tracking issue)
 - Supersedes: None
+
+## Amendment (2026-06-27): one fully-manual release that migrates _and_ deploys
+
+The original decision made a `package.json` `version` change on a push to `master`
+**auto-deploy** to production (with `workflow_dispatch` as a secondary path), and let
+`migrate-db.yml` **auto-apply** migrations to prod on any push to `master` that touched
+`supabase/**`. Both automatic triggers are **removed**. Production is now released by a
+single deliberate `workflow_dispatch` on `.github/workflows/deploy-prod.yml`. A merge to
+`master` — version bump or schema change or not — never touches production by itself.
+
+That one dispatch runs the whole release in order:
+`source_integrity` (migration ledger check) → `backup` (pre-release prod DB dump to
+OneDrive) → `migrate` (`supabase db push`, idempotent no-op if nothing is pending) →
+`deploy` (`vercel pull → build --prod → deploy --prebuilt --prod`) → tag the
+`v<version>` GitHub Release. Migrations run **before** the deploy so the DB and app ship
+together — this directly closes the "prod database can run ahead of the deployed prod
+app" gap called out in the Consequences below. `migrate-db.yml` is **deleted** (its jobs
+moved into `deploy-prod.yml`); `migrate-dry-run.yml` is unchanged and still validates
+every migration via `supabase db push --dry-run` against Production at PR time, so a bad
+migration is caught before it can reach a release.
+
+What stays the same: previews, `git.deploymentEnabled: false`, the runtime-secret
+constraints below, and the backup/migration mechanics themselves. The `v<version>` tag +
+GitHub Release step still runs (now on every manual dispatch, reading the current
+`package.json` `version`, skipping if the tag already exists), so the milestone → Release
+ritual is unchanged.
+
+Why: "every version-bump merge ships to prod" coupled releasing to merging, and
+auto-migrate-on-merge applied schema to prod ahead of (and independently of) the app.
+Folding both into one manual release makes the release moment explicit, ships schema and
+app together, and lets changes land on `master` without forcing a production cut. Where
+the decision text below says a version bump is the production-release _signal_, read it
+as: a version bump marks a release _candidate_; the manual dispatch is the release.
 
 ## Context
 

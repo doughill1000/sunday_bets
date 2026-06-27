@@ -1,24 +1,102 @@
 # .github/workflows/deploy-prod.yml
-# Production deploys are gated: Vercel's automatic Git deploys are disabled
-# (vercel.json `git.deploymentEnabled: false`), so this workflow is the only path
-# to production. It deploys only when `package.json` "version" changes on a push to
-# master, or on a manual `workflow_dispatch` (an off-cycle cut). See ADR-0010.
+# Production releases are manual: Vercel's automatic Git deploys are disabled
+# (vercel.json `git.deploymentEnabled: false`), and this workflow runs ONLY on a
+# deliberate `workflow_dispatch` ("Run workflow"). A merge to master never ships to
+# prod by itself.
+#
+# One dispatch is a full release, in order: verify migration source -> back up the
+# prod DB -> apply pending migrations -> build & deploy the app -> tag the release.
+# Migrations run before the deploy so the DB and app ship together. Migrations are
+# validated at PR time by migrate-dry-run.yml (`supabase db push --dry-run`), so a
+# bad migration is caught before it can reach this workflow. See ADR-0010.
 name: Deploy Production
 
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 concurrency:
   group: deploy-prod
-  cancel-in-progress: false
+  cancel-in-progress: false # never interrupt a release mid-flight
 
 permissions:
-  contents: write # create the v<version> tag + GitHub Release on a version bump
+  contents: write # create the v<version> tag + GitHub Release for the deployed version
+
+env:
+  SUPABASE_CLI_VERSION: 2.107.0
 
 jobs:
+  # 1. Migration ledger integrity must hold before we touch the prod DB.
+  source_integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migration:check
+
+  # 2. Back up prod before applying anything (runs on every release, even if there
+  #    are no pending migrations — a pre-release snapshot is always worth having).
+  backup:
+    needs: [source_integrity]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: Production
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install tools (pg_dump 17, rclone)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget ca-certificates gnupg
+          echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/pgdg.gpg >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          curl -fsSL https://rclone.org/install.sh | sudo bash
+      - name: Backup DB to OneDrive (rclone)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          RCLONE_CONFIG_B64: ${{ secrets.RCLONE_CONFIG_B64 }}
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "$RCLONE_CONFIG_B64" | base64 -d > ~/.config/rclone/rclone.conf
+          TS=$(date -u +'%Y%m%dT%H%M%SZ')
+          FILE="supabase_${TS}_${GITHUB_SHA::7}.dump"
+          /usr/lib/postgresql/17/bin/pg_dump --dbname="$SUPABASE_DB_URL" \
+            --format=custom --no-owner --no-privileges --compress=9 --file="$FILE"
+          rclone copy "$FILE" onedrive:supabase-backups/
+
+  # 3. Apply pending migrations to prod (idempotent no-op if none are pending).
+  migrate:
+    needs: [backup]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: Production
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Run Supabase migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
+  # 4. Build & deploy the app, then tag the release. Runs after the DB is migrated
+  #    so app and schema ship together.
   deploy:
+    needs: [migrate]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -28,74 +106,51 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 2 # need HEAD^ to compare the version line
 
-      - name: Decide whether to deploy
-        id: decide
+      - name: Read version
+        id: version
         run: |
-          NEW=$(node -p "require('./package.json').version")
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-          echo "Current version: $NEW"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual dispatch — deploying current master."
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git show HEAD^:package.json > /tmp/prev-package.json 2>/dev/null || echo '{}' > /tmp/prev-package.json
-          OLD=$(node -p "require('/tmp/prev-package.json').version || ''")
-          echo "Previous version: ${OLD:-<none>}"
-          if [ "$NEW" != "$OLD" ]; then
-            echo "Version bumped ($OLD -> $NEW) — deploying."
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No version bump — skipping production deploy."
-            echo "deploy=false" >> "$GITHUB_OUTPUT"
-          fi
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Deploying version: $VERSION"
 
       # `vercel build` spawns `pnpm` to install deps (project uses pnpm-lock.yaml).
       # Vercel's own infra provides pnpm; here the build runs in CI, so we must too.
       - uses: pnpm/action-setup@v6
-        if: steps.decide.outputs.deploy == 'true'
         with:
           version: 9
 
       - uses: actions/setup-node@v6
-        if: steps.decide.outputs.deploy == 'true'
         with:
           node-version: 22
 
       - name: Install Vercel CLI
-        if: steps.decide.outputs.deploy == 'true'
         # Pin the major so a breaking CLI release can't silently break the only
         # path to production. Bump deliberately after vetting a new major.
         run: npm install -g vercel@54
 
       - name: Pull Vercel production environment
-        if: steps.decide.outputs.deploy == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Build
-        if: steps.decide.outputs.deploy == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy to production
-        if: steps.decide.outputs.deploy == 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
-      # On a real version bump (push, not manual dispatch), tag the release so the
-      # milestone -> GitHub Release ritual stays in sync. Skips if the tag exists.
+      # Tag the deployed version so the milestone -> GitHub Release ritual stays in
+      # sync. Skips if the release/tag already exists (e.g. re-dispatching the same
+      # version), so it's safe to run on every manual release.
       - name: Tag release
-        if: github.event_name == 'push' && steps.decide.outputs.deploy == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.decide.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           TAG="v$VERSION"
           if gh release view "$TAG" >/dev/null 2>&1; then
