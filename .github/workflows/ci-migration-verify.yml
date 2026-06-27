@@ -8,15 +8,12 @@ name: CI - Migration Drift (src reproduces migrations)
 # REQUIRED GATE. The ADR-0012 history squash landed (the from-empty baseline now applies:
 # the RLS helper functions it depends on are emitted in the schemas phase, ahead of the
 # inline policies that call them), so this job blocks the PR on any src↔migration drift.
-# Add "CI - Migration Drift (src reproduces migrations)" to the branch's required status
-# checks in GitHub branch protection to enforce it on merge.
+# Add "verify-result" to the branch's required status checks in GitHub branch protection
+# to enforce it on merge.
 
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'supabase/**'
-      - '.github/workflows/ci-migration-verify.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +23,23 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      supabase: ${{ steps.filter.outputs.supabase }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            supabase:
+              - 'supabase/**'
+              - '.github/workflows/ci-migration-verify.yml'
+
   verify:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.supabase == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -64,3 +77,17 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
+
+  verify-result:
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.verify.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi

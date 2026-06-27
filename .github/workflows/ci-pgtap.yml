@@ -2,9 +2,6 @@ name: PGTap Tests
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'supabase/**'
-      - '.github/workflows/ci-pgtap.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,7 +11,23 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      supabase: ${{ steps.filter.outputs.supabase }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            supabase:
+              - 'supabase/**'
+              - '.github/workflows/ci-pgtap.yml'
+
   pgTap:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.supabase == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -32,3 +45,17 @@ jobs:
         run: supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Run Tests
         run: supabase test db
+
+  pgTap-result:
+    needs: pgTap
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.pgTap.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
