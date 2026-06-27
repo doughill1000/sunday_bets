@@ -4,20 +4,18 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
+import { getGroupMembersPage } from '$lib/server/db/queries/getGroupMembers';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
   const { groupId, user } = locals;
   if (!groupId || !user) throw redirect(303, '/auth/error?reason=no-group');
 
-  // Load members with their user profiles, ordered by role then display name.
-  const { data: memberships, error: memErr } = await supabaseService
-    .from('group_memberships')
-    .select('user_id, role, joined_at, users!inner(id, display_name, avatar_key)')
-    .eq('group_id', groupId)
-    .order('role')
-    .order('joined_at');
-
-  if (memErr) throw new Error(memErr.message);
+  // Bounded, keyset-paginated members page (issue #152). Pass back `membersCursor`
+  // as `?members_cursor=` to fetch the next page; for real groups the first page
+  // already contains everyone, so output is unchanged.
+  const membersPage = await getGroupMembersPage(groupId, {
+    cursor: url.searchParams.get('members_cursor')
+  });
 
   // Load group name.
   const { data: group, error: groupErr } = await supabaseService
@@ -28,8 +26,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   if (groupErr || !group) throw redirect(303, '/auth/error?reason=no-group');
 
-  // Check if the current user is a commissioner.
-  const myMembership = memberships?.find((m) => m.user_id === user.id);
+  // The current user's role via a direct PK lookup -- they may not be on the first
+  // members page, so we can't derive this from the page above.
+  const { data: myMembership } = await supabaseService
+    .from('group_memberships')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle();
   const isCommissioner = myMembership?.role === 'commissioner';
 
   // Load active invites if commissioner.
@@ -68,13 +72,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   return {
     group,
-    members: (memberships ?? []).map((m) => ({
-      userId: m.user_id,
-      role: m.role,
-      joinedAt: m.joined_at,
-      displayName: m.users.display_name ?? '',
-      avatarKey: m.users.avatar_key ?? null
-    })),
+    members: membersPage.members,
+    membersCursor: membersPage.nextCursor,
     isCommissioner,
     currentUserId: user.id,
     invites,

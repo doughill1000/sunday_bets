@@ -1479,9 +1479,58 @@ export type Database = {
         Args: { p_group_id: string };
         Returns: boolean;
       };
+      group_members_page: {
+        Args: {
+          p_after_joined_at?: string;
+          p_after_role?: Database['public']['Enums']['group_membership_role'];
+          p_after_user_id?: string;
+          p_group_id: string;
+          p_limit?: number;
+        };
+        Returns: {
+          avatar_key: string;
+          display_name: string;
+          group_id: string;
+          joined_at: string;
+          role: Database['public']['Enums']['group_membership_role'];
+          user_id: string;
+        }[];
+      };
+      group_season_years: { Args: { p_group_id: string }; Returns: number[] };
       is_admin: { Args: never; Returns: boolean };
       is_commissioner: { Args: { target_group_id: string }; Returns: boolean };
       is_member: { Args: { target_group_id: string }; Returns: boolean };
+      leaderboard_season_page: {
+        Args: {
+          p_after_pushes?: number;
+          p_after_total_points?: number;
+          p_after_user_id?: string;
+          p_after_wins?: number;
+          p_group_id: string;
+          p_limit?: number;
+          p_season_year: number;
+        };
+        Returns: {
+          avatar_key: string | null;
+          decisions: number | null;
+          display_name: string | null;
+          group_id: string | null;
+          losses: number | null;
+          missed: number | null;
+          pushes: number | null;
+          rank: number | null;
+          season_year: number | null;
+          total_points: number | null;
+          user_id: string | null;
+          wins: number | null;
+        }[];
+        SetofOptions: {
+          from: '*';
+          to: 'leaderboard_season_totals';
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       leave_group: { Args: { p_group_id: string }; Returns: undefined };
       lock_pick: {
         Args: {
