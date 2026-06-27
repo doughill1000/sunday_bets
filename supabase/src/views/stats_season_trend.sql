@@ -1,6 +1,9 @@
 -- Weekly and cumulative season scoring per group, shaped for WeeklyCumulativeEntry.
-create or replace view public.stats_season_trend
-with (security_invoker = on) as
+-- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
+-- of a grading run. Matviews don't support security_invoker; all reads are service-role.
+drop view if exists public.stats_season_trend;
+
+create materialized view public.stats_season_trend as
 with week_rows as (
   select
     ps.user_id,
@@ -58,6 +61,11 @@ select
   ) as cumulative_rank_this_week,
   cumulative.group_id
 from cumulative;
+
+-- Unique natural key for REFRESH ... CONCURRENTLY; also serves the (group_id,
+-- season_year) read filter in getWeeklyCumulative.
+create unique index if not exists uq_stats_season_trend
+  on public.stats_season_trend (group_id, user_id, season_year, week_number);
 
 revoke all on public.stats_season_trend from public, anon, authenticated;
 grant select on public.stats_season_trend to service_role;

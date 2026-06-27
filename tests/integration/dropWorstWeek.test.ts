@@ -224,6 +224,12 @@ beforeAll(async () => {
   await insertSettlement(NODROP_GROUP_ID, CANARY_USER_ID, game2Id, -4, 'loss');
   await insertSettlement(DROP_GROUP_ID, CONTROL_USER_ID, game1Id, 5, 'win');
   await insertSettlement(DROP_GROUP_ID, CONTROL_USER_ID, game2Id, 5, 'win');
+
+  // leaderboard_season_totals is a materialized view (issue #191): refresh it after
+  // writing settlements directly so getSeasonLeaderboard reflects them.
+  const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');
+  if (refreshErr)
+    throw new Error(`dropWorstWeek: refresh_leaderboard_stats: ${refreshErr.message}`);
 });
 
 afterAll(async () => {
@@ -297,6 +303,11 @@ describe('drop-worst-week via getSeasonLeaderboard', () => {
 
     await ensureMembership(admin, DROP_GROUP_ID, [oneWeekUserId]);
     await insertSettlement(DROP_GROUP_ID, oneWeekUserId, game1Id, 7, 'win');
+    // Refresh the matview (issue #191) so the new settlement is visible to the read below.
+    {
+      const { error } = await admin.rpc('refresh_leaderboard_stats');
+      if (error) throw new Error(`dropWorstWeek: refresh_leaderboard_stats: ${error.message}`);
+    }
 
     try {
       const entries = await getSeasonLeaderboard(DW_SEASON_YEAR, DROP_GROUP_ID);

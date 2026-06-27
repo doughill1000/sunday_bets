@@ -289,9 +289,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "13e7d2193e0fa63e2256cc94795ddc03268826af13d2d396b7750e79e4ae099e",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "5668bff0943bf572fdd72ef2643849c6b2c4a49762797b0d26789bab88c82791",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
@@ -314,39 +314,39 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "views/stats_accuracy_by_team_alltime.sql": {
-    "hash": "9217543f3d31b2a246b7cf369a3178221d19b3717d7c5d29916b1372e38582d8",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "75c35955c15f1d3b949d025aa8a39dff6da09f2c247abbf47a7af1c284faaca3",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_accuracy_by_team.sql": {
-    "hash": "59b373eaf84994213fc9a4d951a8af26addfab6459623ae098fcdbab366d8a39",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "8091f3af5e96b4540535ed5922567fbb77e13bad3bbef9fef676785eea305e75",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_accuracy_by_weight_alltime.sql": {
-    "hash": "9ca7d45061babfb97a6d4d4767c07d74b0e8a234999f664b2610ed1e72f77e2f",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "0841df68cf68b861132f5ed8c3ccd36a111bf33b9024095912fe741f9dedee8d",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_accuracy_by_weight.sql": {
-    "hash": "71ec5ff1c468b46663f833c6ba77ca9417684a72cd89c499469b68d0f59df15e",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "cd9f7311534ac6a312eeb298509a4615a57d6e6809c5c21623cfe97c927fdb26",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_alltime_totals.sql": {
-    "hash": "381f79b0a2ea9d8a14e66e092928ba7a1185e7c11e4d6d67674256ba1d9e7333",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "3c763952f09091906e8bcb13a537a64ed86523e2729cc7876346a1478d20cc3c",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_head_to_head.sql": {
-    "hash": "643831739ef83abf840ccf1fdde14365f37fcd1d3cd7b8b566d667f95b936a93",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "b4aab5e5dd1ef3b237e22a4011ee82a8d8a7f7340087c2af1c558b0107fba2ae",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/stats_season_trend.sql": {
-    "hash": "6ebd53a5ff3490dfad0bc20ebf164271ac21110cf8d467ad119a3bc8bfcffe77",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "2c3b9d0a830f7d60feac886663c2128cb74f21ec5e37049c1c7a3b70f4c86456",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   },
   "views/ui_games.sql": {
     "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4",
@@ -618,5 +618,11 @@
     "signature": "public._capture_closing_line(uuid[])",
     "migration": "20260627001610_house_grading_preset.sql",
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
+  },
+  "functions/stats/refresh_leaderboard_stats.sql": {
+    "hash": "ff300c933f36d65376cab28913baa9a84e18cf669784b6b582eccff10cf72dc6",
+    "signature": "public.refresh_leaderboard_stats()",
+    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
+    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
   }
 }

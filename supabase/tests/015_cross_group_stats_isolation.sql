@@ -161,6 +161,10 @@ ON CONFLICT (group_id, user_id, game_id) DO UPDATE
       outcome      = EXCLUDED.outcome,
       graded_at    = EXCLUDED.graded_at;
 
+-- leaderboard_season_totals and the stats_* views are materialized (issue #191):
+-- refresh so the settlements above are visible to every assertion below.
+SELECT public.refresh_leaderboard_stats();
+
 -- ── Assertions: leaderboard_season_totals ─────────────────────────────────────
 
 -- 1. Group A leaderboard contains shared and excl-A, NOT excl-B.

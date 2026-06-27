@@ -4,7 +4,12 @@
 -- week is omitted from total_points once they have 2+ settled weeks. The drop
 -- forgives points only -- the W/L/push record and tie-breakers still count the
 -- dropped week.
-create or replace view public.leaderboard_season_totals as
+-- Materialized (issue #191): season standings are recomputed only at the end of a
+-- grading run via public.refresh_leaderboard_stats(), not on every page load. The
+-- query body below is unchanged from the prior regular view.
+drop view if exists public.leaderboard_season_totals;
+
+create materialized view public.leaderboard_season_totals as
 with season_rows as (
 select
 ps.user_id,
@@ -113,3 +118,14 @@ order by a.total_points desc, a.wins desc, a.pushes desc
 a.group_id,
 a.avatar_key
 from adjusted a;
+
+-- Unique natural key. Required for REFRESH MATERIALIZED VIEW CONCURRENTLY and also
+-- serves the (group_id, season_year) read filter in getSeasonLeaderboard.
+create unique index if not exists uq_leaderboard_season_totals
+  on public.leaderboard_season_totals (group_id, user_id, season_year);
+
+-- Materialized views are NOT covered by the schema-wide `grant select on all tables`
+-- (that grant excludes matviews), so service_role is granted explicitly. MVs cannot
+-- carry RLS; every read goes through the service-role client, which filters by group_id.
+revoke all on public.leaderboard_season_totals from public, anon, authenticated;
+grant select on public.leaderboard_season_totals to service_role;

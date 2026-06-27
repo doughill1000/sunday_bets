@@ -530,6 +530,11 @@ async function run() {
     if (error) throw new Error(`grade_game(${id}) failed: ${error.message}`);
   }
 
+  // Grading writes settlements but the leaderboard/stats matviews (issue #191) only
+  // recompute on an explicit refresh; do it once after grading so the seeded data shows.
+  const { error: refreshErr } = await supabase.rpc('refresh_leaderboard_stats');
+  if (refreshErr) throw new Error(`refresh_leaderboard_stats failed: ${refreshErr.message}`);
+
   // --- Admin screen data: settings + cron run log ----------------------------
   console.log('Seeding settings + cron_run_log…');
   const { error: settingsErr } = await supabase.from('settings').upsert({

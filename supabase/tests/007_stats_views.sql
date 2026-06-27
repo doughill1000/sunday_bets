@@ -2,13 +2,13 @@ begin;
 
 select plan(20);
 
-select has_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
-select has_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team exists');
-select has_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight exists');
-select has_view('public', 'stats_season_trend', 'stats_season_trend exists');
-select has_view('public', 'stats_alltime_totals', 'stats_alltime_totals exists');
-select has_view('public', 'stats_accuracy_by_team_alltime', 'stats_accuracy_by_team_alltime exists');
-select has_view('public', 'stats_accuracy_by_weight_alltime', 'stats_accuracy_by_weight_alltime exists');
+select has_materialized_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
+select has_materialized_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team exists');
+select has_materialized_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight exists');
+select has_materialized_view('public', 'stats_season_trend', 'stats_season_trend exists');
+select has_materialized_view('public', 'stats_alltime_totals', 'stats_alltime_totals exists');
+select has_materialized_view('public', 'stats_accuracy_by_team_alltime', 'stats_accuracy_by_team_alltime exists');
+select has_materialized_view('public', 'stats_accuracy_by_weight_alltime', 'stats_accuracy_by_weight_alltime exists');
 
 select columns_are(
   'public',
@@ -171,6 +171,10 @@ set
   outcome = excluded.outcome,
   graded_at = excluded.graded_at;
 
+-- These are materialized views (issue #191): recompute them so the rows inserted
+-- above are visible to the assertions below.
+select public.refresh_leaderboard_stats();
+
 select results_eq(
   $$
     select
@@ -270,16 +274,18 @@ select results_eq(
   'alltime weight accuracy aggregates across all seasons'
 );
 
+-- The 7 stats views are materialized (issue #191). security_invoker is a plain-view
+-- reloption matviews can't carry; assert they are matviews (relkind 'm') instead.
 select results_eq(
   $$
     select count(*)::int
     from pg_class
     where relnamespace = 'public'::regnamespace
       and relname like 'stats_%'
-      and reloptions @> array['security_invoker=on']
+      and relkind = 'm'
   $$,
   $$ values (7) $$,
-  'all stats views use security_invoker'
+  'all stats views are materialized'
 );
 
 select tests.clear_authentication();
@@ -287,7 +293,7 @@ set role anon;
 select throws_ok(
   $$ select * from public.stats_season_trend limit 1 $$,
   '42501',
-  'permission denied for view stats_season_trend',
+  'permission denied for materialized view stats_season_trend',
   'anon query is denied'
 );
 reset role;

@@ -56,5 +56,6 @@ current status.
 | [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        |
 | [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                |
 | [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                |
+| [ADR-0013](0013-materialized-leaderboard-stats.md)         | Leaderboard/stats served from materialized views refreshed on grading       |
 
 _ADR-0008 was never used — the number was skipped, so there is no `0008-*.md` record._
