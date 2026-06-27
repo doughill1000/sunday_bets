@@ -1475,6 +1475,10 @@ export type Database = {
       };
       grade_season: { Args: { p_season_id: number }; Returns: undefined };
       grade_week: { Args: { p_week_id: number }; Returns: undefined };
+      group_active_season_settled: {
+        Args: { p_group_id: string };
+        Returns: boolean;
+      };
       is_admin: { Args: never; Returns: boolean };
       is_commissioner: { Args: { target_group_id: string }; Returns: boolean };
       is_member: { Args: { target_group_id: string }; Returns: boolean };
@@ -1556,6 +1560,14 @@ export type Database = {
           ok: boolean;
           reason: string;
         }[];
+      };
+      update_group_config: {
+        Args: {
+          p_drop_worst_week?: boolean;
+          p_grading_preset?: string;
+          p_group_id: string;
+        };
+        Returns: undefined;
       };
       upsert_game_by_external_id: {
         Args: {

@@ -30,12 +30,16 @@ refresh them at the **end of every grading run**.
 
 Boundaries future work must preserve:
 
-1. **Grading is the only writer that must trigger a refresh.** After `grade_game`,
-   `grade_week`, or `grade_season` commits, the server grading helpers
+1. **Any path that changes a leaderboard input must refresh.** The inputs are
+   `pick_settlement` rows (changed by grading) and `group_config.scoring_rules`
+   (the `drop_worst_week` toggle, changed by `update_group_config`). After
+   `grade_game`/`grade_week`/`grade_season` commits, the server grading helpers
    (`src/lib/server/grading.ts`) call the SQL function
-   `public.refresh_leaderboard_stats()`. Any new code path that writes
-   `pick_settlement` (backfills, demo seed, prod-data clone, imports) must refresh the
-   matviews afterward, or the leaderboard will show stale data until the next grade.
+   `public.refresh_leaderboard_stats()`; the `/api/group/update-config` route calls the
+   same helper after a successful config change. Any new code path that writes
+   `pick_settlement` or `group_config` (backfills, demo seed, prod-data clone, imports)
+   must refresh the matviews afterward, or the leaderboard will show stale data until the
+   next refresh.
 2. **Refresh is `CONCURRENTLY` and never blocks or fails the grade.** Each matview
    carries a unique index on its natural key so `REFRESH MATERIALIZED VIEW CONCURRENTLY`
    can run (it keeps the view readable during refresh and is transaction-safe inside the
