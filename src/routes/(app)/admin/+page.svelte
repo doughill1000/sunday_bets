@@ -30,6 +30,11 @@
     const ms = new Date(finished_at).getTime() - new Date(started_at).getTime();
     return `${(ms / 1000).toFixed(1)}s`;
   }
+
+  const headroom = $derived(data.notificationHeadroom);
+  const headroomLabel = $derived(
+    headroom.headroomPct == null ? '—' : `${Math.round(headroom.headroomPct * 100)}%`
+  );
 </script>
 
 <section class="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
@@ -58,6 +63,43 @@
       {msg.text}
     </div>
   {/if}
+
+  <Card class="p-6">
+    <CardHeader class="mb-4">
+      <CardTitle class="text-xl font-bold">Scaling signals</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-2 text-sm">
+      <p class="text-muted-foreground">
+        Notification cron (<span class="font-mono text-xs">{headroom.job}</span>) duration vs the
+        Vercel function timeout ({headroom.timeoutSeconds}s). Tier-B trigger: move the reminder
+        fan-out off the request path when headroom falls to/under 50%. See
+        <span class="font-mono text-xs">docs/observability/scaling-signals.md</span>.
+      </p>
+      {#if headroom.sampleCount === 0}
+        <p class="text-muted-foreground">No finished notification-cron runs recorded yet.</p>
+      {:else}
+        <div class="flex flex-wrap gap-x-6 gap-y-1">
+          <span>Latest: <strong>{headroom.latestDurationSeconds?.toFixed(1)}s</strong></span>
+          <span
+            >Worst of {headroom.sampleCount}:
+            <strong>{headroom.maxDurationSeconds?.toFixed(1)}s</strong></span
+          >
+          <span>
+            Headroom:
+            <strong class:text-destructive={headroom.warn} class:text-success={!headroom.warn}>
+              {headroomLabel}
+            </strong>
+          </span>
+        </div>
+        {#if headroom.warn}
+          <p class="text-destructive">
+            Notification cron is using over half the function timeout — evaluate the Tier-B
+            background/queue path.
+          </p>
+        {/if}
+      {/if}
+    </CardContent>
+  </Card>
 
   <Card class="p-6">
     <CardHeader class="mb-4">

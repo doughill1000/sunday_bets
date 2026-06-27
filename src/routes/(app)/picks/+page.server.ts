@@ -9,6 +9,7 @@ import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
+import { tracePageLoad } from '$lib/server/observability';
 
 async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise<boolean> {
   const { data } = await supabaseService
@@ -27,6 +28,16 @@ export const load: PageServerLoad = async (event) => {
 
   const { groupId, memberships } = event.locals;
   if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+
+  return tracePageLoad('picks', () => loadPicks(event, groupId, userId, memberships));
+};
+
+async function loadPicks(
+  event: Parameters<PageServerLoad>[0],
+  groupId: string,
+  userId: string | null,
+  memberships: App.Locals['memberships']
+) {
   const membershipCount = memberships.length;
 
   const displayNameResult = userId
@@ -92,4 +103,4 @@ export const load: PageServerLoad = async (event) => {
     finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin,
     membershipCount
   };
-};
+}

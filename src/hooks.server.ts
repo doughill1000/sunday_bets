@@ -7,6 +7,7 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 import { supabaseService } from '$lib/supabase/service';
 import type { Database } from '$lib/types/supabase';
 import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-resolver';
+import { traceDbQuery, traceSpan } from '$lib/server/observability';
 
 const supabase: Handle = async ({ event, resolve }) => {
   /**
@@ -89,17 +90,29 @@ const injectSession: Handle = async ({ event, resolve }) => {
   event.locals.memberships = [];
 
   if (user) {
-    const [profileResult, membershipsResult] = await Promise.all([
-      supabaseService
-        .from('users')
-        .select('role, display_name, avatar_key, guide_seen_at')
-        .eq('id', user.id)
-        .maybeSingle(),
-      supabaseService
-        .from('group_memberships')
-        .select('group_id, status, role, groups(name)')
-        .eq('user_id', user.id)
-    ]);
+    // Per-request auth-hook DB cost: a parent span over the two service-role
+    // reads, each wrapped as a child DB span so the cost is readable in Sentry
+    // per query and in aggregate (issue #190). No behavior change.
+    const [profileResult, membershipsResult] = await traceSpan(
+      'auth-hook.db',
+      'function.sveltekit.hook',
+      () =>
+        Promise.all([
+          traceDbQuery('auth-hook.users-profile', () =>
+            supabaseService
+              .from('users')
+              .select('role, display_name, avatar_key, guide_seen_at')
+              .eq('id', user.id)
+              .maybeSingle()
+          ),
+          traceDbQuery('auth-hook.group-memberships', () =>
+            supabaseService
+              .from('group_memberships')
+              .select('group_id, status, role, groups(name)')
+              .eq('user_id', user.id)
+          )
+        ])
+    );
 
     event.locals.isAdmin = profileResult.data?.role === 'admin';
     if (profileResult.data) {
