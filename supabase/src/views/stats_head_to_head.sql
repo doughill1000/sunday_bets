@@ -1,6 +1,9 @@
 -- One directional row per player pair per (group, season), comparing shared-game points.
-create or replace view public.stats_head_to_head
-with (security_invoker = on) as
+-- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
+-- of a grading run. Matviews don't support security_invoker; all reads are service-role.
+drop view if exists public.stats_head_to_head;
+
+create materialized view public.stats_head_to_head as
 select
   left_ps.user_id,
   left_user.display_name,
@@ -31,6 +34,11 @@ group by
   right_user.display_name,
   s.year,
   left_ps.group_id;
+
+-- Unique natural key for REFRESH ... CONCURRENTLY; also serves the (group_id,
+-- season_year) read filter in getStatsForSeason.
+create unique index if not exists uq_stats_head_to_head
+  on public.stats_head_to_head (group_id, user_id, opponent_user_id, season_year);
 
 revoke all on public.stats_head_to_head from public, anon, authenticated;
 grant select on public.stats_head_to_head to service_role;

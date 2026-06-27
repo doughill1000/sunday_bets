@@ -25,6 +25,9 @@ vi.mock('$lib/server/odds', () => ({
   fetchNFLScores: (...args: any[]) => fetchScoresImpl(...args)
 }));
 
+// Silence Sentry so the non-fatal refresh-failure path doesn't emit real events.
+vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
+
 // AFTER mocks defined, import functions under test
 import { gradeGame, gradeWeek, gradeSeason } from '$lib/server/grading';
 
@@ -106,6 +109,19 @@ describe('grading service', () => {
   it('gradeGame throws on rpc error', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
     await expect(gradeGame('g1')).rejects.toThrow('fail');
+  });
+
+  it('gradeGame refreshes the leaderboard/stats matviews after grading', async () => {
+    await gradeGame('g1');
+    expect(rpc).toHaveBeenCalledWith('refresh_leaderboard_stats');
+  });
+
+  it('gradeGame still returns ok when the matview refresh fails (non-fatal)', async () => {
+    // First rpc (grade_game) succeeds; the refresh rpc reports an error.
+    rpc.mockResolvedValueOnce({ data: null, error: null }); // grade_game
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'refresh boom' } }); // refresh
+    const res = await gradeGame('g1');
+    expect(res).toEqual({ ok: true, game_id: 'g1' });
   });
 
   it('gradeGame with refreshScores fetches scores and updates finals when completed', async () => {

@@ -132,6 +132,10 @@ VALUES
     -1, 'missed'
   );
 
+-- leaderboard_season_totals is materialized (issue #191): refresh so the settlements
+-- above are visible. leaderboard_weekly_cumulative below is still a plain view.
+SELECT public.refresh_leaderboard_stats();
+
 -- ── Season parity ─────────────────────────────────────────────────────────────
 
 SELECT results_eq(

@@ -162,6 +162,11 @@ beforeAll(async () => {
     { onConflict: 'group_id,user_id,game_id' }
   );
   if (settlErr) throw new Error('Failed to seed pick_settlement: ' + settlErr.message);
+
+  // leaderboard_season_totals is a materialized view (issue #191): refresh it after
+  // seeding settlements directly so getSeasonLeaderboard reflects them.
+  const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');
+  if (refreshErr) throw new Error('Failed to refresh_leaderboard_stats: ' + refreshErr.message);
 });
 
 afterAll(async () => {

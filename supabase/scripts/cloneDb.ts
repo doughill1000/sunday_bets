@@ -130,6 +130,17 @@ async function main() {
     'COMMIT;'
   );
 
+  // The leaderboard/stats matviews (issue #191) were populated WITH DATA when migrations
+  // ran against an empty DB, so they are stale after loading prod data. Refresh them once
+  // the data is committed. Guarded so older destinations without the function still clone.
+  chunks.push(
+    `DO $$ BEGIN
+       IF to_regprocedure('public.refresh_leaderboard_stats()') IS NOT NULL THEN
+         PERFORM public.refresh_leaderboard_stats();
+       END IF;
+     END $$;`
+  );
+
   const restoreSql = chunks.join('\n');
   await execa('psql', ['--dbname', DEST], {
     stdio: ['pipe', 'inherit', 'inherit'],

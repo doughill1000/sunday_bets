@@ -1,5 +1,8 @@
-create or replace view public.stats_accuracy_by_team_alltime
-with (security_invoker = on) as
+-- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
+-- of a grading run. Matviews don't support security_invoker; all reads are service-role.
+drop view if exists public.stats_accuracy_by_team_alltime;
+
+create materialized view public.stats_accuracy_by_team_alltime as
 select
   ps.user_id,
   u.display_name,
@@ -22,6 +25,10 @@ join public.picks p on p.id = ps.pick_id
 join public.users u on u.id = ps.user_id
 join public.teams t on t.id = p.picked_team_id
 group by ps.user_id, u.display_name, p.picked_team_id, t.name, t.short_name, ps.group_id;
+
+-- Unique natural key for REFRESH ... CONCURRENTLY; also serves the group_id read filter.
+create unique index if not exists uq_stats_accuracy_by_team_alltime
+  on public.stats_accuracy_by_team_alltime (group_id, user_id, team_id);
 
 revoke all on public.stats_accuracy_by_team_alltime from public, anon, authenticated;
 grant select on public.stats_accuracy_by_team_alltime to service_role;

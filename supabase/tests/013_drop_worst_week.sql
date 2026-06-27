@@ -7,7 +7,7 @@ begin;
 
 select plan(6);
 
-select has_view('public', 'leaderboard_season_totals', 'leaderboard_season_totals exists');
+select has_materialized_view('public', 'leaderboard_season_totals', 'leaderboard_season_totals exists');
 
 -- Output contract is unchanged by the drop-worst-week rework (type stability).
 select columns_are(
@@ -149,6 +149,10 @@ on conflict (group_id, user_id, game_id) do update
 set points_delta = excluded.points_delta,
     outcome      = excluded.outcome,
     graded_at    = excluded.graded_at;
+
+-- leaderboard_season_totals is materialized (issue #191): refresh so the settlements
+-- above are visible to the assertions below.
+select public.refresh_leaderboard_stats();
 
 -- Clear minimum: raw 8 (10 - 5 + 3), drop the -5 week -> 13. Record (3 decisions,
 -- 2 wins, 1 loss) still counts the dropped week (points-only handling).

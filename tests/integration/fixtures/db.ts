@@ -537,6 +537,14 @@ export async function seedTwoGroupSettlements(
   const { error: gradeErr } = await supabase.rpc('grade_game', { p_game_id: gameId });
   if (gradeErr) throw new Error(`seedTwoGroupSettlements: grade_game failed: ${gradeErr.message}`);
 
+  // 13. Refresh the leaderboard/stats matviews (issue #191) so callers that read them
+  //     see the settlements this fixture just wrote (grade_game alone does not refresh).
+  const { error: refreshErr } = await supabase.rpc('refresh_leaderboard_stats');
+  if (refreshErr)
+    throw new Error(
+      `seedTwoGroupSettlements: refresh_leaderboard_stats failed: ${refreshErr.message}`
+    );
+
   return {
     groupAId: TWO_GROUP_IDS.groupA,
     groupBId: TWO_GROUP_IDS.groupB,

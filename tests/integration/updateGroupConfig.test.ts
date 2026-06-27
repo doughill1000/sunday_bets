@@ -171,6 +171,12 @@ beforeAll(async () => {
   // Commissioner: week1 +10 win (best), week2 -4 loss (worst, dropped when on).
   await insertSettlement(game1Id, 10, 'win');
   await insertSettlement(game2Id, -4, 'loss');
+
+  // leaderboard_season_totals is a materialized view (issue #191): refresh it after
+  // seeding settlements so the baseline read below reflects them.
+  const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');
+  if (refreshErr)
+    throw new Error('updateGroupConfig: refresh_leaderboard_stats: ' + refreshErr.message);
 });
 
 afterAll(async () => {
@@ -209,6 +215,12 @@ describe('update_group_config end-to-end', () => {
       p_drop_worst_week: true
     });
     expect(error).toBeNull();
+
+    // The config change feeds the materialized leaderboard (issue #191), which the
+    // /api/group/update-config route refreshes after a successful update. This test
+    // calls the RPC directly, so refresh explicitly to mirror that production path.
+    const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');
+    expect(refreshErr).toBeNull();
 
     // Drop on → worst week (-4) excluded → total = 6 - (-4) = 10.
     const after = await getSeasonLeaderboard(UGC_SEASON_YEAR, GROUP_ID);

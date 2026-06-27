@@ -5,6 +5,7 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
+import { refreshLeaderboardStats } from '$lib/server/grading';
 
 const bodySchema = z.object({
   grading_preset: z.enum(['house', 'gamer']),
@@ -32,6 +33,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   });
 
   if (error) return json({ reason: errReason(error.code) }, { status: 400 });
+
+  // drop_worst_week feeds leaderboard_season_totals (a materialized view, issue #191),
+  // so a config change must refresh it for the standings to reflect the new rule. Like
+  // the grading path, this is best-effort and never fails the config write.
+  await refreshLeaderboardStats();
 
   return json({ ok: true });
 };

@@ -3,8 +3,8 @@ import type { PageServerLoad } from './$types';
 import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
-import { getCommentsForGame } from '$lib/server/db/queries/getCommentsForGame';
-import { getReactionsForGame } from '$lib/server/db/queries/getReactionsForGame';
+import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
+import { getReactionsForGames } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
@@ -62,19 +62,23 @@ export const load: PageServerLoad = async (event) => {
   ]);
 
   // Load comments and reactions for started games only (RLS also enforces this gate).
+  // Two batched queries (one per table) instead of a per-game N+1.
   const now = Date.now();
   const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
 
-  const socialEntries = await Promise.all(
-    startedGameIds.map(async (gameId) => {
-      const [comments, reactions] = await Promise.all([
-        getCommentsForGame(event, groupId, gameId),
-        getReactionsForGame(event, groupId, gameId)
-      ]);
-      return [gameId, { comments, reactions }] as const;
-    })
+  const [commentsByGame, reactionsByGame] = await Promise.all([
+    getCommentsForGames(event, groupId, startedGameIds),
+    getReactionsForGames(event, groupId, startedGameIds)
+  ]);
+  const social = Object.fromEntries(
+    startedGameIds.map((gameId) => [
+      gameId,
+      {
+        comments: commentsByGame.get(gameId) ?? [],
+        reactions: reactionsByGame.get(gameId) ?? []
+      }
+    ])
   );
-  const social = Object.fromEntries(socialEntries);
 
   return {
     week,

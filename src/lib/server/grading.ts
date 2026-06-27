@@ -1,7 +1,31 @@
 // src/lib/server/services/grading.ts
+import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
 import { type OddsScore } from '$lib/types/oddsApi';
 import { fetchNFLScores } from '$lib/server/odds';
+
+/**
+ * Refresh the materialized leaderboard/stats views after a grading run (issue #191).
+ * The leaderboard and stats pages read these matviews, which only change during grading,
+ * so we recompute them here instead of on every page load.
+ *
+ * A refresh failure is logged but never thrown: the grade has already committed, the
+ * leaderboard simply shows the prior snapshot, and the next grade self-heals it. Keeping
+ * this off the grade's critical path is deliberate — a transient refresh error must not
+ * abort or roll back grading.
+ */
+export async function refreshLeaderboardStats(): Promise<void> {
+  const { error } = await supabaseService.rpc('refresh_leaderboard_stats');
+  if (error) {
+    Sentry.captureException(error, {
+      tags: { area: 'grading', step: 'refresh_leaderboard_stats' }
+    });
+    console.error(
+      'refresh_leaderboard_stats failed (leaderboard/stats may be stale):',
+      error.message
+    );
+  }
+}
 
 /** Grade a single game. Optionally refresh finals from Odds API first. */
 export async function gradeGame(
@@ -13,6 +37,7 @@ export async function gradeGame(
   }
   const { error } = await supabaseService.rpc('grade_game', { p_game_id: gameId });
   if (error) throw new Error(error.message);
+  await refreshLeaderboardStats();
   return { ok: true, game_id: gameId };
 }
 
@@ -31,6 +56,7 @@ export async function gradeWeek(
   }
   const { error } = await supabaseService.rpc('grade_week', { p_week_id: weekId });
   if (error) throw new Error(error.message);
+  await refreshLeaderboardStats();
   return { ok: true, week_id: weekId };
 }
 
@@ -55,6 +81,7 @@ export async function gradeSeason(
   }
   const { error } = await supabaseService.rpc('grade_season', { p_season_id: seasonId });
   if (error) throw new Error(error.message);
+  await refreshLeaderboardStats();
   return { ok: true, season_id: seasonId };
 }
 

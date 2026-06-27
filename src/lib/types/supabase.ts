@@ -1522,6 +1522,7 @@ export type Database = {
         Returns: undefined;
       };
       redeem_invite: { Args: { p_code: string }; Returns: undefined };
+      refresh_leaderboard_stats: { Args: never; Returns: undefined };
       remove_member: {
         Args: { p_group_id: string; p_user_id: string };
         Returns: undefined;
