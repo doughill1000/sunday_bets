@@ -1,9 +1,29 @@
 # ADR-0010: Gate deploys behind version bumps via GitHub Actions
 
-- Status: Accepted
+- Status: Accepted (amended 2026-06-27)
 - Date: 2026-06-26
 - Issue: None (approved release-strategy plan; no tracking issue)
 - Supersedes: None
+
+## Amendment (2026-06-27): production releases are fully manual
+
+The original decision made a `package.json` `version` change on a push to `master`
+**auto-deploy** to production, with `workflow_dispatch` as a secondary off-cycle path.
+That automatic trigger is **removed**: `.github/workflows/deploy-prod.yml` now runs on
+`workflow_dispatch` **only**. A merge to `master` — version bump or not — never ships
+to production by itself; shipping is always a deliberate "Run workflow" click.
+
+What stays the same: previews, `git.deploymentEnabled: false`, the
+`vercel pull → build --prod → deploy --prebuilt --prod` sequence, and the runtime-secret
+constraints below. The `v<version>` tag + GitHub Release step still runs (now on every
+manual dispatch, reading the current `package.json` `version`, skipping if the tag
+already exists), so the milestone → Release ritual is unchanged.
+
+Why: "every version-bump merge ships to prod" coupled releasing to merging. Decoupling
+them makes the release moment explicit and lets schema/app changes land on `master`
+without forcing an immediate production cut. Where the decision text below says a
+version bump is the production-release _signal_, read it as: a version bump marks a
+release _candidate_; the manual dispatch is the release.
 
 ## Context
 
