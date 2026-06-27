@@ -52,11 +52,12 @@ function weekBoundaries(timestamps: number[]): { startTs: string; endTs: string 
 }
 
 export async function syncSchedule(year: number = targetNFLYear()): Promise<ScheduleSyncStats> {
-  const seasonId = await upsertSeasonByYear(year);
-
   const teams = await findTeamsByExternalKeys();
   const byAbbr = new Map(teams.map((t) => [t.external_key, t.id]));
 
+  // Created lazily on the first week that returns real games, so a year with no
+  // published schedule yet never leaves behind a blank season/week shell.
+  let seasonId: number | null = null;
   let weeksProcessed = 0;
   let gamesUpserted = 0;
   let gamesSkipped = 0;
@@ -83,6 +84,9 @@ export async function syncSchedule(year: number = targetNFLYear()): Promise<Sche
     const timestamps = weekResult.games.map((g) => new Date(g.date).getTime());
     const { startTs, endTs } = weekBoundaries(timestamps);
 
+    if (seasonId === null) {
+      seasonId = await upsertSeasonByYear(year);
+    }
     const weekId = await upsertWeek({ seasonId, weekNumber: weekNum, startTs, endTs });
     weeksProcessed++;
 

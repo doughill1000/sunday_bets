@@ -78,7 +78,47 @@ describe('lib/server/schedule.ts', () => {
       const calledUrl = (fetch as unknown as Mock).mock.calls[0][0] as string;
       expect(calledUrl).toContain('seasontype=2');
       expect(calledUrl).toContain('week=3');
-      expect(calledUrl).toContain('season=2026');
+      // The scoreboard endpoint keys on `dates`, not `season` (issue #272): it
+      // ignores `season` and returns the current season's games.
+      expect(calledUrl).toContain('dates=2026');
+      expect(calledUrl).not.toContain('season=2026');
+    });
+
+    it('returns no games when ESPN serves a different season than requested (issue #272)', async () => {
+      // Reproduces the fallback that polluted prod: asking for 2026 but ESPN
+      // echoing last season's completed games.
+      mockFetch({
+        season: { year: 2025 },
+        week: { number: 1 },
+        events: [
+          {
+            id: '401547001',
+            date: '2025-09-05T00:20Z',
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    team: { abbreviation: 'PHI', displayName: 'Philadelphia Eagles' }
+                  },
+                  { homeAway: 'away', team: { abbreviation: 'DAL', displayName: 'Dallas Cowboys' } }
+                ],
+                status: { type: { state: 'post', completed: true } }
+              }
+            ]
+          }
+        ]
+      });
+
+      const result = await fetchEspnWeek(2026, 1);
+      expect(result.games).toHaveLength(0);
+    });
+
+    it('returns games when the payload season matches the requested year', async () => {
+      mockFetch({ season: { year: 2026 }, ...WEEK_1_RESPONSE });
+
+      const result = await fetchEspnWeek(2026, 1);
+      expect(result.games).toHaveLength(2);
     });
 
     it('maps ESPN-specific abbreviations to internal keys', async () => {

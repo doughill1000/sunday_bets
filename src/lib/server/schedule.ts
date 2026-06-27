@@ -34,6 +34,9 @@ const EspnEventSchema = z.object({
 });
 
 const EspnScoreboardSchema = z.object({
+  // ESPN echoes the season it actually served. We validate it against the
+  // requested year so a fallback response is never written as another season.
+  season: z.object({ year: z.number() }).optional(),
   week: z.object({ number: z.number() }),
   events: z.array(EspnEventSchema).default([])
 });
@@ -85,10 +88,13 @@ function mapStatus(state: string, completed: boolean): EspnGame['status'] {
 // Both are non-fatal from the caller's perspective (logged to Sentry, no DB write).
 // ---------------------------------------------------------------------------
 export async function fetchEspnWeek(year: number, weekNumber: number): Promise<EspnWeekResult> {
+  // The scoreboard endpoint keys the schedule off `dates` (the season year),
+  // NOT `season` — it silently ignores `season` and returns the current season,
+  // so asking for a non-current year would otherwise yield the wrong games.
   const url = `${ESPN_SCOREBOARD}?${new URLSearchParams({
     seasontype: '2',
     week: String(weekNumber),
-    season: String(year)
+    dates: String(year)
   })}`;
 
   let raw: unknown;
@@ -109,7 +115,15 @@ export async function fetchEspnWeek(year: number, weekNumber: number): Promise<E
     );
   }
 
-  const { week, events } = parsed.data;
+  const { season, week, events } = parsed.data;
+
+  // Defense in depth: if ESPN reports a different season than we asked for
+  // (a fallback/unpublished response), treat the week as having no schedule
+  // data yet rather than importing another season's games.
+  if (season && season.year !== year) {
+    return { weekNumber: week.number, games: [] };
+  }
+
   const games: EspnGame[] = [];
 
   for (const event of events) {
