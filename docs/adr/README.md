@@ -58,5 +58,6 @@ current status.
 | [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                |
 | [ADR-0013](0013-materialized-leaderboard-stats.md)         | Leaderboard/stats served from materialized views refreshed on grading       |
 | [ADR-0014](0014-auth-context-caching.md)                   | Short-TTL per-instance cache of the per-request auth-hook lookups           |
+| [ADR-0015](0015-versioning-and-release-policy.md)          | Versioning and release policy (label-driven SemVer)                         |
 
 _ADR-0008 was never used — the number was skipped, so there is no `0008-*.md` record._

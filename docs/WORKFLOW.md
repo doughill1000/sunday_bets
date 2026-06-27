@@ -12,6 +12,7 @@ Codex concurrently.
 | Executable scope and acceptance criteria   | GitHub Issue                      |
 | Priority, agent ownership, and live status | GitHub Project                    |
 | Release grouping                           | GitHub Milestone                  |
+| Version impact of a change                 | `semver:` label (ADR-0015)        |
 | Durable technical and fairness decisions   | [ADRs](adr/README.md)             |
 | Implementation and verification            | Pull request                      |
 | Shipped history (authoritative)            | GitHub Release                    |
@@ -175,23 +176,45 @@ git worktree remove ..\sunday_bets-codex-123
 git worktree prune
 ```
 
+## Versioning
+
+Versions follow SemVer and are **label-driven** (ADR-0015). A change's version impact
+is decided once, at issue authoring, and consumed at release — agents never pick numbers
+ad hoc:
+
+- **major** — removes/renames a user-facing capability, a breaking data-model or auth
+  change needing coordinated migration, or an epoch shift (single → multi-group was 2.0).
+- **minor** — a new backward-compatible user-facing feature (most `type:feature`).
+- **patch** — fix, perf, refactor, infra/CI, docs, or chore; the default for issue-less
+  and ADR-only PRs.
+
+`issue-author` assigns a `semver:` label + target milestone; `finish-pr` carries them
+onto the PR and does **not** bump `package.json`; `cut-release` computes the release
+version from the milestone's highest label and bumps `package.json` then. `package.json`
+holds the **last shipped** version between releases. The date-grouped
+[CHANGELOG](CHANGELOG.md) is unchanged; per-version notes are the auto-generated GitHub
+Release (see below).
+
 ## Cutting a release
 
-Production is gated (ADR-0010): Vercel's automatic Git deploys are off, so a plain
-merge to `master` does **not** ship. Production deploys only on a `package.json`
-`"version"` change or a manual dispatch.
+Production is gated (ADR-0010): Vercel's automatic Git deploys are off, so a plain merge
+to `master` never ships. A release is a **single deliberate manual dispatch**. Run the
+`cut-release` skill for the whole ritual.
 
-- **Normal release:** bump `package.json` `"version"` in the PR that completes the
-  release (or in a dedicated bump PR), then merge. `deploy-prod.yml` detects the
-  changed version, deploys to production, and tags a `v<version>` GitHub Release.
-- **Off-cycle cut:** run **Deploy Production → Run workflow** (`workflow_dispatch`) to
-  ship current `master` without a version change (no tag is created).
-- **App + DB together:** because `supabase/**` migrations deploy on merge independently
-  of the app, bump the version in the **same PR** as any schema change that needs new
-  app code, so app and DB ship together.
+- **Compute the version (ADR-0015):** base is the latest `v*` git tag, level is the
+  highest `semver:` label across the milestone's issues (major > minor > patch; default
+  patch). Feature PRs never bump `package.json`; `cut-release` bumps it in a dedicated
+  release PR.
+- **Release:** after the bump merges, run **Deploy Production → Run workflow**
+  (`workflow_dispatch`). It runs the migration-ledger check → prod DB backup →
+  `supabase db push` → `vercel build/deploy --prod` → tag `v<version>` + create the
+  GitHub Release. Migrations run before the deploy so app and DB ship together; the
+  version is read at dispatch to tag the Release (skipped if the tag exists).
+- **Off-cycle cut:** the same dispatch ships current `master`; it tags whatever version
+  `package.json` currently holds (skipped if that tag already exists).
 - **Previews:** opening / readying / reopening a PR deploys one preview; comment
   `/preview` for an updated preview mid-PR.
 
-At release time, close the milestone and publish a GitHub Release (the prod deploy
-auto-creates the `v<version>` release notes to refine). Update the roadmap only when
-the direction or ordering changed, not to mirror completed issue status.
+At release time, close the milestone and refine the auto-generated `v<version>` GitHub
+Release notes. Update the roadmap only when the direction or ordering changed, not to
+mirror completed issue status.
