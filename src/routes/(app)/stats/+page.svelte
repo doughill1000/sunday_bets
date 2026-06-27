@@ -360,13 +360,13 @@
                       {data.seasonYear} results grouped by the team backed.</CardDescription
                     >
                   </CardHeader>
-                  <CardContent class="overflow-x-auto">
-                    <Table>
+                  <CardContent class="overflow-x-auto px-2 sm:px-6">
+                    <Table class="text-xs sm:text-sm">
                       <TableHeader>
                         <TableRow>
                           {@render teamHead('Team', 'team')}
                           {@render teamHead('Record', 'record')}
-                          {@render teamHead('Accuracy', 'accuracy', 'right')}
+                          {@render teamHead('Win %', 'accuracy', 'right')}
                           {@render teamHead('Pts', 'points', 'right')}
                         </TableRow>
                       </TableHeader>
@@ -396,13 +396,13 @@
                       {data.seasonYear} confidence-level results, including each All-In.</CardDescription
                     >
                   </CardHeader>
-                  <CardContent class="overflow-x-auto">
-                    <Table>
+                  <CardContent class="overflow-x-auto px-2 sm:px-6">
+                    <Table class="text-xs sm:text-sm">
                       <TableHeader>
                         <TableRow>
                           <TableHead>Weight</TableHead>
                           <TableHead>Record</TableHead>
-                          <TableHead class="text-right">Accuracy</TableHead>
+                          <TableHead class="text-right">Win %</TableHead>
                           <TableHead class="text-right">Pts</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -454,13 +454,13 @@
                     <CardTitle>Accuracy by team</CardTitle>
                     <CardDescription>All-time results grouped by the team backed.</CardDescription>
                   </CardHeader>
-                  <CardContent class="overflow-x-auto">
-                    <Table>
+                  <CardContent class="overflow-x-auto px-2 sm:px-6">
+                    <Table class="text-xs sm:text-sm">
                       <TableHeader>
                         <TableRow>
                           {@render allTimeTeamHead('Team', 'team')}
                           {@render allTimeTeamHead('Record', 'record')}
-                          {@render allTimeTeamHead('Accuracy', 'accuracy', 'right')}
+                          {@render allTimeTeamHead('Win %', 'accuracy', 'right')}
                           {@render allTimeTeamHead('Pts', 'points', 'right')}
                         </TableRow>
                       </TableHeader>
@@ -487,13 +487,13 @@
                     <CardTitle>Accuracy by weight</CardTitle>
                     <CardDescription>All-time confidence-level results.</CardDescription>
                   </CardHeader>
-                  <CardContent class="overflow-x-auto">
-                    <Table>
+                  <CardContent class="overflow-x-auto px-2 sm:px-6">
+                    <Table class="text-xs sm:text-sm">
                       <TableHeader>
                         <TableRow>
                           <TableHead>Weight</TableHead>
                           <TableHead>Record</TableHead>
-                          <TableHead class="text-right">Accuracy</TableHead>
+                          <TableHead class="text-right">Win %</TableHead>
                           <TableHead class="text-right">Pts</TableHead>
                         </TableRow>
                       </TableHeader>
