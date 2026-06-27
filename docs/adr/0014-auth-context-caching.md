@@ -1,6 +1,6 @@
 # ADR-0014: Auth-context caching — short-TTL per-instance cache of the auth-hook lookups
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-27
 - Issue: #192
 - Supersedes: None

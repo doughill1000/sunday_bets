@@ -7,6 +7,7 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 import { supabaseService } from '$lib/supabase/service';
 import type { Database } from '$lib/types/supabase';
 import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-resolver';
+import { getAuthContext } from '$lib/server/auth-context-cache';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
 
 const supabase: Handle = async ({ event, resolve }) => {
@@ -92,26 +93,34 @@ const injectSession: Handle = async ({ event, resolve }) => {
   if (user) {
     // Per-request auth-hook DB cost: a parent span over the two service-role
     // reads, each wrapped as a child DB span so the cost is readable in Sentry
-    // per query and in aggregate (issue #190). No behavior change.
-    const [profileResult, membershipsResult] = await traceSpan(
-      'auth-hook.db',
-      'function.sveltekit.hook',
+    // per query and in aggregate (issue #190).
+    //
+    // The traced fetch is the cache MISS path: `getAuthContext` serves a warm
+    // entry within the ~30s TTL without running it, so a hit emits none of the
+    // #190 DB spans and the cache hit rate reads straight off Sentry (ADR-0014).
+    // The cache is a latency optimization only — `isAdmin` derived below is a UI
+    // hint; admin endpoints re-verify `users.role` fresh in `requireAdmin`.
+    const { profile: profileResult, memberships: membershipsResult } = await getAuthContext(
+      user.id,
       () =>
-        Promise.all([
-          traceDbQuery('auth-hook.users-profile', () =>
-            supabaseService
-              .from('users')
-              .select('role, display_name, avatar_key, guide_seen_at')
-              .eq('id', user.id)
-              .maybeSingle()
-          ),
-          traceDbQuery('auth-hook.group-memberships', () =>
-            supabaseService
-              .from('group_memberships')
-              .select('group_id, status, role, groups(name)')
-              .eq('user_id', user.id)
-          )
-        ])
+        traceSpan('auth-hook.db', 'function.sveltekit.hook', async () => {
+          const [profile, memberships] = await Promise.all([
+            traceDbQuery('auth-hook.users-profile', () =>
+              supabaseService
+                .from('users')
+                .select('role, display_name, avatar_key, guide_seen_at')
+                .eq('id', user.id)
+                .maybeSingle()
+            ),
+            traceDbQuery('auth-hook.group-memberships', () =>
+              supabaseService
+                .from('group_memberships')
+                .select('group_id, status, role, groups(name)')
+                .eq('user_id', user.id)
+            )
+          ]);
+          return { profile, memberships };
+        })
     );
 
     event.locals.isAdmin = profileResult.data?.role === 'admin';
