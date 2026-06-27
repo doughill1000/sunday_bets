@@ -44,6 +44,11 @@ begin
     return;
   end if;
 
+  -- Soft cap: groups are limited to 50 members.
+  if (select count(*) from public.group_memberships where group_id = v_invite.group_id) >= 50 then
+    raise exception 'group is full' using errcode = 'P0006';
+  end if;
+
   -- Atomically add membership and increment usage counter.
   insert into public.group_memberships (group_id, user_id, role)
   values (v_invite.group_id, v_user_id, 'member');

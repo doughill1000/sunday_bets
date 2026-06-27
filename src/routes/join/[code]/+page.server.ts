@@ -15,7 +15,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 
-// Maps RPC error codes to user-facing messages. P0002–P0005 match
+// Maps RPC error codes to user-facing messages. P0002–P0006 match
 // redeem_invite.sql; P0001 = not authenticated (should not reach the action
 // without a session, but kept for defensive completeness).
 function redeemErrorMessage(code: string | undefined): string {
@@ -28,6 +28,8 @@ function redeemErrorMessage(code: string | undefined): string {
       return 'This invite has expired. Ask your commissioner for a new one.';
     case 'P0005':
       return 'This invite has already been used the maximum number of times.';
+    case 'P0006':
+      return 'This group is full — ask the commissioner to remove a member or start another group.';
     default:
       return 'Could not join the group. Please try again.';
   }

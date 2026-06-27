@@ -13,12 +13,12 @@ begin
   --   2) raw_user_meta_data.full_name
   --   3) email local-part
   --   4) fallback based on uuid
-  v_display_name := coalesce(
+  v_display_name := left(btrim(coalesce(
     (new.raw_user_meta_data ->> 'display_name'),
     (new.raw_user_meta_data ->> 'full_name'),
     split_part(new.email, '@', 1),
     'user-' || left(new.id::text, 8)
-  );
+  )), 40);
 
   insert into public.users (id, display_name, role)
   values (new.id, v_display_name, 'player')
