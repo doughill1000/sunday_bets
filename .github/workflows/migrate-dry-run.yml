@@ -4,9 +4,6 @@ name: Supabase Dry Run Migrations
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'supabase/**'
-      - '.github/workflows/migrate-dry-run.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,7 +13,23 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      supabase: ${{ steps.filter.outputs.supabase }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            supabase:
+              - 'supabase/**'
+              - '.github/workflows/migrate-dry-run.yml'
+
   source-integrity:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.supabase == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,3 +68,18 @@ jobs:
         run: |
           echo "Dry running migrations against Production..."
           supabase db push --db-url "$SUPABASE_DB_URL" --dry-run --yes
+
+  dry-run-result:
+    needs: [source-integrity, supabase-dry-run]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          si="${{ needs.source-integrity.result }}"
+          sdr="${{ needs.supabase-dry-run.result }}"
+          if [[ ("$si" == "success" || "$si" == "skipped") && ("$sdr" == "success" || "$sdr" == "skipped") ]]; then
+            exit 0
+          else
+            exit 1
+          fi
