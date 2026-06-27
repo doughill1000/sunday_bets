@@ -123,10 +123,14 @@ export function getAuthContext<T>(userId: string, fetcher: () => Promise<T>): Pr
 }
 
 /**
- * Evict the cached auth context for `userId`. Intended for defense-in-depth
- * bust-on-write from the cheap local mutations that change cached fields
- * (profile/avatar, `guide_seen_at`, membership status). Wiring is deferred per
- * ADR-0014 unless the TTL proves too lax; this export exists for that follow-up.
+ * Evict the cached auth context for `userId`. Wired as bust-on-write from the
+ * local mutations that change cached fields — `create_group` / `redeem_invite`
+ * (join flows), the `guide-seen` and avatar `profile` endpoints, and
+ * `leave_group` / `remove_member` / `promote_member` — so a write takes effect
+ * on the next request instead of at TTL expiry (ADR-0014, "Bust-on-write").
+ * Self mutations are fully effective; cross-user ones are best-effort per
+ * instance. Admin role changes have no in-app write, so role staleness is
+ * handled by the `requireAdmin` fresh re-check, not by this.
  */
 export function invalidateAuthContext(userId: string): void {
   defaultCache.invalidate(userId);

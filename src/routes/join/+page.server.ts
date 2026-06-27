@@ -1,6 +1,7 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 import { canCreateGroup } from '$lib/server/settings';
+import { invalidateAuthContext } from '$lib/server/auth-context-cache';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -48,8 +49,13 @@ export const actions: Actions = {
       });
     }
 
-    // The new commissioner membership makes this the user's active group; the
-    // (app) routes resolve it on the next request.
+    // The new commissioner membership makes this the user's active group, but
+    // the auth-context cache (ADR-0014) may still hold this user's pre-creation
+    // memberships (empty) within its TTL. Bust it now so the immediate redirect
+    // to /picks resolves the new membership instead of bouncing back to /join.
+    invalidateAuthContext(locals.user.id);
+
+    // The (app) routes resolve the new active group on the next request.
     throw redirect(303, '/picks');
   }
 };

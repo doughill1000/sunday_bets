@@ -56,7 +56,24 @@ Boundaries future work must preserve:
    memberships. The cookie, not the cache, drives the active group, so group-switching
    stays instant.
 
-**Staleness budget:** ~30s for a membership change, profile/avatar edit, or
+**Bust-on-write (adopted, not deferred).** The in-app mutations that change a cached
+field call `invalidateAuthContext(userId)` immediately after the write, so the change
+takes effect on the next request rather than at TTL expiry. This is required, not merely
+defense-in-depth: the cache is per-instance and survives across requests, so a user who
+**creates a group** or **redeems an invite** and is then redirected to `/picks` would be
+served their pre-write (empty) memberships from the same warm instance and bounced back to
+`/join` for up to the TTL; likewise a dismissed how-to-play guide (`guide_seen_at`) would
+re-open on reload. The wired call sites are: `create_group` and `redeem_invite` (the join
+flows), the `guide-seen` and avatar `profile` endpoints (self `users` fields), and
+`leave_group` / `remove_member` / `promote_member` (membership changes). Self mutations
+(join/guide/avatar/leave) clear the actor's own entry on the instance serving the next
+request, so they are fully effective. Cross-user mutations (`remove_member` /
+`promote_member`) are best-effort: they clear the target's entry only on the actor's
+instance, so the ≤TTL app-shell bound below still applies cross-instance.
+
+**Staleness budget:** with bust-on-write wired, same-instance propagation is immediate;
+the residual window is the **cross-instance** case (an instance other than the writer's
+holds a stale entry), bounded by ~30s for a membership change, profile/avatar edit, or
 `guide_seen_at` dismissal to propagate to the app shell; admin is always fresh (boundary
 2). Because every underlying data operation is RLS-denied throughout the window, the only
 thing that can go stale is **app-shell access/UI state**, not data exposure.
@@ -69,12 +86,14 @@ thing that can go stale is **app-shell access/UI state**, not data exposure.
   cache hit, so the hit rate reads straight off Sentry.
 - **Harmful / cost:** a bounded staleness window (≤ TTL) on the shared, sensitive auth
   path:
-  - A just-removed/just-suspended member keeps **app-shell** access for ≤30s (the
-    no-membership redirect guard and `groups/switch` validation read cached memberships).
-    Their data is still RLS-denied — pgTAP `015_cross_group_stats_isolation` covers the
-    layer.
-  - A dismissed how-to-play guide (`guide_seen_at` rides the cached `users` row) could
-    briefly re-show for ≤30s.
+  - A just-removed/just-suspended member keeps **app-shell** access for ≤30s on instances
+    other than the one that served the removal (the no-membership redirect guard and
+    `groups/switch` validation read cached memberships); bust-on-write closes the window on
+    the actor's instance. Their data is still RLS-denied — pgTAP
+    `015_cross_group_stats_isolation` covers the layer.
+  - A dismissed how-to-play guide (`guide_seen_at` rides the cached `users` row) is busted
+    on write for the dismissing user, so it does not re-show on their next request;
+    cross-instance it could still briefly re-show for ≤30s.
   - **Admin caching has no RLS backstop** (boundary 2), and `users.role` has **no in-app
     mutation path** (demotion is manual SQL), so role-change invalidation cannot be wired.
     Admin safety must therefore rest entirely on the `requireAdmin` fresh re-check, not on
@@ -96,9 +115,13 @@ thing that can go stale is **app-shell access/UI state**, not data exposure.
   decision exists to remove.
 - **Cache with explicit invalidation on every role/membership change (#192 option 3).**
   Near-fresh reads, but invalidation paths are easy to miss → silent staleness, and
-  `users.role` has no in-app write to hook anyway. Deferred to a defense-in-depth
-  bust-on-write (`invalidate(userId)` from the cheap local profile/guide/membership
-  mutations) layered on top of the TTL if the ~30s budget proves too lax.
+  `users.role` has no in-app write to hook anyway. **Adopted as a bust-on-write layer on
+  top of the TTL** (see "Bust-on-write" in the Decision): the cheap local
+  profile/guide/membership mutations call `invalidateAuthContext(userId)`. This was
+  necessary, not optional — the TTL-only build bounced just-created/just-joined users back
+  to `/join` from the same warm instance and re-opened the dismissed guide on reload. Role
+  invalidation is still not wired (no in-app write); admin safety rests on the
+  `requireAdmin` fresh re-check (boundary 2).
 - **Move role + membership into the session JWT claims (#192 option 4).** Zero extra DB
   reads, but the largest auth change: staleness tied to token lifetime, couples authz to
   token issuance, risks app-layer/RLS divergence, and is the hardest to reverse. Deferred
@@ -113,5 +136,5 @@ thing that can go stale is **app-shell access/UI state**, not data exposure.
   emits none), and the `requireAdmin` fresh re-check.
 - **Measurement:** confirm in Sentry that the `auth-hook.*` spans drop out on cache hits;
   report the before/after on the auth path in the implementation PR.
-- If the ~30s budget proves too lax, add #192 option-3 bust-on-write invalidation. If
+- #192 option-3 bust-on-write invalidation is now wired (see Decision/Alternatives). If
   per-request DB reads must be eliminated entirely (not just reduced), revisit option 4.

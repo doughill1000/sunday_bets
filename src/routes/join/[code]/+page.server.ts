@@ -14,6 +14,7 @@
 
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
+import { invalidateAuthContext } from '$lib/server/auth-context-cache';
 
 // Maps RPC error codes to user-facing messages. P0002–P0006 match
 // redeem_invite.sql; P0001 = not authenticated (should not reach the action
@@ -87,6 +88,11 @@ export const actions: Actions = {
       // and this submit — treat it the same as other terminal states.
       return fail(400, { error: redeemErrorMessage(error.code) });
     }
+
+    // Bust this user's cached auth context (ADR-0014) so the redirect to /picks
+    // sees the freshly-added membership instead of the cached pre-join (empty)
+    // memberships, which would otherwise bounce the user back to /join.
+    invalidateAuthContext(locals.user.id);
 
     // On success (including already-member no-op) the hook resolves the new
     // membership as the active group on the next request.
