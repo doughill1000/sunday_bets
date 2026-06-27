@@ -124,6 +124,14 @@
         </AlertDescription>
       </Alert>
     {/if}
+    {#if isLastWeek && finalWeekUnlimitedAllin}
+      <Alert class="mt-4" data-testid="final-week-allin-banner">
+        <AlertTitle>Final week — All-In unlocked</AlertTitle>
+        <AlertDescription>
+          This is the last week of the season. You can go All-In on every pick, not just one.
+        </AlertDescription>
+      </Alert>
+    {/if}
     <div class="picks-board mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
