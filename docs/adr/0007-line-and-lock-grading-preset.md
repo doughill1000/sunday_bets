@@ -1,6 +1,7 @@
 # ADR-0007: Line and lock grading preset (House vs Gamer)
 
 - Status: Accepted
+- Amended: 2026-06-26 (#177) — see "Amendment" below
 - Date: 2026-06-24
 - Issue: #108
 - Supersedes: None
@@ -122,3 +123,26 @@ the season**, with **Gamer** retained as an optional legacy preset.
   `scoring_rules`), ADR-0002 (group config that hosts this preset).
 - Revisit if a group ever wants active and passive players to coexist on one
   leaderboard — that would reopen the per-player line-lock alternative.
+
+## Amendment (2026-06-26, issue #177)
+
+During implementation, with no live users (offseason), we changed the original
+group's treatment:
+
+- The original group (`00000000-0000-4000-8000-000000000017`) moves to **House**
+  for weeks first graded after this change ships. Its already-graded history remains
+  **Gamer** and re-grades byte-identically. This revises the original Decision bullet
+  that pinned the original group to `'gamer'` permanently, and narrows the
+  "byte-identical, no-regrade" guarantee to **already-graded** weeks.
+- The preset is now **frozen per settlement at first grade**
+  (`pick_settlement.graded_preset`), generalizing "frozen per season": a settled game
+  never changes preset on re-grade. The migration backfills all existing settlements
+  to `'gamer'` and sets the original group's `group_config.grading_preset = 'house'`.
+  New groups still default to House.
+- The closing line is captured as an explicit, write-once flagged artifact
+  (`game_lines.is_closing_line`, the latest line with `fetched_at <= commence_time`),
+  reusing the existing hourly pre-kickoff odds cadence — no new cron and no extra Odds
+  API budget.
+- Rationale: with no live users there is no dispute risk in moving the one real group
+  to the fairer House rule going forward, while per-settlement freeze guarantees
+  history is never silently regraded.

@@ -27,6 +27,12 @@ alter table public.pick_settlement
   add constraint pick_settlement_points_range
   check (points_delta between -20 and 10);
 
+-- Preset frozen at first grade so re-grades never flip already-settled weeks.
+-- Backfilled to 'gamer' for all existing settlements (they were graded on locked lines).
+alter table public.pick_settlement
+  add column if not exists graded_preset text;
+update public.pick_settlement set graded_preset = 'gamer' where graded_preset is null;
+
 -- helpful index for joins by game
 create index if not exists idx_pick_settlement_game on public.pick_settlement(game_id);
 create index if not exists idx_pick_settlement_group_game_user

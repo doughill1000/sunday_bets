@@ -3,15 +3,16 @@
 
 BEGIN;
 
-SELECT plan(16);
+SELECT plan(17);
 
 -- Structure -----------------------------------------------------------------
 SELECT has_table('public', 'group_config', 'public.group_config exists');
 SELECT has_table('public', 'group_week_overrides', 'public.group_week_overrides exists');
 
 SELECT has_column('public', 'group_config', 'group_id',      'group_config has group_id');
-SELECT has_column('public', 'group_config', 'line_source',   'group_config has line_source');
-SELECT has_column('public', 'group_config', 'scoring_rules', 'group_config has scoring_rules');
+SELECT has_column('public', 'group_config', 'line_source',     'group_config has line_source');
+SELECT has_column('public', 'group_config', 'grading_preset', 'group_config has grading_preset');
+SELECT has_column('public', 'group_config', 'scoring_rules',  'group_config has scoring_rules');
 
 SELECT has_column('public', 'group_week_overrides', 'group_id',  'group_week_overrides has group_id');
 SELECT has_column('public', 'group_week_overrides', 'week_id',   'group_week_overrides has week_id');
