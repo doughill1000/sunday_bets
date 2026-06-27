@@ -155,6 +155,7 @@ export type Database = {
           game_id: string;
           id: number;
           is_active_line: boolean;
+          is_closing_line: boolean;
           source: string;
           spread_team_id: number;
           spread_value: number;
@@ -164,6 +165,7 @@ export type Database = {
           game_id: string;
           id?: number;
           is_active_line?: boolean;
+          is_closing_line?: boolean;
           source?: string;
           spread_team_id: number;
           spread_value: number;
@@ -173,6 +175,7 @@ export type Database = {
           game_id?: string;
           id?: number;
           is_active_line?: boolean;
+          is_closing_line?: boolean;
           source?: string;
           spread_team_id?: number;
           spread_value?: number;
@@ -262,6 +265,7 @@ export type Database = {
       group_config: {
         Row: {
           created_at: string;
+          grading_preset: string;
           group_id: string;
           line_source: string;
           scoring_rules: Json;
@@ -269,6 +273,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          grading_preset?: string;
           group_id: string;
           line_source?: string;
           scoring_rules?: Json;
@@ -276,6 +281,7 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          grading_preset?: string;
           group_id?: string;
           line_source?: string;
           scoring_rules?: Json;
@@ -498,6 +504,7 @@ export type Database = {
         Row: {
           game_id: string;
           graded_at: string;
+          graded_preset: string | null;
           group_id: string;
           outcome: Database['public']['Enums']['pick_outcome'] | null;
           pick_id: string | null;
@@ -507,6 +514,7 @@ export type Database = {
         Insert: {
           game_id: string;
           graded_at?: string;
+          graded_preset?: string | null;
           group_id: string;
           outcome?: Database['public']['Enums']['pick_outcome'] | null;
           pick_id?: string | null;
@@ -516,6 +524,7 @@ export type Database = {
         Update: {
           game_id?: string;
           graded_at?: string;
+          graded_preset?: string | null;
           group_id?: string;
           outcome?: Database['public']['Enums']['pick_outcome'] | null;
           pick_id?: string | null;
@@ -1411,6 +1420,10 @@ export type Database = {
       };
     };
     Functions: {
+      _capture_closing_line: {
+        Args: { p_game_ids: string[] };
+        Returns: undefined;
+      };
       _get_final_week_unlimited_allin: { Args: never; Returns: boolean };
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] };

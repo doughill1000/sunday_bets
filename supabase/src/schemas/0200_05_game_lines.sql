@@ -6,10 +6,20 @@ create table if not exists public.game_lines (
   spread_team_id integer not null references public.teams(id), -- team giving/taking points
   spread_value numeric not null,                               -- negative = favorite
   fetched_at timestamptz not null default now(),
-  is_active_line boolean not null default false
+  is_active_line boolean not null default false,
+  -- Flagged write-once at first grade: the last pre-kickoff line per (game, source).
+  is_closing_line boolean not null default false
 );
 
 -- At most one active line per game
 create unique index if not exists ux_game_lines_active
 on public.game_lines (game_id)
 where is_active_line = true;
+
+-- Additive column for existing DBs; the definition above handles fresh DBs.
+alter table public.game_lines
+  add column if not exists is_closing_line boolean not null default false;
+
+-- At most one closing line per (game, source)
+create unique index if not exists ux_game_lines_closing
+on public.game_lines (game_id, source) where is_closing_line = true;
