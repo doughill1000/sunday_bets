@@ -61,11 +61,11 @@ values
   ('00000000-0000-4154-8000-000000000001', 'fanduel', '{"missed_pick_penalty": -2}', 'house'),
   ('00000000-0000-4154-8000-000000000002', 'fanduel', '{}', 'house');
 
--- Settled active-season game for Group B. Active season = max(seasons.year). The
--- local DB already carries seeded future seasons, so derive a year strictly above
--- the current max to guarantee this season is the active one for the freeze check.
+-- Settled active-season game for Group B. Active season = max(seasons.year).
+-- Derive a year strictly above the current max so this season is the active one
+-- for the freeze check. coalesce handles a migration-only DB (CI) with no seasons.
 insert into public.seasons (id, league, year)
-values (9954, 'NFL', (select max(year) + 1 from public.seasons));
+values (9954, 'NFL', (select coalesce(max(year), 2000) + 1 from public.seasons));
 
 insert into public.weeks (id, season_id, week_number, start_ts, end_ts)
 values (99541, 9954, 1, '2054-09-04 00:00:00+00', '2054-09-11 00:00:00+00');
