@@ -17,6 +17,12 @@
   let renameMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let renameBusy = $state(false);
 
+  // League rules (grading preset + drop-worst-week)
+  let preset = $state<'house' | 'gamer'>(data.gradingPreset);
+  let dropWorst = $state(data.dropWorstWeek);
+  let configMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let configBusy = $state(false);
+
   // Per-member busy states
   let memberBusy = $state<string | null>(null); // userId currently being acted on
   let memberMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -65,6 +71,31 @@
       newGroupName = data.group.name;
     } finally {
       renameBusy = false;
+    }
+  }
+
+  async function saveConfig() {
+    if (configBusy) return;
+    configMsg = null;
+    configBusy = true;
+    try {
+      const res = await fetch('/api/group/update-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grading_preset: preset, drop_worst_week: dropWorst })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        configMsg = { kind: 'error', text: body.reason ?? 'Could not update league rules.' };
+        return;
+      }
+      configMsg = { kind: 'success', text: 'League rules saved.' };
+      await invalidateAll();
+      // Re-sync local controls with the persisted values.
+      preset = data.gradingPreset;
+      dropWorst = data.dropWorstWeek;
+    } finally {
+      configBusy = false;
     }
   }
 
@@ -414,6 +445,76 @@
                 </li>
               {/each}
             </ul>
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
+  {/if}
+
+  <!-- League rules (commissioner only) -->
+  {#if data.isCommissioner}
+    <Card class="p-6">
+      <CardHeader class="mb-2 p-0">
+        <CardTitle class="text-xl font-bold">League rules</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-5 p-0 pt-2">
+        <form
+          class="space-y-5"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void saveConfig();
+          }}
+        >
+          <!-- Grading preset (frozen once the season has started) -->
+          <div class="space-y-1">
+            <Label for="grading-preset">Grading</Label>
+            <select
+              id="grading-preset"
+              bind:value={preset}
+              disabled={configBusy || data.presetLocked}
+              class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="house">House — everyone graded on the closing line (fair)</option>
+              <option value="gamer">Gamer — each pick graded on its own locked line</option>
+            </select>
+            {#if data.presetLocked}
+              <p class="text-xs text-muted-foreground">Locked — the season has started.</p>
+            {:else}
+              <p class="text-xs text-muted-foreground">
+                Can only change before the season's first game is settled.
+              </p>
+            {/if}
+          </div>
+
+          <!-- Drop worst week (freely editable) -->
+          <div class="flex items-start gap-3">
+            <input
+              id="drop-worst-week"
+              type="checkbox"
+              bind:checked={dropWorst}
+              disabled={configBusy}
+              class="border-input mt-1 h-4 w-4 rounded border"
+            />
+            <div class="space-y-0.5">
+              <Label for="drop-worst-week">Drop each player's worst week</Label>
+              <p class="text-xs text-muted-foreground">
+                Exclude every member's lowest-scoring week from their season total.
+              </p>
+            </div>
+          </div>
+
+          <Button type="submit" size="sm" disabled={configBusy}>
+            {configBusy ? 'Saving…' : 'Save'}
+          </Button>
+        </form>
+
+        {#if configMsg}
+          <div
+            class="rounded-xl border p-3 text-sm"
+            class:border-success={configMsg.kind === 'success'}
+            class:border-destructive={configMsg.kind === 'error'}
+          >
+            {configMsg.text}
           </div>
         {/if}
       </CardContent>

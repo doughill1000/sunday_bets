@@ -3,6 +3,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { supabaseService } from '$lib/supabase/service';
+import { getGroupConfig } from '$lib/server/groupConfig';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const { groupId, user } = locals;
@@ -41,6 +42,10 @@ export const load: PageServerLoad = async ({ locals }) => {
     revoked_at: string | null;
     created_at: string;
   }[] = [];
+  // League rules (commissioner-only): current values + season-freeze lock flag.
+  let gradingPreset: 'house' | 'gamer' = 'house';
+  let dropWorstWeek = false;
+  let presetLocked = false;
   if (isCommissioner) {
     const { data: inviteData } = await supabaseService
       .from('group_invites')
@@ -50,6 +55,15 @@ export const load: PageServerLoad = async ({ locals }) => {
       .order('created_at', { ascending: false })
       .limit(20);
     invites = inviteData ?? [];
+
+    const cfg = await getGroupConfig(groupId);
+    const { data: locked } = await supabaseService.rpc('group_active_season_settled', {
+      p_group_id: groupId
+    });
+    gradingPreset = cfg?.grading_preset === 'gamer' ? 'gamer' : 'house';
+    dropWorstWeek =
+      (cfg?.scoring_rules as { drop_worst_week?: boolean } | null)?.drop_worst_week ?? false;
+    presetLocked = locked ?? false;
   }
 
   return {
@@ -63,6 +77,9 @@ export const load: PageServerLoad = async ({ locals }) => {
     })),
     isCommissioner,
     currentUserId: user.id,
-    invites
+    invites,
+    gradingPreset,
+    dropWorstWeek,
+    presetLocked
   };
 };
