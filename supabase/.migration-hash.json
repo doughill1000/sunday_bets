@@ -290,7 +290,7 @@
   },
   "views/leaderboard_season_totals.sql": {
     "hash": "bc5fabc0f98e7b5cb04d08d44796b94b76759f3664051506fe074ac2e1a5385d",
-    "migration": "20260627142300_paginated_leaderboard_members.sql",
+    "migration": "20260627165203_paginated_leaderboard_members.sql",
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "views/leaderboard_weekly_cumulative.sql": {
@@ -390,16 +390,16 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/auth/handle_new_auth_user.sql": {
-    "hash": "b1238dd9684c9a38c6af173b1cec944d7432e088c8763d77b7003a4522aa5784",
+    "hash": "63b71a5988ec0fef6498e977fa97383e170470e2c4073bde2111b49276672f74",
     "signature": "public.handle_new_auth_user()",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260627141319_cap_display_name_and_group_size.sql",
+    "migrationHash": "ac219a73822a152eff778ac8f5bcf059f2a31faa0f938b1999930ad20c3852b2"
   },
   "functions/auth/handle_updated_auth_user.sql": {
-    "hash": "5789d83a0c7c8c0ae79442fc81d6ad1931f0e1d0552e1e7bc60339eb366428a0",
+    "hash": "8545578921ededd15c357bf715544fbc462edd8e6fbbdfc7fe31378ea146c74e",
     "signature": "public.handle_updated_auth_user()",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260627141319_cap_display_name_and_group_size.sql",
+    "migrationHash": "ac219a73822a152eff778ac8f5bcf059f2a31faa0f938b1999930ad20c3852b2"
   },
   "functions/auth/is_commissioner.sql": {
     "hash": "8b267c11d51d1aa2ea9fb8840efef2a70021f4fbff5497dc8cda910c42dd7bc2",
@@ -486,10 +486,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/groups/redeem_invite.sql": {
-    "hash": "4814f2a1387a4debc729a3652cc2e80ecaa75835498291a7246a851b0cec8eb0",
+    "hash": "bba441cad415e988842efe4efb1fd13b38345e5d767a0ae957cc5ed15487aba9",
     "signature": "public.redeem_invite(text)",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260627141319_cap_display_name_and_group_size.sql",
+    "migrationHash": "ac219a73822a152eff778ac8f5bcf059f2a31faa0f938b1999930ad20c3852b2"
   },
   "functions/groups/remove_member.sql": {
     "hash": "817167e5ff8a4b698b2f52c72611bc7c21718b5107edd5411e59fc154b06078e",
@@ -637,27 +637,32 @@
     "migration": "20260627014310_add_update_group_config_rpc.sql",
     "migrationHash": "ec89398c0ec5c594e69525ac0323fd3f67469b1c357a29e6dd91e0bd2692f0c2"
   },
+  "schemas/0222_users_display_name_length.sql": {
+    "hash": "62c77c28a135ba708a93306e5508ca1d291f1394b526cf5f4a4a8f0b3418b0a1",
+    "migration": "20260627141319_cap_display_name_and_group_size.sql",
+    "migrationHash": "ac219a73822a152eff778ac8f5bcf059f2a31faa0f938b1999930ad20c3852b2"
+  },
   "indexes/idx_group_memberships_group_role_joined.sql": {
     "hash": "f7746e4d91c6a7ae68c71dba47aa3b6431de20312aea9293c19f3d0eae3f231c",
-    "migration": "20260627142300_paginated_leaderboard_members.sql",
+    "migration": "20260627165203_paginated_leaderboard_members.sql",
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "functions/groups/group_members_page.sql": {
     "hash": "0e08ab55b821396d88dfe3978c797357a45ad20587be10a11b8d262ce1e83f33",
     "signature": "public.group_members_page(uuid, int, public.group_membership_role, timestamptz, uuid)",
-    "migration": "20260627142300_paginated_leaderboard_members.sql",
+    "migration": "20260627165203_paginated_leaderboard_members.sql",
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "functions/stats/group_season_years.sql": {
     "hash": "4a067bf72a093bde1cd9e1f90482b427f9c73087607b93b5723814ad07d02942",
     "signature": "public.group_season_years(uuid)",
-    "migration": "20260627142300_paginated_leaderboard_members.sql",
+    "migration": "20260627165203_paginated_leaderboard_members.sql",
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "functions/stats/leaderboard_season_page.sql": {
     "hash": "6c85c85104d643e5faa04ab07f02cf8354b646d561615bac7815a472ed5ec524",
     "signature": "public.leaderboard_season_page(uuid, int, int, int, int, int, uuid)",
-    "migration": "20260627142300_paginated_leaderboard_members.sql",
+    "migration": "20260627165203_paginated_leaderboard_members.sql",
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   }
 }

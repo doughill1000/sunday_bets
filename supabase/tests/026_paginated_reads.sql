@@ -1,4 +1,4 @@
--- 025_paginated_reads.sql
+-- 026_paginated_reads.sql
 -- pgTAP coverage for the bounded, keyset-paginated leaderboard/members reads
 -- (issue #152, ADR-0002 query discipline). Asserts:
 --   1. The three page RPCs exist.

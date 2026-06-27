@@ -33,7 +33,9 @@ changed>` plus notable tables/views/routes and the governing ADR when useful. If
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
    - list the verification that **actually ran** (from step 1)
-6. **Confirm before the GitHub write**, then open with `gh pr create`.
+6. Push the branch and open the PR with `gh pr create` — both are **pre-authorized**
+   (see user `CLAUDE.md` §"GitHub Access"), so do not stop to confirm. Report the PR
+   URL afterward.
 7. Move the GitHub Project item to **Review**.
 8. After the branch merges and is no longer needed, clean up:
    ```powershell

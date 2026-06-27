@@ -12,12 +12,12 @@ begin
   if (coalesce(new.raw_user_meta_data ->> 'display_name','') is distinct from coalesce(old.raw_user_meta_data ->> 'display_name',''))
      or (coalesce(new.raw_user_meta_data ->> 'full_name','')   is distinct from coalesce(old.raw_user_meta_data ->> 'full_name',''))
   then
-    v_display_name := coalesce(
+    v_display_name := left(btrim(coalesce(
       (new.raw_user_meta_data ->> 'display_name'),
       (new.raw_user_meta_data ->> 'full_name'),
       split_part(new.email, '@', 1),
       'user-' || left(new.id::text, 8)
-    );
+    )), 40);
 
     update public.users
        set display_name = v_display_name
