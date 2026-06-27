@@ -2,6 +2,7 @@
 // Calls remove_member RPC as the authenticated user (commissioner check in function).
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
+import { invalidateAuthContext } from '$lib/server/auth-context-cache';
 
 function errReason(code: string | undefined): string {
   if (code === 'P0020') return 'Only commissioners can remove members.';
@@ -27,6 +28,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (error) {
     return json({ reason: errReason(error.code) }, { status: 400 });
   }
+
+  // Best-effort bust of the removed member's cached memberships on this instance
+  // (ADR-0014). The cache is per-instance, so this only shortens the staleness
+  // window where the actor and target share a warm instance; the ≤TTL app-shell
+  // bound still applies cross-instance (data stays RLS-denied regardless).
+  invalidateAuthContext(userId);
 
   return json({ ok: true });
 };

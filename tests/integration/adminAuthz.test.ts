@@ -115,6 +115,36 @@ afterAll(async () => {
 });
 
 // ---------------------------------------------------------------------------
+// requireAdmin fresh re-check (ADR-0014 boundary 2)
+//
+// `requireAdmin` must verify `users.role` FRESH/UNCACHED rather than trust the
+// cached `locals.isAdmin`. These tests force `locals.isAdmin` to disagree with
+// the DB and assert the DB wins both directions — so deny-after-revocation is
+// immediate (a demoted admin with `isAdmin` cached stale-true is still denied)
+// and a freshly-promoted admin is not locked out by a stale-false cache.
+// ---------------------------------------------------------------------------
+
+describe('requireAdmin re-reads users.role fresh (ignores stale locals.isAdmin)', () => {
+  test('rejects a non-admin whose isAdmin is cached stale-true (deny after revocation)', async () => {
+    // NON_ADMIN_USER_ID is a plain player in the DB; pass isAdmin: true to
+    // simulate a stale cache entry from before demotion. Must still 403.
+    const res = await invoke(settingsPatchHandler, NON_ADMIN_USER_ID, true, {
+      final_week_unlimited_allin: false
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test('admits an admin whose isAdmin is cached stale-false', async () => {
+    // ADMIN_USER_ID is an admin in the DB; pass isAdmin: false to simulate a
+    // stale cache from before promotion. The fresh read must let it through.
+    const res = await invoke(settingsPatchHandler, ADMIN_USER_ID, false, {
+      final_week_unlimited_allin: false
+    });
+    expect(res.status).not.toBe(403);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // grade-game — POST
 // ---------------------------------------------------------------------------
 
