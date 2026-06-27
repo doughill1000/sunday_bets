@@ -7,7 +7,11 @@
 -- Materialized (issue #191): season standings are recomputed only at the end of a
 -- grading run via public.refresh_leaderboard_stats(), not on every page load. The
 -- query body below is unchanged from the prior regular view.
-drop view if exists public.leaderboard_season_totals;
+-- DROP MATERIALIZED VIEW (not DROP VIEW): once #191 converted this to a matview, any
+-- later re-emission of this file (e.g. issue #152's keyset index below) runs against a
+-- DB where it is already a matview, and `drop view` errors on a matview. IF EXISTS
+-- keeps the from-empty baseline a clean no-op.
+drop materialized view if exists public.leaderboard_season_totals;
 
 create materialized view public.leaderboard_season_totals as
 with season_rows as (
@@ -123,6 +127,16 @@ from adjusted a;
 -- serves the (group_id, season_year) read filter in getSeasonLeaderboard.
 create unique index if not exists uq_leaderboard_season_totals
   on public.leaderboard_season_totals (group_id, user_id, season_year);
+
+-- Keyset-pagination index (issue #152, ADR-0002 query discipline). Matches the
+-- (group_id, season_year) equality filter plus the exact display ordering used by
+-- public.leaderboard_season_page: total_points/wins/pushes descending, with user_id
+-- as the unique descending tie-breaker so the keyset cursor is total. Column order
+-- and direction mirror that ORDER BY so the keyset row-value comparison and the page
+-- limit are both served by a single index range scan (EXPLAIN: Index Scan, no Sort).
+create index if not exists idx_leaderboard_season_totals_keyset
+  on public.leaderboard_season_totals
+  (group_id, season_year, total_points desc, wins desc, pushes desc, user_id desc);
 
 -- Materialized views are NOT covered by the schema-wide `grant select on all tables`
 -- (that grant excludes matviews), so service_role is granted explicitly. MVs cannot

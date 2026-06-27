@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
+import { getCurrentSeasonYear, getSeasonLeaderboardPage } from '$lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { tracePageLoad } from '$lib/server/observability';
 
@@ -14,20 +14,24 @@ export const load: PageServerLoad = async (event) => {
 async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: string) {
   const view = event.url.searchParams.get('view') ?? 'standings';
   const weekParam = event.url.searchParams.get('week');
+  const cursor = event.url.searchParams.get('cursor');
 
   const seasonYear = await getCurrentSeasonYear();
 
-  const [{ data: auth }, totals] = await Promise.all([
+  const [{ data: auth }, page] = await Promise.all([
     event.locals.supabase.auth.getUser(),
-    getSeasonLeaderboard(seasonYear, groupId)
+    getSeasonLeaderboardPage(seasonYear, groupId, { cursor })
   ]);
 
   const currentUserId = auth?.user?.id ?? null;
+  const totals = page.entries;
+  const totalsCursor = page.nextCursor;
 
   if (view !== 'weekly') {
     return {
       seasonYear,
       totals,
+      totalsCursor,
       currentUserId,
       view: 'standings' as const,
       weeks: null,
@@ -50,6 +54,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   return {
     seasonYear,
     totals,
+    totalsCursor,
     currentUserId,
     view: 'weekly' as const,
     weeks,
