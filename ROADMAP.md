@@ -75,7 +75,9 @@ line stays honest about what is committed.
 - **Scaling (measurement-gated).** Observability first to define "measured scale," then
   response caching, bounded and paginated leaderboards, and operational alerts and
   load-testing — each triggered by a metric crossing a threshold, not by a date. This
-  honors the guardrail that infrastructure is revisited only from measurements.
+  honors the guardrail that infrastructure is revisited only from measurements. The
+  baseline signals and their Tier A/B trigger thresholds are defined in
+  [`docs/observability/scaling-signals.md`](docs/observability/scaling-signals.md).
 - **Gameplay decisions and research.** Catch-up mechanics, auto-pick defaults, and the
   more experimental scoring and side-game ideas stay in a decide-when-wanted backlog;
   each is gated on writing and accepting its ADR before any build.

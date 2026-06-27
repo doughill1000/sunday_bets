@@ -2,11 +2,16 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
+import { tracePageLoad } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
   const { groupId } = event.locals;
   if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
 
+  return tracePageLoad('leaderboard', () => loadLeaderboard(event, groupId));
+};
+
+async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: string) {
   const view = event.url.searchParams.get('view') ?? 'standings';
   const weekParam = event.url.searchParams.get('week');
 
@@ -51,4 +56,4 @@ export const load: PageServerLoad = async (event) => {
     selectedWeek: selectedWeek ?? null,
     breakdown
   };
-};
+}
