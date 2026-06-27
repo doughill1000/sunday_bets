@@ -41,8 +41,10 @@ work that "0 open issues" hides.
 3. **Cross-check local signals so no single source fools you:** `package.json` version,
    `git tag --sort=-v:refname`, the latest `gh release`, and the newest `docs/CHANGELOG.md`
    entries. A version is **shipped** only when its milestone is open=0 **and** a matching
-   Release is published. `package.json` already bumped to the _next_ version is the normal
-   post-release state — not evidence the prior version is incomplete.
+   Release is published. Per ADR-0015, `package.json` holds the **last shipped** version
+   between releases (it is bumped only by `cut-release`, at release time) — so
+   `package.json` matching the latest `v*` tag is the normal mid-cycle state, not
+   evidence a version is incomplete.
 4. **Look past "0 open."** Build three buckets, not one count:
    - **Shipped** — closed issues in the milestone (cross-referenced with `docs/CHANGELOG.md`).
    - **Deferred** — work the roadmap/issues explicitly punted to the next milestone. Name it
@@ -69,5 +71,6 @@ work that "0 open issues" hides.
 
 - `ROADMAP.md` (release direction), `docs/CHANGELOG.md` (shipped history),
   `docs/WORKFLOW.md` (delivery process)
-- Sibling skills: `start-issue` (begin the next piece), `finish-pr` (close one out),
-  `scope-issue` (triage what a leftover issue should become).
+- Sibling skills: `cut-release` (the **write** counterpart — actually cuts the release
+  once this read-only check says a version is done), `start-issue` (begin the next
+  piece), `finish-pr` (close one out), `scope-issue` (triage a leftover issue).

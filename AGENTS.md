@@ -48,8 +48,8 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   auto-deploys are off (ADR-0010): a PR gets **one** preview deployment on open / ready
   / reopen (backed by the staging Supabase project) plus on-demand previews via a
   `/preview` comment — not one per push. **Merging does not ship**; production deploys
-  only on a `package.json` `"version"` bump or a manual dispatch (see
-  `docs/WORKFLOW.md` §"Cutting a release").
+  only on a single deliberate manual dispatch (ADR-0010), which reads `package.json`
+  `"version"` to tag the release (see `docs/WORKFLOW.md` §"Cutting a release").
 - **Confirm before any GitHub write** (push, PR, issue, gist) — per your user-level agent instructions.
 - **Database changes** use the hash-ledger flow (full steps in README): edit
   `supabase/src/**`, run `pnpm db:migration --name=describe_the_change`, then commit
@@ -128,12 +128,13 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   read that file first (then `gh` for anything newer) — do not reverse-engineer
   completion from source. GitHub (closed issues, merged PRs, Releases) stays
   authoritative.
-- **If the issue includes a target version number**, bump `package.json` `"version"`
-  to that value as part of the implementation commit. Note this is now also the
-  **production-release trigger** (ADR-0010): merging a version bump to `master` deploys
-  to prod and tags a release, so only bump when the change is meant to ship. Conversely,
-  bump the version when a merged schema change needs new app code, so app and DB ship
-  together.
+- **Version impact is label-driven (ADR-0015) — do not bump `package.json` in feature
+  PRs.** `issue-author` assigns a `semver:patch|minor|major` label + target milestone;
+  `finish-pr` inherits them onto the PR; the `cut-release` skill computes the release
+  version from the milestone's highest `semver:` label and bumps `package.json` then, in
+  a dedicated release PR. `package.json` holds the **last shipped** version between
+  releases. The manual deploy dispatch (ADR-0010) reads that version to tag the release.
+  See `docs/WORKFLOW.md` §"Versioning".
 
 ## Auth & admin
 
