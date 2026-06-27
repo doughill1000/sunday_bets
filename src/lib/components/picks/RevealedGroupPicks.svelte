@@ -65,7 +65,11 @@
               {@const isMe = p.userId === myUserId}
               <li class="flex items-center gap-1 text-xs">
                 <UserAvatar size="xs" avatarKey={p.avatarKey} displayName={p.displayName ?? '?'} />
-                <span class={isMe ? 'font-semibold' : 'text-muted-foreground'}>
+                <span
+                  class="inline-block max-w-[140px] truncate align-bottom sm:max-w-[200px] {isMe
+                    ? 'font-semibold'
+                    : 'text-muted-foreground'}"
+                >
                   {p.displayName ?? p.userId}{isMe ? ' (you)' : ''}
                 </span>
                 <span

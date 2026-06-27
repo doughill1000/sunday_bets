@@ -189,7 +189,10 @@
       {#each comments as comment (comment.id)}
         <li class="group flex items-start gap-1.5 text-sm" data-testid="comment-row">
           <span class="min-w-0 flex-1">
-            <span class="font-medium">{comment.display_name ?? 'Member'}:</span>
+            <span
+              class="inline-block max-w-[140px] truncate align-bottom font-medium sm:max-w-[200px]"
+              >{comment.display_name ?? 'Member'}</span
+            >:
             <span class="ml-1 text-foreground/80">{comment.body}</span>
           </span>
           {#if comment.user_id === currentUserId}
