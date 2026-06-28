@@ -1,6 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getCurrentSeasonYear, getSeasonLeaderboardPage } from '$lib/server/db/queries/leaderboard';
+import {
+  getCurrentSeasonYear,
+  getSeasonLeaderboardPage,
+  getAvailableSeasons
+} from '$lib/server/db/queries/leaderboard';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { tracePageLoad } from '$lib/server/observability';
@@ -17,7 +21,13 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   const weekParam = event.url.searchParams.get('week');
   const cursor = event.url.searchParams.get('cursor');
 
-  const seasonYear = await getCurrentSeasonYear();
+  const [currentSeasonYear, availableSeasons] = await Promise.all([
+    getCurrentSeasonYear(),
+    getAvailableSeasons(groupId)
+  ]);
+
+  const rawSeason = event.url.searchParams.get('season');
+  const seasonYear = rawSeason ? parseInt(rawSeason, 10) || currentSeasonYear : currentSeasonYear;
 
   const [{ data: auth }, page, champion] = await Promise.all([
     event.locals.supabase.auth.getUser(),
@@ -26,13 +36,16 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   ]);
 
   const currentUserId = auth?.user?.id ?? null;
-  const championUserId = champion?.user_id ?? null;
+  // Crown only shown when viewing the current in-progress season.
+  const championUserId = seasonYear === currentSeasonYear ? (champion?.user_id ?? null) : null;
   const totals = page.entries;
   const totalsCursor = page.nextCursor;
 
   if (view !== 'weekly') {
     return {
+      currentSeasonYear,
       seasonYear,
+      availableSeasons,
       totals,
       totalsCursor,
       currentUserId,
@@ -56,7 +69,9 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
       : [];
 
   return {
+    currentSeasonYear,
     seasonYear,
+    availableSeasons,
     totals,
     totalsCursor,
     currentUserId,

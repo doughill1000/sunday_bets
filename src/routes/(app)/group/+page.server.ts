@@ -6,7 +6,11 @@ import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { getGroupMembersPage } from '$lib/server/db/queries/getGroupMembers';
 import { getLeagueHonors } from '$lib/server/db/queries/honors';
-import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
+import {
+  getCurrentSeasonYear,
+  getSeasonLeaderboard,
+  getAvailableSeasons
+} from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
 import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
 
@@ -16,8 +20,16 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
   // League Honors (#305): the Group tab is now the home for trophies, the wooden
   // spoon, and identity badges (moved off Stats). Champion/spoon come from
-  // getLeagueHonors; badges derive from the current season's stats + standings.
-  const seasonYear = await getCurrentSeasonYear();
+  // getLeagueHonors; badges derive from the selected season's stats + standings.
+  const [currentSeasonYear, availableSeasons] = await Promise.all([
+    getCurrentSeasonYear(),
+    getAvailableSeasons(groupId)
+  ]);
+
+  const rawSeason = url.searchParams.get('season');
+  const badgeSeasonYear = rawSeason
+    ? parseInt(rawSeason, 10) || currentSeasonYear
+    : currentSeasonYear;
 
   // Bounded, keyset-paginated members page (issue #152). Pass back `membersCursor`
   // as `?members_cursor=` to fetch the next page; for real groups the first page
@@ -25,8 +37,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const [membersPage, honors, seasonStats, seasonTotals] = await Promise.all([
     getGroupMembersPage(groupId, { cursor: url.searchParams.get('members_cursor') }),
     getLeagueHonors(groupId),
-    getStatsForSeason(seasonYear, groupId),
-    getSeasonLeaderboard(seasonYear, groupId)
+    getStatsForSeason(badgeSeasonYear, groupId),
+    getSeasonLeaderboard(badgeSeasonYear, groupId)
   ]);
 
   // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
@@ -93,6 +105,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     currentUserId: user.id,
     honors,
     badges,
+    availableSeasons,
+    badgeSeasonYear,
     invites,
     gradingPreset,
     dropWorstWeek,
