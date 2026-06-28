@@ -43,8 +43,6 @@
     accuracy: 'desc',
     points: 'desc'
   };
-  const SHOW_HEAD_TO_HEAD = true;
-
   let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
     key: 'accuracy',
     direction: 'desc'
@@ -250,18 +248,9 @@
 
     {#if selectedCareer}
       <Tabs value="season" class="w-full space-y-6">
-        <TabsList
-          class={SHOW_HEAD_TO_HEAD
-            ? 'grid w-full grid-cols-3 sm:inline-grid sm:w-auto'
-            : 'grid w-full grid-cols-2 sm:inline-grid sm:w-auto'}
-        >
+        <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
           <TabsTrigger value="season" class={ACTIVE_TAB_TRIGGER_CLASS}>Season</TabsTrigger>
           <TabsTrigger value="career" class={ACTIVE_TAB_TRIGGER_CLASS}>Career</TabsTrigger>
-          {#if SHOW_HEAD_TO_HEAD}
-            <TabsTrigger value="head-to-head" class={ACTIVE_TAB_TRIGGER_CLASS}
-              >Head to head</TabsTrigger
-            >
-          {/if}
         </TabsList>
 
         <TabsContent value="season" class="space-y-6">
@@ -421,6 +410,46 @@
                 </Card>
               {/if}
             </div>
+
+            {@const seasonH2H = selectedUserId
+              ? headToHeadForUser(data.headToHead, selectedUserId)
+              : []}
+            {#if seasonH2H.length > 0}
+              <section class="space-y-3" aria-labelledby="season-h2h-heading">
+                <div>
+                  <h2 id="season-h2h-heading" class="text-xl font-semibold tracking-tight">
+                    Head to head
+                  </h2>
+                  <p class="text-sm text-muted-foreground">
+                    {possessive} weighted results against each player on games you both shared this season.
+                  </p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {#each seasonH2H as row (row.opponentUserId)}
+                    <Card class="gap-3 py-4">
+                      <CardHeader class="px-4">
+                        <CardTitle class="text-base">
+                          {subjectLabel} <span class="text-muted-foreground">vs</span>
+                          {row.opponentDisplayName}
+                        </CardTitle>
+                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                      </CardHeader>
+                      <CardContent class="flex items-end justify-between px-4">
+                        <div>
+                          <p class="text-2xl font-bold">
+                            {@render wlp(row.wins, row.losses, row.pushes)}
+                          </p>
+                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
+                        </div>
+                        <p class="text-sm font-medium">
+                          {row.points} to {row.opponentPoints} pts
+                        </p>
+                      </CardContent>
+                    </Card>
+                  {/each}
+                </div>
+              </section>
+            {/if}
           {:else}
             <Card class="border-dashed">
               <CardHeader>
@@ -532,60 +561,48 @@
                 {/if}
               </div>
             {/if}
+
+            {@const careerH2H = selectedUserId
+              ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
+              : []}
+            {#if careerH2H.length > 0}
+              <section class="space-y-3" aria-labelledby="career-h2h-heading">
+                <div>
+                  <h2 id="career-h2h-heading" class="text-xl font-semibold tracking-tight">
+                    Head to head
+                  </h2>
+                  <p class="text-sm text-muted-foreground">
+                    {possessive} weighted results against each player on games you both shared, all-time.
+                  </p>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {#each careerH2H as row (row.opponentUserId)}
+                    <Card class="gap-3 py-4">
+                      <CardHeader class="px-4">
+                        <CardTitle class="text-base">
+                          {subjectLabel} <span class="text-muted-foreground">vs</span>
+                          {row.opponentDisplayName}
+                        </CardTitle>
+                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                      </CardHeader>
+                      <CardContent class="flex items-end justify-between px-4">
+                        <div>
+                          <p class="text-2xl font-bold">
+                            {@render wlp(row.wins, row.losses, row.pushes)}
+                          </p>
+                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
+                        </div>
+                        <p class="text-sm font-medium">
+                          {row.points} to {row.opponentPoints} pts
+                        </p>
+                      </CardContent>
+                    </Card>
+                  {/each}
+                </div>
+              </section>
+            {/if}
           {/await}
         </TabsContent>
-
-        {#if SHOW_HEAD_TO_HEAD}
-          <TabsContent value="head-to-head" class="space-y-6">
-            {#await data.allTimeDetail}
-              <Card class="border-dashed">
-                <CardHeader>
-                  <CardTitle>Loading head-to-head…</CardTitle>
-                </CardHeader>
-              </Card>
-            {:then detail}
-              {@const headToHead = selectedUserId
-                ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
-                : []}
-              {#if headToHead.length > 0}
-                <section class="space-y-3" aria-labelledby="head-to-head-heading">
-                  <div>
-                    <h2 id="head-to-head-heading" class="text-2xl font-semibold tracking-tight">
-                      Head to head
-                    </h2>
-                    <p class="text-sm text-muted-foreground">
-                      {possessive} weighted results against each player on games you both shared.
-                    </p>
-                  </div>
-                  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {#each headToHead as row (row.opponentUserId)}
-                      <Card class="gap-3 py-4">
-                        <CardHeader class="px-4">
-                          <CardTitle class="text-base">
-                            {subjectLabel} <span class="text-muted-foreground">vs</span>
-                            {row.opponentDisplayName}
-                          </CardTitle>
-                          <CardDescription>{row.gamesCompared} games compared</CardDescription>
-                        </CardHeader>
-                        <CardContent class="flex items-end justify-between px-4">
-                          <div>
-                            <p class="text-2xl font-bold">
-                              {@render wlp(row.wins, row.losses, row.pushes)}
-                            </p>
-                            <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
-                          </div>
-                          <p class="text-sm font-medium">
-                            {row.points} to {row.opponentPoints} pts
-                          </p>
-                        </CardContent>
-                      </Card>
-                    {/each}
-                  </div>
-                </section>
-              {/if}
-            {/await}
-          </TabsContent>
-        {/if}
       </Tabs>
     {/if}
   {/if}
