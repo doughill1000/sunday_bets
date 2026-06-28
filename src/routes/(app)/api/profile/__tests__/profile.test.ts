@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateDisplayName } from '../+server';
+import { validateDisplayName } from '$lib/server/profile-validation';
 
 describe('validateDisplayName', () => {
   it('accepts a valid name', () => {
