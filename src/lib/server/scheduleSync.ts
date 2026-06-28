@@ -3,7 +3,8 @@ import {
   fetchEspnWeek,
   EspnFetchError,
   EspnParseError,
-  NFL_REGULAR_SEASON_WEEKS
+  NFL_REGULAR_SEASON_WEEKS,
+  NFL_PRESEASON_WEEKS
 } from './schedule';
 import { findTeamsByExternalKeys } from './db/queries/findTeamsByExternalKeys';
 import { upsertSeasonByYear } from './db/commands/upsertSeasonByYear';
@@ -63,31 +64,41 @@ export async function syncSchedule(year: number = targetNFLYear()): Promise<Sche
   let gamesSkipped = 0;
   let weeksFailed = 0;
 
-  for (let weekNum = 1; weekNum <= NFL_REGULAR_SEASON_WEEKS; weekNum++) {
+  async function ensureSeason(): Promise<number> {
+    if (seasonId !== null) return seasonId;
+    const id = await upsertSeasonByYear(year);
+    seasonId = id;
+    return id;
+  }
+
+  // Process one ESPN week into our schema. Preseason (seasontype=1) weeks are stored with a
+  // negative week_number and is_scoring=false (ADR-0016) — they are pickable and graded but
+  // never count toward standings/stats; regular weeks keep their positive number and count.
+  async function processWeek(espnWeek: number, seasonType: 1 | 2) {
     let weekResult;
     try {
-      weekResult = await fetchEspnWeek(year, weekNum);
+      weekResult = await fetchEspnWeek(year, espnWeek, seasonType);
     } catch (err) {
       if (err instanceof EspnFetchError || err instanceof EspnParseError) {
         Sentry.captureException(err);
         weeksFailed++;
-        continue;
+        return;
       }
       throw err;
     }
 
     if (weekResult.games.length === 0) {
-      // Week returned no games yet (future week not yet scheduled by ESPN).
-      continue;
+      // Week returned no games yet (future or non-existent week not scheduled by ESPN).
+      return;
     }
 
     const timestamps = weekResult.games.map((g) => new Date(g.date).getTime());
     const { startTs, endTs } = weekBoundaries(timestamps);
 
-    if (seasonId === null) {
-      seasonId = await upsertSeasonByYear(year);
-    }
-    const weekId = await upsertWeek({ seasonId, weekNumber: weekNum, startTs, endTs });
+    const sid = await ensureSeason();
+    const isScoring = seasonType === 2;
+    const weekNumber = seasonType === 1 ? -espnWeek : espnWeek;
+    const weekId = await upsertWeek({ seasonId: sid, weekNumber, startTs, endTs, isScoring });
     weeksProcessed++;
 
     for (const game of weekResult.games) {
@@ -109,6 +120,14 @@ export async function syncSchedule(year: number = targetNFLYear()): Promise<Sche
       });
       gamesUpserted++;
     }
+  }
+
+  // Preseason first (chronologically earlier), then the regular season.
+  for (let weekNum = 1; weekNum <= NFL_PRESEASON_WEEKS; weekNum++) {
+    await processWeek(weekNum, 1);
+  }
+  for (let weekNum = 1; weekNum <= NFL_REGULAR_SEASON_WEEKS; weekNum++) {
+    await processWeek(weekNum, 2);
   }
 
   return {

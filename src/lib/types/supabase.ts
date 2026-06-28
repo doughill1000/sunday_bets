@@ -918,6 +918,7 @@ export type Database = {
         Row: {
           end_ts: string;
           id: number;
+          is_scoring: boolean;
           season_id: number;
           start_ts: string;
           week_number: number;
@@ -925,6 +926,7 @@ export type Database = {
         Insert: {
           end_ts: string;
           id?: number;
+          is_scoring?: boolean;
           season_id: number;
           start_ts: string;
           week_number: number;
@@ -932,6 +934,7 @@ export type Database = {
         Update: {
           end_ts?: string;
           id?: number;
+          is_scoring?: boolean;
           season_id?: number;
           start_ts?: string;
           week_number?: number;

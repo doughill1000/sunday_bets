@@ -4,6 +4,10 @@ const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/football/
 
 export const NFL_REGULAR_SEASON_WEEKS = 18;
 
+// ESPN preseason (seasontype=1) is the Hall of Fame weekend plus three preseason weekends.
+// We over-iterate slightly and rely on empty-week skipping, so the exact count is not critical.
+export const NFL_PRESEASON_WEEKS = 4;
+
 // ---------------------------------------------------------------------------
 // Zod schemas — catch ESPN schema drift before any DB write
 // ---------------------------------------------------------------------------
@@ -87,12 +91,17 @@ function mapStatus(state: string, completed: boolean): EspnGame['status'] {
 // Throws EspnFetchError on network failure, EspnParseError on schema mismatch.
 // Both are non-fatal from the caller's perspective (logged to Sentry, no DB write).
 // ---------------------------------------------------------------------------
-export async function fetchEspnWeek(year: number, weekNumber: number): Promise<EspnWeekResult> {
+export async function fetchEspnWeek(
+  year: number,
+  weekNumber: number,
+  // ESPN seasontype: 2 = regular season (default), 1 = preseason (ADR-0016 non-scoring round).
+  seasonType: 1 | 2 = 2
+): Promise<EspnWeekResult> {
   // The scoreboard endpoint keys the schedule off `dates` (the season year),
   // NOT `season` — it silently ignores `season` and returns the current season,
   // so asking for a non-current year would otherwise yield the wrong games.
   const url = `${ESPN_SCOREBOARD}?${new URLSearchParams({
-    seasontype: '2',
+    seasontype: String(seasonType),
     week: String(weekNumber),
     dates: String(year)
   })}`;

@@ -17,17 +17,23 @@ export async function getSeasonWeekOptions(seasonYear: number): Promise<SeasonWe
   if (seasonErr || !season) return [];
 
   const now = new Date().toISOString();
+  // Include non-scoring rounds (preseason / practice, ADR-0016) so their graded results are
+  // viewable; the matviews exclude them from standings and the UI labels them. Order by
+  // start_ts so preseason (negative week_number) still sorts chronologically before week 1.
   const { data: weeks, error: weeksErr } = await supabaseService
     .from('weeks')
-    .select('id, week_number')
+    .select('id, week_number, is_scoring')
     .eq('season_id', season.id)
     .lte('start_ts', now)
-    .gte('week_number', 0) // exclude preseason (week_number < 0)
-    .order('week_number', { ascending: true });
+    .order('start_ts', { ascending: true });
 
   if (weeksErr) throw weeksErr;
 
-  return (weeks ?? []).map((w) => ({ weekNumber: w.week_number, weekId: w.id }));
+  return (weeks ?? []).map((w) => ({
+    weekNumber: w.week_number,
+    weekId: w.id,
+    isScoring: w.is_scoring
+  }));
 }
 
 export async function getWeeklyPickBreakdown(

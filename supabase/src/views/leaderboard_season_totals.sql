@@ -8,10 +8,14 @@
 -- grading run via public.refresh_leaderboard_stats(), not on every page load. The
 -- query body below is unchanged from the prior regular view.
 -- DROP MATERIALIZED VIEW (not DROP VIEW): once #191 converted this to a matview, any
--- later re-emission of this file (e.g. issue #152's keyset index below) runs against a
--- DB where it is already a matview, and `drop view` errors on a matview. IF EXISTS
--- keeps the from-empty baseline a clean no-op.
-drop materialized view if exists public.leaderboard_season_totals;
+-- later re-emission of this file (e.g. issue #152's keyset index below, or #274's
+-- is_scoring filter) runs against a DB where it is already a matview, and `drop view`
+-- errors on a matview. IF EXISTS keeps the from-empty baseline a clean no-op.
+-- CASCADE: leaderboard_season_page() is `returns setof` this matview — a hard type
+-- dependency that blocks a plain drop. CASCADE drops that function too; it is recreated
+-- by functions/stats/leaderboard_season_page.sql (emitted after views), and the ADR-0011
+-- ACL guard + service_role default privileges restore its grant on recreation.
+drop materialized view if exists public.leaderboard_season_totals cascade;
 
 create materialized view public.leaderboard_season_totals as
 with season_rows as (
@@ -29,6 +33,8 @@ join public.games g on g.id = ps.game_id
 join public.weeks w on w.id = g.week_id
 join public.seasons s on s.id = w.season_id
 join public.users u on u.id = ps.user_id
+-- Non-scoring rounds (ADR-0016) never count toward standings.
+where w.is_scoring
 )
 -- Decision-level season aggregates: raw points and the W/L/push record.
 -- Record counts intentionally include every week, even one later dropped

@@ -1,7 +1,9 @@
 -- Weekly and cumulative season scoring per group, shaped for WeeklyCumulativeEntry.
 -- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
 -- of a grading run. Matviews don't support security_invoker; all reads are service-role.
-drop view if exists public.stats_season_trend;
+-- DROP MATERIALIZED VIEW (not DROP VIEW): #191 made this a matview, so re-emission of this
+-- file runs against an existing matview, and `drop view` errors on a matview.
+drop materialized view if exists public.stats_season_trend;
 
 create materialized view public.stats_season_trend as
 with week_rows as (
@@ -21,6 +23,8 @@ with week_rows as (
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
   join public.users u on u.id = ps.user_id
+  -- Non-scoring rounds (ADR-0016) never count toward the trend.
+  where w.is_scoring
   group by ps.user_id, u.display_name, s.year, w.week_number, ps.group_id
 ), cumulative as (
   select

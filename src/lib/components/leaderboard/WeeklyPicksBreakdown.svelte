@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
+  import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import WeeklyPickCard from './WeeklyPickCard.svelte';
   import type { SeasonWeekOption, WeeklyGameBreakdown } from '$lib/types/leaderboard';
 
@@ -34,6 +35,13 @@
   function next() {
     if (hasNext) navigate(weeks[currentIndex + 1].weekNumber);
   }
+
+  // Preseason rounds are stored as negative week_number (ADR-0016); label them as such
+  // rather than showing "Week -1".
+  function weekLabel(w: SeasonWeekOption | null): string {
+    if (w == null) return 'No weeks started';
+    return w.weekNumber < 0 ? `Preseason ${-w.weekNumber}` : `Week ${w.weekNumber}`;
+  }
 </script>
 
 <div class="space-y-4" data-testid="weekly-breakdown">
@@ -41,10 +49,19 @@
   <div class="flex items-center justify-between gap-2">
     <Button variant="outline" size="sm" onclick={prev} disabled={!hasPrev}>◀</Button>
     <span class="text-sm font-medium">
-      {selectedWeek != null ? `Week ${selectedWeek.weekNumber}` : 'No weeks started'}
+      {weekLabel(selectedWeek)}
     </span>
     <Button variant="outline" size="sm" onclick={next} disabled={!hasNext}>▶</Button>
   </div>
+
+  {#if selectedWeek && !selectedWeek.isScoring}
+    <Alert data-testid="non-scoring-banner">
+      <AlertTitle>This round doesn't count</AlertTitle>
+      <AlertDescription>
+        Results are shown for fun — they don't affect the season standings.
+      </AlertDescription>
+    </Alert>
+  {/if}
 
   {#if weeks.length === 0}
     <p class="text-sm text-muted-foreground">No weeks have started yet.</p>

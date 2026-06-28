@@ -94,6 +94,15 @@
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
 
+{#if week && week.is_scoring === false}
+  <Alert class="mb-4" data-testid="non-scoring-banner">
+    <AlertTitle>This round doesn't count</AlertTitle>
+    <AlertDescription>
+      Picks and results here are just for fun — they don't affect the season standings.
+    </AlertDescription>
+  </Alert>
+{/if}
+
 {#if games.length === 0}
   <Alert>
     {#if !week}
