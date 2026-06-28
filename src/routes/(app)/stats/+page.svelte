@@ -230,7 +230,7 @@
     </div>
   </div>
 
-  <LeagueHonors honors={data.honors} currentUserId={data.currentUserId} />
+  <LeagueHonors honors={data.honors} badges={data.badges} currentUserId={data.currentUserId} />
 
   {#if data.allTimeTotals.length === 0}
     <Card class="border-dashed">
