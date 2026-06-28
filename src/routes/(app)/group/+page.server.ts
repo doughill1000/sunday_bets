@@ -12,6 +12,7 @@ import {
   getAvailableSeasons
 } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
+import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -26,10 +27,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     getAvailableSeasons(groupId)
   ]);
 
-  const rawSeason = url.searchParams.get('season');
-  const badgeSeasonYear = rawSeason
-    ? parseInt(rawSeason, 10) || currentSeasonYear
-    : currentSeasonYear;
+  const badgeSeasonYear = resolveSeasonYear(
+    url.searchParams.get('season'),
+    availableSeasons,
+    currentSeasonYear
+  );
 
   // Bounded, keyset-paginated members page (issue #152). Pass back `membersCursor`
   // as `?members_cursor=` to fetch the next page; for real groups the first page
