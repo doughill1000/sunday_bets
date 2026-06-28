@@ -31,12 +31,13 @@
 <!-- Fills the h-14 container row provided by +layout.svelte -->
 <div class="relative flex w-full items-center">
   <!-- Desktop inline nav (hidden on mobile — bottom tab bar takes over) -->
-  <nav class="hidden sm:flex items-center gap-1 text-sm font-medium">
+  <nav data-testid="primary-nav" class="hidden sm:flex items-center gap-1 text-sm font-medium">
     <a href="/picks" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Picks</a>
     <a href="/leaderboard" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
       >Leaderboard</a
     >
     <a href="/stats" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Stats</a>
+    <a href="/group" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Group</a>
   </nav>
 
   <!-- Group switcher (multi-group only; renders nothing otherwise). A single instance

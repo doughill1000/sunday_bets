@@ -5,17 +5,32 @@ import type { PageServerLoad } from './$types';
 import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { getGroupMembersPage } from '$lib/server/db/queries/getGroupMembers';
+import { getLeagueHonors } from '$lib/server/db/queries/honors';
+import { getCurrentSeasonYear, getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
+import { getStatsForSeason } from '$lib/server/db/queries/stats';
+import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const { groupId, user } = locals;
   if (!groupId || !user) throw redirect(303, '/auth/error?reason=no-group');
 
+  // League Honors (#305): the Group tab is now the home for trophies, the wooden
+  // spoon, and identity badges (moved off Stats). Champion/spoon come from
+  // getLeagueHonors; badges derive from the current season's stats + standings.
+  const seasonYear = await getCurrentSeasonYear();
+
   // Bounded, keyset-paginated members page (issue #152). Pass back `membersCursor`
   // as `?members_cursor=` to fetch the next page; for real groups the first page
   // already contains everyone, so output is unchanged.
-  const membersPage = await getGroupMembersPage(groupId, {
-    cursor: url.searchParams.get('members_cursor')
-  });
+  const [membersPage, honors, seasonStats, seasonTotals] = await Promise.all([
+    getGroupMembersPage(groupId, { cursor: url.searchParams.get('members_cursor') }),
+    getLeagueHonors(groupId),
+    getStatsForSeason(seasonYear, groupId),
+    getSeasonLeaderboard(seasonYear, groupId)
+  ]);
+
+  // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
+  const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
 
   // Load group name.
   const { data: group, error: groupErr } = await supabaseService
@@ -76,6 +91,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     membersCursor: membersPage.nextCursor,
     isCommissioner,
     currentUserId: user.id,
+    honors,
+    badges,
     invites,
     gradingPreset,
     dropWorstWeek,
