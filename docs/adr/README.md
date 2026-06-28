@@ -43,22 +43,23 @@ line); this index intentionally does not repeat it, so the two cannot drift — 
 "don't duplicate live status" rule in `docs/WORKFLOW.md`. Open the linked ADR for its
 current status.
 
-| ADR                                                        | Decision                                                                    |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------- |
-| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md)        | Use issue-led delivery and ADRs                                             |
-| [ADR-0002](0002-group-tenancy-boundary.md)                 | Group tenancy boundary and data model                                       |
-| [ADR-0003](0003-schedule-source-and-game-identity.md)      | Schedule source and game-identity / reconciliation model                    |
-| [ADR-0004](0004-oauth-and-identity-linking.md)             | Third-party (OAuth) sign-in and the single-identity / account-linking model |
-| [ADR-0005](0005-drop-worst-week-scoring.md)                | Drop-worst-week scoring (configurable per group)                            |
-| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management       |
-| [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                               |
-| [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                      |
-| [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                        |
-| [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                |
-| [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                |
-| [ADR-0013](0013-materialized-leaderboard-stats.md)         | Leaderboard/stats served from materialized views refreshed on grading       |
-| [ADR-0014](0014-auth-context-caching.md)                   | Short-TTL per-instance cache of the per-request auth-hook lookups           |
-| [ADR-0015](0015-versioning-and-release-policy.md)          | Versioning and release policy (label-driven SemVer)                         |
-| [ADR-0016](0016-non-scoring-rounds.md)                     | Non-scoring rounds (`weeks.is_scoring`) and ESPN preseason sourcing         |
+| ADR                                                        | Decision                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [ADR-0001](0001-use-issue-led-delivery-and-adrs.md)        | Use issue-led delivery and ADRs                                                       |
+| [ADR-0002](0002-group-tenancy-boundary.md)                 | Group tenancy boundary and data model                                                 |
+| [ADR-0003](0003-schedule-source-and-game-identity.md)      | Schedule source and game-identity / reconciliation model                              |
+| [ADR-0004](0004-oauth-and-identity-linking.md)             | Third-party (OAuth) sign-in and the single-identity / account-linking model           |
+| [ADR-0005](0005-drop-worst-week-scoring.md)                | Drop-worst-week scoring (configurable per group)                                      |
+| [ADR-0006](0006-group-lifecycle-invites-and-membership.md) | Group lifecycle — creation gating, invites, and membership management                 |
+| [ADR-0007](0007-line-and-lock-grading-preset.md)           | Line and lock grading preset (House vs Gamer)                                         |
+| [ADR-0008](0008-ai-foundation.md)                          | AI integration foundation — gateway, voice-only boundary, output model, cost controls |
+| [ADR-0009](0009-global-picks-fan-out.md)                   | Global picks — write-time fan-out to all active groups                                |
+| [ADR-0010](0010-production-release-gating.md)              | Gate deploys behind version bumps via GitHub Actions                                  |
+| [ADR-0011](0011-grant-and-rls-baseline-pattern.md)         | Closed-by-default grant/RLS baseline pattern                                          |
+| [ADR-0012](0012-migration-history-rebaseline.md)           | Migration history rebaseline (squash) and simplified rollout                          |
+| [ADR-0013](0013-materialized-leaderboard-stats.md)         | Leaderboard/stats served from materialized views refreshed on grading                 |
+| [ADR-0014](0014-auth-context-caching.md)                   | Short-TTL per-instance cache of the per-request auth-hook lookups                     |
+| [ADR-0015](0015-versioning-and-release-policy.md)          | Versioning and release policy (label-driven SemVer)                                   |
+| [ADR-0016](0016-non-scoring-rounds.md)                     | Non-scoring rounds (`weeks.is_scoring`) and ESPN preseason sourcing                   |
 
-_ADR-0008 was never used — the number was skipped, so there is no `0008-*.md` record._
+_The numbering is sequential; the next ADR is 0017._
