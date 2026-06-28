@@ -6,6 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import LeagueHonors from '$lib/components/stats/LeagueHonors.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -212,85 +213,11 @@
 </script>
 
 <section class="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
-  <h1 class="text-2xl font-bold">Group</h1>
+  <h1 class="text-2xl font-bold">{data.group.name}</h1>
 
-  <!-- Group name / rename -->
-  <Card class="p-6">
-    <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">
-        {data.isCommissioner ? 'Group settings' : data.group.name}
-      </CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-4 p-0 pt-2">
-      {#if data.isCommissioner}
-        {#if !renaming}
-          <div class="flex items-center justify-between gap-4">
-            <span class="text-lg font-medium">{data.group.name}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onclick={() => {
-                renaming = true;
-                newGroupName = data.group.name;
-                renameMsg = null;
-              }}
-            >
-              Rename
-            </Button>
-          </div>
-        {:else}
-          <form
-            class="space-y-3"
-            onsubmit={(e) => {
-              e.preventDefault();
-              void renameGroup();
-            }}
-          >
-            <div class="space-y-1">
-              <Label for="group-name">Group name</Label>
-              <Input
-                id="group-name"
-                bind:value={newGroupName}
-                maxlength={60}
-                placeholder="Group name"
-                disabled={renameBusy}
-              />
-            </div>
-            <div class="flex gap-2">
-              <Button
-                type="submit"
-                size="sm"
-                disabled={renameBusy || newGroupName.trim().length === 0}
-              >
-                {renameBusy ? 'Saving…' : 'Save'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={renameBusy}
-                onclick={() => {
-                  renaming = false;
-                  renameMsg = null;
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        {/if}
-
-        {#if renameMsg}
-          <div
-            class="rounded-xl border p-3 text-sm"
-            class:border-success={renameMsg.kind === 'success'}
-            class:border-destructive={renameMsg.kind === 'error'}
-          >
-            {renameMsg.text}
-          </div>
-        {/if}
-      {/if}
-    </CardContent>
-  </Card>
+  <!-- League honors (#305): champions, the trophy case, the wooden spoon, and
+       identity badges. Visible to every member — the Group tab is now their home. -->
+  <LeagueHonors honors={data.honors} badges={data.badges} currentUserId={data.currentUserId} />
 
   <!-- Members list -->
   <Card class="p-6">
@@ -360,8 +287,86 @@
     </CardContent>
   </Card>
 
-  <!-- Invite management (commissioner only) -->
+  <!-- Manage group (commissioner-only controls) — grouped under one heading so
+       non-commissioner members land on the league page above, not a settings wall. -->
   {#if data.isCommissioner}
+    <h2 class="text-xl font-bold">Manage group</h2>
+
+    <!-- Group name / rename -->
+    <Card class="p-6">
+      <CardHeader class="mb-2 p-0">
+        <CardTitle class="text-xl font-bold">Group name</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-4 p-0 pt-2">
+        {#if !renaming}
+          <div class="flex items-center justify-between gap-4">
+            <span class="text-lg font-medium">{data.group.name}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={() => {
+                renaming = true;
+                newGroupName = data.group.name;
+                renameMsg = null;
+              }}
+            >
+              Rename
+            </Button>
+          </div>
+        {:else}
+          <form
+            class="space-y-3"
+            onsubmit={(e) => {
+              e.preventDefault();
+              void renameGroup();
+            }}
+          >
+            <div class="space-y-1">
+              <Label for="group-name">Group name</Label>
+              <Input
+                id="group-name"
+                bind:value={newGroupName}
+                maxlength={60}
+                placeholder="Group name"
+                disabled={renameBusy}
+              />
+            </div>
+            <div class="flex gap-2">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={renameBusy || newGroupName.trim().length === 0}
+              >
+                {renameBusy ? 'Saving…' : 'Save'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={renameBusy}
+                onclick={() => {
+                  renaming = false;
+                  renameMsg = null;
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        {/if}
+
+        {#if renameMsg}
+          <div
+            class="rounded-xl border p-3 text-sm"
+            class:border-success={renameMsg.kind === 'success'}
+            class:border-destructive={renameMsg.kind === 'error'}
+          >
+            {renameMsg.text}
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
+
+    <!-- Invites -->
     <Card class="p-6">
       <CardHeader class="mb-2 p-0">
         <CardTitle class="text-xl font-bold">Invites</CardTitle>
@@ -449,10 +454,8 @@
         {/if}
       </CardContent>
     </Card>
-  {/if}
 
-  <!-- League rules (commissioner only) -->
-  {#if data.isCommissioner}
+    <!-- League rules -->
     <Card class="p-6">
       <CardHeader class="mb-2 p-0">
         <CardTitle class="text-xl font-bold">League rules</CardTitle>

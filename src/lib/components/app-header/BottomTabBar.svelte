@@ -3,15 +3,18 @@
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
+  import Users from '@lucide/svelte/icons/users';
 
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
-    { href: '/stats', label: 'Stats', Icon: BarChart2 }
+    { href: '/stats', label: 'Stats', Icon: BarChart2 },
+    { href: '/group', label: 'Group', Icon: Users }
   ];
 </script>
 
 <nav
+  data-testid="bottom-tab-bar"
   class="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
   style="padding-bottom: env(safe-area-inset-bottom)"
 >
