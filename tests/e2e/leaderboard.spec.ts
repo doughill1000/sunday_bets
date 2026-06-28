@@ -19,3 +19,16 @@ test('leaderboard renders Standings and Weekly tabs', { tag: '@smoke' }, async (
   await lb.openWeekly();
   await expect(lb.weeklyBreakdown()).toBeVisible();
 });
+
+test('weekly tab shows a jump-to-week dropdown', async ({ page }) => {
+  const lb = leaderboardPage(page);
+  await lb.goto();
+  await lb.openWeekly();
+
+  // The week dropdown trigger is always present once the weekly breakdown loads.
+  await expect(lb.weekDropdownTrigger()).toBeVisible();
+
+  // Opening the dropdown reveals at least one week option.
+  await lb.openWeekDropdown();
+  await expect(page.getByRole('menuitem').first()).toBeVisible();
+});

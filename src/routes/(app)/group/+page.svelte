@@ -217,7 +217,13 @@
 
   <!-- League honors (#305): champions, the trophy case, the wooden spoon, and
        identity badges. Visible to every member — the Group tab is now their home. -->
-  <LeagueHonors honors={data.honors} badges={data.badges} currentUserId={data.currentUserId} />
+  <LeagueHonors
+    honors={data.honors}
+    badges={data.badges}
+    currentUserId={data.currentUserId}
+    seasons={data.availableSeasons}
+    selectedSeason={data.badgeSeasonYear}
+  />
 
   <!-- Members list -->
   <Card class="p-6">

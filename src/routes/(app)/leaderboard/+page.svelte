@@ -19,6 +19,7 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
+  import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
   let { data }: { data: PageData } = $props();
@@ -46,15 +47,18 @@
 </svelte:head>
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
-  <div>
-    <h1
-      id="leaderboard-heading"
-      data-testid="leaderboard-heading"
-      class="text-3xl font-bold tracking-tight"
-    >
-      Leaderboard
-    </h1>
-    <p class="mt-1 text-muted-foreground">{data.seasonYear} season.</p>
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1
+        id="leaderboard-heading"
+        data-testid="leaderboard-heading"
+        class="text-3xl font-bold tracking-tight"
+      >
+        Leaderboard
+      </h1>
+      <p class="mt-1 text-muted-foreground">{data.seasonYear} season.</p>
+    </div>
+    <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
   </div>
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">

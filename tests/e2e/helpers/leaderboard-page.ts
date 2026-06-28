@@ -68,6 +68,27 @@ export function leaderboardPage(page: Page) {
         await api.weeklyTab().click();
         await expect(api.weeklyBreakdown()).toBeVisible({ timeout: 5000 });
       }).toPass({ timeout: 8000 });
+    },
+
+    // --- season picker -------------------------------------------------------
+
+    /** The season <select> (only rendered when 2+ seasons are available). */
+    seasonPicker(): Locator {
+      return page.getByRole('combobox', { name: 'Select season' });
+    },
+
+    // --- week navigator ------------------------------------------------------
+
+    /** The "Jump to week" dropdown trigger button. */
+    weekDropdownTrigger(): Locator {
+      return page.getByRole('button', { name: 'Jump to week' });
+    },
+
+    /** Click the week dropdown and wait for its content to open. */
+    async openWeekDropdown() {
+      await api.weekDropdownTrigger().click();
+      // Wait for at least one dropdown item to appear.
+      await expect(page.getByRole('menuitem').first()).toBeVisible({ timeout: 5000 });
     }
   };
 

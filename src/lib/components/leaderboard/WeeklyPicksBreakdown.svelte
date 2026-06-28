@@ -2,6 +2,12 @@
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
+  import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem
+  } from '$lib/components/ui/dropdown-menu';
   import WeeklyPickCard from './WeeklyPickCard.svelte';
   import type { SeasonWeekOption, WeeklyGameBreakdown } from '$lib/types/leaderboard';
 
@@ -48,9 +54,56 @@
   <!-- Week navigator -->
   <div class="flex items-center justify-between gap-2">
     <Button variant="outline" size="sm" onclick={prev} disabled={!hasPrev}>◀</Button>
-    <span class="text-sm font-medium">
-      {weekLabel(selectedWeek)}
-    </span>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="ghost"
+            size="sm"
+            class="flex items-center gap-1 text-sm font-medium"
+            aria-label="Jump to week"
+          >
+            {weekLabel(selectedWeek)}
+            <svg
+              class="h-3 w-3 shrink-0 opacity-60"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </Button>
+        {/snippet}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" class="max-h-64 overflow-y-auto">
+        {#each weeks as w (w.weekNumber)}
+          <DropdownMenuItem class="cursor-pointer" onclick={() => navigate(w.weekNumber)}>
+            <span class="flex-1">{weekLabel(w)}</span>
+            {#if selectedWeek?.weekNumber === w.weekNumber}
+              <svg
+                class="ml-2 h-4 w-4 shrink-0 text-primary"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            {/if}
+          </DropdownMenuItem>
+        {/each}
+      </DropdownMenuContent>
+    </DropdownMenu>
     <Button variant="outline" size="sm" onclick={next} disabled={!hasNext}>▶</Button>
   </div>
 

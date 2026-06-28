@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-29
+
+- **PR #310** Leaderboard season history, week jump-to picker, and per-season badges — the leaderboard's Standings and Weekly tabs now accept a `?season=` param so players can browse any historical season (2022–present); the Weekly week navigator gains a clickable dropdown to jump directly to any started week instead of stepping one at a time; and the Group page's identity-badge section gets a season picker so past seasons' titles are visible while the Trophy Case / champion crown / wooden spoon stay cross-season. Pure UI wiring over existing season-parameterised queries — no DB change. New: `SeasonPicker.svelte` · routes: `/leaderboard`, `/group` · component: `LeagueHonors.svelte`, `WeeklyPicksBreakdown.svelte`
+
 ## 2026-06-28
 
 - **#305** App IA — Group tab + League Honors relocation — a fourth first-class **Group** tab joins Picks · Leaderboard · Stats in both the mobile bottom bar and desktop nav (`Users` icon), and the redundant Group link leaves the avatar dropdown (GroupSwitcher untouched). League Honors (champions, wooden spoon, identity badges) moves off `/stats` onto `/group`, shown to every member above the roster, with commissioner-only forms grouped under a gated "Manage group" section; Stats becomes pure personal history. Prerequisite for the AI recap card (#284). components: `BottomTabBar.svelte`, `AppHeader.svelte`, `HeaderAccount.svelte`, `LeagueHonors.svelte` · routes: `/group`, `/stats` · e2e: `nav.spec.ts`

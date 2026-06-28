@@ -7,17 +7,22 @@
     CardTitle
   } from '$lib/components/ui/card';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import type { BadgeAward, LeagueHonors } from '$lib/types/honors';
   import Trophy from '@lucide/svelte/icons/trophy';
 
   let {
     honors,
     badges = [],
-    currentUserId = null
+    currentUserId = null,
+    seasons = [],
+    selectedSeason = null
   }: {
     honors: LeagueHonors;
     badges?: BadgeAward[];
     currentUserId?: string | null;
+    seasons?: number[];
+    selectedSeason?: number | null;
   } = $props();
 
   const reigning = $derived(honors.reigningChampion);
@@ -29,13 +34,15 @@
       : null
   );
 
+  const hasBadgePicker = $derived(seasons.length > 1);
+
   function nameFor(userId: string, displayName: string): string {
     return userId === currentUserId ? `${displayName} (you)` : displayName;
   }
 </script>
 
-<!-- Render once there's a champion or awarded badges. -->
-{#if reigning || badges.length > 0}
+<!-- Render once there's a champion, awarded badges, or a season picker to show. -->
+{#if reigning || badges.length > 0 || hasBadgePicker}
   <Card data-testid="league-honors">
     <CardHeader>
       <CardTitle>League honors</CardTitle>
@@ -103,27 +110,36 @@
       {/if}
 
       <!-- Identity badges: per-season titles and milestones (#281) -->
-      {#if badges.length > 0}
+      {#if badges.length > 0 || hasBadgePicker}
         <div class="space-y-2" data-testid="badge-chips">
-          <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Identity badges
-          </p>
-          <ul class="flex flex-wrap gap-2">
-            {#each badges as badge (badge.id)}
-              <li
-                class="flex items-center gap-1.5 rounded-full border bg-muted/40 py-1 pr-3 pl-2.5 text-sm"
-                data-testid="badge-chip-{badge.id}"
-                title={badge.flavor}
-              >
-                <span aria-hidden="true">{badge.emoji}</span>
-                <span class="font-medium">{badge.label}</span>
-                <span class="text-muted-foreground">—</span>
-                <span
-                  >{badge.holders.map((h) => nameFor(h.user_id, h.display_name)).join(', ')}</span
+          <div class="flex flex-wrap items-center gap-3">
+            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Identity badges
+            </p>
+            {#if hasBadgePicker && selectedSeason != null}
+              <SeasonPicker {seasons} selected={selectedSeason} />
+            {/if}
+          </div>
+          {#if badges.length > 0}
+            <ul class="flex flex-wrap gap-2">
+              {#each badges as badge (badge.id)}
+                <li
+                  class="flex items-center gap-1.5 rounded-full border bg-muted/40 py-1 pr-3 pl-2.5 text-sm"
+                  data-testid="badge-chip-{badge.id}"
+                  title={badge.flavor}
                 >
-              </li>
-            {/each}
-          </ul>
+                  <span aria-hidden="true">{badge.emoji}</span>
+                  <span class="font-medium">{badge.label}</span>
+                  <span class="text-muted-foreground">—</span>
+                  <span
+                    >{badge.holders.map((h) => nameFor(h.user_id, h.display_name)).join(', ')}</span
+                  >
+                </li>
+              {/each}
+            </ul>
+          {:else}
+            <p class="text-sm text-muted-foreground">No badges awarded this season.</p>
+          {/if}
         </div>
       {/if}
     </CardContent>
