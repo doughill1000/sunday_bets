@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeBadges, computeSampleGuard } from '../badges';
+import { computeBadges, computeSampleGuard, badgeInputsFromSeasonStats } from '../badges';
 import type {
   BadgeInputs,
   BadgeSeasonTotalsEntry,
@@ -8,6 +8,8 @@ import type {
   BadgeTeamEntry,
   BadgeTrendEntry
 } from '../badges';
+import type { SeasonStats } from '$lib/types/server/stats';
+import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // --- Fixture helpers ---
 
@@ -605,5 +607,159 @@ describe('computeBadges — output shape', () => {
     for (const b of badges.filter((b) => b.kind === 'title')) {
       expect(b.holders).toHaveLength(1);
     }
+  });
+});
+
+// --- Mapper: badgeInputsFromSeasonStats ---
+//
+// Locks the projection that lets the /stats load reuse already-fetched season rows
+// instead of re-querying the five matviews (perf deep-dive). Each badge input must be
+// narrowed to exactly the fields the engine needs, with no leftover columns.
+
+describe('badgeInputsFromSeasonStats', () => {
+  const seasonStats: SeasonStats = {
+    trend: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        season_year: 2024,
+        week_number: 1,
+        week_points: 5,
+        week_wins: 3,
+        week_losses: 0,
+        week_pushes: 0,
+        week_missed: 0,
+        cumulative_points: 5,
+        season_total: 5,
+        cumulative_rank_this_week: 1
+      }
+    ],
+    teamAccuracy: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        season_year: 2024,
+        team_id: 7,
+        team_name: 'Team Name',
+        team_short_name: 'TM',
+        decisions: 5,
+        wins: 3,
+        losses: 2,
+        pushes: 0,
+        points: 4,
+        accuracy: 0.6
+      }
+    ],
+    weightAccuracy: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        season_year: 2024,
+        weight: 'A',
+        decisions: 3,
+        wins: 2,
+        losses: 1,
+        pushes: 0,
+        points: 6,
+        accuracy: 2 / 3
+      }
+    ],
+    headToHead: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        opponent_user_id: 'u2',
+        opponent_display_name: 'Bob',
+        games_compared: 10,
+        wins: 7,
+        losses: 3,
+        pushes: 0,
+        points: 14,
+        opponent_points: 6
+      }
+    ]
+  };
+
+  const seasonTotals: SeasonLeaderboardEntry[] = [
+    {
+      user_id: 'u1',
+      display_name: 'Alice',
+      avatar_key: null,
+      season_year: 2024,
+      total_points: 12,
+      decisions: 10,
+      wins: 6,
+      losses: 4,
+      pushes: 0,
+      missed: 1,
+      rank: 1
+    }
+  ];
+
+  it('projects each input to exactly the badge-engine fields', () => {
+    const inputs = badgeInputsFromSeasonStats(seasonStats, seasonTotals);
+
+    expect(inputs.seasonTotals).toEqual([
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        decisions: 10,
+        wins: 6,
+        losses: 4,
+        pushes: 0,
+        missed: 1
+      }
+    ]);
+    expect(inputs.weightAccuracy).toEqual([
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        weight: 'A',
+        decisions: 3,
+        wins: 2,
+        losses: 1,
+        pushes: 0
+      }
+    ]);
+    expect(inputs.headToHead).toEqual([
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        opponent_user_id: 'u2',
+        games_compared: 10,
+        wins: 7,
+        losses: 3
+      }
+    ]);
+    expect(inputs.teamAccuracy).toEqual([
+      { user_id: 'u1', display_name: 'Alice', team_id: 7, decisions: 5, wins: 3, losses: 2 }
+    ]);
+    expect(inputs.trend).toEqual([
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        week_number: 1,
+        week_wins: 3,
+        week_losses: 0,
+        week_missed: 0
+      }
+    ]);
+  });
+
+  it('feeds computeBadges so derived badges carry through (equivalence to the old getBadges path)', () => {
+    const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
+    const awarded = ids(badges);
+    // trend → perfect-week, totals → the-degenerate: proves both sources flow through the mapper.
+    expect(awarded).toContain('perfect-week');
+    expect(awarded).toContain('the-degenerate');
+  });
+
+  it('returns empty arrays for empty season stats', () => {
+    const inputs = badgeInputsFromSeasonStats(
+      { trend: [], teamAccuracy: [], weightAccuracy: [], headToHead: [] },
+      []
+    );
+    expect(inputs).toEqual(EMPTY);
+    expect(computeBadges(inputs)).toEqual([]);
   });
 });
