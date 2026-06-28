@@ -103,6 +103,7 @@
                 {#each data.totals as r (r.user_id)}
                   {@const isYou = r.user_id === data.currentUserId}
                   {@const isFirst = r.rank === 1}
+                  {@const isChampion = r.user_id === data.championUserId}
                   <TableRow
                     class={isYou
                       ? 'bg-primary/10 font-semibold'
@@ -123,6 +124,7 @@
                           avatarKey={r.avatar_key ?? null}
                           displayName={r.display_name}
                           size="xs"
+                          champion={isChampion}
                         />
                         {isYou ? `${r.display_name} (you)` : r.display_name}
                       </div>
