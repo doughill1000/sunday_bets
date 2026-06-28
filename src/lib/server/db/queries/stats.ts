@@ -15,6 +15,7 @@ import type {
 type TeamAccuracyRow = Tables<'stats_accuracy_by_team'>;
 type WeightAccuracyRow = Tables<'stats_accuracy_by_weight'>;
 type HeadToHeadRow = Tables<'stats_head_to_head'>;
+type AllTimeHeadToHeadRow = Tables<'stats_head_to_head_alltime'>;
 type AllTimeTotalsRow = Tables<'stats_alltime_totals'>;
 type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
 type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
@@ -81,13 +82,12 @@ function toWeightAccuracy(row: WeightAccuracyRow): WeightAccuracyEntry | null {
   };
 }
 
-function toHeadToHead(row: HeadToHeadRow): HeadToHeadEntry | null {
+function toHeadToHead(row: HeadToHeadRow | AllTimeHeadToHeadRow): HeadToHeadEntry | null {
   if (
     row.user_id == null ||
     row.display_name == null ||
     row.opponent_user_id == null ||
     row.opponent_display_name == null ||
-    row.season_year == null ||
     row.games_compared == null ||
     row.wins == null ||
     row.losses == null ||
@@ -103,7 +103,6 @@ function toHeadToHead(row: HeadToHeadRow): HeadToHeadEntry | null {
     display_name: row.display_name,
     opponent_user_id: row.opponent_user_id,
     opponent_display_name: row.opponent_display_name,
-    season_year: row.season_year,
     games_compared: row.games_compared,
     wins: row.wins,
     losses: row.losses,
@@ -242,7 +241,7 @@ function toAllTimeWeightAccuracy(row: AllTimeWeightRow): AllTimeWeightAccuracyEn
 }
 
 export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
-  const [totalsResult, teamResult, weightResult] = await Promise.all([
+  const [totalsResult, teamResult, weightResult, headToHeadResult] = await Promise.all([
     supabaseService
       .from('stats_alltime_totals')
       .select('*')
@@ -259,12 +258,19 @@ export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
       .select('*')
       .eq('group_id', groupId)
       .order('display_name')
-      .order('weight')
+      .order('weight'),
+    supabaseService
+      .from('stats_head_to_head_alltime')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('opponent_display_name')
   ]);
 
   if (totalsResult.error) throw totalsResult.error;
   if (teamResult.error) throw teamResult.error;
   if (weightResult.error) throw weightResult.error;
+  if (headToHeadResult.error) throw headToHeadResult.error;
 
   return {
     allTimeTotals: (totalsResult.data ?? []).flatMap((row) => {
@@ -277,6 +283,10 @@ export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
     }),
     allTimeWeightAccuracy: (weightResult.data ?? []).flatMap((row) => {
       const entry = toAllTimeWeightAccuracy(row);
+      return entry ? [entry] : [];
+    }),
+    allTimeHeadToHead: (headToHeadResult.data ?? []).flatMap((row) => {
+      const entry = toHeadToHead(row);
       return entry ? [entry] : [];
     })
   };

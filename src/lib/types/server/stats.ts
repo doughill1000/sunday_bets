@@ -48,7 +48,6 @@ export type HeadToHeadEntry = {
   display_name: string;
   opponent_user_id: string;
   opponent_display_name: string;
-  season_year: number;
   games_compared: number;
   wins: number;
   losses: number;
@@ -105,4 +104,5 @@ export type AllTimeStats = {
   allTimeTotals: AllTimeTotalsEntry[];
   allTimeTeamAccuracy: AllTimeTeamAccuracyEntry[];
   allTimeWeightAccuracy: AllTimeWeightAccuracyEntry[];
+  allTimeHeadToHead: HeadToHeadEntry[];
 };

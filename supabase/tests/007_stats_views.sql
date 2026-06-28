@@ -1,8 +1,9 @@
 begin;
 
-select plan(20);
+select plan(24);
 
 select has_materialized_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
+select has_materialized_view('public', 'stats_head_to_head_alltime', 'stats_head_to_head_alltime exists');
 select has_materialized_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team exists');
 select has_materialized_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight exists');
 select has_materialized_view('public', 'stats_season_trend', 'stats_season_trend exists');
@@ -45,7 +46,7 @@ values
 on conflict (group_id, user_id) do nothing;
 
 insert into public.seasons (league, year)
-values ('NFL', 2040)
+values ('NFL', 2040), ('NFL', 2042)
 on conflict (league, year) do nothing;
 
 insert into public.weeks (season_id, week_number, start_ts, end_ts)
@@ -54,6 +55,15 @@ values (
   1,
   '2040-09-01 00:00:00+00',
   '2040-09-08 00:00:00+00'
+)
+on conflict (season_id, week_number) do nothing;
+
+insert into public.weeks (season_id, week_number, start_ts, end_ts)
+values (
+  (select id from public.seasons where league = 'NFL' and year = 2042),
+  1,
+  '2042-09-01 00:00:00+00',
+  '2042-09-08 00:00:00+00'
 )
 on conflict (season_id, week_number) do nothing;
 
@@ -97,6 +107,28 @@ where w.season_id = (select id from public.seasons where league = 'NFL' and year
   and w.week_number = 1
 on conflict (external_game_id) do nothing;
 
+insert into public.games (
+  week_id,
+  external_game_id,
+  commence_time,
+  home_team_id,
+  away_team_id,
+  status
+)
+select
+  w.id,
+  'stats-game-4',
+  '2042-09-01 17:00:00+00',
+  home.id,
+  away.id,
+  'final'
+from public.weeks w
+join public.teams home on home.external_key = 'STATS_A'
+join public.teams away on away.external_key = 'STATS_B'
+where w.season_id = (select id from public.seasons where league = 'NFL' and year = 2042)
+  and w.week_number = 1
+on conflict (external_game_id) do nothing;
+
 insert into public.picks (
   group_id,
   user_id,
@@ -123,9 +155,11 @@ from (
     ('stats_a', 'stats-game-1', 'STATS_A', 'L'),
     ('stats_a', 'stats-game-2', 'STATS_B', 'A'),
     ('stats_a', 'stats-game-3', 'STATS_A', 'M'),
+    ('stats_a', 'stats-game-4', 'STATS_A', 'H'),
     ('stats_b', 'stats-game-1', 'STATS_B', 'M'),
     ('stats_b', 'stats-game-2', 'STATS_C', 'H'),
-    ('stats_b', 'stats-game-3', 'STATS_C', 'A')
+    ('stats_b', 'stats-game-3', 'STATS_C', 'A'),
+    ('stats_b', 'stats-game-4', 'STATS_B', 'M')
 ) pick(user_name, external_game_id, team_key, weight)
 join lateral (
   select tests.get_supabase_uid(pick.user_name) as user_id
@@ -158,9 +192,11 @@ join lateral (
     (tests.get_supabase_uid('stats_a'), 'stats-game-1', 1, 'win'),
     (tests.get_supabase_uid('stats_a'), 'stats-game-2', -10, 'loss'),
     (tests.get_supabase_uid('stats_a'), 'stats-game-3', 0, 'push'),
+    (tests.get_supabase_uid('stats_a'), 'stats-game-4', 5, 'win'),
     (tests.get_supabase_uid('stats_b'), 'stats-game-1', -3, 'loss'),
     (tests.get_supabase_uid('stats_b'), 'stats-game-2', 5, 'win'),
-    (tests.get_supabase_uid('stats_b'), 'stats-game-3', 0, 'push')
+    (tests.get_supabase_uid('stats_b'), 'stats-game-3', 0, 'push'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-4', -3, 'loss')
 ) result(user_id, external_game_id, points_delta, outcome)
   on result.user_id = p.user_id
  and result.external_game_id = g.external_game_id
@@ -186,9 +222,26 @@ select results_eq(
       case when user_id = tests.get_supabase_uid('stats_a') then opponent_points else points end
     from public.stats_head_to_head
     where season_year = 2040
+      and group_id = '00000000-0000-4000-8000-000000000007'
   $$,
   $$ values (3, 1, 1, 1, -9, 2) $$,
   'head-to-head aggregates shared-game weighted results'
+);
+
+select results_eq(
+  $$
+    select
+      games_compared,
+      case when user_id = tests.get_supabase_uid('stats_a') then wins else losses end,
+      case when user_id = tests.get_supabase_uid('stats_a') then losses else wins end,
+      pushes,
+      case when user_id = tests.get_supabase_uid('stats_a') then points else opponent_points end,
+      case when user_id = tests.get_supabase_uid('stats_a') then opponent_points else points end
+    from public.stats_head_to_head_alltime
+    where group_id = '00000000-0000-4000-8000-000000000007'
+  $$,
+  $$ values (4, 2, 1, 1, -4, -1) $$,
+  'alltime head-to-head aggregates shared-game weighted results across seasons'
 );
 
 select results_eq(
@@ -238,6 +291,10 @@ select ok(
   has_table_privilege('service_role', 'public.stats_head_to_head', 'select'),
   'service_role can select stats views'
 );
+select ok(
+  has_table_privilege('service_role', 'public.stats_head_to_head_alltime', 'select'),
+  'service_role can select alltime head-to-head'
+);
 
 select results_eq(
   $$
@@ -246,7 +303,7 @@ select results_eq(
     where user_id = tests.get_supabase_uid('stats_a')
       and group_id = '00000000-0000-4000-8000-000000000007'
   $$,
-  $$ values (-9, 3, 1, 1, 1) $$,
+  $$ values (-4, 4, 2, 1, 1) $$,
   'alltime totals aggregate across all seasons'
 );
 
@@ -258,7 +315,7 @@ select results_eq(
       and group_id = '00000000-0000-4000-8000-000000000007'
       and team_short_name = 'STA'
   $$,
-  $$ values (2, 1, 0, 1, 1, 1.0000::numeric) $$,
+  $$ values (3, 2, 0, 1, 6, 1.0000::numeric) $$,
   'alltime team accuracy aggregates across all seasons'
 );
 
@@ -274,7 +331,7 @@ select results_eq(
   'alltime weight accuracy aggregates across all seasons'
 );
 
--- The 7 stats views are materialized (issue #191). security_invoker is a plain-view
+-- The 8 stats views are materialized (issues #191/#280). security_invoker is a plain-view
 -- reloption matviews can't carry; assert they are matviews (relkind 'm') instead.
 select results_eq(
   $$
@@ -284,7 +341,7 @@ select results_eq(
       and relname like 'stats_%'
       and relkind = 'm'
   $$,
-  $$ values (7) $$,
+  $$ values (8) $$,
   'all stats views are materialized'
 );
 
@@ -295,6 +352,15 @@ select throws_ok(
   '42501',
   'permission denied for materialized view stats_season_trend',
   'anon query is denied'
+);
+reset role;
+
+set role authenticated;
+select throws_ok(
+  $$ select * from public.stats_head_to_head_alltime limit 1 $$,
+  '42501',
+  'permission denied for materialized view stats_head_to_head_alltime',
+  'authenticated query is denied for alltime head-to-head'
 );
 reset role;
 

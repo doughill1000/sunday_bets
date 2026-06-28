@@ -14,7 +14,7 @@
 
 BEGIN;
 
-SELECT plan(22);
+SELECT plan(24);
 
 -- ── Stable UUIDs for this file ───────────────────────────────────────────────
 
@@ -419,9 +419,35 @@ SELECT results_eq(
   'stats_head_to_head: group B H2H does not expose group A exclusive member'
 );
 
+-- 19. Group A alltime H2H: excl-B must never appear as user_id or opponent.
+SELECT results_eq(
+  $$
+    SELECT count(*)::int
+    FROM public.stats_head_to_head_alltime
+    WHERE group_id = '00000000-0000-4000-8000-0000000015a1'
+      AND (user_id = tests.get_supabase_uid('iso_excl_b')
+           OR opponent_user_id = tests.get_supabase_uid('iso_excl_b'))
+  $$,
+  $$ VALUES (0) $$,
+  'stats_head_to_head_alltime: group A H2H does not expose group B exclusive member'
+);
+
+-- 20. Group B alltime H2H: excl-A must never appear as user_id or opponent.
+SELECT results_eq(
+  $$
+    SELECT count(*)::int
+    FROM public.stats_head_to_head_alltime
+    WHERE group_id = '00000000-0000-4000-8000-0000000015b2'
+      AND (user_id = tests.get_supabase_uid('iso_excl_a')
+           OR opponent_user_id = tests.get_supabase_uid('iso_excl_a'))
+  $$,
+  $$ VALUES (0) $$,
+  'stats_head_to_head_alltime: group B H2H does not expose group A exclusive member'
+);
+
 -- ── Assertions: stats_alltime_totals ─────────────────────────────────────────
 
--- 19. Group A alltime totals: shared user shows 1 win.
+-- 21. Group A alltime totals: shared user shows 1 win.
 SELECT results_eq(
   $$
     SELECT wins, losses
@@ -433,7 +459,7 @@ SELECT results_eq(
   'stats_alltime_totals: shared user has 1 win in group A'
 );
 
--- 20. Group B alltime totals: shared user shows 1 loss.
+-- 22. Group B alltime totals: shared user shows 1 loss.
 SELECT results_eq(
   $$
     SELECT wins, losses
@@ -445,7 +471,7 @@ SELECT results_eq(
   'stats_alltime_totals: shared user has 1 loss in group B'
 );
 
--- 21. Group A alltime totals: excl-B must not appear.
+-- 23. Group A alltime totals: excl-B must not appear.
 SELECT results_eq(
   $$
     SELECT count(*)::int
@@ -457,7 +483,7 @@ SELECT results_eq(
   'stats_alltime_totals: group A must not expose group B exclusive member'
 );
 
--- 22. Group B alltime totals: excl-A must not appear.
+-- 24. Group B alltime totals: excl-A must not appear.
 SELECT results_eq(
   $$
     SELECT count(*)::int

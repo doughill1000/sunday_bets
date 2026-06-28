@@ -36,7 +36,6 @@ const h2hRow = (
     | 'opponent_points'
   >
 ): HeadToHeadEntry => ({
-  season_year: 2026,
   games_compared: overrides.wins + overrides.losses + overrides.pushes,
   ...overrides
 });

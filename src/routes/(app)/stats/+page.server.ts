@@ -46,6 +46,7 @@ async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) 
     allTimeTotals: allTimeStats.allTimeTotals,
     allTimeTeamAccuracy: allTimeStats.allTimeTeamAccuracy,
     allTimeWeightAccuracy: allTimeStats.allTimeWeightAccuracy,
+    allTimeHeadToHead: allTimeStats.allTimeHeadToHead,
     ...stats
   };
 }

@@ -40,7 +40,7 @@
     accuracy: 'desc',
     points: 'desc'
   };
-  const SHOW_HEAD_TO_HEAD = false;
+  const SHOW_HEAD_TO_HEAD = true;
 
   let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
     key: 'accuracy',
@@ -174,7 +174,7 @@
       .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
   );
   const headToHead = $derived(
-    selectedUserId ? headToHeadForUser(data.headToHead, selectedUserId) : []
+    selectedUserId ? headToHeadForUser(data.allTimeHeadToHead, selectedUserId) : []
   );
   const allTimeTeamRows = $derived(
     data.allTimeTeamAccuracy

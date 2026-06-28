@@ -620,10 +620,10 @@
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
-    "hash": "ff300c933f36d65376cab28913baa9a84e18cf669784b6b582eccff10cf72dc6",
+    "hash": "de5c39c97ab7c44138992bcb514c7b42a0f022cb63dd00ae2e8ba4ba2a5972cf",
     "signature": "public.refresh_leaderboard_stats()",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "migration": "20260628033559_lifetime_head_to_head.sql",
+    "migrationHash": "0cec8fb6c86a4d363fffd5ef3b538e6f1a3a14b97a56c0f23a3c2b03d1e36e95"
   },
   "functions/auth/group_active_season_settled.sql": {
     "hash": "7ec5abf4bca6381ab64f9748ed2219f9da713030f89b972fd5b60bf939c76db5",
@@ -674,5 +674,10 @@
     "hash": "59db9f0250aba0a7d5edfb19c76f52d5aa3579e7385258c95bce930c9007d864",
     "migration": "20260628030106_league_completed_standings.sql",
     "migrationHash": "3e703f8764bb6e6f1dc829316527ee4c3790d3a6482e8b912fe865d5889edeed"
+  },
+  "views/stats_head_to_head_alltime.sql": {
+    "hash": "3b6a0b2bc83ef0b1a51258bf4a6bcd367afb4869a03a162fbfabe17ec5e744ce",
+    "migration": "20260628033559_lifetime_head_to_head.sql",
+    "migrationHash": "0cec8fb6c86a4d363fffd5ef3b538e6f1a3a14b97a56c0f23a3c2b03d1e36e95"
   }
 }
