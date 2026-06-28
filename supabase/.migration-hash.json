@@ -620,10 +620,10 @@
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
-    "hash": "de5c39c97ab7c44138992bcb514c7b42a0f022cb63dd00ae2e8ba4ba2a5972cf",
+    "hash": "e098fced68a992f97184c203e127b1566c56197193161f0433f4ddc148c8a210",
     "signature": "public.refresh_leaderboard_stats()",
-    "migration": "20260628033559_lifetime_head_to_head.sql",
-    "migrationHash": "0cec8fb6c86a4d363fffd5ef3b538e6f1a3a14b97a56c0f23a3c2b03d1e36e95"
+    "migration": "20260628163909_add_group_pick_consensus_matview.sql",
+    "migrationHash": "e9e89775257ee5634d1e1e365803f6c3ca672266d9f93e87eb0e35aa826c4748"
   },
   "functions/auth/group_active_season_settled.sql": {
     "hash": "7ec5abf4bca6381ab64f9748ed2219f9da713030f89b972fd5b60bf939c76db5",
@@ -679,5 +679,10 @@
     "hash": "3b6a0b2bc83ef0b1a51258bf4a6bcd367afb4869a03a162fbfabe17ec5e744ce",
     "migration": "20260628033559_lifetime_head_to_head.sql",
     "migrationHash": "0cec8fb6c86a4d363fffd5ef3b538e6f1a3a14b97a56c0f23a3c2b03d1e36e95"
+  },
+  "views/group_pick_consensus.sql": {
+    "hash": "5dc941a5616e6a121722943797cb0169e489506ec33621965818cdc88a24dbd2",
+    "migration": "20260628163909_add_group_pick_consensus_matview.sql",
+    "migrationHash": "e9e89775257ee5634d1e1e365803f6c3ca672266d9f93e87eb0e35aa826c4748"
   }
 }

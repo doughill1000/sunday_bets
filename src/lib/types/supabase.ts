@@ -957,6 +957,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      group_pick_consensus: {
+        Row: {
+          consensus_pct: number | null;
+          display_name: string | null;
+          game_id: string | null;
+          graded_outcome: Database['public']['Enums']['pick_outcome'] | null;
+          group_id: string | null;
+          is_minority: boolean | null;
+          picked_team_id: number | null;
+          season_year: number | null;
+          user_id: string | null;
+          week_number: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'ui_games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'picks_picked_team_id_fkey';
+            columns: ['picked_team_id'];
+            isOneToOne: false;
+            referencedRelation: 'teams';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       leaderboard_season_totals: {
         Row: {
           avatar_key: string | null;
