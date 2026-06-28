@@ -33,7 +33,8 @@
         }
       };
       document.addEventListener('visibilitychange', handleVisibility);
-      removeVisibilityListener = () => document.removeEventListener('visibilitychange', handleVisibility);
+      removeVisibilityListener = () =>
+        document.removeEventListener('visibilitychange', handleVisibility);
 
       // When a new SW takes over, reload so the user gets the latest assets.
       navigator.serviceWorker.addEventListener('controllerchange', () => {
