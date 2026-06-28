@@ -29,6 +29,10 @@
 
   let { data }: { data: PageData } = $props();
 
+  // All-time detail (team/weight/head-to-head) streams in after first paint, so it is a
+  // promise on `data`. This alias lets comparators reference its resolved element types.
+  type AllTimeDetail = Awaited<typeof data.allTimeDetail>;
+
   type TeamSortKey = 'team' | 'record' | 'accuracy' | 'points';
   type SortDirection = 'asc' | 'desc';
 
@@ -142,8 +146,8 @@
   }
 
   function compareAllTimeTeamRows(
-    a: (typeof data.allTimeTeamAccuracy)[number],
-    b: (typeof data.allTimeTeamAccuracy)[number]
+    a: AllTimeDetail['allTimeTeamAccuracy'][number],
+    b: AllTimeDetail['allTimeTeamAccuracy'][number]
   ) {
     const direction = allTimeTeamSort.direction;
     const fallback = a.team_short_name.localeCompare(b.team_short_name);
@@ -173,19 +177,9 @@
       .filter((r) => r.user_id === selectedUserId)
       .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
   );
-  const headToHead = $derived(
-    selectedUserId ? headToHeadForUser(data.allTimeHeadToHead, selectedUserId) : []
-  );
-  const allTimeTeamRows = $derived(
-    data.allTimeTeamAccuracy
-      .filter((r) => r.user_id === selectedUserId)
-      .toSorted(compareAllTimeTeamRows)
-  );
-  const allTimeWeightRows = $derived(
-    data.allTimeWeightAccuracy
-      .filter((r) => r.user_id === selectedUserId)
-      .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
-  );
+
+  // All-time row derivations (allTimeTeamRows / allTimeWeightRows / headToHead) live inside
+  // the {#await data.allTimeDetail} blocks below, since that data streams in asynchronously.
 
   function onSeasonChange(e: Event) {
     const year = (e.target as HTMLSelectElement).value;
@@ -444,122 +438,155 @@
           <!-- Career summary -->
           <CareerSummary entry={selectedCareer} isYou={isCareerYou} />
 
-          <!-- All-time accuracy breakdowns -->
-          {#if allTimeTeamRows.length > 0 || allTimeWeightRows.length > 0}
-            <div>
-              <h2 class="text-xl font-semibold tracking-tight">All-time accuracy</h2>
-              <p class="mt-1 text-sm text-muted-foreground">Aggregated across all seasons.</p>
-            </div>
-            <div class="grid gap-6 xl:grid-cols-2">
-              {#if allTimeTeamRows.length > 0}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Accuracy by team</CardTitle>
-                    <CardDescription>All-time results grouped by the team backed.</CardDescription>
-                  </CardHeader>
-                  <CardContent class="overflow-x-auto px-2 sm:px-6">
-                    <Table class="text-xs sm:text-sm">
-                      <TableHeader>
-                        <TableRow>
-                          {@render allTimeTeamHead('Team', 'team')}
-                          {@render allTimeTeamHead('Record', 'record')}
-                          {@render allTimeTeamHead('Win %', 'accuracy', 'right')}
-                          {@render allTimeTeamHead('Pts', 'points', 'right')}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {#each allTimeTeamRows as row (row.team_id)}
+          <!-- All-time accuracy breakdowns (streamed off the critical path) -->
+          {#await data.allTimeDetail}
+            <Card class="border-dashed">
+              <CardHeader>
+                <CardTitle>Loading all-time accuracy…</CardTitle>
+                <CardDescription>One moment while the career breakdowns load.</CardDescription>
+              </CardHeader>
+            </Card>
+          {:then detail}
+            {@const allTimeTeamRows = detail.allTimeTeamAccuracy
+              .filter((r) => r.user_id === selectedUserId)
+              .toSorted(compareAllTimeTeamRows)}
+            {@const allTimeWeightRows = detail.allTimeWeightAccuracy
+              .filter((r) => r.user_id === selectedUserId)
+              .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))}
+            {#if allTimeTeamRows.length > 0 || allTimeWeightRows.length > 0}
+              <div>
+                <h2 class="text-xl font-semibold tracking-tight">All-time accuracy</h2>
+                <p class="mt-1 text-sm text-muted-foreground">Aggregated across all seasons.</p>
+              </div>
+              <div class="grid gap-6 xl:grid-cols-2">
+                {#if allTimeTeamRows.length > 0}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Accuracy by team</CardTitle>
+                      <CardDescription>All-time results grouped by the team backed.</CardDescription
+                      >
+                    </CardHeader>
+                    <CardContent class="overflow-x-auto px-2 sm:px-6">
+                      <Table class="text-xs sm:text-sm">
+                        <TableHeader>
                           <TableRow>
-                            <TableCell class="font-medium" title={row.team_name}>
-                              {row.team_short_name}
-                            </TableCell>
-                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                            <TableCell class="text-right">{row.points}</TableCell>
+                            {@render allTimeTeamHead('Team', 'team')}
+                            {@render allTimeTeamHead('Record', 'record')}
+                            {@render allTimeTeamHead('Win %', 'accuracy', 'right')}
+                            {@render allTimeTeamHead('Pts', 'points', 'right')}
                           </TableRow>
-                        {/each}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              {/if}
+                        </TableHeader>
+                        <TableBody>
+                          {#each allTimeTeamRows as row (row.team_id)}
+                            <TableRow>
+                              <TableCell class="font-medium" title={row.team_name}>
+                                {row.team_short_name}
+                              </TableCell>
+                              <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                              <TableCell class="text-right"
+                                >{formatAccuracy(row.accuracy)}</TableCell
+                              >
+                              <TableCell class="text-right">{row.points}</TableCell>
+                            </TableRow>
+                          {/each}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                {/if}
 
-              {#if allTimeWeightRows.length > 0}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Accuracy by weight</CardTitle>
-                    <CardDescription>All-time confidence-level results.</CardDescription>
-                  </CardHeader>
-                  <CardContent class="overflow-x-auto px-2 sm:px-6">
-                    <Table class="text-xs sm:text-sm">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Weight</TableHead>
-                          <TableHead>Record</TableHead>
-                          <TableHead class="text-right">Win %</TableHead>
-                          <TableHead class="text-right">Pts</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {#each allTimeWeightRows as row (row.weight)}
-                          <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
-                            <TableCell>
-                              {#if row.weight === 'A'}
-                                <Badge>All-In</Badge>
-                              {:else}
-                                {weightLabel(row.weight)}
-                              {/if}
-                            </TableCell>
-                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                            <TableCell class="text-right font-medium">{row.points}</TableCell>
+                {#if allTimeWeightRows.length > 0}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Accuracy by weight</CardTitle>
+                      <CardDescription>All-time confidence-level results.</CardDescription>
+                    </CardHeader>
+                    <CardContent class="overflow-x-auto px-2 sm:px-6">
+                      <Table class="text-xs sm:text-sm">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Weight</TableHead>
+                            <TableHead>Record</TableHead>
+                            <TableHead class="text-right">Win %</TableHead>
+                            <TableHead class="text-right">Pts</TableHead>
                           </TableRow>
-                        {/each}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              {/if}
-            </div>
-          {/if}
+                        </TableHeader>
+                        <TableBody>
+                          {#each allTimeWeightRows as row (row.weight)}
+                            <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
+                              <TableCell>
+                                {#if row.weight === 'A'}
+                                  <Badge>All-In</Badge>
+                                {:else}
+                                  {weightLabel(row.weight)}
+                                {/if}
+                              </TableCell>
+                              <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
+                              <TableCell class="text-right"
+                                >{formatAccuracy(row.accuracy)}</TableCell
+                              >
+                              <TableCell class="text-right font-medium">{row.points}</TableCell>
+                            </TableRow>
+                          {/each}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                {/if}
+              </div>
+            {/if}
+          {/await}
         </TabsContent>
 
         {#if SHOW_HEAD_TO_HEAD}
           <TabsContent value="head-to-head" class="space-y-6">
-            {#if headToHead.length > 0}
-              <section class="space-y-3" aria-labelledby="head-to-head-heading">
-                <div>
-                  <h2 id="head-to-head-heading" class="text-2xl font-semibold tracking-tight">
-                    Head to head
-                  </h2>
-                  <p class="text-sm text-muted-foreground">
-                    {possessive} weighted results against each player on games you both shared.
-                  </p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {#each headToHead as row (row.opponentUserId)}
-                    <Card class="gap-3 py-4">
-                      <CardHeader class="px-4">
-                        <CardTitle class="text-base">
-                          {subjectLabel} <span class="text-muted-foreground">vs</span>
-                          {row.opponentDisplayName}
-                        </CardTitle>
-                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
-                      </CardHeader>
-                      <CardContent class="flex items-end justify-between px-4">
-                        <div>
-                          <p class="text-2xl font-bold">
-                            {@render wlp(row.wins, row.losses, row.pushes)}
+            {#await data.allTimeDetail}
+              <Card class="border-dashed">
+                <CardHeader>
+                  <CardTitle>Loading head-to-head…</CardTitle>
+                </CardHeader>
+              </Card>
+            {:then detail}
+              {@const headToHead = selectedUserId
+                ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
+                : []}
+              {#if headToHead.length > 0}
+                <section class="space-y-3" aria-labelledby="head-to-head-heading">
+                  <div>
+                    <h2 id="head-to-head-heading" class="text-2xl font-semibold tracking-tight">
+                      Head to head
+                    </h2>
+                    <p class="text-sm text-muted-foreground">
+                      {possessive} weighted results against each player on games you both shared.
+                    </p>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {#each headToHead as row (row.opponentUserId)}
+                      <Card class="gap-3 py-4">
+                        <CardHeader class="px-4">
+                          <CardTitle class="text-base">
+                            {subjectLabel} <span class="text-muted-foreground">vs</span>
+                            {row.opponentDisplayName}
+                          </CardTitle>
+                          <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                        </CardHeader>
+                        <CardContent class="flex items-end justify-between px-4">
+                          <div>
+                            <p class="text-2xl font-bold">
+                              {@render wlp(row.wins, row.losses, row.pushes)}
+                            </p>
+                            <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
+                          </div>
+                          <p class="text-sm font-medium">
+                            {row.points} to {row.opponentPoints} pts
                           </p>
-                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
-                        </div>
-                        <p class="text-sm font-medium">{row.points} to {row.opponentPoints} pts</p>
-                      </CardContent>
-                    </Card>
-                  {/each}
-                </div>
-              </section>
-            {/if}
+                        </CardContent>
+                      </Card>
+                    {/each}
+                  </div>
+                </section>
+              {/if}
+            {/await}
           </TabsContent>
         {/if}
       </Tabs>

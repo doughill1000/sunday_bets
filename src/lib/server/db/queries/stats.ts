@@ -240,13 +240,34 @@ function toAllTimeWeightAccuracy(row: AllTimeWeightRow): AllTimeWeightAccuracyEn
   };
 }
 
-export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
-  const [totalsResult, teamResult, weightResult, headToHeadResult] = await Promise.all([
-    supabaseService
-      .from('stats_alltime_totals')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('display_name'),
+/**
+ * All-time per-player totals only. Split out from the detail breakdowns (#perf) because
+ * the `/stats` load needs totals eagerly (player selector + the career-tab gate), while
+ * the heavier team/weight/head-to-head detail can stream after first paint via
+ * {@link getAllTimeDetail}.
+ */
+export async function getAllTimeTotals(groupId: string): Promise<AllTimeTotalsEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_alltime_totals')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('display_name');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toAllTimeTotals(row);
+    return entry ? [entry] : [];
+  });
+}
+
+/**
+ * The heavier all-time accuracy breakdowns (team, weight, head-to-head) that back the
+ * Career and Head-to-head tabs. Returned un-awaited from the stats load so SvelteKit
+ * streams them off the critical path; the default Season tab never needs them.
+ */
+export async function getAllTimeDetail(
+  groupId: string
+): Promise<Omit<AllTimeStats, 'allTimeTotals'>> {
+  const [teamResult, weightResult, headToHeadResult] = await Promise.all([
     supabaseService
       .from('stats_accuracy_by_team_alltime')
       .select('*')
@@ -267,16 +288,11 @@ export async function getAllTimeStats(groupId: string): Promise<AllTimeStats> {
       .order('opponent_display_name')
   ]);
 
-  if (totalsResult.error) throw totalsResult.error;
   if (teamResult.error) throw teamResult.error;
   if (weightResult.error) throw weightResult.error;
   if (headToHeadResult.error) throw headToHeadResult.error;
 
   return {
-    allTimeTotals: (totalsResult.data ?? []).flatMap((row) => {
-      const entry = toAllTimeTotals(row);
-      return entry ? [entry] : [];
-    }),
     allTimeTeamAccuracy: (teamResult.data ?? []).flatMap((row) => {
       const entry = toAllTimeTeamAccuracy(row);
       return entry ? [entry] : [];

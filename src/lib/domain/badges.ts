@@ -1,4 +1,6 @@
 import type { BadgeAward, BadgeHolder, BadgeId } from '$lib/types/honors';
+import type { SeasonStats } from '$lib/types/server/stats';
+import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // Input types shaped from matview rows; all required fields already non-null.
 
@@ -56,6 +58,63 @@ export type BadgeInputs = {
   teamAccuracy: BadgeTeamEntry[];
   trend: BadgeTrendEntry[];
 };
+
+/**
+ * Projects the season stats a `/stats` load already fetches into `BadgeInputs`, so the
+ * badge engine reuses those rows instead of re-querying the same five matviews
+ * (`leaderboard_season_totals`, `stats_accuracy_by_weight`, `stats_head_to_head`,
+ * `stats_accuracy_by_team`, `stats_season_trend`). Pure: only narrows already-non-null
+ * fields, no DB access. See `getStatsForSeason` / `getSeasonLeaderboard`.
+ */
+export function badgeInputsFromSeasonStats(
+  season: SeasonStats,
+  seasonTotals: SeasonLeaderboardEntry[]
+): BadgeInputs {
+  return {
+    seasonTotals: seasonTotals.map((t) => ({
+      user_id: t.user_id,
+      display_name: t.display_name,
+      decisions: t.decisions,
+      wins: t.wins,
+      losses: t.losses,
+      pushes: t.pushes,
+      missed: t.missed
+    })),
+    weightAccuracy: season.weightAccuracy.map((w) => ({
+      user_id: w.user_id,
+      display_name: w.display_name,
+      weight: w.weight,
+      decisions: w.decisions,
+      wins: w.wins,
+      losses: w.losses,
+      pushes: w.pushes
+    })),
+    headToHead: season.headToHead.map((h) => ({
+      user_id: h.user_id,
+      display_name: h.display_name,
+      opponent_user_id: h.opponent_user_id,
+      games_compared: h.games_compared,
+      wins: h.wins,
+      losses: h.losses
+    })),
+    teamAccuracy: season.teamAccuracy.map((t) => ({
+      user_id: t.user_id,
+      display_name: t.display_name,
+      team_id: t.team_id,
+      decisions: t.decisions,
+      wins: t.wins,
+      losses: t.losses
+    })),
+    trend: season.trend.map((r) => ({
+      user_id: r.user_id,
+      display_name: r.display_name,
+      week_number: r.week_number,
+      week_wins: r.week_wins,
+      week_losses: r.week_losses,
+      week_missed: r.week_missed
+    }))
+  };
+}
 
 // Thresholds
 const MIN_SAMPLE_DECISIONS = 5;
