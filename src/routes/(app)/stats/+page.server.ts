@@ -7,6 +7,7 @@ import {
 } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason, getAllTimeStats } from '$lib/server/db/queries/stats';
 import { getLeagueHonors } from '$lib/server/db/queries/honors';
+import { getBadges } from '$lib/server/db/queries/badges';
 import { tracePageLoad } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
@@ -25,12 +26,13 @@ async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) 
   const rawSeason = event.url.searchParams.get('season');
   const seasonYear = rawSeason ? parseInt(rawSeason, 10) || currentSeasonYear : currentSeasonYear;
 
-  const [availableSeasons, allTimeStats, stats, totals, honors] = await Promise.all([
+  const [availableSeasons, allTimeStats, stats, totals, honors, badges] = await Promise.all([
     getAvailableSeasons(groupId),
     getAllTimeStats(groupId),
     getStatsForSeason(seasonYear, groupId),
     getSeasonLeaderboard(seasonYear, groupId),
-    getLeagueHonors(groupId)
+    getLeagueHonors(groupId),
+    getBadges(seasonYear, groupId)
   ]);
 
   return {
@@ -40,6 +42,7 @@ async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) 
     currentUserId: auth?.user?.id ?? null,
     totals,
     honors,
+    badges,
     allTimeTotals: allTimeStats.allTimeTotals,
     allTimeTeamAccuracy: allTimeStats.allTimeTeamAccuracy,
     allTimeWeightAccuracy: allTimeStats.allTimeWeightAccuracy,
