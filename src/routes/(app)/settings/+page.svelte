@@ -14,6 +14,16 @@
   let { data }: { data: PageData } = $props();
 
   const displayName = $derived(data.userProfile?.displayName ?? '');
+  let displayNameInput = $state(data.userProfile?.displayName ?? '');
+  let displayNameBusy = $state(false);
+  let displayNameMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const canSubmitDisplayName = $derived(
+    displayNameInput.trim().length > 0 &&
+      displayNameInput.trim().length <= 40 &&
+      displayNameInput.trim() !== displayName &&
+      !displayNameBusy
+  );
+
   let avatarKey = $state<string | null>(data.userProfile?.avatarKey ?? null);
   let avatarMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let currentPassword = $state('');
@@ -27,6 +37,38 @@
       confirmPassword.length > 0 &&
       !passwordBusy
   );
+
+  async function saveDisplayName() {
+    if (displayNameBusy) return;
+    displayNameMsg = null;
+    const trimmed = displayNameInput.trim();
+    if (trimmed.length === 0) {
+      displayNameMsg = { kind: 'error', text: 'Display name cannot be blank.' };
+      return;
+    }
+    if (trimmed.length > 40) {
+      displayNameMsg = { kind: 'error', text: 'Display name must be 40 characters or fewer.' };
+      return;
+    }
+    displayNameBusy = true;
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ display_name: trimmed })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        displayNameMsg = { kind: 'error', text: body.reason ?? 'Could not save display name.' };
+        return;
+      }
+      displayNameInput = trimmed;
+      displayNameMsg = { kind: 'success', text: 'Display name saved.' };
+      await invalidateAll();
+    } finally {
+      displayNameBusy = false;
+    }
+  }
 
   async function selectAvatar(key: string | null) {
     avatarKey = key;
@@ -241,6 +283,38 @@
         <UserAvatar {avatarKey} {displayName} size="md" />
         <span class="font-medium">{displayName}</span>
       </div>
+
+      <form
+        class="space-y-2"
+        onsubmit={(e) => {
+          e.preventDefault();
+          void saveDisplayName();
+        }}
+      >
+        <Label for="display-name">Display name</Label>
+        <div class="flex gap-2">
+          <Input
+            id="display-name"
+            name="display-name"
+            type="text"
+            maxlength={40}
+            autocomplete="nickname"
+            bind:value={displayNameInput}
+          />
+          <Button type="submit" disabled={!canSubmitDisplayName}>
+            {displayNameBusy ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+        {#if displayNameMsg}
+          <div
+            class="rounded-xl border p-3 text-sm"
+            class:border-success={displayNameMsg.kind === 'success'}
+            class:border-destructive={displayNameMsg.kind === 'error'}
+          >
+            {displayNameMsg.text}
+          </div>
+        {/if}
+      </form>
 
       <div>
         <p class="mb-2 text-sm text-muted-foreground">Choose an avatar</p>
