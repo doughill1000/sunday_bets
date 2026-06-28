@@ -32,6 +32,16 @@ export async function addGroupMember(params: AddGroupMemberParams): Promise<AddG
 
   const userId = data.user.id;
 
+  // The AFTER INSERT trigger on auth.users creates the public.users row, but under
+  // concurrent load it may not be visible yet when the group_memberships FK is checked.
+  // Upsert defensively so the insert below never races against the trigger.
+  await supabaseService
+    .from('users')
+    .upsert(
+      { id: userId, display_name: params.displayName, role: 'player' },
+      { onConflict: 'id', ignoreDuplicates: true }
+    );
+
   const { error: memberErr } = await supabaseService.from('group_memberships').insert({
     group_id: params.groupId,
     user_id: userId,

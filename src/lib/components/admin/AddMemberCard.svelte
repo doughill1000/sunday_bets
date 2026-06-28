@@ -2,6 +2,7 @@
   import AdminCard from './AdminCard.svelte';
   import { Button } from '$lib/components/ui/button';
   import { addMember } from '$lib/api/admin/members';
+  import { onMount } from 'svelte';
 
   interface Props {
     onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
@@ -12,7 +13,12 @@
   let displayName = $state('');
   let password = $state('');
   let busy = $state(false);
+  let mounted = $state(false);
   let lastResult: { email: string; temporaryPassword: string } | null = $state(null);
+
+  onMount(() => {
+    mounted = true;
+  });
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
     onNote?.(kind, text);
@@ -88,7 +94,12 @@
       </div>
     </div>
 
-    <Button variant="default" onclick={submit} disabled={busy} data-testid="add-member-submit">
+    <Button
+      variant="default"
+      onclick={submit}
+      disabled={busy || !mounted}
+      data-testid="add-member-submit"
+    >
       {busy ? 'Adding…' : 'Add Member'}
     </Button>
 

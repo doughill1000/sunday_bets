@@ -18,6 +18,16 @@ export function leaderboardPage(page: Page) {
     async goto() {
       await page.goto('/leaderboard');
       await expect(api.heading()).toBeVisible();
+      // Dismiss the AI recap flash modal if it auto-opened (localStorage is empty
+      // in a fresh e2e context, so the "seen" guard doesn't fire). The modal is a
+      // full-screen overlay that blocks all tab interactions until dismissed.
+      const dismiss = page.getByTestId('recap-dismiss');
+      await dismiss
+        .waitFor({ state: 'visible', timeout: 3000 })
+        .then(() => dismiss.click())
+        .catch(() => {
+          /* no recap visible — nothing to dismiss */
+        });
     },
 
     /** The page heading. */

@@ -21,6 +21,10 @@ export function adminMembers(page: Page) {
     async goto() {
       await page.goto('/admin');
       await expect(api.card()).toBeVisible();
+      // The submit button is disabled until onMount fires (hydration guard), so
+      // waiting for it to become enabled ensures the Svelte onclick handler is
+      // wired up before any test interaction — same pattern as the picks board.
+      await expect(api.submitButton()).toBeEnabled({ timeout: 5000 });
     },
 
     // --- add-member card ------------------------------------------------------

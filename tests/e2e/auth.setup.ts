@@ -31,5 +31,17 @@ setup('authenticate', async ({ page }) => {
   await page.goto('/picks');
   await expect(page).toHaveURL(/\/picks/);
 
+  // Dismiss the AI recap flash modal if it opens (localStorage is empty the first time
+  // through, so the "seen" guard doesn't fire). Saving the state below captures the
+  // localStorage "seen" key, so all subsequent specs reusing this storageState won't
+  // see the modal at all.
+  const recapDismiss = page.getByTestId('recap-dismiss');
+  await recapDismiss
+    .waitFor({ state: 'visible', timeout: 3000 })
+    .then(() => recapDismiss.click())
+    .catch(() => {
+      /* no recap — nothing to dismiss */
+    });
+
   await page.context().storageState({ path: authFile });
 });

@@ -44,6 +44,7 @@
           class="absolute -top-3 -right-3 z-10 rounded-full bg-background border border-border p-1.5 shadow-md hover:bg-muted transition-colors"
           onclick={dismiss}
           aria-label="Dismiss recap"
+          data-testid="recap-dismiss"
         >
           <X class="h-4 w-4 text-muted-foreground" />
         </button>

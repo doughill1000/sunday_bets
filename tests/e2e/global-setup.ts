@@ -228,6 +228,21 @@ export default async function globalSetup() {
     }
   }
 
+  // Remove any non-e2e games from this week so the picks board shows exactly
+  // the one BUF @ KC card the specs expect. The demo seed may populate week 1
+  // with graded games that break per-week game-count assertions (e.g. "1/5 saved").
+  const { data: nonE2eGames } = await supabase
+    .from('games')
+    .select('id')
+    .eq('week_id', weekId)
+    .neq('external_game_id', GAME_TAG);
+  if (nonE2eGames?.length) {
+    const staleIds = nonE2eGames.map((g: { id: string }) => g.id);
+    await supabase.from('picks').delete().in('game_id', staleIds);
+    await supabase.from('game_lines').delete().in('game_id', staleIds);
+    await supabase.from('games').delete().in('id', staleIds);
+  }
+
   // Game — kickoff in the future so picks remain editable/lockable.
   const commenceTime = new Date(Date.now() + 2 * DAY).toISOString();
   let gameId: string;

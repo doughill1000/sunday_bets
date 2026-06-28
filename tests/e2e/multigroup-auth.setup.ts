@@ -35,6 +35,16 @@ setup('authenticate multigroup user', async ({ page }) => {
   await page.goto('/picks');
   await expect(page).toHaveURL(/\/picks/);
 
+  // Dismiss the AI recap flash modal if it opens (same storageState isolation as
+  // auth.setup.ts — capture the "seen" key so group-switcher specs don't see it).
+  const recapDismiss = page.getByTestId('recap-dismiss');
+  await recapDismiss
+    .waitFor({ state: 'visible', timeout: 3000 })
+    .then(() => recapDismiss.click())
+    .catch(() => {
+      /* no recap — nothing to dismiss */
+    });
+
   // Pin the active group to "Sunday Bets" so the default switcher label is
   // deterministic. page.request shares the context cookie jar, so the
   // active_group_id cookie this sets is captured in storageState below.

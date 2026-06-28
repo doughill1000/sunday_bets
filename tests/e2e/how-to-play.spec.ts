@@ -164,6 +164,17 @@ test('account menu "How to Play" link navigates to /how-to-play', async ({ page 
   await signIn(page, HOW_TO_PLAY_USER.email, HOW_TO_PLAY_USER.password);
   await expect(page).toHaveURL(/\/picks/);
 
+  // Dismiss the AI recap flash modal if it appeared (fresh context has no
+  // localStorage "seen" key; guide is suppressed via guide_seen_at so the recap
+  // would otherwise be the sole overlay blocking the account menu click).
+  const recapDismiss = page.getByTestId('recap-dismiss');
+  await recapDismiss
+    .waitFor({ state: 'visible', timeout: 3000 })
+    .then(() => recapDismiss.click())
+    .catch(() => {
+      /* no recap — nothing to dismiss */
+    });
+
   // Open the account dropdown and wait for the menu item to appear.
   await expect(async () => {
     await htp.accountMenuTrigger().click();
