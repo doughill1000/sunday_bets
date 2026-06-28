@@ -48,9 +48,10 @@ export type H2HRecord = {
 };
 
 /**
- * `stats_head_to_head` stores one directional row per pair (right.user_id > left.user_id),
- * so a given user appears as either the subject or the opponent. Normalize every relevant row
- * to the selected user's perspective, flipping wins/losses and points where they were the opponent.
+ * Head-to-head read models store one directional row per pair (right.user_id > left.user_id),
+ * so a given user appears as either the subject or the opponent. Normalize every relevant
+ * row to the selected user's perspective, flipping wins/losses and points where they were
+ * the opponent.
  */
 export function headToHeadForUser(rows: HeadToHeadEntry[], userId: string): H2HRecord[] {
   const records: H2HRecord[] = [];

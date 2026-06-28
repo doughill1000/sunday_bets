@@ -1377,6 +1377,30 @@ export type Database = {
           }
         ];
       };
+      stats_head_to_head_alltime: {
+        Row: {
+          display_name: string | null;
+          games_compared: number | null;
+          group_id: string | null;
+          losses: number | null;
+          opponent_display_name: string | null;
+          opponent_points: number | null;
+          opponent_user_id: string | null;
+          points: number | null;
+          pushes: number | null;
+          user_id: string | null;
+          wins: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       stats_season_trend: {
         Row: {
           cumulative_points: number | null;

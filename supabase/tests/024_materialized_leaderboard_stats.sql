@@ -1,6 +1,6 @@
 -- 023_materialized_leaderboard_stats.sql
 -- Structural coverage for the leaderboard/stats materialized views (issue #191):
---   1. Each of the 8 aggregation views is materialized (not a plain view).
+--   1. Each of the 9 aggregation views is materialized (not a plain view).
 --   2. Each carries the unique index REFRESH ... CONCURRENTLY requires.
 --   3. public.refresh_leaderboard_stats() exists, is SECURITY DEFINER, and runs cleanly
 --      inside a transaction (the same shape as the service-role rpc the grading path uses).
@@ -8,14 +8,15 @@
 
 BEGIN;
 
-SELECT plan(22);
+SELECT plan(24);
 
--- ── 1. The 8 aggregation views are materialized ──────────────────────────────
+-- ── 1. The 9 aggregation views are materialized ──────────────────────────────
 SELECT has_materialized_view('public', 'leaderboard_season_totals', 'leaderboard_season_totals is materialized');
 SELECT has_materialized_view('public', 'stats_season_trend', 'stats_season_trend is materialized');
 SELECT has_materialized_view('public', 'stats_accuracy_by_team', 'stats_accuracy_by_team is materialized');
 SELECT has_materialized_view('public', 'stats_accuracy_by_weight', 'stats_accuracy_by_weight is materialized');
 SELECT has_materialized_view('public', 'stats_head_to_head', 'stats_head_to_head is materialized');
+SELECT has_materialized_view('public', 'stats_head_to_head_alltime', 'stats_head_to_head_alltime is materialized');
 SELECT has_materialized_view('public', 'stats_alltime_totals', 'stats_alltime_totals is materialized');
 SELECT has_materialized_view('public', 'stats_accuracy_by_team_alltime', 'stats_accuracy_by_team_alltime is materialized');
 SELECT has_materialized_view('public', 'stats_accuracy_by_weight_alltime', 'stats_accuracy_by_weight_alltime is materialized');
@@ -26,6 +27,7 @@ SELECT has_index('public', 'stats_season_trend', 'uq_stats_season_trend', 'stats
 SELECT has_index('public', 'stats_accuracy_by_team', 'uq_stats_accuracy_by_team', 'stats_accuracy_by_team has its unique index');
 SELECT has_index('public', 'stats_accuracy_by_weight', 'uq_stats_accuracy_by_weight', 'stats_accuracy_by_weight has its unique index');
 SELECT has_index('public', 'stats_head_to_head', 'uq_stats_head_to_head', 'stats_head_to_head has its unique index');
+SELECT has_index('public', 'stats_head_to_head_alltime', 'uq_stats_head_to_head_alltime', 'stats_head_to_head_alltime has its unique index');
 SELECT has_index('public', 'stats_alltime_totals', 'uq_stats_alltime_totals', 'stats_alltime_totals has its unique index');
 SELECT has_index('public', 'stats_accuracy_by_team_alltime', 'uq_stats_accuracy_by_team_alltime', 'stats_accuracy_by_team_alltime has its unique index');
 SELECT has_index('public', 'stats_accuracy_by_weight_alltime', 'uq_stats_accuracy_by_weight_alltime', 'stats_accuracy_by_weight_alltime has its unique index');

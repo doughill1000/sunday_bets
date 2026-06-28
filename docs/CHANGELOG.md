@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-28
+
+- **#280** Lifetime head-to-head records — the hidden `/stats` Head to head tab is visible and now reads all-time rivalry records across every scoring season, backed by a new service-role-only `stats_head_to_head_alltime` matview refreshed by `refresh_leaderboard_stats()`. Closes #280. view: `stats_head_to_head_alltime` · route: `/stats` · ADR-0013 · ADR-0002
+
 ## 2026-06-27
 
 - **#279** League honors — reigning-champ crown, trophy case & wooden spoon — a `LeagueHonors` hero atop `/stats` shows the reigning champion (crown on their avatar), a trophy case of every completed season's champion (newest first), and the most-recently-completed season's last place (wooden spoon); the crown also marks the reigning champ on `/leaderboard`, distinct from the current-leader 🏆. All three honors derive from one read-model: `league_completed_standings`, a plain view over the `leaderboard_season_totals` matview filtered to seasons whose scoring-week games are all final. Presentation only — no scoring/grading change; first Wave-1 slice of epic #277. Closes #279. view: `league_completed_standings` · components: `LeagueHonors.svelte`, `UserAvatar.svelte` · routes: `/stats`, `/leaderboard` · ADR-0013 · ADR-0002
