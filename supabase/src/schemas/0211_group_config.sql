@@ -19,3 +19,12 @@ create table if not exists public.group_config (
 alter table public.group_config
   add column if not exists grading_preset text not null default 'house'
     check (grading_preset in ('gamer', 'house'));
+
+-- AI recap tone (ADR-0008, dec. 4): mild | medium | spicy. Default medium.
+alter table public.group_config
+  add column if not exists spice text not null default 'medium'
+    check (spice in ('mild', 'medium', 'spicy'));
+
+-- Whether the grade-cron AI recap runs for this group (ADR-0008, dec. 4).
+alter table public.group_config
+  add column if not exists ai_recaps_enabled boolean not null default true;

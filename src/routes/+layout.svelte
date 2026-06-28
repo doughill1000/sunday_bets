@@ -4,6 +4,7 @@
   import BottomTabBar from '$lib/components/app-header/BottomTabBar.svelte';
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
+  import RecapFlash from '$lib/components/recap/RecapFlash.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
@@ -17,6 +18,7 @@
   const userProfile = $derived(data.userProfile ?? null);
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
+  const latestRecap = $derived(data.latestRecap ?? null);
 
   onMount(() => {
     const updateSW = registerSW({
@@ -64,5 +66,6 @@
   {#if user}
     <BottomTabBar />
     <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
+    <RecapFlash recap={latestRecap} />
   {/if}
 </div>
