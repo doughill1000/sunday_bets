@@ -3,7 +3,8 @@ import {
   computeBadges,
   computeSampleGuard,
   computeOracleGuard,
-  badgeInputsFromSeasonStats
+  badgeInputsFromSeasonStats,
+  BADGE_GLOSSARY
 } from '../badges';
 import type {
   BadgeConsensusEntry,
@@ -597,6 +598,29 @@ describe('Perfect Week', () => {
   });
 });
 
+// --- Awards glossary (modal copy) ---
+
+describe('BADGE_GLOSSARY', () => {
+  it('has one entry per BadgeId with non-empty label and description', () => {
+    const awardedIds = ids(
+      computeBadges({
+        ...EMPTY,
+        seasonTotals: [totals({ decisions: 10, wins: 7, losses: 3, missed: 1 })]
+      })
+    );
+    // Every id the engine can award must have a glossary entry (and vice versa).
+    expect(BADGE_GLOSSARY.length).toBeGreaterThanOrEqual(awardedIds.length);
+    for (const g of BADGE_GLOSSARY) {
+      expect(g.label.length).toBeGreaterThan(0);
+      expect(g.description.length).toBeGreaterThan(0);
+      expect(g.emoji.length).toBeGreaterThan(0);
+      expect(['title', 'milestone']).toContain(g.kind);
+    }
+    // No duplicate ids in the glossary.
+    expect(new Set(BADGE_GLOSSARY.map((g) => g.id)).size).toBe(BADGE_GLOSSARY.length);
+  });
+});
+
 // --- Integration: badge structure ---
 
 describe('computeBadges — output shape', () => {
@@ -611,6 +635,7 @@ describe('computeBadges — output shape', () => {
       expect(b).toHaveProperty('label');
       expect(b).toHaveProperty('emoji');
       expect(b).toHaveProperty('flavor');
+      expect(b).toHaveProperty('description');
       expect(b).toHaveProperty('kind');
       expect(b).toHaveProperty('holders');
       expect(b.holders.length).toBeGreaterThan(0);
