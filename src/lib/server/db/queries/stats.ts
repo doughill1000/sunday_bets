@@ -6,6 +6,7 @@ import type {
   AllTimeTotalsEntry,
   AllTimeTeamAccuracyEntry,
   AllTimeWeightAccuracyEntry,
+  ConsensusStatsEntry,
   HeadToHeadEntry,
   SeasonStats,
   TeamAccuracyEntry,
@@ -19,6 +20,11 @@ type AllTimeHeadToHeadRow = Tables<'stats_head_to_head_alltime'>;
 type AllTimeTotalsRow = Tables<'stats_alltime_totals'>;
 type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
 type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
+// Narrowed shape for the partial select on group_pick_consensus.
+type ConsensusPickRow = Pick<
+  Tables<'group_pick_consensus'>,
+  'user_id' | 'display_name' | 'consensus_pct' | 'is_minority' | 'graded_outcome'
+>;
 
 function toTeamAccuracy(row: TeamAccuracyRow): TeamAccuracyEntry | null {
   if (
@@ -112,8 +118,51 @@ function toHeadToHead(row: HeadToHeadRow | AllTimeHeadToHeadRow): HeadToHeadEntr
   };
 }
 
+/** Aggregate per-pick consensus rows into per-user summaries for badge derivation. */
+function aggregateConsensusRows(rows: ConsensusPickRow[]): ConsensusStatsEntry[] {
+  const byUser = new Map<
+    string,
+    {
+      user_id: string;
+      display_name: string;
+      decisions: number;
+      sumConsensusPct: number;
+      contrarian_picks: number;
+      contrarian_wins: number;
+    }
+  >();
+
+  for (const row of rows) {
+    if (row.user_id == null || row.display_name == null) continue;
+    const acc = byUser.get(row.user_id) ?? {
+      user_id: row.user_id,
+      display_name: row.display_name,
+      decisions: 0,
+      sumConsensusPct: 0,
+      contrarian_picks: 0,
+      contrarian_wins: 0
+    };
+    acc.decisions++;
+    acc.sumConsensusPct += Number(row.consensus_pct ?? 0);
+    if (row.is_minority) {
+      acc.contrarian_picks++;
+      if (row.graded_outcome === 'win') acc.contrarian_wins++;
+    }
+    byUser.set(row.user_id, acc);
+  }
+
+  return [...byUser.values()].map((acc) => ({
+    user_id: acc.user_id,
+    display_name: acc.display_name,
+    decisions: acc.decisions,
+    mean_consensus_pct: acc.decisions > 0 ? acc.sumConsensusPct / acc.decisions : 0,
+    contrarian_picks: acc.contrarian_picks,
+    contrarian_wins: acc.contrarian_wins
+  }));
+}
+
 export async function getStatsForSeason(seasonYear: number, groupId: string): Promise<SeasonStats> {
-  const [trend, teamResult, weightResult, headToHeadResult] = await Promise.all([
+  const [trend, teamResult, weightResult, headToHeadResult, consensusResult] = await Promise.all([
     getWeeklyCumulative(seasonYear, groupId),
     supabaseService
       .from('stats_accuracy_by_team')
@@ -135,12 +184,18 @@ export async function getStatsForSeason(seasonYear: number, groupId: string): Pr
       .eq('season_year', seasonYear)
       .eq('group_id', groupId)
       .order('display_name')
-      .order('opponent_display_name')
+      .order('opponent_display_name'),
+    supabaseService
+      .from('group_pick_consensus')
+      .select('user_id, display_name, consensus_pct, is_minority, graded_outcome')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
   ]);
 
   if (teamResult.error) throw teamResult.error;
   if (weightResult.error) throw weightResult.error;
   if (headToHeadResult.error) throw headToHeadResult.error;
+  if (consensusResult.error) throw consensusResult.error;
 
   return {
     trend,
@@ -155,7 +210,8 @@ export async function getStatsForSeason(seasonYear: number, groupId: string): Pr
     headToHead: (headToHeadResult.data ?? []).flatMap((row) => {
       const entry = toHeadToHead(row);
       return entry ? [entry] : [];
-    })
+    }),
+    consensusStats: aggregateConsensusRows(consensusResult.data ?? [])
   };
 }
 

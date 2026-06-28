@@ -33,7 +33,11 @@ export type BadgeId =
   | 'the-nemesis'
   | 'the-homer'
   | 'big-game-hunter'
-  | 'perfect-week';
+  | 'perfect-week'
+  // Tier-B consensus badges (#294, Wave 2 of epic #277)
+  | 'contrarian'
+  | 'sheep'
+  | 'oracle';
 
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';

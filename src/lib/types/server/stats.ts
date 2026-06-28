@@ -56,11 +56,26 @@ export type HeadToHeadEntry = {
   opponent_points: number;
 };
 
+export type ConsensusStatsEntry = {
+  user_id: string;
+  display_name: string;
+  /** Total non-missed picks in scoring rounds for the season. */
+  decisions: number;
+  /** Average consensus_pct across all picks (0–100). */
+  mean_consensus_pct: number;
+  /** Count of picks where the user was in the minority (consensus_pct < 50). */
+  contrarian_picks: number;
+  /** Minority picks that graded as wins. */
+  contrarian_wins: number;
+};
+
 export type SeasonStats = {
   trend: SeasonTrendEntry[];
   teamAccuracy: TeamAccuracyEntry[];
   weightAccuracy: WeightAccuracyEntry[];
   headToHead: HeadToHeadEntry[];
+  /** Per-user consensus aggregates for Tier-B badge derivation (#294). */
+  consensusStats: ConsensusStatsEntry[];
 };
 
 export type AllTimeTotalsEntry = {

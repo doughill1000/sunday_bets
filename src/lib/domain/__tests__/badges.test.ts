@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { computeBadges, computeSampleGuard, badgeInputsFromSeasonStats } from '../badges';
+import {
+  computeBadges,
+  computeSampleGuard,
+  computeOracleGuard,
+  badgeInputsFromSeasonStats
+} from '../badges';
 import type {
+  BadgeConsensusEntry,
   BadgeInputs,
   BadgeSeasonTotalsEntry,
   BadgeWeightEntry,
@@ -80,8 +86,21 @@ const EMPTY: BadgeInputs = {
   weightAccuracy: [],
   headToHead: [],
   teamAccuracy: [],
-  trend: []
+  trend: [],
+  consensus: []
 };
+
+function consensus(overrides: Partial<BadgeConsensusEntry> = {}): BadgeConsensusEntry {
+  return {
+    user_id: 'u1',
+    display_name: 'Alice',
+    decisions: 10,
+    mean_consensus_pct: 45,
+    contrarian_picks: 6,
+    contrarian_wins: 4,
+    ...overrides
+  };
+}
 
 function ids(badges: ReturnType<typeof computeBadges>) {
   return badges.map((b) => b.id);
@@ -677,6 +696,16 @@ describe('badgeInputsFromSeasonStats', () => {
         points: 14,
         opponent_points: 6
       }
+    ],
+    consensusStats: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        decisions: 10,
+        mean_consensus_pct: 45.5,
+        contrarian_picks: 6,
+        contrarian_wins: 4
+      }
     ]
   };
 
@@ -744,6 +773,16 @@ describe('badgeInputsFromSeasonStats', () => {
         week_missed: 0
       }
     ]);
+    expect(inputs.consensus).toEqual([
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        decisions: 10,
+        mean_consensus_pct: 45.5,
+        contrarian_picks: 6,
+        contrarian_wins: 4
+      }
+    ]);
   });
 
   it('feeds computeBadges so derived badges carry through (equivalence to the old getBadges path)', () => {
@@ -756,10 +795,264 @@ describe('badgeInputsFromSeasonStats', () => {
 
   it('returns empty arrays for empty season stats', () => {
     const inputs = badgeInputsFromSeasonStats(
-      { trend: [], teamAccuracy: [], weightAccuracy: [], headToHead: [] },
+      { trend: [], teamAccuracy: [], weightAccuracy: [], headToHead: [], consensusStats: [] },
       []
     );
     expect(inputs).toEqual(EMPTY);
     expect(computeBadges(inputs)).toEqual([]);
+  });
+});
+
+// --- computeOracleGuard ---
+
+describe('computeOracleGuard', () => {
+  it('returns the floor when the list is empty', () => {
+    expect(computeOracleGuard([])).toBe(5);
+  });
+
+  it('returns the floor for low contrarian activity', () => {
+    // avg = 4 contrarian picks → round(4 * 0.35) = 1 → floor wins
+    const low = [consensus({ contrarian_picks: 4 }), consensus({ contrarian_picks: 4 })];
+    expect(computeOracleGuard(low)).toBe(5);
+  });
+
+  it('scales up with high contrarian activity', () => {
+    // avg = 30 → round(30 * 0.35) = 11 > 5
+    const active = [consensus({ contrarian_picks: 30 }), consensus({ contrarian_picks: 30 })];
+    expect(computeOracleGuard(active)).toBe(11);
+  });
+});
+
+// --- The Contrarian (Tier-B) ---
+
+describe('The Contrarian', () => {
+  it('awards the player with the lowest mean consensus_pct', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 35 }),
+        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 65 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'contrarian');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('excludes players below the decision sample guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+      ],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 50 }),
+        // Bob is below the guard (2 decisions < 5 floor)
+        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 2, mean_consensus_pct: 20 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'contrarian');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded when no player reaches the guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 2 })],
+      consensus: [consensus({ decisions: 2, mean_consensus_pct: 30 })]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('contrarian');
+  });
+
+  it('breaks ties by higher decision count, then alphabetically', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
+        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
+      ],
+      consensus: [
+        // Tied mean; Zara has more decisions → wins
+        consensus({ user_id: 'u1', display_name: 'Zara', decisions: 12, mean_consensus_pct: 40 }),
+        consensus({ user_id: 'u2', display_name: 'Alice', decisions: 8, mean_consensus_pct: 40 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'contrarian');
+    expect(badge?.holders[0].display_name).toBe('Zara');
+  });
+
+  it('is not awarded when there is no consensus data', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10 })],
+      consensus: []
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('contrarian');
+  });
+});
+
+// --- The Sheep (Tier-B) ---
+
+describe('The Sheep', () => {
+  it('awards the player with the highest mean consensus_pct', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 75 }),
+        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 55 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('excludes players below the guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+      ],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 60 }),
+        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 2, mean_consensus_pct: 95 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('breaks ties by higher decision count, then alphabetically', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
+        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
+      ],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Zara', decisions: 12, mean_consensus_pct: 70 }),
+        consensus({ user_id: 'u2', display_name: 'Alice', decisions: 8, mean_consensus_pct: 70 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
+    expect(badge?.holders[0].display_name).toBe('Zara');
+  });
+});
+
+// --- The Oracle (Tier-B) ---
+
+describe('The Oracle', () => {
+  it('awards the player with the best contrarian-pick win rate', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      consensus: [
+        // Alice: 4/5 = 80% contrarian win rate
+        consensus({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          contrarian_picks: 5,
+          contrarian_wins: 4
+        }),
+        // Bob: 2/5 = 40% contrarian win rate
+        consensus({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 10,
+          contrarian_picks: 5,
+          contrarian_wins: 2
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'oracle');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('does not award when no player reaches the oracle guard', () => {
+    // oracle guard = max(5, round(avg(contrarian_picks) * 0.35))
+    // avg contrarian_picks = 2 → guard = 5; nobody has 5 contrarian picks
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10 })],
+      consensus: [consensus({ contrarian_picks: 2, contrarian_wins: 2 })]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('oracle');
+  });
+
+  it('breaks ties by more contrarian picks, then alphabetically', () => {
+    // avg contrarian_picks = 10 → guard = max(5, round(10*0.35)) = max(5,4) = 5
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Alice', decisions: 10 })
+      ],
+      consensus: [
+        // Same rate 60%; Zara has more contrarian picks → wins
+        consensus({
+          user_id: 'u1',
+          display_name: 'Zara',
+          decisions: 10,
+          contrarian_picks: 10,
+          contrarian_wins: 6
+        }),
+        consensus({
+          user_id: 'u2',
+          display_name: 'Alice',
+          decisions: 10,
+          contrarian_picks: 5,
+          contrarian_wins: 3
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'oracle');
+    expect(badge?.holders[0].display_name).toBe('Zara');
+  });
+
+  it('is not awarded when there is no consensus data', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10 })],
+      consensus: []
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('oracle');
+  });
+});
+
+// --- Tier-B and Tier-A coexist ---
+
+describe('Tier-B and Tier-A badges coexist', () => {
+  it('returns both Tier-A and Tier-B badges in the same output', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
+      consensus: [
+        consensus({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          mean_consensus_pct: 40,
+          contrarian_picks: 6,
+          contrarian_wins: 4
+        })
+      ]
+    };
+    const awarded = ids(computeBadges(inputs));
+    // Tier-A: the-degenerate is always awarded when someone has decisions
+    expect(awarded).toContain('the-degenerate');
+    // Tier-B: contrarian awarded (single eligible player)
+    expect(awarded).toContain('contrarian');
   });
 });
