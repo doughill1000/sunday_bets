@@ -28,6 +28,56 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_recaps: {
+        Row: {
+          completion_tokens: number | null;
+          created_at: string;
+          facts: Json;
+          group_id: string;
+          id: string;
+          is_fallback: boolean;
+          model: string | null;
+          prompt_tokens: number | null;
+          prose: string;
+          season_year: number;
+          week_number: number;
+        };
+        Insert: {
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts: Json;
+          group_id: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          prose: string;
+          season_year: number;
+          week_number: number;
+        };
+        Update: {
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts?: Json;
+          group_id?: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          prose?: string;
+          season_year?: number;
+          week_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_recaps_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       audit_log: {
         Row: {
           action: string;
@@ -264,27 +314,33 @@ export type Database = {
       };
       group_config: {
         Row: {
+          ai_recaps_enabled: boolean;
           created_at: string;
           grading_preset: string;
           group_id: string;
           line_source: string;
           scoring_rules: Json;
+          spice: string;
           updated_at: string;
         };
         Insert: {
+          ai_recaps_enabled?: boolean;
           created_at?: string;
           grading_preset?: string;
           group_id: string;
           line_source?: string;
           scoring_rules?: Json;
+          spice?: string;
           updated_at?: string;
         };
         Update: {
+          ai_recaps_enabled?: boolean;
           created_at?: string;
           grading_preset?: string;
           group_id?: string;
           line_source?: string;
           scoring_rules?: Json;
+          spice?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -350,6 +406,7 @@ export type Database = {
       };
       group_memberships: {
         Row: {
+          ai_recap_opt_out: boolean;
           group_id: string;
           joined_at: string;
           role: Database['public']['Enums']['group_membership_role'];
@@ -357,6 +414,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          ai_recap_opt_out?: boolean;
           group_id: string;
           joined_at?: string;
           role?: Database['public']['Enums']['group_membership_role'];
@@ -364,6 +422,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          ai_recap_opt_out?: boolean;
           group_id?: string;
           joined_at?: string;
           role?: Database['public']['Enums']['group_membership_role'];

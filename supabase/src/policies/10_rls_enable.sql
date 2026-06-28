@@ -17,3 +17,4 @@ alter table if exists public.group_config enable row level security;
 alter table if exists public.group_week_overrides enable row level security;
 alter table if exists public.comments  enable row level security;
 alter table if exists public.reactions enable row level security;
+alter table if exists public.ai_recaps enable row level security;

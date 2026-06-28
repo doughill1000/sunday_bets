@@ -56,3 +56,8 @@ revoke all on public.reactions from public, anon;
 
 grant select, insert, delete on public.comments  to authenticated;
 grant select, insert, delete on public.reactions to authenticated;
+
+-- ai_recaps: members read their group's rows; no client writes (service role only).
+-- ADR-0008 (AI output is group-scoped, writes via service role batch lane).
+revoke all on public.ai_recaps from public, anon;
+grant select on public.ai_recaps to authenticated;
