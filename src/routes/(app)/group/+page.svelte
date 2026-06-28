@@ -6,7 +6,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
-  import LeagueHonors from '$lib/components/stats/LeagueHonors.svelte';
+  import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
 
   let { data }: { data: PageData } = $props();
 
