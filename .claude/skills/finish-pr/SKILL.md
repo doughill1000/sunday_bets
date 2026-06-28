@@ -10,8 +10,12 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
 
 ## Steps
 
-1. Run the `test-gate` skill first. **Record exactly which layers ran** and why any
-   were skipped — this goes in the PR body verbatim.
+1. Ensure the `test-gate` checks have passed against the **current** branch state. If
+   you already ran the gate earlier in this session and nothing has changed since (no new
+   commits or edits), **reuse those results — do not re-run it** (re-running a green gate
+   on an unchanged tree wastes minutes, especially integration/e2e). Otherwise run the
+   `test-gate` skill now. Either way, **record exactly which layers ran** and why any were
+   skipped — this goes in the PR body verbatim.
 2. If the branch is based on older trunk, refresh from `origin/master`, reverify, and
    regenerate any artifacts (types, migration ledger) from the **combined** state —
    never resolve a ledger conflict by taking one side wholesale.
