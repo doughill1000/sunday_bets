@@ -84,6 +84,17 @@ describe('lib/server/schedule.ts', () => {
       expect(calledUrl).not.toContain('season=2026');
     });
 
+    it('requests preseason (seasontype=1) when asked (ADR-0016)', async () => {
+      mockFetch(WEEK_1_RESPONSE);
+
+      await fetchEspnWeek(2026, 1, 1);
+
+      const calledUrl = (fetch as unknown as Mock).mock.calls[0][0] as string;
+      expect(calledUrl).toContain('seasontype=1');
+      expect(calledUrl).toContain('week=1');
+      expect(calledUrl).toContain('dates=2026');
+    });
+
     it('returns no games when ESPN serves a different season than requested (issue #272)', async () => {
       // Reproduces the fallback that polluted prod: asking for 2026 but ESPN
       // echoing last season's completed games.

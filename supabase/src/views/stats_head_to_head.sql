@@ -1,7 +1,9 @@
 -- One directional row per player pair per (group, season), comparing shared-game points.
 -- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
 -- of a grading run. Matviews don't support security_invoker; all reads are service-role.
-drop view if exists public.stats_head_to_head;
+-- DROP MATERIALIZED VIEW (not DROP VIEW): #191 made this a matview, so re-emission of this
+-- file runs against an existing matview, and `drop view` errors on a matview.
+drop materialized view if exists public.stats_head_to_head;
 
 create materialized view public.stats_head_to_head as
 select
@@ -27,6 +29,9 @@ join public.weeks w on w.id = g.week_id
 join public.seasons s on s.id = w.season_id
 join public.users left_user on left_user.id = left_ps.user_id
 join public.users right_user on right_user.id = right_ps.user_id
+-- Non-scoring rounds (ADR-0016) never count. The pair shares one game, so filtering the
+-- left settlement's week excludes both sides.
+where w.is_scoring
 group by
   left_ps.user_id,
   left_user.display_name,

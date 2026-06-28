@@ -289,9 +289,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "bc5fabc0f98e7b5cb04d08d44796b94b76759f3664051506fe074ac2e1a5385d",
-    "migration": "20260627165203_paginated_leaderboard_members.sql",
-    "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
+    "hash": "23d9af78d3c93bd7e2917a2fe5c99afd3c6e93444df4e263038fd36ef76523fd",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
@@ -314,39 +314,39 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "views/stats_accuracy_by_team_alltime.sql": {
-    "hash": "75c35955c15f1d3b949d025aa8a39dff6da09f2c247abbf47a7af1c284faaca3",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "49aa72e1ec52c9a46a10d4540034b864773f47159ffff849ff90cb59b04c1066",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_accuracy_by_team.sql": {
-    "hash": "8091f3af5e96b4540535ed5922567fbb77e13bad3bbef9fef676785eea305e75",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "f15bfb211212f2c1c1d3835053b2f5a29855b354cfdb14593a96ea84a00992b6",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_accuracy_by_weight_alltime.sql": {
-    "hash": "0841df68cf68b861132f5ed8c3ccd36a111bf33b9024095912fe741f9dedee8d",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "1f6a5634c58dae5f3b977704ca64c7255d46ed71f2be41a357dcd4cc2ae4bf26",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_accuracy_by_weight.sql": {
-    "hash": "cd9f7311534ac6a312eeb298509a4615a57d6e6809c5c21623cfe97c927fdb26",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "3f9a7c1e0802fccb56db4cc3db9444b94cee0b10e27b06aaea485669e2fe702e",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_alltime_totals.sql": {
-    "hash": "3c763952f09091906e8bcb13a537a64ed86523e2729cc7876346a1478d20cc3c",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "97e46bcb10fa3552f93f593af9949402327a6d2fba4ec2fad55806fd343f6fad",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_head_to_head.sql": {
-    "hash": "b4aab5e5dd1ef3b237e22a4011ee82a8d8a7f7340087c2af1c558b0107fba2ae",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "390c4375b9e82bad03bd45ef5271c52f0b6076cb96ae0df083fb02e0f259a9f5",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_season_trend.sql": {
-    "hash": "2c3b9d0a830f7d60feac886663c2128cb74f21ec5e37049c1c7a3b70f4c86456",
-    "migration": "20260627023356_materialize_leaderboard_stats_views.sql",
-    "migrationHash": "5e7db236391efbf6e92cdc0668c32d22af2e0cd6247fc7bfdb555361da54929d"
+    "hash": "2831f9ec907227ad460aad5a48554303e87db69ad20bb18b0e0c375d4ce4c314",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/ui_games.sql": {
     "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4",
@@ -660,9 +660,14 @@
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "functions/stats/leaderboard_season_page.sql": {
-    "hash": "6c85c85104d643e5faa04ab07f02cf8354b646d561615bac7815a472ed5ec524",
+    "hash": "94c34cf1b9a7e4580f0975c6983a08f6a60d34358b9f8bebb441cc3e022b293f",
     "signature": "public.leaderboard_season_page(uuid, int, int, int, int, int, uuid)",
-    "migration": "20260627165203_paginated_leaderboard_members.sql",
-    "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+  },
+  "schemas/0223_weeks_is_scoring.sql": {
+    "hash": "fd4cd66ff103577284e4f0fd564d6cdd209904687d4d55a583f340b661bff5b0",
+    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
+    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   }
 }

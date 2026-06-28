@@ -40,7 +40,9 @@ export type Settlement = {
   outcome: GameResult | null;
 };
 
-export type SeasonWeekOption = { weekNumber: number; weekId: number };
+// isScoring=false marks a non-scoring round (preseason / practice, ADR-0016): pickable and
+// shown with graded results, but excluded from standings/stats and labelled in the UI.
+export type SeasonWeekOption = { weekNumber: number; weekId: number; isScoring: boolean };
 
 export type WeeklyPickRow = {
   userId: string;

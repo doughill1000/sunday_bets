@@ -1,6 +1,8 @@
 -- Materialized (issue #191): refreshed by public.refresh_leaderboard_stats() at the end
 -- of a grading run. Matviews don't support security_invoker; all reads are service-role.
-drop view if exists public.stats_accuracy_by_weight_alltime;
+-- DROP MATERIALIZED VIEW (not DROP VIEW): #191 made this a matview, so re-emission of this
+-- file runs against an existing matview, and `drop view` errors on a matview.
+drop materialized view if exists public.stats_accuracy_by_weight_alltime;
 
 create materialized view public.stats_accuracy_by_weight_alltime as
 select
@@ -21,6 +23,11 @@ select
 from public.pick_settlement ps
 join public.picks p on p.id = ps.pick_id
 join public.users u on u.id = ps.user_id
+-- Join through to weeks only to exclude non-scoring rounds (ADR-0016); 1:1, so otherwise
+-- unchanged.
+join public.games g on g.id = ps.game_id
+join public.weeks w on w.id = g.week_id
+where w.is_scoring
 group by ps.user_id, u.display_name, p.weight, ps.group_id;
 
 -- Unique natural key for REFRESH ... CONCURRENTLY; also serves the group_id read filter.

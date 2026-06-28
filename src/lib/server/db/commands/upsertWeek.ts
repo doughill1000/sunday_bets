@@ -5,13 +5,22 @@ export async function upsertWeek(params: {
   weekNumber: number;
   startTs: string;
   endTs: string;
+  // Whether this round counts toward standings/stats (ADR-0016). Preseason weeks pass
+  // false; regular weeks default true.
+  isScoring?: boolean;
 }): Promise<number> {
-  const { seasonId, weekNumber, startTs, endTs } = params;
+  const { seasonId, weekNumber, startTs, endTs, isScoring = true } = params;
 
   const { data, error } = await supabaseService
     .from('weeks')
     .upsert(
-      { season_id: seasonId, week_number: weekNumber, start_ts: startTs, end_ts: endTs },
+      {
+        season_id: seasonId,
+        week_number: weekNumber,
+        start_ts: startTs,
+        end_ts: endTs,
+        is_scoring: isScoring
+      },
       { onConflict: 'season_id,week_number' }
     )
     .select('id')

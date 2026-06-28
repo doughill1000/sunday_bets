@@ -59,5 +59,6 @@ current status.
 | [ADR-0013](0013-materialized-leaderboard-stats.md)         | Leaderboard/stats served from materialized views refreshed on grading       |
 | [ADR-0014](0014-auth-context-caching.md)                   | Short-TTL per-instance cache of the per-request auth-hook lookups           |
 | [ADR-0015](0015-versioning-and-release-policy.md)          | Versioning and release policy (label-driven SemVer)                         |
+| [ADR-0016](0016-non-scoring-rounds.md)                     | Non-scoring rounds (`weeks.is_scoring`) and ESPN preseason sourcing         |
 
 _ADR-0008 was never used — the number was skipped, so there is no `0008-*.md` record._

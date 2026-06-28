@@ -18,6 +18,10 @@
 -- standings by passing an arbitrary p_group_id, violating ADR-0002 cross-group denial.
 -- service_role EXECUTE comes from the blanket grant in grants/admin_grants.sql; the
 -- closed-by-default ACL guard strips the implicit PUBLIC grant.
+--
+-- Re-emitted with #274: this function `returns setof` leaderboard_season_totals, so any
+-- re-emission of that matview must CASCADE-drop this function (see the view source) and
+-- recreate it here afterward. The ACL guard + default privileges re-close/grant on recreate.
 create or replace function public.leaderboard_season_page(
   p_group_id uuid,
   p_season_year int,
