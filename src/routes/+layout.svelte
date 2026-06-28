@@ -19,15 +19,28 @@
   const groupId = $derived(data.groupId ?? null);
 
   onMount(() => {
-    const updateSW = registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        if (confirm('Update available. Refresh now?')) {
-          updateSW(true);
+    // autoUpdate strategy: the SW installs silently and onNeedRefresh never
+    // fires. vite-plugin-pwa's registerSW already reloads the page when a new
+    // SW takes control (workbox-window's `controlling` event, guarded by
+    // `isUpdate` so it does NOT reload on the first install). We must not add
+    // our own unguarded `controllerchange` reload — that fires when the SW
+    // claims the client on first load and reloads mid-navigation.
+    registerSW({ immediate: true, onOfflineReady() {} });
+
+    let removeVisibilityListener: (() => void) | undefined;
+    if ('serviceWorker' in navigator) {
+      // Force an update check whenever the user returns to the app —
+      // iOS only checks on navigation and throttles to ~24h otherwise.
+      // When the check finds a new SW, the registerSW reload above kicks in.
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          navigator.serviceWorker.getRegistration().then((reg) => reg?.update());
         }
-      },
-      onOfflineReady() {}
-    });
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      removeVisibilityListener = () =>
+        document.removeEventListener('visibilitychange', handleVisibility);
+    }
 
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
@@ -35,7 +48,10 @@
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      removeVisibilityListener?.();
+      sub.subscription.unsubscribe();
+    };
   });
 </script>
 
