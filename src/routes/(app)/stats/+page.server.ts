@@ -10,6 +10,7 @@ import {
   getAllTimeTotals,
   getAllTimeDetail
 } from '$lib/server/db/queries/stats';
+import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad, traceDbQuery } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
@@ -22,13 +23,18 @@ export const load: PageServerLoad = async (event) => {
 async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) {
   // The hook (injectSession) already validated the JWT via safeGetSession, so trust
   // locals.user instead of a second auth.getUser() round-trip.
-  const currentSeasonYear = await getCurrentSeasonYear();
+  const [currentSeasonYear, availableSeasons] = await Promise.all([
+    getCurrentSeasonYear(),
+    getAvailableSeasons(groupId)
+  ]);
 
-  const rawSeason = event.url.searchParams.get('season');
-  const seasonYear = rawSeason ? parseInt(rawSeason, 10) || currentSeasonYear : currentSeasonYear;
+  const seasonYear = resolveSeasonYear(
+    event.url.searchParams.get('season'),
+    availableSeasons,
+    currentSeasonYear
+  );
 
-  const [availableSeasons, allTimeTotals, stats, totals] = await Promise.all([
-    getAvailableSeasons(groupId),
+  const [allTimeTotals, stats, totals] = await Promise.all([
     getAllTimeTotals(groupId),
     getStatsForSeason(seasonYear, groupId),
     getSeasonLeaderboard(seasonYear, groupId)
