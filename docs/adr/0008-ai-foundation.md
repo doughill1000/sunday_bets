@@ -1,6 +1,6 @@
 # ADR-0008: AI integration foundation — gateway, deterministic-mechanic/AI-voice split, group-scoped outputs, and metered cost controls
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-27
 - Issue: #189
 - Supersedes: None
@@ -30,10 +30,10 @@ soon joined by the #277 lore read-models (#279/#280/#281, v2.5). A mature batch 
 and `cron_run_log`) and a usage-metering precedent (`recordUsage()` in
 `src/lib/server/odds.ts`) are already in place to host and bound the work.
 
-This ADR is the gate: AI feature-build issues (#284 onward) are **blocked until it is
-Accepted**. It stays **Proposed** until #189's throwaway staging spike returns a measured
-per-run cost and acceptable sample quality, which finalize the model choice, budget cap,
-and retention window left open below.
+This ADR is the gate: AI feature-build issues (#284 onward) were **blocked until it was
+Accepted**. The #189 spike has since run — measuring cost and validating output quality on
+real data — so the model, budget cap, and retention stance below are now settled and the
+ADR is **Accepted**.
 
 ## Decision
 
@@ -42,10 +42,11 @@ Introduce AI through a single governed entry point. Boundaries future work must 
 1. **Provider: Vercel AI Gateway, server-side only.** Models are addressed by plain
    `provider/model` strings (not provider-specific SDK packages), so the model can be
    swapped without code churn and we keep unified observability, model fallback, and
-   zero-data-retention defaults. Which model — and whether a separate fallback model is
-   used — is left entirely to #189's spike and recorded on acceptance; this foundation
-   commits only to the Gateway and the `provider/model`-string approach. No model key or
-   call ever reaches the client.
+   zero-data-retention defaults. The default model is **`openai/gpt-5.4`** (chosen via the
+   #189 spike — see Follow-up). A model failure or timeout degrades to deterministic copy
+   (boundary 6) rather than to a second model, so no separate model fallback is configured;
+   swapping models later is a one-string change. No model key or call ever reaches the
+   client.
 
 2. **Deterministic mechanic, AI voice only (the fairness boundary).** Every outcome — who
    won, who choked, who was contrarian, the head-to-head math, which badge changed hands —
@@ -63,8 +64,12 @@ Introduce AI through a single governed entry point. Boundaries future work must 
 
 4. **Consent and tone are first-class.** A per-group **spice** setting (e.g. mild | medium
    | spicy) and a per-player **"roast me?" opt-out** (default on; opted-out players are
-   narrated neutrally) gate generation. The exact spice→prompt mapping and the allowlist
-   contents are tuned against real output by #189's spike and recorded here on acceptance.
+   narrated neutrally) gate generation. **Spice defaults to `medium`** and is set per group
+   (e.g. the original group runs `spicy`). The three levels map to escalating prompt
+   direction — `mild` = light ribbing, `medium` = playful trash talk + hype, `spicy` = harder
+   roasts and bravado — always bounded by the allowlist (in-app gameplay facts only, no
+   real-world/off-topic material, no low blows). The #189 spike confirmed all three stay
+   on-topic and fact-faithful.
 
 5. **AI output is persisted in group-scoped tables.** Generated text lives in
    group-scoped tables (`ai_recaps` is the first) under the closed-by-default grant/RLS
@@ -77,17 +82,21 @@ Introduce AI through a single governed entry point. Boundaries future work must 
    metered via the existing `recordUsage()` pattern. Generation runs **once per group per
    graded week** (for the recap). A **per-group/week budget cap** is enforced; exceeding it
    — or any call failure/timeout — yields **deterministic fallback copy**, never an error,
-   so the weekly ritual never breaks. The cap value is set from the spike's measured
-   per-run cost (× groups × weeks) before acceptance.
+   so the weekly ritual never breaks. The #189 spike measured **~$0.006 per run** for
+   `openai/gpt-5.4` (~540 in / ~310 out tokens; ≈$0.11 per group per season at 18 graded
+   weeks). The per-group/week cap is set to **$0.05** — roughly 8× measured headroom for
+   larger rosters and prompt growth — beyond which a run yields the fallback copy.
 
 7. **AI runs in the batch/cron lane, not on request paths.** Generation is triggered after
    the weekly grading run, reusing `cron.ts`, `api/cron/*`, `cron-*.yml`, and `cron_run_log`.
    This foundation puts no AI call on a synchronous user-facing request path, keeping spend
    and latency predictable.
 
-8. **Data retention is minimized.** Zero-data-retention is used at the Gateway/provider
-   where available; persisted outputs live only in the group-scoped tables under normal
-   group data lifecycle. Exact retention specifics are confirmed alongside the spike.
+8. **Data retention is minimized.** The Gateway does **not** log prompt/completion content
+   by default, and we keep it that way; persisted outputs live only in the group-scoped
+   tables under normal group data lifecycle. Formal Zero-Data-Retention _routing_ is a
+   Pro/Enterprise feature — deferred unless/until the team upgrades; the no-content-logging
+   default is the baseline relied on now.
 
 AI features are **free to all players at launch**; paywalls and premium tiering are out of
 scope for this foundation and remain a separate future decision.
@@ -108,9 +117,10 @@ scope for this foundation and remain a separate future decision.
   flow + generated `src/lib/types/supabase.ts`, serialized per the DB rules — **deferred to
   the build issues** (#284 ff.), not done here. #189's spike is throwaway and touches
   neither the ledger nor shared paths.
-- **Status:** remains **Proposed** until #189's spike reports a measured per-run cost and
-  acceptable sample quality; those numbers finalize the model choice, budget cap, and
-  retention window. Build issues are blocked until this is Accepted.
+- **Status:** **Accepted** — the #189 spike measured cost (~$0.006/run on `openai/gpt-5.4`)
+  and confirmed fact-faithful, on-topic output across spice levels, settling the model,
+  budget cap, and retention stance above. AI feature-build issues (#284 onward) are now
+  unblocked.
 
 ## Alternatives considered
 
@@ -130,10 +140,11 @@ scope for this foundation and remain a separate future decision.
 
 ## Follow-up
 
-- **#189** — measured-cost spike on staging (recommended: weekly recap / Commissioner).
-  Finalizes model IDs, per-run cost, budget cap, spice/allowlist dial, and retention →
-  moves this ADR to **Accepted**. Requires Vercel AI Gateway access + a model key in the
-  staging env; spike code is discarded, not merged.
+- **#189** — spike **done** (2026-06-27): ran the real Week-18 packet through the Gateway,
+  chose **`openai/gpt-5.4`**, measured **~$0.006/run**, and verified the deterministic-facts
+  → AI-voice boundary holds (no hallucination across spice levels). One gap to carry into
+  #284: the facts packet needs an `is_final_week`/season-end flag so the model doesn't invent
+  a "playoffs / next week" sign-off. Spike code discarded (gitignored, not merged).
 - **#283** — AI League Commentator epic (player-facing build track), blocked until
   Accepted. **#284** — Wave 1 weekly recap MVP (v2.6): builds the `RecapFacts` builder, the
   Gateway voice call + metering, the `ai_recaps` table, the post-grading trigger, the
