@@ -19,11 +19,15 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
    PR without it) and commit it on the branch so it travels inside this PR (it then
    lands in `master` exactly when the code does — no separate write, no drift).
    Newest-first, under a `## YYYY-MM-DD` heading: `- **#NNN** <short title> — <what
-changed>` plus notable tables/views/routes and the governing ADR when useful. If the
-   PR closes no issue (chore/skill/CI/infra/docs), still add an entry, keyed by PR
-   number as `- **PR #NNN** …`. See the format note at the top of `docs/CHANGELOG.md`.
-   It's a shared file: if the top conflicts with another in-flight PR, keep both
-   entries.
+changed and why it matters>` plus notable tables/views/routes/files (as bare
+   pointers) and the governing ADR when useful. **Keep it a pointer, not a spec:** one
+   or two sentences — no function/variable names, config values (TTLs, thresholds),
+   enumerated test files, error codes, or step-by-step prod recaps; the PR, the code,
+   and the ADR hold that detail (a changelog that names a TTL or an internal symbol
+   lies the moment either changes). If the PR closes no issue (chore/skill/CI/infra/docs),
+   still add an entry, keyed by PR number as `- **PR #NNN** …`. See the format note at
+   the top of `docs/CHANGELOG.md`. It's a shared file: if the top conflicts with another
+   in-flight PR, keep both entries.
 4. **Carry version intent (ADR-0015).** Confirm the closed issue has a `semver:` label
    and a target milestone (set by `issue-author`); inherit both onto the PR. For an
    issue-less PR (chore/skill/CI/infra/docs), apply `semver:patch` and attach the active
