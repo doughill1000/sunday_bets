@@ -77,6 +77,7 @@ describe('snapshotBadges', () => {
         label: 'The Degenerate',
         emoji: '🎰',
         flavor: 'Bets everything',
+        description: 'Placed the most picks this season.',
         kind: 'title',
         holders: [{ user_id: 'u1', display_name: 'Alice' }]
       },
@@ -85,6 +86,7 @@ describe('snapshotBadges', () => {
         label: 'Perfect Week',
         emoji: '🔥',
         flavor: 'Went perfect',
+        description: 'Had a perfect week.',
         kind: 'milestone',
         holders: [
           { user_id: 'u2', display_name: 'Bob' },
@@ -114,6 +116,7 @@ describe('diffBadges', () => {
     label,
     emoji: '🏆',
     flavor: '',
+    description: '',
     kind: 'title',
     holders: holders.map((uid) => ({ user_id: uid, display_name: uid }))
   });

@@ -220,6 +220,7 @@
   <LeagueHonors
     honors={data.honors}
     badges={data.badges}
+    members={data.members}
     currentUserId={data.currentUserId}
     seasons={data.availableSeasons}
     selectedSeason={data.badgeSeasonYear}

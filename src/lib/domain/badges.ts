@@ -1,4 +1,10 @@
-import type { BadgeAward, BadgeHolder, BadgeId } from '$lib/types/honors';
+import type {
+  BadgeAward,
+  BadgeGlossaryEntry,
+  BadgeHolder,
+  BadgeId,
+  BadgeKind
+} from '$lib/types/honors';
 import type { ConsensusStatsEntry, SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
@@ -389,70 +395,110 @@ function perfectWeek(trend: BadgeTrendEntry[]): BadgeHolder[] {
 
 // --- Hardcoded flavor slots (AI layer #189 overrides these later) ---
 
-const FLAVORS: Record<BadgeId, { label: string; emoji: string; flavor: string }> = {
+const FLAVORS: Record<
+  BadgeId,
+  { label: string; emoji: string; flavor: string; description: string }
+> = {
   'the-degenerate': {
     label: 'The Degenerate',
     emoji: '🎰',
-    flavor: "Can't miss a game. Every slate, every week."
+    flavor: "Can't miss a game. Every slate, every week.",
+    description: 'Placed the most picks this season.'
   },
   'mr-calculated': {
     label: 'Mr. Calculated',
     emoji: '🧮',
-    flavor: 'Ice in the veins, spreadsheets in the soul.'
+    flavor: 'Ice in the veins, spreadsheets in the soul.',
+    description: 'Best win rate this season (minimum number of picks required).'
   },
   'the-choker': {
     label: 'The Choker',
     emoji: '😬',
-    flavor: 'Went all in… and all in went wrong.'
+    flavor: 'Went all in… and all in went wrong.',
+    description: 'Worst win rate on All-In picks this season.'
   },
   'the-ghost': {
     label: 'The Ghost',
     emoji: '👻',
-    flavor: 'Showed up for the group chat. Not the picks.'
+    flavor: 'Showed up for the group chat. Not the picks.',
+    description: 'Missed the most picks this season.'
   },
   'the-nemesis': {
     label: 'The Nemesis',
     emoji: '⚔️',
-    flavor: 'Nobody wants to be on the other side of this matchup.'
+    flavor: 'Nobody wants to be on the other side of this matchup.',
+    description: 'Best overall head-to-head record against the league this season.'
   },
   'the-homer': {
     label: 'The Homer',
     emoji: '🏠',
-    flavor: 'Picks on vibes and team colors.'
+    flavor: 'Picks on vibes and team colors.',
+    description: 'Biggest share of picks on a single team (minimum number of picks required).'
   },
   'big-game-hunter': {
     label: 'Big Game Hunter',
     emoji: '🎯',
-    flavor: 'Went all in — and cashed.'
+    flavor: 'Went all in — and cashed.',
+    description: 'Won 3 or more All-In picks this season.'
   },
   'perfect-week': {
     label: 'Perfect Week',
     emoji: '✨',
-    flavor: 'Not a single wrong pick all week.'
+    flavor: 'Not a single wrong pick all week.',
+    description: 'Had at least one week with every pick correct and none missed.'
   },
   // Tier-B consensus badges (#294)
   contrarian: {
     label: 'The Contrarian',
     emoji: '🦅',
-    flavor: 'Always bucks the crowd. Sometimes right, never boring.'
+    flavor: 'Always bucks the crowd. Sometimes right, never boring.',
+    description: "Most often picks against the group's consensus (minimum picks required)."
   },
   sheep: {
     label: 'The Sheep',
     emoji: '🐑',
-    flavor: 'Goes where the group goes. Safety in numbers.'
+    flavor: 'Goes where the group goes. Safety in numbers.',
+    description: "Most often picks with the group's consensus (minimum picks required)."
   },
   oracle: {
     label: 'The Oracle',
     emoji: '🔮',
-    flavor: 'Bucks the crowd and wins. Madness or genius?'
+    flavor: 'Bucks the crowd and wins. Madness or genius?',
+    description: 'Best win rate on picks made against the majority (minimum picks required).'
   }
 };
+
+/**
+ * Ordered glossary of every possible award for the "Awards guide" modal — titles
+ * (one holder per season) first, then milestones (anyone who clears the bar). Order
+ * mirrors `computeBadges`. Derived from the same `FLAVORS` slots the engine awards from,
+ * so copy stays single-sourced.
+ */
+const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
+  { id: 'the-degenerate', kind: 'title' },
+  { id: 'mr-calculated', kind: 'title' },
+  { id: 'the-choker', kind: 'title' },
+  { id: 'the-ghost', kind: 'title' },
+  { id: 'the-nemesis', kind: 'title' },
+  { id: 'the-homer', kind: 'title' },
+  { id: 'contrarian', kind: 'title' },
+  { id: 'sheep', kind: 'title' },
+  { id: 'oracle', kind: 'title' },
+  { id: 'big-game-hunter', kind: 'milestone' },
+  { id: 'perfect-week', kind: 'milestone' }
+];
+
+export const BADGE_GLOSSARY: BadgeGlossaryEntry[] = GLOSSARY_ORDER.map(({ id, kind }) => ({
+  id,
+  kind,
+  ...FLAVORS[id]
+}));
 
 function award(id: BadgeId, kind: 'title', holders: [BadgeHolder]): BadgeAward;
 function award(id: BadgeId, kind: 'milestone', holders: BadgeHolder[]): BadgeAward;
 function award(id: BadgeId, kind: BadgeAward['kind'], holders: BadgeHolder[]): BadgeAward {
-  const { label, emoji, flavor } = FLAVORS[id];
-  return { id, label, emoji, flavor, kind, holders };
+  const { label, emoji, flavor, description } = FLAVORS[id];
+  return { id, label, emoji, flavor, description, kind, holders };
 }
 
 /**
