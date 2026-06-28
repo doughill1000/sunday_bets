@@ -1,14 +1,16 @@
 -- 028_league_completed_standings.sql
 -- pgTAP tests for public.league_completed_standings (issue #279, ADR-0013).
 -- The view is a plain select over leaderboard_season_totals restricted to seasons
--- whose every scoreable (non-postponed/cancelled) game has status = 'final'.
+-- whose every scoreable (non-postponed/cancelled) game has a recorded final score
+-- (final_scores populated) — mirroring advance_week_if_complete rather than trusting
+-- the games.status string, so a fully-graded season is not hidden by a stale status.
 -- Readable by service_role only; anon and authenticated are revoked.
 --
--- owns season years 2096, 2097
+-- owns season years 2095, 2096, 2097
 
 BEGIN;
 
-SELECT plan(10);
+SELECT plan(11);
 
 -- ── Structural / grant assertions (no data refresh needed) ────────────────────
 
@@ -198,6 +200,81 @@ ON CONFLICT (group_id, user_id, game_id) DO UPDATE
       outcome      = EXCLUDED.outcome,
       graded_at    = EXCLUDED.graded_at;
 
+-- ── Regression seed: a fully-graded season whose status never advanced ─────────
+-- Season 2095 = completed-by-final_scores: its only scoring game still reads
+-- status='scheduled' (e.g. an imported/backfilled season, or a status sync that
+-- stopped) but carries final_scores + a settled pick. The view must treat it as
+-- complete via final_scores, not the stale status. Reuses group A + alice.
+INSERT INTO public.seasons (league, year) VALUES ('NFL', 2095)
+ON CONFLICT (league, year) DO NOTHING;
+
+INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts)
+VALUES (
+  (SELECT id FROM public.seasons WHERE league = 'NFL' AND year = 2095),
+  1,
+  '2095-09-06 00:00:00+00',
+  '2095-09-13 00:00:00+00'
+)
+ON CONFLICT (season_id, week_number) DO NOTHING;
+
+-- final_scores present but status deliberately left 'scheduled'.
+INSERT INTO public.games (
+  week_id, external_game_id, commence_time,
+  home_team_id, away_team_id, status, final_scores
+)
+SELECT
+  w.id,
+  'lcs-028-2095-g1',
+  '2095-09-09 18:00:00+00',
+  home.id,
+  away.id,
+  'scheduled',
+  '{"home": 21, "away": 17}'::jsonb
+FROM public.weeks w
+JOIN public.teams home ON home.external_key = 'LCS_HOME'
+JOIN public.teams away ON away.external_key = 'LCS_AWAY'
+WHERE w.season_id = (SELECT id FROM public.seasons WHERE league = 'NFL' AND year = 2095)
+  AND w.week_number = 1
+ON CONFLICT (external_game_id) DO NOTHING;
+
+-- alice (group A) picks home and wins; gives season 2095 a leaderboard row.
+INSERT INTO public.picks (
+  group_id, user_id, game_id, picked_team_id,
+  weight, locked_at, locked_spread_team_id, locked_spread_value, locked_by
+)
+SELECT
+  '00000000-0000-4000-8000-0000000028a1'::uuid,
+  tests.get_supabase_uid('lcs_alice'),
+  g.id,
+  home.id,
+  'M'::public.weight_enum,
+  g.commence_time - interval '1 hour',
+  home.id,
+  7.0,
+  tests.get_supabase_uid('lcs_alice')
+FROM public.games g
+JOIN public.teams home ON home.external_key = 'LCS_HOME'
+WHERE g.external_game_id = 'lcs-028-2095-g1'
+ON CONFLICT (group_id, user_id, game_id) DO NOTHING;
+
+INSERT INTO public.pick_settlement (
+  group_id, user_id, game_id, pick_id, points_delta, outcome, graded_at
+)
+SELECT
+  p.group_id,
+  p.user_id,
+  p.game_id,
+  p.id,
+  3,
+  'win'::public.pick_outcome,
+  '2095-09-09 22:00:00+00'
+FROM public.picks p
+WHERE p.game_id = (SELECT id FROM public.games WHERE external_game_id = 'lcs-028-2095-g1')
+ON CONFLICT (group_id, user_id, game_id) DO UPDATE
+  SET points_delta = EXCLUDED.points_delta,
+      outcome      = EXCLUDED.outcome,
+      graded_at    = EXCLUDED.graded_at;
+
 -- Matviews are refreshed only at the end of a grading run (#191): refresh so the
 -- settlements above are visible to the assertions below.
 SELECT public.refresh_leaderboard_stats();
@@ -278,6 +355,22 @@ SELECT results_eq(
   $$,
   $$ VALUES (1) $$,
   'league_completed_standings: group B member carol present under group B for 2097'
+);
+
+-- 11. Regression (this fix): season 2095 is graded via final_scores while its game
+--     still reads status='scheduled'. It must be treated as completed and surface
+--     alice (group A) as its champion — proving completion keys off final_scores,
+--     not the stale status string.
+SELECT is(
+  (
+    SELECT user_id
+    FROM public.league_completed_standings
+    WHERE season_year = 2095
+      AND group_id = '00000000-0000-4000-8000-0000000028a1'
+      AND rank = 1
+  ),
+  tests.get_supabase_uid('lcs_alice'),
+  'league_completed_standings: season graded via final_scores (status still scheduled) is completed; alice is champion'
 );
 
 SELECT * FROM finish();
