@@ -19,15 +19,27 @@
   const groupId = $derived(data.groupId ?? null);
 
   onMount(() => {
-    const updateSW = registerSW({
-      immediate: true,
-      onNeedRefresh() {
-        if (confirm('Update available. Refresh now?')) {
-          updateSW(true);
+    // autoUpdate strategy: SW installs silently. onNeedRefresh never fires.
+    // We instead listen for controllerchange (new SW took over) and reload.
+    registerSW({ immediate: true, onOfflineReady() {} });
+
+    let removeVisibilityListener: (() => void) | undefined;
+    if ('serviceWorker' in navigator) {
+      // Force an update check whenever the user returns to the app —
+      // iOS only checks on navigation and throttles to ~24h otherwise.
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible') {
+          navigator.serviceWorker.getRegistration().then((reg) => reg?.update());
         }
-      },
-      onOfflineReady() {}
-    });
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      removeVisibilityListener = () => document.removeEventListener('visibilitychange', handleVisibility);
+
+      // When a new SW takes over, reload so the user gets the latest assets.
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
 
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
@@ -35,7 +47,10 @@
       }
     });
 
-    return () => sub.subscription.unsubscribe();
+    return () => {
+      removeVisibilityListener?.();
+      sub.subscription.unsubscribe();
+    };
   });
 </script>
 
