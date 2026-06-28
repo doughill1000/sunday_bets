@@ -1,5 +1,5 @@
 import type { BadgeAward, BadgeHolder, BadgeId } from '$lib/types/honors';
-import type { SeasonStats } from '$lib/types/server/stats';
+import type { ConsensusStatsEntry, SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // Input types shaped from matview rows; all required fields already non-null.
@@ -51,12 +51,28 @@ export type BadgeTrendEntry = {
   week_missed: number;
 };
 
+// Tier-B consensus input (per-user aggregate from group_pick_consensus matview, #294).
+export type BadgeConsensusEntry = {
+  user_id: string;
+  display_name: string;
+  /** Total non-missed picks in scoring rounds. */
+  decisions: number;
+  /** Average consensus_pct across picks (0–100). */
+  mean_consensus_pct: number;
+  /** Picks where the user was in the minority (consensus_pct < 50). */
+  contrarian_picks: number;
+  /** Minority picks that graded as wins. */
+  contrarian_wins: number;
+};
+
 export type BadgeInputs = {
   seasonTotals: BadgeSeasonTotalsEntry[];
   weightAccuracy: BadgeWeightEntry[];
   headToHead: BadgeH2HEntry[];
   teamAccuracy: BadgeTeamEntry[];
   trend: BadgeTrendEntry[];
+  /** Per-user consensus aggregates for Tier-B badges (#294). */
+  consensus: BadgeConsensusEntry[];
 };
 
 /**
@@ -112,7 +128,17 @@ export function badgeInputsFromSeasonStats(
       week_wins: r.week_wins,
       week_losses: r.week_losses,
       week_missed: r.week_missed
-    }))
+    })),
+    consensus: season.consensusStats.map(
+      (c: ConsensusStatsEntry): BadgeConsensusEntry => ({
+        user_id: c.user_id,
+        display_name: c.display_name,
+        decisions: c.decisions,
+        mean_consensus_pct: c.mean_consensus_pct,
+        contrarian_picks: c.contrarian_picks,
+        contrarian_wins: c.contrarian_wins
+      })
+    )
   };
 }
 
@@ -128,6 +154,16 @@ const BIG_GAME_WIN_THRESHOLD = 3;
 export function computeSampleGuard(totals: BadgeSeasonTotalsEntry[]): number {
   if (totals.length === 0) return MIN_SAMPLE_DECISIONS;
   const avg = totals.reduce((s, t) => s + t.decisions, 0) / totals.length;
+  return Math.max(MIN_SAMPLE_DECISIONS, Math.round(avg * SAMPLE_FRACTION));
+}
+
+/**
+ * Season-scaled minimum contrarian picks for Oracle eligibility.
+ * Scales with average contrarian-pick count across the league.
+ */
+export function computeOracleGuard(consensus: BadgeConsensusEntry[]): number {
+  if (consensus.length === 0) return MIN_SAMPLE_DECISIONS;
+  const avg = consensus.reduce((s, c) => s + c.contrarian_picks, 0) / consensus.length;
   return Math.max(MIN_SAMPLE_DECISIONS, Math.round(avg * SAMPLE_FRACTION));
 }
 
@@ -268,6 +304,70 @@ function theHomer(
   );
 }
 
+// --- Tier-B consensus badge helpers (#294) ---
+
+/**
+ * Contrarian: most consistently picks against consensus (lowest mean consensus_pct).
+ * Requires `guard` decisions to be eligible (same season-scaled guard as Tier-A).
+ */
+function contrarian(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
+  const eligible = consensus.filter((c) => c.decisions >= guard);
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((best, curr) => {
+      if (curr.mean_consensus_pct < best.mean_consensus_pct) return curr;
+      if (curr.mean_consensus_pct === best.mean_consensus_pct) {
+        if (curr.decisions > best.decisions) return curr;
+        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      }
+      return best;
+    })
+  );
+}
+
+/**
+ * Sheep: most consistently picks with the crowd (highest mean consensus_pct).
+ * Requires `guard` decisions to be eligible.
+ */
+function sheep(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
+  const eligible = consensus.filter((c) => c.decisions >= guard);
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((best, curr) => {
+      if (curr.mean_consensus_pct > best.mean_consensus_pct) return curr;
+      if (curr.mean_consensus_pct === best.mean_consensus_pct) {
+        if (curr.decisions > best.decisions) return curr;
+        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      }
+      return best;
+    })
+  );
+}
+
+/**
+ * Oracle: best contrarian-pick win rate above a season-scaled minimum sample.
+ * Only picks made against the majority (is_minority = true) count toward the rate.
+ * Does not award when no player reaches the oracle guard on contrarian picks.
+ */
+function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
+  const eligible = consensus.filter(
+    (c) => c.contrarian_picks >= oracleGuard && c.contrarian_picks > 0
+  );
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((best, curr) => {
+      const currRate = curr.contrarian_wins / curr.contrarian_picks;
+      const bestRate = best.contrarian_wins / best.contrarian_picks;
+      if (currRate > bestRate) return curr;
+      if (currRate === bestRate) {
+        if (curr.contrarian_picks > best.contrarian_picks) return curr;
+        if (curr.contrarian_picks === best.contrarian_picks) return alphaFirst(curr, best);
+      }
+      return best;
+    })
+  );
+}
+
 // --- Milestone badge helpers (threshold: zero or more holders) ---
 
 function bigGameHunter(weights: BadgeWeightEntry[]): BadgeHolder[] {
@@ -329,6 +429,22 @@ const FLAVORS: Record<BadgeId, { label: string; emoji: string; flavor: string }>
     label: 'Perfect Week',
     emoji: '✨',
     flavor: 'Not a single wrong pick all week.'
+  },
+  // Tier-B consensus badges (#294)
+  contrarian: {
+    label: 'The Contrarian',
+    emoji: '🦅',
+    flavor: 'Always bucks the crowd. Sometimes right, never boring.'
+  },
+  sheep: {
+    label: 'The Sheep',
+    emoji: '🐑',
+    flavor: 'Goes where the group goes. Safety in numbers.'
+  },
+  oracle: {
+    label: 'The Oracle',
+    emoji: '🔮',
+    flavor: 'Bucks the crowd and wins. Madness or genius?'
   }
 };
 
@@ -345,10 +461,11 @@ function award(id: BadgeId, kind: BadgeAward['kind'], holders: BadgeHolder[]): B
  * are omitted). Deterministic: stable tie-breaks and no side effects.
  */
 export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
-  const { seasonTotals, weightAccuracy, headToHead, teamAccuracy, trend } = inputs;
+  const { seasonTotals, weightAccuracy, headToHead, teamAccuracy, trend, consensus } = inputs;
   const guard = computeSampleGuard(seasonTotals);
   const badges: BadgeAward[] = [];
 
+  // Tier-A: superlative titles
   const degen = theDegenerate(seasonTotals);
   if (degen) badges.push(award('the-degenerate', 'title', [degen]));
 
@@ -367,11 +484,26 @@ export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
   const homer = theHomer(teamAccuracy, seasonTotals, guard);
   if (homer) badges.push(award('the-homer', 'title', [homer]));
 
+  // Tier-A: milestone badges
   const hunters = bigGameHunter(weightAccuracy);
   if (hunters.length > 0) badges.push(award('big-game-hunter', 'milestone', hunters));
 
   const perfecters = perfectWeek(trend);
   if (perfecters.length > 0) badges.push(award('perfect-week', 'milestone', perfecters));
+
+  // Tier-B: consensus titles (#294)
+  if (consensus.length > 0) {
+    const oracleGuard = computeOracleGuard(consensus);
+
+    const cont = contrarian(consensus, guard);
+    if (cont) badges.push(award('contrarian', 'title', [cont]));
+
+    const sheepHolder = sheep(consensus, guard);
+    if (sheepHolder) badges.push(award('sheep', 'title', [sheepHolder]));
+
+    const oracleHolder = oracle(consensus, oracleGuard);
+    if (oracleHolder) badges.push(award('oracle', 'title', [oracleHolder]));
+  }
 
   return badges;
 }
