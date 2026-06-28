@@ -7,6 +7,7 @@ import {
 } from '$lib/server/db/queries/leaderboard';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
+import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
@@ -26,8 +27,11 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
     getAvailableSeasons(groupId)
   ]);
 
-  const rawSeason = event.url.searchParams.get('season');
-  const seasonYear = rawSeason ? parseInt(rawSeason, 10) || currentSeasonYear : currentSeasonYear;
+  const seasonYear = resolveSeasonYear(
+    event.url.searchParams.get('season'),
+    availableSeasons,
+    currentSeasonYear
+  );
 
   const [{ data: auth }, page, champion] = await Promise.all([
     event.locals.supabase.auth.getUser(),
