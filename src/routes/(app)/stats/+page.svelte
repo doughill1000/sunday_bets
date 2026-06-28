@@ -2,7 +2,6 @@
   import { goto } from '$app/navigation';
   import type { PageData } from './$types';
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
-  import LeagueHonors from '$lib/components/stats/LeagueHonors.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import { Badge } from '$lib/components/ui/badge';
@@ -223,8 +222,6 @@
       <p class="mt-1 text-muted-foreground">How you've performed against the spread.</p>
     </div>
   </div>
-
-  <LeagueHonors honors={data.honors} badges={data.badges} currentUserId={data.currentUserId} />
 
   {#if data.allTimeTotals.length === 0}
     <Card class="border-dashed">

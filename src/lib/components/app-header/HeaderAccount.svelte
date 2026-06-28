@@ -66,9 +66,6 @@
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
       <DropdownMenuItem>
-        <a href="/group" class="block w-full">Group</a>
-      </DropdownMenuItem>
-      <DropdownMenuItem>
         <a href="/settings" class="block w-full">Settings</a>
       </DropdownMenuItem>
       <DropdownMenuItem data-testid="nav-how-to-play">
