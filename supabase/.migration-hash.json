@@ -669,5 +669,10 @@
     "hash": "fd4cd66ff103577284e4f0fd564d6cdd209904687d4d55a583f340b661bff5b0",
     "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
     "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+  },
+  "views/league_completed_standings.sql": {
+    "hash": "59db9f0250aba0a7d5edfb19c76f52d5aa3579e7385258c95bce930c9007d864",
+    "migration": "20260628030106_league_completed_standings.sql",
+    "migrationHash": "3e703f8764bb6e6f1dc829316527ee4c3790d3a6482e8b912fe865d5889edeed"
   }
 }

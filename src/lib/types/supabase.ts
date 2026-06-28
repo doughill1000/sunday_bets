@@ -1008,6 +1008,31 @@ export type Database = {
           }
         ];
       };
+      league_completed_standings: {
+        Row: {
+          avatar_key: string | null;
+          decisions: number | null;
+          display_name: string | null;
+          group_id: string | null;
+          losses: number | null;
+          missed: number | null;
+          pushes: number | null;
+          rank: number | null;
+          season_year: number | null;
+          total_points: number | null;
+          user_id: string | null;
+          wins: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       picks_group_view: {
         Row: {
           avatar_key: string | null;

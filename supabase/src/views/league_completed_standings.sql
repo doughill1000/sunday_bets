@@ -1,0 +1,29 @@
+-- League honors read-model (#279, ADR-0013): a plain view over the
+-- leaderboard_season_totals matview, filtered to seasons whose scoring-week games have
+-- all finished. Reads the already-materialized standings (no refresh of its own). Source
+-- for the reigning champion (rank 1 of the most-recently-completed season), the trophy
+-- case (rank 1 of every completed season), and the wooden spoon (max rank of the
+-- most-recently-completed season).
+create or replace view public.league_completed_standings as
+with completed_seasons as (
+  -- "Completed" = every scoreable (non-postponed/cancelled) game in the season's scoring
+  -- weeks is final. Mirrors advance_week_if_complete; postponed/cancelled are excluded so
+  -- one unplayable game never blocks completion. Keyed by year to match
+  -- leaderboard_season_totals.season_year (NFL-only league today).
+  select s.year as season_year
+  from public.seasons s
+  join public.weeks w on w.season_id = s.id and w.is_scoring
+  join public.games g on g.week_id = w.id
+  where g.status not in ('postponed', 'cancelled')
+  group by s.year
+  having count(*) > 0
+     and count(*) filter (where g.status <> 'final') = 0
+)
+select t.*
+from public.leaderboard_season_totals t
+join completed_seasons cs on cs.season_year = t.season_year;
+
+-- Reads a service_role-only matview; the SvelteKit server fetches via the service key and
+-- filters by group_id (views/matviews carry no RLS). Match the matview's grant.
+revoke all on public.league_completed_standings from public, anon, authenticated;
+grant select on public.league_completed_standings to service_role;

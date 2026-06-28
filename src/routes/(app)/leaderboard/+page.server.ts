@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getCurrentSeasonYear, getSeasonLeaderboardPage } from '$lib/server/db/queries/leaderboard';
+import { getReigningChampion } from '$lib/server/db/queries/honors';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { tracePageLoad } from '$lib/server/observability';
 
@@ -18,12 +19,14 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
 
   const seasonYear = await getCurrentSeasonYear();
 
-  const [{ data: auth }, page] = await Promise.all([
+  const [{ data: auth }, page, champion] = await Promise.all([
     event.locals.supabase.auth.getUser(),
-    getSeasonLeaderboardPage(seasonYear, groupId, { cursor })
+    getSeasonLeaderboardPage(seasonYear, groupId, { cursor }),
+    getReigningChampion(groupId)
   ]);
 
   const currentUserId = auth?.user?.id ?? null;
+  const championUserId = champion?.user_id ?? null;
   const totals = page.entries;
   const totalsCursor = page.nextCursor;
 
@@ -33,6 +36,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
       totals,
       totalsCursor,
       currentUserId,
+      championUserId,
       view: 'standings' as const,
       weeks: null,
       selectedWeek: null,
@@ -56,6 +60,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
     totals,
     totalsCursor,
     currentUserId,
+    championUserId,
     view: 'weekly' as const,
     weeks,
     selectedWeek: selectedWeek ?? null,
