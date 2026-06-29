@@ -168,7 +168,7 @@
             Trophy case
           </p>
           <ul class="flex flex-wrap gap-2">
-            {#each trophyCase as champ (champ.season_year)}
+            {#each trophyCase as champ (`${champ.season_year}-${champ.user_id}`)}
               <li
                 class="flex items-center gap-2 rounded-full border bg-muted/40 py-1 pr-3 pl-1 text-sm"
               >
