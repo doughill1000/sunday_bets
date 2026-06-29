@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(25);
 
 select has_materialized_view('public', 'stats_head_to_head', 'stats_head_to_head exists');
 select has_materialized_view('public', 'stats_head_to_head_alltime', 'stats_head_to_head_alltime exists');
@@ -46,7 +46,7 @@ values
 on conflict (group_id, user_id) do nothing;
 
 insert into public.seasons (league, year)
-values ('NFL', 2040), ('NFL', 2042)
+values ('NFL', 2040), ('NFL', 2042), ('NFL', 2044)
 on conflict (league, year) do nothing;
 
 insert into public.weeks (season_id, week_number, start_ts, end_ts)
@@ -67,16 +67,27 @@ values (
 )
 on conflict (season_id, week_number) do nothing;
 
+insert into public.weeks (season_id, week_number, start_ts, end_ts)
+values (
+  (select id from public.seasons where league = 'NFL' and year = 2044),
+  1,
+  '2044-09-01 00:00:00+00',
+  '2044-09-08 00:00:00+00'
+)
+on conflict (season_id, week_number) do nothing;
+
 -- Three teams so the three games can each be a distinct matchup. The
 -- uq_games_matchup constraint forbids duplicate (week, home, away) rows.
 -- stats_a's picks (STATS_A / STATS_B) are what the team-accuracy assertions
 -- pin, so every game stats_a picks in still contains the team it picks;
--- stats_b's picked team is never asserted, so STATS_C stands in where needed.
+-- stats_b's picked team is never asserted, so STATS_C/STATS_D stand in where needed.
+-- STATS_D is used in the 2044 agreement/opposite fixture for the opposite-picks filter test.
 insert into public.teams (external_key, name, short_name)
 values
   ('STATS_A', 'Stats Team A', 'STA'),
   ('STATS_B', 'Stats Team B', 'STB'),
-  ('STATS_C', 'Stats Team C', 'STC')
+  ('STATS_C', 'Stats Team C', 'STC'),
+  ('STATS_D', 'Stats Team D', 'STD')
 on conflict (external_key) do nothing;
 
 insert into public.games (
@@ -129,6 +140,36 @@ where w.season_id = (select id from public.seasons where league = 'NFL' and year
   and w.week_number = 1
 on conflict (external_game_id) do nothing;
 
+-- 2044: two games to test the opposite-picks filter.
+-- game-5: agreement game — both players pick the same team (STATS_D home) → must be excluded.
+-- game-6: opposite game — stats_a picks STATS_B (home), stats_b picks STATS_D (away) → included.
+insert into public.games (
+  week_id,
+  external_game_id,
+  commence_time,
+  home_team_id,
+  away_team_id,
+  status
+)
+select
+  w.id,
+  game.external_game_id,
+  game.commence_time,
+  home.id,
+  away.id,
+  'final'
+from public.weeks w
+cross join (
+  values
+    ('stats-game-5', '2044-09-01 17:00:00+00'::timestamptz, 'STATS_D', 'STATS_C'),
+    ('stats-game-6', '2044-09-01 20:00:00+00'::timestamptz, 'STATS_B', 'STATS_D')
+) game(external_game_id, commence_time, home_key, away_key)
+join public.teams home on home.external_key = game.home_key
+join public.teams away on away.external_key = game.away_key
+where w.season_id = (select id from public.seasons where league = 'NFL' and year = 2044)
+  and w.week_number = 1
+on conflict (external_game_id) do nothing;
+
 insert into public.picks (
   group_id,
   user_id,
@@ -156,10 +197,15 @@ from (
     ('stats_a', 'stats-game-2', 'STATS_B', 'A'),
     ('stats_a', 'stats-game-3', 'STATS_A', 'M'),
     ('stats_a', 'stats-game-4', 'STATS_A', 'H'),
+    -- 2044: game-5 agreement (both pick STATS_D), game-6 opposite (stats_a STATS_B, stats_b STATS_D)
+    ('stats_a', 'stats-game-5', 'STATS_D', 'L'),
+    ('stats_a', 'stats-game-6', 'STATS_B', 'L'),
     ('stats_b', 'stats-game-1', 'STATS_B', 'M'),
     ('stats_b', 'stats-game-2', 'STATS_C', 'H'),
     ('stats_b', 'stats-game-3', 'STATS_C', 'A'),
-    ('stats_b', 'stats-game-4', 'STATS_B', 'M')
+    ('stats_b', 'stats-game-4', 'STATS_B', 'M'),
+    ('stats_b', 'stats-game-5', 'STATS_D', 'M'),
+    ('stats_b', 'stats-game-6', 'STATS_D', 'L')
 ) pick(user_name, external_game_id, team_key, weight)
 join lateral (
   select tests.get_supabase_uid(pick.user_name) as user_id
@@ -193,10 +239,15 @@ join lateral (
     (tests.get_supabase_uid('stats_a'), 'stats-game-2', -10, 'loss'),
     (tests.get_supabase_uid('stats_a'), 'stats-game-3', 0, 'push'),
     (tests.get_supabase_uid('stats_a'), 'stats-game-4', 5, 'win'),
+    -- 2044 fixtures: game-5 agreement, game-6 opposite (stats_b wins game-6)
+    (tests.get_supabase_uid('stats_a'), 'stats-game-5', 2, 'win'),
+    (tests.get_supabase_uid('stats_a'), 'stats-game-6', -2, 'loss'),
     (tests.get_supabase_uid('stats_b'), 'stats-game-1', -3, 'loss'),
     (tests.get_supabase_uid('stats_b'), 'stats-game-2', 5, 'win'),
     (tests.get_supabase_uid('stats_b'), 'stats-game-3', 0, 'push'),
-    (tests.get_supabase_uid('stats_b'), 'stats-game-4', -3, 'loss')
+    (tests.get_supabase_uid('stats_b'), 'stats-game-4', -3, 'loss'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-5', 3, 'win'),
+    (tests.get_supabase_uid('stats_b'), 'stats-game-6', 2, 'win')
 ) result(user_id, external_game_id, points_delta, outcome)
   on result.user_id = p.user_id
  and result.external_game_id = g.external_game_id
@@ -240,8 +291,26 @@ select results_eq(
     from public.stats_head_to_head_alltime
     where group_id = '00000000-0000-4000-8000-000000000007'
   $$,
-  $$ values (4, 2, 1, 1, -4, -1) $$,
-  'alltime head-to-head aggregates shared-game weighted results across seasons'
+  $$ values (5, 2, 2, 1, -6, 1) $$,
+  'alltime head-to-head counts only opposite-pick games across all seasons'
+);
+
+-- Agreement game (game-5, 2044) must be excluded; only the opposite game (game-6) counts.
+select results_eq(
+  $$
+    select
+      games_compared,
+      case when user_id = tests.get_supabase_uid('stats_a') then wins else losses end,
+      case when user_id = tests.get_supabase_uid('stats_a') then losses else wins end,
+      pushes,
+      case when user_id = tests.get_supabase_uid('stats_a') then points else opponent_points end,
+      case when user_id = tests.get_supabase_uid('stats_a') then opponent_points else points end
+    from public.stats_head_to_head
+    where season_year = 2044
+      and group_id = '00000000-0000-4000-8000-000000000007'
+  $$,
+  $$ values (1, 0, 1, 0, -2, 2) $$,
+  'head-to-head excludes agreement games; only opposite-pick games count'
 );
 
 select results_eq(
@@ -303,7 +372,7 @@ select results_eq(
     where user_id = tests.get_supabase_uid('stats_a')
       and group_id = '00000000-0000-4000-8000-000000000007'
   $$,
-  $$ values (-4, 4, 2, 1, 1) $$,
+  $$ values (-4, 6, 3, 2, 1) $$,
   'alltime totals aggregate across all seasons'
 );
 

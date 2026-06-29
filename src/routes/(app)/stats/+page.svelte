@@ -421,7 +421,8 @@
                     Head to head
                   </h2>
                   <p class="text-sm text-muted-foreground">
-                    {possessive} weighted results against each player on games you both shared this season.
+                    {possessive} weighted results against each player on games where you picked opposite
+                    sides this season.
                   </p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -432,7 +433,8 @@
                           {subjectLabel} <span class="text-muted-foreground">vs</span>
                           {row.opponentDisplayName}
                         </CardTitle>
-                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                        <CardDescription>{row.gamesCompared} games you disagreed on</CardDescription
+                        >
                       </CardHeader>
                       <CardContent class="flex items-end justify-between px-4">
                         <div>
@@ -572,7 +574,8 @@
                     Head to head
                   </h2>
                   <p class="text-sm text-muted-foreground">
-                    {possessive} weighted results against each player on games you both shared, all-time.
+                    {possessive} weighted results against each player on games where you picked opposite
+                    sides, all-time.
                   </p>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -583,7 +586,8 @@
                           {subjectLabel} <span class="text-muted-foreground">vs</span>
                           {row.opponentDisplayName}
                         </CardTitle>
-                        <CardDescription>{row.gamesCompared} games compared</CardDescription>
+                        <CardDescription>{row.gamesCompared} games you disagreed on</CardDescription
+                        >
                       </CardHeader>
                       <CardContent class="flex items-end justify-between px-4">
                         <div>

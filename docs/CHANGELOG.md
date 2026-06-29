@@ -48,6 +48,8 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-29
 
+- **PR #315** Redefine head-to-head as opposite-picks only — `stats_head_to_head` and `stats_head_to_head_alltime` now count only games where the two players backed different teams; agreement games (both picked the same side) are excluded. Missed picks are dropped by the inner-join on `picks.picked_team_id`. The Nemesis badge follows automatically (it reads the same matview). UI copy updated: section descriptions and card subtitles now read "games you disagreed on". views: `stats_head_to_head`, `stats_head_to_head_alltime` · badges: `the-nemesis` · route: `/stats`
+
 - **PR #310** Leaderboard season history, week jump-to picker, and per-season badges — the leaderboard's Standings and Weekly tabs now accept a `?season=` param so players can browse any historical season (2022–present); the Weekly week navigator gains a clickable dropdown to jump directly to any started week instead of stepping one at a time; and the Group page's identity-badge section gets a season picker so past seasons' titles are visible while the Trophy Case / champion crown / wooden spoon stay cross-season. Pure UI wiring over existing season-parameterised queries — no DB change. New: `SeasonPicker.svelte` · routes: `/leaderboard`, `/group` · component: `LeagueHonors.svelte`, `WeeklyPicksBreakdown.svelte`
 
 ## 2026-06-28
