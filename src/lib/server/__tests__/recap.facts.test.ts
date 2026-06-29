@@ -73,10 +73,10 @@ describe('snapshotBadges', () => {
   it('maps badge ids to their holder user_ids', () => {
     const badges: BadgeAward[] = [
       {
-        id: 'the-degenerate',
-        label: 'The Degenerate',
-        emoji: '🎰',
-        flavor: 'Bets everything',
+        id: 'the-grinder',
+        label: 'The Grinder',
+        emoji: '🪨',
+        flavor: 'No glamour, just volume.',
         description: 'Placed the most picks this season.',
         kind: 'title',
         holders: [{ user_id: 'u1', display_name: 'Alice' }]
@@ -95,7 +95,7 @@ describe('snapshotBadges', () => {
       }
     ];
     const snap = snapshotBadges(badges);
-    expect(snap['the-degenerate']).toEqual(['u1']);
+    expect(snap['the-grinder']).toEqual(['u1']);
     expect(snap['perfect-week']).toEqual(['u2', 'u3']);
   });
 
@@ -148,16 +148,16 @@ describe('diffBadges', () => {
 
   it('returns empty for the first covered week (no prior snapshot)', () => {
     // When there is no prior recap, badge_changes stay empty — no deltas.
-    const current = [makeAward('the-degenerate', 'The Degenerate', ['u1'])];
+    const current = [makeAward('the-grinder', 'The Grinder', ['u1'])];
     // No prior snapshot supplied — caller passes {} (empty).
     expect(diffBadges(current, {})).toHaveLength(1); // first occurrence = "appeared"
   });
 
   it('handles multiple badges changing in the same week', () => {
-    const prior = { 'the-choker': ['u1'], 'mr-calculated': ['u3'] };
+    const prior = { 'the-choker': ['u1'], 'the-sharp': ['u3'] };
     const current = [
       makeAward('the-choker', 'The Choker', ['u2']), // changed
-      makeAward('mr-calculated', 'Mr. Calculated', ['u3']) // unchanged
+      makeAward('the-sharp', 'The Sharp', ['u3']) // unchanged
     ];
     const changes = diffBadges(current, prior);
     expect(changes).toHaveLength(1);
