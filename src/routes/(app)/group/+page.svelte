@@ -236,7 +236,9 @@
         {#each data.members as member (member.userId)}
           {@const isSelf = member.userId === data.currentUserId}
           {@const isOnlyCommissioner = member.role === 'commissioner' && commissionerCount === 1}
-          <li class="flex items-center justify-between gap-3 rounded-lg border p-3">
+          <li
+            class="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+          >
             <div class="flex min-w-0 items-center gap-3">
               <UserAvatar displayName={member.displayName} avatarKey={member.avatarKey} size="sm" />
               <div class="min-w-0">
@@ -250,7 +252,7 @@
             </div>
 
             {#if data.isCommissioner && !isSelf}
-              <div class="flex shrink-0 gap-2">
+              <div class="flex shrink-0 gap-2 self-end sm:self-auto">
                 {#if member.role === 'member'}
                   <Button
                     variant="outline"
