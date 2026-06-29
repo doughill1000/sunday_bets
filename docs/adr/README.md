@@ -61,5 +61,6 @@ current status.
 | [ADR-0014](0014-auth-context-caching.md)                   | Short-TTL per-instance cache of the per-request auth-hook lookups                     |
 | [ADR-0015](0015-versioning-and-release-policy.md)          | Versioning and release policy (label-driven SemVer)                                   |
 | [ADR-0016](0016-non-scoring-rounds.md)                     | Non-scoring rounds (`weeks.is_scoring`) and ESPN preseason sourcing                   |
+| [ADR-0017](0017-client-data-cache.md)                      | Client-side stale-while-revalidate cache (TanStack Query) for read screens            |
 
-_The numbering is sequential; the next ADR is 0017._
+_The numbering is sequential; the next ADR is 0018._
