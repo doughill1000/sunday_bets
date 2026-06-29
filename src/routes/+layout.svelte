@@ -22,6 +22,19 @@
   const groupId = $derived(data.groupId ?? null);
   const latestRecap = $derived(data.latestRecap ?? null);
 
+  // Show a section skeleton only when *entering* Stats/Group from another section —
+  // not on intra-section navigations (e.g. season switches via goto), which would
+  // otherwise blank the current page to a skeleton on every filter change.
+  const enteringSection = $derived.by(() => {
+    const to = navigating?.to?.url.pathname;
+    const from = navigating?.from?.url.pathname;
+    if (!to) return null;
+    for (const section of ['/stats', '/group'] as const) {
+      if (to.startsWith(section) && !from?.startsWith(section)) return section;
+    }
+    return null;
+  });
+
   onMount(() => {
     // autoUpdate strategy: the SW installs silently and onNeedRefresh never
     // fires. vite-plugin-pwa's registerSW already reloads the page when a new
@@ -79,9 +92,9 @@
 
   <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
     <EngagementBanner {user} />
-    {#if navigating?.to?.url.pathname.startsWith('/stats')}
+    {#if enteringSection === '/stats'}
       {@render statsSkeleton()}
-    {:else if navigating?.to?.url.pathname.startsWith('/group')}
+    {:else if enteringSection === '/group'}
       {@render groupSkeleton()}
     {:else}
       {@render children()}
