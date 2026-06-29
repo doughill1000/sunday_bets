@@ -360,70 +360,72 @@
         </div>
       {/if}
 
-      <form
-        class="space-y-4 border-t pt-4"
-        onsubmit={(event) => {
-          event.preventDefault();
-          void changePassword();
-        }}
-      >
-        <div>
-          <h2 class="font-medium">Password</h2>
-          <p class="text-sm text-muted-foreground">Update the password for this account.</p>
-        </div>
+      {#if hasProvider('email')}
+        <form
+          class="space-y-4 border-t pt-4"
+          onsubmit={(event) => {
+            event.preventDefault();
+            void changePassword();
+          }}
+        >
+          <div>
+            <h2 class="font-medium">Password</h2>
+            <p class="text-sm text-muted-foreground">Update the password for this account.</p>
+          </div>
 
-        <div class="space-y-2">
-          <Label for="current-password">Current password</Label>
-          <Input
-            id="current-password"
-            name="current-password"
-            type="password"
-            autocomplete="current-password"
-            bind:value={currentPassword}
-          />
-        </div>
-
-        <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
-            <Label for="new-password">New password</Label>
+            <Label for="current-password">Current password</Label>
             <Input
-              id="new-password"
-              name="new-password"
+              id="current-password"
+              name="current-password"
               type="password"
-              autocomplete="new-password"
-              minlength={8}
-              bind:value={newPassword}
+              autocomplete="current-password"
+              bind:value={currentPassword}
             />
           </div>
-          <div class="space-y-2">
-            <Label for="confirm-password">Confirm new password</Label>
-            <Input
-              id="confirm-password"
-              name="confirm-password"
-              type="password"
-              autocomplete="new-password"
-              minlength={8}
-              bind:value={confirmPassword}
-            />
-          </div>
-        </div>
 
-        <div class="flex justify-end">
-          <Button type="submit" disabled={!canSubmitPassword}>
-            {passwordBusy ? 'Updating...' : 'Update password'}
-          </Button>
-        </div>
-
-        {#if passwordMsg}
-          <div
-            class="rounded-xl border p-3 text-sm"
-            class:border-success={passwordMsg.kind === 'success'}
-            class:border-destructive={passwordMsg.kind === 'error'}
-          >
-            {passwordMsg.text}
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <Label for="new-password">New password</Label>
+              <Input
+                id="new-password"
+                name="new-password"
+                type="password"
+                autocomplete="new-password"
+                minlength={8}
+                bind:value={newPassword}
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="confirm-password">Confirm new password</Label>
+              <Input
+                id="confirm-password"
+                name="confirm-password"
+                type="password"
+                autocomplete="new-password"
+                minlength={8}
+                bind:value={confirmPassword}
+              />
+            </div>
           </div>
-        {/if}
-      </form>
+
+          <div class="flex justify-end">
+            <Button type="submit" disabled={!canSubmitPassword}>
+              {passwordBusy ? 'Updating...' : 'Update password'}
+            </Button>
+          </div>
+
+          {#if passwordMsg}
+            <div
+              class="rounded-xl border p-3 text-sm"
+              class:border-success={passwordMsg.kind === 'success'}
+              class:border-destructive={passwordMsg.kind === 'error'}
+            >
+              {passwordMsg.text}
+            </div>
+          {/if}
+        </form>
+      {/if}
     </CardContent>
   </Card>
 
