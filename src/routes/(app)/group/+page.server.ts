@@ -1,30 +1,26 @@
 // src/routes/(app)/group/+page.server.ts
-// Group management page — members list, commissioner actions, invite minting.
+// Group management page — commissioner-only controls + season metadata.
+//
+// The shareable data (group name, members, league honors, identity badges) now comes from
+// the client `createQuery` keyed by `(groupId, season)` so a revisit renders from cache and
+// revalidates in the background (ADR-0017); `+page.ts` prefetches it on the server for a
+// flash-free first paint. This load stays light and is the home of the commissioner-only,
+// sensitive data — invites, grading config, role flags — which is NEVER cached or persisted
+// to IndexedDB (boundary 3): it lives behind the `isCommissioner` check below.
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
-import { getGroupMembersPage } from '$lib/server/db/queries/getGroupMembers';
-import { getLeagueHonors } from '$lib/server/db/queries/honors';
-import { getSeasonLeaderboard, getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
-import { getStatsForSeason } from '$lib/server/db/queries/stats';
+import { getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
-import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const { groupId, user } = locals;
   if (!groupId || !user) throw redirect(303, '/auth/error?reason=no-group');
 
-  // League Honors (#305): the Group tab is now the home for trophies, the wooden
-  // spoon, and identity badges (moved off Stats). Champion/spoon come from
-  // getLeagueHonors; badges derive from the selected season's stats + standings.
-  //
-  // Group name and current-user role run in the same block — neither depends on
-  // badgeSeasonYear and they were the former sequential tail.
-  const [currentSeasonYear, availableSeasons, groupResult, myMembershipResult] = await Promise.all([
+  const [currentSeasonYear, availableSeasons, myMembershipResult] = await Promise.all([
     locals.getCurrentSeasonYear(),
     getAvailableSeasons(groupId),
-    supabaseService.from('groups').select('id, name').eq('id', groupId).single(),
     supabaseService
       .from('group_memberships')
       .select('role, ai_recap_opt_out')
@@ -32,9 +28,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
       .eq('user_id', user.id)
       .maybeSingle()
   ]);
-
-  const { data: group, error: groupErr } = groupResult;
-  if (groupErr || !group) throw redirect(303, '/auth/error?reason=no-group');
 
   const isCommissioner = myMembershipResult.data?.role === 'commissioner';
 
@@ -44,20 +37,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     currentSeasonYear
   );
 
-  // Bounded, keyset-paginated members page (issue #152). Pass back `membersCursor`
-  // as `?members_cursor=` to fetch the next page; for real groups the first page
-  // already contains everyone, so output is unchanged.
-  const [membersPage, honors, seasonStats, seasonTotals] = await Promise.all([
-    getGroupMembersPage(groupId, { cursor: url.searchParams.get('members_cursor') }),
-    getLeagueHonors(groupId),
-    getStatsForSeason(badgeSeasonYear, groupId),
-    getSeasonLeaderboard(badgeSeasonYear, groupId)
-  ]);
-
-  // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
-  const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
-
-  // Load active invites if commissioner.
+  // Load active invites + league rules only for commissioners. This is sensitive, per-role
+  // data and is deliberately kept off the cached/persisted query payload (ADR-0017).
   let invites: {
     id: string;
     code: string;
@@ -99,13 +80,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   const aiRecapOptOut = myMembershipResult.data?.ai_recap_opt_out ?? false;
 
   return {
-    group,
-    members: membersPage.members,
-    membersCursor: membersPage.nextCursor,
+    groupId,
     isCommissioner,
     currentUserId: user.id,
-    honors,
-    badges,
     availableSeasons,
     badgeSeasonYear,
     invites,

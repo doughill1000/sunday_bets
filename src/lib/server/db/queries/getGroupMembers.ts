@@ -1,24 +1,14 @@
 import { supabaseService } from '$lib/supabase/service';
 import { clampLimit, decodeCursor, encodeCursor } from '$lib/server/pagination';
+import type { GroupMember, GroupMemberRole, GroupMembersPage } from '$lib/types/group';
 
-export type GroupMemberRole = 'commissioner' | 'member';
-
-export type GroupMember = {
-  userId: string;
-  role: GroupMemberRole;
-  joinedAt: string;
-  displayName: string;
-  avatarKey: string | null;
-};
+// Canonical DTOs moved to `$lib/types/group` (client-safe) so the cached Group read screen
+// can type the payload without importing server code (ADR-0017); re-exported here so
+// existing `import … from '$lib/server/db/queries/getGroupMembers'` call sites are unchanged.
+export type { GroupMember, GroupMemberRole, GroupMembersPage } from '$lib/types/group';
 
 /** Opaque keyset cursor for the members list: the last row's ordering tuple. */
 type GroupMembersCursor = { r: GroupMemberRole; j: string; u: string };
-
-export type GroupMembersPage = {
-  members: GroupMember[];
-  /** Pass back as `cursor` to fetch the next page; `null` when no more rows. */
-  nextCursor: string | null;
-};
 
 /**
  * One bounded, keyset-paginated page of a group's members (issue #152). Backed by the

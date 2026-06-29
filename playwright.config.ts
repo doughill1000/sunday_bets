@@ -28,7 +28,9 @@ const appEnv = {
 // locally we use the dev server for fast feedback. Each runs on its own port so
 // a stray local dev server never satisfies the CI preview's health check.
 const isCI = !!process.env.CI;
-const port = isCI ? 4173 : 5173;
+// E2E_PORT lets a local run target a worktree dev server on a non-default port
+// (e.g. when 5173 is held by the main checkout); falls back to the usual ports.
+const port = process.env.E2E_PORT ? Number(process.env.E2E_PORT) : isCI ? 4173 : 5173;
 const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({

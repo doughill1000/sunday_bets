@@ -2,12 +2,16 @@
   import AdminCard from './AdminCard.svelte';
   import { Button } from '$lib/components/ui/button';
   import { gradeWeek, gradeGame, gradeSeason } from '$lib/api/admin/grading';
+  import { useQueryClient } from '@tanstack/svelte-query';
+  import { SHAREABLE_QUERY_ROOTS } from '$lib/query/keys';
 
   interface Props {
     activeWeek: { id: number; week_number: number } | null;
     onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
   }
   let { activeWeek, onNote }: Props = $props();
+
+  const queryClient = useQueryClient();
 
   let grading = $state(false);
   let gameId = $state('');
@@ -24,6 +28,11 @@
     try {
       await promise;
       note('success', successMsg);
+      // Grading recomputes scores (and identity badges) across groups, so drop the cached
+      // standings / stats / group reads — they revalidate on next visit (ADR-0017 boundary 5).
+      await Promise.all(
+        SHAREABLE_QUERY_ROOTS.map((root) => queryClient.invalidateQueries({ queryKey: [root] }))
+      );
     } catch (err) {
       note('error', err instanceof Error ? err.message : 'An unknown error occurred.');
     } finally {

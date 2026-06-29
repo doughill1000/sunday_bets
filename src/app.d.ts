@@ -28,6 +28,10 @@ declare global {
       getCurrentSeasonYear: () => Promise<number>;
     }
   }
+
+  /** Per-deploy build id injected by Vite `define` (vite.config.ts). Used as the
+   * TanStack Query persister cache-buster — see ADR-0017. */
+  const __BUILD_ID__: string;
 }
 
 export {};

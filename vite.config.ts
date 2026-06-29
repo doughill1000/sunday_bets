@@ -5,6 +5,14 @@ import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { sentrySvelteKit } from '@sentry/sveltekit';
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    // Stable per-deploy id used as the TanStack Query IndexedDB persister `buster`
+    // (ADR-0017): a new deploy invalidates any persisted client cache. Vercel sets
+    // VERCEL_GIT_COMMIT_SHA at build; locally we fall back to the build timestamp.
+    __BUILD_ID__: JSON.stringify(
+      process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? String(Date.now())
+    )
+  },
   plugins: [
     sentrySvelteKit({
       sourceMapsUploadOptions: {

@@ -10,9 +10,24 @@
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
   import { navigating } from '$app/state';
+  import { dev } from '$app/environment';
   import { registerSW } from 'virtual:pwa-register';
+  import { QueryClientProvider } from '@tanstack/svelte-query';
+  import {
+    persistQueryClientRestore,
+    persistQueryClientSubscribe
+  } from '@tanstack/svelte-query-persist-client';
+  import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
+  import { getQueryClient, makePersistOptions } from '$lib/query/client';
 
   let { children, data } = $props();
+
+  // One QueryClient per environment: the browser singleton (so SPA navigations reuse one
+  // cache) on the client, a fresh per-request client on the server (ADR-0017). The same
+  // provider renders on the server and client (no `{#if browser}` swap, which would
+  // hydration-mismatch) so `createQuery` is never gated; IndexedDB persistence is wired up
+  // separately in `onMount` below — browser-only and non-blocking.
+  const queryClient = getQueryClient();
   const supabase = $derived(data.supabase);
   const session = $derived(data.session);
   const user = $derived(data.user);
@@ -42,6 +57,16 @@
   });
 
   onMount(() => {
+    // Persist the shareable query cache to IndexedDB for cold-launch instant render
+    // (ADR-0017). Browser-only (onMount), so SSR never touches IndexedDB. Non-gating: we
+    // restore into the existing client and then subscribe to persist future changes —
+    // `createQuery` is never paused on restore (unlike PersistQueryClientProvider).
+    const persistOptions = { queryClient, ...makePersistOptions() };
+    let unsubscribePersist: (() => void) | undefined;
+    void persistQueryClientRestore(persistOptions).finally(() => {
+      unsubscribePersist = persistQueryClientSubscribe(persistOptions);
+    });
+
     // autoUpdate strategy: the SW installs silently and onNeedRefresh never
     // fires. vite-plugin-pwa's registerSW already reloads the page when a new
     // SW takes control (workbox-window's `controlling` event, guarded by
@@ -74,49 +99,63 @@
     return () => {
       removeVisibilityListener?.();
       sub.subscription.unsubscribe();
+      unsubscribePersist?.();
     };
   });
 </script>
 
-<NavProgress />
-
-<div class="flex min-h-svh flex-col bg-background text-foreground">
-  <header
-    class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-  >
-    <div class="container mx-auto flex h-14 items-center px-4">
-      <AppHeader
-        {user}
-        canSeeAdmin={isAdmin}
-        displayName={userProfile?.displayName ?? ''}
-        avatarKey={userProfile?.avatarKey ?? null}
-        {memberships}
-        activeGroupId={groupId}
-        champion={isChampion}
-      />
-    </div>
-  </header>
-
-  <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
-    <EngagementBanner {user} />
-    {#if enteringSection === '/stats'}
-      {@render statsSkeleton()}
-    {:else if enteringSection === '/group'}
-      {@render groupSkeleton()}
-    {:else}
-      {@render children()}
-    {/if}
-    <Toaster />
-  </main>
-
-  {#if user}
-    <BottomTabBar />
-    <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
-    {#await data.latestRecap then recap}
-      <RecapFlash {recap} />
-    {/await}
+<!-- The QueryClient is provided around the whole shell so any read screen can use
+     `createQuery`. The same provider renders on server and client (persistence is wired
+     up in onMount, not via a browser-only provider) so there is no hydration mismatch and
+     queries are never gated on cache restore (ADR-0017). -->
+<QueryClientProvider client={queryClient}>
+  {@render appShell()}
+  {#if dev}
+    <SvelteQueryDevtools />
   {/if}
-</div>
+</QueryClientProvider>
+
+{#snippet appShell()}
+  <NavProgress />
+
+  <div class="flex min-h-svh flex-col bg-background text-foreground">
+    <header
+      class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    >
+      <div class="container mx-auto flex h-14 items-center px-4">
+        <AppHeader
+          {user}
+          canSeeAdmin={isAdmin}
+          displayName={userProfile?.displayName ?? ''}
+          avatarKey={userProfile?.avatarKey ?? null}
+          {memberships}
+          activeGroupId={groupId}
+          champion={isChampion}
+        />
+      </div>
+    </header>
+
+    <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
+      <EngagementBanner {user} />
+      {#if enteringSection === '/stats'}
+        {@render statsSkeleton()}
+      {:else if enteringSection === '/group'}
+        {@render groupSkeleton()}
+      {:else}
+        {@render children()}
+      {/if}
+      <Toaster />
+    </main>
+
+    {#if user}
+      <BottomTabBar />
+      <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
+      {#await data.latestRecap then recap}
+        <RecapFlash {recap} />
+      {/await}
+    {/if}
+  </div>
+{/snippet}
 
 {#snippet statsSkeleton()}
   <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-hidden="true">
