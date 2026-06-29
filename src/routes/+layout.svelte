@@ -10,7 +10,7 @@
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
   import { navigating } from '$app/state';
-  import { dev } from '$app/environment';
+  import { browser, dev } from '$app/environment';
   import { registerSW } from 'virtual:pwa-register';
   import { QueryClientProvider } from '@tanstack/svelte-query';
   import {
@@ -110,7 +110,9 @@
      queries are never gated on cache restore (ADR-0017). -->
 <QueryClientProvider client={queryClient}>
   {@render appShell()}
-  {#if dev}
+  <!-- Skip the devtools under an automated browser (Playwright sets navigator.webdriver):
+       its floating overlay otherwise intercepts e2e clicks (e.g. the comment composer). -->
+  {#if dev && browser && !navigator.webdriver}
     <SvelteQueryDevtools />
   {/if}
 </QueryClientProvider>

@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/sveltekit';
 import { gradeWeek } from '$lib/server/grading';
 import { sendResultsRecap } from '$lib/server/notifications';
 import { sendAIRecaps } from '$lib/server/aiRecap';
+import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
 import { requireCronSecret, withCronLog } from '$lib/server/cron';
 import { findRecentGradableWeeks } from '$lib/server/db/queries/findRecentGradableWeeks';
 
@@ -49,7 +50,24 @@ export const POST: RequestHandler = async (event) => {
       })
     );
 
-    return { weekIds: weeks.map((w) => w.id), results, recaps, aiRecaps };
+    // After the weekly AI recap, generate Season Wrapped at season's end (#347, ADR-0008).
+    // No-op except on a fully-graded FINAL week of a complete season; idempotent per subject.
+    // Errors → Sentry only; never fail grading.
+    const seasonWrappeds = await Promise.all(
+      weeks.map(async (w) => {
+        try {
+          return { weekId: w.id, ...(await sendSeasonWrappeds(w.id)) };
+        } catch (e) {
+          Sentry.captureException(e);
+          return {
+            weekId: w.id,
+            error: e instanceof Error ? e.message : 'season wrapped failed'
+          };
+        }
+      })
+    );
+
+    return { weekIds: weeks.map((w) => w.id), results, recaps, aiRecaps, seasonWrappeds };
   });
   return new Response(JSON.stringify(jobResult), {
     status: jobResult.ok ? 200 : 500,

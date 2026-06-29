@@ -3,12 +3,14 @@
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
+  import Gift from '@lucide/svelte/icons/gift';
   import Users from '@lucide/svelte/icons/users';
 
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
     { href: '/stats', label: 'Stats', Icon: BarChart2 },
+    { href: '/wrapped', label: 'Wrapped', Icon: Gift },
     { href: '/group', label: 'Group', Icon: Users }
   ];
 </script>

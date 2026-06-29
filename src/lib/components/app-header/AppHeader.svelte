@@ -8,6 +8,7 @@
     { href: '/picks', label: 'Picks' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/stats', label: 'Stats' },
+    { href: '/wrapped', label: 'Wrapped' },
     { href: '/group', label: 'Group' }
   ];
 
