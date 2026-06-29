@@ -8,6 +8,7 @@ import type {
   AllTimeWeightAccuracyEntry,
   ConsensusStatsEntry,
   HeadToHeadEntry,
+  LineSideStatsEntry,
   SeasonStats,
   TeamAccuracyEntry,
   WeightAccuracyEntry
@@ -20,6 +21,7 @@ type AllTimeHeadToHeadRow = Tables<'stats_head_to_head_alltime'>;
 type AllTimeTotalsRow = Tables<'stats_alltime_totals'>;
 type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
 type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
+type LineSideRow = Tables<'stats_accuracy_by_line_side'>;
 // Narrowed shape for the partial select on group_pick_consensus.
 type ConsensusPickRow = Pick<
   Tables<'group_pick_consensus'>,
@@ -170,41 +172,68 @@ function aggregateConsensusRows(rows: ConsensusPickRow[]): ConsensusStatsEntry[]
   }));
 }
 
+function toLineSide(row: LineSideRow): LineSideStatsEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.decisions == null ||
+    row.chalk_picks == null ||
+    row.dog_picks == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    decisions: row.decisions,
+    chalk_picks: row.chalk_picks,
+    dog_picks: row.dog_picks
+  };
+}
+
 export async function getStatsForSeason(seasonYear: number, groupId: string): Promise<SeasonStats> {
-  const [trend, teamResult, weightResult, headToHeadResult, consensusResult] = await Promise.all([
-    getWeeklyCumulative(seasonYear, groupId),
-    supabaseService
-      .from('stats_accuracy_by_team')
-      .select('*')
-      .eq('season_year', seasonYear)
-      .eq('group_id', groupId)
-      .order('display_name')
-      .order('team_short_name'),
-    supabaseService
-      .from('stats_accuracy_by_weight')
-      .select('*')
-      .eq('season_year', seasonYear)
-      .eq('group_id', groupId)
-      .order('display_name')
-      .order('weight'),
-    supabaseService
-      .from('stats_head_to_head')
-      .select('*')
-      .eq('season_year', seasonYear)
-      .eq('group_id', groupId)
-      .order('display_name')
-      .order('opponent_display_name'),
-    supabaseService
-      .from('group_pick_consensus')
-      .select('user_id, display_name, consensus_pct, is_minority, graded_outcome')
-      .eq('season_year', seasonYear)
-      .eq('group_id', groupId)
-  ]);
+  const [trend, teamResult, weightResult, headToHeadResult, consensusResult, lineSideResult] =
+    await Promise.all([
+      getWeeklyCumulative(seasonYear, groupId),
+      supabaseService
+        .from('stats_accuracy_by_team')
+        .select('*')
+        .eq('season_year', seasonYear)
+        .eq('group_id', groupId)
+        .order('display_name')
+        .order('team_short_name'),
+      supabaseService
+        .from('stats_accuracy_by_weight')
+        .select('*')
+        .eq('season_year', seasonYear)
+        .eq('group_id', groupId)
+        .order('display_name')
+        .order('weight'),
+      supabaseService
+        .from('stats_head_to_head')
+        .select('*')
+        .eq('season_year', seasonYear)
+        .eq('group_id', groupId)
+        .order('display_name')
+        .order('opponent_display_name'),
+      supabaseService
+        .from('group_pick_consensus')
+        .select('user_id, display_name, consensus_pct, is_minority, graded_outcome')
+        .eq('season_year', seasonYear)
+        .eq('group_id', groupId),
+      supabaseService
+        .from('stats_accuracy_by_line_side')
+        .select('*')
+        .eq('season_year', seasonYear)
+        .eq('group_id', groupId)
+        .order('display_name')
+    ]);
 
   if (teamResult.error) throw teamResult.error;
   if (weightResult.error) throw weightResult.error;
   if (headToHeadResult.error) throw headToHeadResult.error;
   if (consensusResult.error) throw consensusResult.error;
+  if (lineSideResult.error) throw lineSideResult.error;
 
   return {
     trend,
@@ -220,7 +249,11 @@ export async function getStatsForSeason(seasonYear: number, groupId: string): Pr
       const entry = toHeadToHead(row);
       return entry ? [entry] : [];
     }),
-    consensusStats: aggregateConsensusRows(consensusResult.data ?? [])
+    consensusStats: aggregateConsensusRows(consensusResult.data ?? []),
+    lineSide: (lineSideResult.data ?? []).flatMap((row) => {
+      const entry = toLineSide(row);
+      return entry ? [entry] : [];
+    })
   };
 }
 

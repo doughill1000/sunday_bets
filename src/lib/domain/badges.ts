@@ -5,7 +5,7 @@ import type {
   BadgeId,
   BadgeKind
 } from '$lib/types/honors';
-import type { ConsensusStatsEntry, SeasonStats } from '$lib/types/server/stats';
+import type { ConsensusStatsEntry, LineSideStatsEntry, SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // Input types shaped from matview rows; all required fields already non-null.
@@ -75,6 +75,18 @@ export type BadgeConsensusEntry = {
   majority_wins: number;
 };
 
+// Line-side input (per-user aggregate from stats_accuracy_by_line_side matview, #317).
+export type BadgeLineSideEntry = {
+  user_id: string;
+  display_name: string;
+  /** Total non-missed picks in scoring rounds (denominator for both ratios). */
+  decisions: number;
+  /** Picks on the spread favorite (line at pick time). */
+  chalk_picks: number;
+  /** Picks on the spread underdog (line at pick time). */
+  dog_picks: number;
+};
+
 export type BadgeInputs = {
   seasonTotals: BadgeSeasonTotalsEntry[];
   weightAccuracy: BadgeWeightEntry[];
@@ -83,6 +95,8 @@ export type BadgeInputs = {
   trend: BadgeTrendEntry[];
   /** Per-user consensus aggregates for Tier-B badges (#294). */
   consensus: BadgeConsensusEntry[];
+  /** Per-user favorite-vs-underdog pick mix for line-side badges (#317). */
+  lineSide: BadgeLineSideEntry[];
 };
 
 /**
@@ -149,6 +163,15 @@ export function badgeInputsFromSeasonStats(
         contrarian_wins: c.contrarian_wins,
         majority_picks: c.majority_picks,
         majority_wins: c.majority_wins
+      })
+    ),
+    lineSide: season.lineSide.map(
+      (l: LineSideStatsEntry): BadgeLineSideEntry => ({
+        user_id: l.user_id,
+        display_name: l.display_name,
+        decisions: l.decisions,
+        chalk_picks: l.chalk_picks,
+        dog_picks: l.dog_picks
       })
     )
   };
@@ -427,6 +450,51 @@ function theLemming(consensus: BadgeConsensusEntry[], oracleGuard: number): Badg
   );
 }
 
+// --- Line-side badge helpers (#317) ---
+
+/**
+ * Chalk Eater: biggest share of picks on the spread favorite. Requires `guard`
+ * decisions to be eligible (same season-scaled guard as Tier-A). Ratio is favorite
+ * picks over all of the player's picks, so pick'em games dilute it like any non-favorite.
+ */
+function chalkEater(lineSide: BadgeLineSideEntry[], guard: number): BadgeHolder | null {
+  const eligible = lineSide.filter((l) => l.decisions >= guard);
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((best, curr) => {
+      const currRatio = curr.chalk_picks / curr.decisions;
+      const bestRatio = best.chalk_picks / best.decisions;
+      if (currRatio > bestRatio) return curr;
+      if (currRatio === bestRatio) {
+        if (curr.decisions > best.decisions) return curr;
+        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      }
+      return best;
+    })
+  );
+}
+
+/**
+ * Dog Lover: biggest share of picks on the spread underdog. Mirror of {@link chalkEater}
+ * on the same favorite-vs-dog axis; requires `guard` decisions to be eligible.
+ */
+function dogLover(lineSide: BadgeLineSideEntry[], guard: number): BadgeHolder | null {
+  const eligible = lineSide.filter((l) => l.decisions >= guard);
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((best, curr) => {
+      const currRatio = curr.dog_picks / curr.decisions;
+      const bestRatio = best.dog_picks / best.decisions;
+      if (currRatio > bestRatio) return curr;
+      if (currRatio === bestRatio) {
+        if (curr.decisions > best.decisions) return curr;
+        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      }
+      return best;
+    })
+  );
+}
+
 // --- Milestone badge helpers (threshold: zero or more holders) ---
 
 function bigGameHunter(weights: BadgeWeightEntry[]): BadgeHolder[] {
@@ -534,6 +602,19 @@ const FLAVORS: Record<
     flavor: 'Followed the herd. Right off the cliff.',
     description:
       'Worst win rate on picks made with the majority this season (minimum picks required).'
+  },
+  // Line-side badges (#317)
+  'chalk-eater': {
+    label: 'Chalk Eater',
+    emoji: '🧱',
+    flavor: "Never met a favorite they didn't back.",
+    description: 'Biggest share of picks on the spread favorite (minimum picks required).'
+  },
+  'dog-lover': {
+    label: 'Dog Lover',
+    emoji: '🐶',
+    flavor: 'Loyalty over logic. Always takes the longshot.',
+    description: 'Biggest share of picks on the spread underdog (minimum picks required).'
   }
 };
 
@@ -555,6 +636,8 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'oracle', kind: 'title' },
   { id: 'the-fool', kind: 'title' },
   { id: 'the-lemming', kind: 'title' },
+  { id: 'chalk-eater', kind: 'title' },
+  { id: 'dog-lover', kind: 'title' },
   { id: 'big-game-hunter', kind: 'milestone' },
   { id: 'perfect-week', kind: 'milestone' }
 ];
@@ -578,7 +661,8 @@ function award(id: BadgeId, kind: BadgeAward['kind'], holders: BadgeHolder[]): B
  * are omitted). Deterministic: stable tie-breaks and no side effects.
  */
 export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
-  const { seasonTotals, weightAccuracy, headToHead, teamAccuracy, trend, consensus } = inputs;
+  const { seasonTotals, weightAccuracy, headToHead, teamAccuracy, trend, consensus, lineSide } =
+    inputs;
   const guard = computeSampleGuard(seasonTotals);
   const badges: BadgeAward[] = [];
 
@@ -626,6 +710,15 @@ export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
 
     const lemmingHolder = theLemming(consensus, oracleGuard);
     if (lemmingHolder) badges.push(award('the-lemming', 'title', [lemmingHolder]));
+  }
+
+  // Line-side titles (#317)
+  if (lineSide.length > 0) {
+    const chalk = chalkEater(lineSide, guard);
+    if (chalk) badges.push(award('chalk-eater', 'title', [chalk]));
+
+    const dog = dogLover(lineSide, guard);
+    if (dog) badges.push(award('dog-lover', 'title', [dog]));
   }
 
   return badges;

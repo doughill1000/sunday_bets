@@ -1321,6 +1321,26 @@ export type Database = {
           }
         ];
       };
+      stats_accuracy_by_line_side: {
+        Row: {
+          chalk_picks: number | null;
+          decisions: number | null;
+          display_name: string | null;
+          dog_picks: number | null;
+          group_id: string | null;
+          season_year: number | null;
+          user_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       stats_accuracy_by_team: {
         Row: {
           accuracy: number | null;
