@@ -5,7 +5,12 @@ import type {
   BadgeId,
   BadgeKind
 } from '$lib/types/honors';
-import type { ConsensusStatsEntry, LineSideStatsEntry, SeasonStats } from '$lib/types/server/stats';
+import type {
+  ConsensusStatsEntry,
+  LineSideStatsEntry,
+  StreakStatsEntry,
+  SeasonStats
+} from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // Input types shaped from matview rows; all required fields already non-null.
@@ -88,6 +93,18 @@ export type BadgeLineSideEntry = {
   dog_picks: number;
 };
 
+// Tier-C streak input (from stats_pick_streaks matview, #296).
+export type BadgeStreakEntry = {
+  user_id: string;
+  display_name: string;
+  /** Non-push graded picks (wins + losses + missed) — used by the sample guard. */
+  graded_picks: number;
+  /** Consecutive wins ending at the most recent graded pick (provisional rank). */
+  current_streak: number;
+  /** Longest consecutive win run achieved in the season (crowned rank). */
+  max_streak: number;
+};
+
 export type BadgeInputs = {
   seasonTotals: BadgeSeasonTotalsEntry[];
   weightAccuracy: BadgeWeightEntry[];
@@ -98,6 +115,8 @@ export type BadgeInputs = {
   consensus: BadgeConsensusEntry[];
   /** Per-user favorite-vs-underdog pick mix for line-side badges (#317). */
   lineSide: BadgeLineSideEntry[];
+  /** Per-user streak data for Tier-C Hot Hand badge (#296). */
+  streaks: BadgeStreakEntry[];
 };
 
 /**
@@ -175,6 +194,15 @@ export function badgeInputsFromSeasonStats(
         chalk_picks: l.chalk_picks,
         dog_picks: l.dog_picks
       })
+    ),
+    streaks: season.streaks.map(
+      (s: StreakStatsEntry): BadgeStreakEntry => ({
+        user_id: s.user_id,
+        display_name: s.display_name,
+        graded_picks: s.graded_picks,
+        current_streak: s.current_streak,
+        max_streak: s.max_streak
+      })
     )
   };
 }
@@ -201,6 +229,17 @@ export function computeSampleGuard(totals: BadgeSeasonTotalsEntry[]): number {
 export function computeOracleGuard(consensus: BadgeConsensusEntry[]): number {
   if (consensus.length === 0) return MIN_SAMPLE_DECISIONS;
   const avg = consensus.reduce((s, c) => s + c.contrarian_picks, 0) / consensus.length;
+  return Math.max(MIN_SAMPLE_DECISIONS, Math.round(avg * SAMPLE_FRACTION));
+}
+
+/**
+ * Season-scaled minimum graded non-push picks for Hot Hand eligibility.
+ * Prevents a week-1 streak from crowning immediately. Scales with average
+ * league activity (graded_picks); floor is MIN_SAMPLE_DECISIONS.
+ */
+export function computeHotHandGuard(streaks: BadgeStreakEntry[]): number {
+  if (streaks.length === 0) return MIN_SAMPLE_DECISIONS;
+  const avg = streaks.reduce((s, t) => s + t.graded_picks, 0) / streaks.length;
   return Math.max(MIN_SAMPLE_DECISIONS, Math.round(avg * SAMPLE_FRACTION));
 }
 
@@ -518,6 +557,35 @@ function dogLover(lineSide: BadgeLineSideEntry[], guard: number): BadgeHolder | 
   );
 }
 
+// --- Tier-C live-form badge helpers (#296) ---
+
+/**
+ * Hot Hand: longest current correct-pick streak.
+ * Provisional (in-season): ranks by `current_streak`.
+ * Crowned (season complete): ranks by `max_streak` (longest run achieved).
+ * Requires `guard` graded non-push picks to suppress early-season noise.
+ * AlphaFirst tie-break, then more graded_picks for volume tie-break.
+ */
+function hotHand(
+  streaks: BadgeStreakEntry[],
+  guard: number,
+  seasonComplete: boolean
+): BadgeHolder | null {
+  const eligible = streaks.filter((s) => s.graded_picks >= guard);
+  if (eligible.length === 0) return null;
+  const key = (s: BadgeStreakEntry) => (seasonComplete ? s.max_streak : s.current_streak);
+  const best = eligible.reduce((best, curr) => {
+    if (key(curr) > key(best)) return curr;
+    if (key(curr) === key(best)) {
+      if (curr.graded_picks > best.graded_picks) return curr;
+      if (curr.graded_picks === best.graded_picks) return alphaFirst(curr, best);
+    }
+    return best;
+  });
+  if (key(best) === 0) return null;
+  return holder(best);
+}
+
 // --- Milestone badge helpers (threshold: zero or more holders) ---
 
 function bigGameHunter(weights: BadgeWeightEntry[]): BadgeHolder[] {
@@ -638,6 +706,14 @@ const FLAVORS: Record<
     emoji: '🐶',
     flavor: 'Loyalty over logic. Always takes the longshot.',
     description: 'Biggest share of picks on the spread underdog (minimum picks required).'
+  },
+  // Tier-C live-form badge (#296)
+  'hot-hand': {
+    label: 'Hot Hand',
+    emoji: '🔥',
+    flavor: "Can't miss right now. Every pick is money.",
+    description:
+      'Longest correct-pick streak this season (minimum picks required). Provisional in-season; crowned at season end on the longest run achieved.'
   }
 };
 
@@ -661,6 +737,7 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'the-lemming', kind: 'title' },
   { id: 'chalk-eater', kind: 'title' },
   { id: 'dog-lover', kind: 'title' },
+  { id: 'hot-hand', kind: 'title' },
   { id: 'big-game-hunter', kind: 'milestone' },
   { id: 'perfect-week', kind: 'milestone' }
 ];
@@ -682,10 +759,21 @@ function award(id: BadgeId, kind: BadgeAward['kind'], holders: BadgeHolder[]): B
  * Pure badge engine: derives all per-season identity titles and milestone badges
  * from pre-fetched settled stats. Returns only awarded badges (unqualified badges
  * are omitted). Deterministic: stable tie-breaks and no side effects.
+ *
+ * @param seasonComplete - true when the season has completed; switches Hot Hand from
+ *   provisional (current_streak) to crowned (max_streak) ranking.
  */
-export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
-  const { seasonTotals, weightAccuracy, headToHead, teamAccuracy, trend, consensus, lineSide } =
-    inputs;
+export function computeBadges(inputs: BadgeInputs, seasonComplete = false): BadgeAward[] {
+  const {
+    seasonTotals,
+    weightAccuracy,
+    headToHead,
+    teamAccuracy,
+    trend,
+    consensus,
+    lineSide,
+    streaks
+  } = inputs;
   const guard = computeSampleGuard(seasonTotals);
   const badges: BadgeAward[] = [];
 
@@ -742,6 +830,13 @@ export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
 
     const dog = dogLover(lineSide, guard);
     if (dog) badges.push(award('dog-lover', 'title', [dog]));
+  }
+
+  // Tier-C: live-form streak title (#296)
+  if (streaks.length > 0) {
+    const hotHandGuard = computeHotHandGuard(streaks);
+    const hand = hotHand(streaks, hotHandGuard, seasonComplete);
+    if (hand) badges.push(award('hot-hand', 'title', [hand]));
   }
 
   return badges;

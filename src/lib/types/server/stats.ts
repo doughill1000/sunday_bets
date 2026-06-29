@@ -85,6 +85,18 @@ export type LineSideStatsEntry = {
   dog_picks: number;
 };
 
+/** Per-player streak data from stats_pick_streaks for the Hot Hand badge (#296). */
+export type StreakStatsEntry = {
+  user_id: string;
+  display_name: string;
+  /** Non-push graded picks (wins + losses + missed) — used by the sample guard. */
+  graded_picks: number;
+  /** Consecutive wins ending at the most recent graded pick (provisional metric). */
+  current_streak: number;
+  /** Longest consecutive win run achieved in the season (crowned metric). */
+  max_streak: number;
+};
+
 export type SeasonStats = {
   trend: SeasonTrendEntry[];
   teamAccuracy: TeamAccuracyEntry[];
@@ -94,6 +106,8 @@ export type SeasonStats = {
   consensusStats: ConsensusStatsEntry[];
   /** Per-user favorite-vs-underdog pick mix for line-side badges (#317). */
   lineSide: LineSideStatsEntry[];
+  /** Per-user streak data for Tier-C Hot Hand badge (#296). */
+  streaks: StreakStatsEntry[];
 };
 
 export type AllTimeTotalsEntry = {

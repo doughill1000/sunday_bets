@@ -32,9 +32,10 @@ begin
   refresh materialized view concurrently public.stats_accuracy_by_weight_alltime;
   refresh materialized view concurrently public.group_pick_consensus;
   refresh materialized view concurrently public.stats_accuracy_by_line_side;
+  refresh materialized view concurrently public.stats_pick_streaks;
 end;
 $$;
 
 comment on function public.refresh_leaderboard_stats() is
-  'Refreshes the 11 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#317). '
+  'Refreshes the 12 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317). '
   'Called after each grading run by src/lib/server/grading.ts.';

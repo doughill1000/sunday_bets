@@ -32,8 +32,15 @@ export async function getGroupCachePayload(
   const { data: group, error: groupErr } = groupResult;
   if (groupErr || !group) throw groupErr ?? new Error('group not found');
 
+  // Hot Hand switches from provisional (current_streak) to crowned (max_streak) when the
+  // season is complete. A season is complete when it appears in the trophy case.
+  const isSeasonComplete = honors.trophyCase.some((h) => h.season_year === seasonYear);
+
   // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
-  const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
+  const badges = computeBadges(
+    badgeInputsFromSeasonStats(seasonStats, seasonTotals),
+    isSeasonComplete
+  );
 
   return {
     group: { id: group.id, name: group.name },

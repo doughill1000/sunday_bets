@@ -620,10 +620,10 @@
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
-    "hash": "4de2ffbc4a0ce16e3291ea0087803102e60545d783ef34ad8869d6a5558827b4",
+    "hash": "64411d7b49db3b0bd4a4dd98c77a3cc5801676b7d9974af971d48648543f5ff5",
     "signature": "public.refresh_leaderboard_stats()",
-    "migration": "20260629012345_add_stats_accuracy_by_line_side.sql",
-    "migrationHash": "6489fc0928058648c1616d699ca6494291e8adac9bcbb219a2399c28498d7800"
+    "migration": "20260629181322_add_stats_pick_streaks.sql",
+    "migrationHash": "6f91768f010f3d591b20d4ca846842cccd01a32460c22ff2844111452199bb6a"
   },
   "functions/auth/group_active_season_settled.sql": {
     "hash": "7ec5abf4bca6381ab64f9748ed2219f9da713030f89b972fd5b60bf939c76db5",
@@ -711,5 +711,10 @@
     "signature": "public.update_recap_opt_out(uuid, boolean)",
     "migration": "20260629143604_add_recap_consent_rpcs.sql",
     "migrationHash": "6fd8c10a649716751c42a0f7a9b3e33fcb82f48cdcb14551a5cd8714051f6d38"
+  },
+  "views/stats_pick_streaks.sql": {
+    "hash": "34f946cf7fd8fd94795afd2079ca6895b94dcb47d2ad95276acc78321448dca8",
+    "migration": "20260629181322_add_stats_pick_streaks.sql",
+    "migrationHash": "6f91768f010f3d591b20d4ca846842cccd01a32460c22ff2844111452199bb6a"
   }
 }
