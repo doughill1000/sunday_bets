@@ -5,8 +5,18 @@ import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
 import { getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getRecapForWeek } from '$lib/server/db/queries/recaps';
-import type { RecapFacts, SpiceLevel } from '$lib/types/server/recap';
+import type {
+  RecapFacts,
+  SpiceLevel,
+  BadTakeKind,
+  RecapBadTake,
+  RecapRivalry
+} from '$lib/types/server/recap';
 import type { BadgeAward } from '$lib/types/honors';
+import type { WeightCode } from '$lib/types/domain';
+import type { Enums } from '$lib/types/supabase';
+
+type PickOutcome = Enums<'pick_outcome'>;
 
 type WeekMeta = { weekNumber: number; seasonYear: number; isFinalWeek: boolean };
 
@@ -111,6 +121,106 @@ export function diffBadges(
   return changes;
 }
 
+// ── Bad-take selector (#295) ────────────────────────────────────────────────────
+// Pure, deterministic: picks the single most roastable losing pick per player.
+// Roastable kinds, most-severe first:
+//   lost_allin     — an All-In (weight 'A') pick that lost
+//   backfired_fade — a minority pick (faded the crowd) that lost
+//   heavy_loss     — a High-weight ('H') pick that lost
+// Low/Medium losses and any non-loss are not roastable. Opted-out players never roasted.
+
+export type BadTakeCandidate = {
+  user_id: string;
+  display_name: string;
+  weight: WeightCode;
+  outcome: PickOutcome;
+  is_minority: boolean;
+};
+
+const BAD_TAKE_SEVERITY: Record<BadTakeKind, number> = {
+  lost_allin: 0,
+  backfired_fade: 1,
+  heavy_loss: 2
+};
+
+function classifyBadTake(c: BadTakeCandidate): BadTakeKind | null {
+  if (c.outcome !== 'loss') return null;
+  if (c.weight === 'A') return 'lost_allin';
+  if (c.is_minority) return 'backfired_fade';
+  if (c.weight === 'H') return 'heavy_loss';
+  return null;
+}
+
+export function selectBadTakes(
+  candidates: BadTakeCandidate[],
+  optedOutUserIds: Iterable<string> = []
+): RecapBadTake[] {
+  const optedOut = new Set(optedOutUserIds);
+  const bestByUser = new Map<string, RecapBadTake>();
+  for (const c of candidates) {
+    if (optedOut.has(c.user_id)) continue;
+    const kind = classifyBadTake(c);
+    if (!kind) continue;
+    const existing = bestByUser.get(c.user_id);
+    if (!existing || BAD_TAKE_SEVERITY[kind] < BAD_TAKE_SEVERITY[existing.kind]) {
+      bestByUser.set(c.user_id, { user_id: c.user_id, display_name: c.display_name, kind });
+    }
+  }
+  return [...bestByUser.values()].sort(
+    (a, b) =>
+      BAD_TAKE_SEVERITY[a.kind] - BAD_TAKE_SEVERITY[b.kind] ||
+      a.display_name.localeCompare(b.display_name) ||
+      a.user_id.localeCompare(b.user_id)
+  );
+}
+
+// ── Rivalry selector (#295) ─────────────────────────────────────────────────────
+// Pure, deterministic ranking of lifetime head-to-head pairs (#280). Each matchup
+// appears twice in the read-model (one row per perspective); we keep the canonical
+// direction (user_id < opponent_user_id). Intensity rewards volume and closeness:
+// score = games − |a_wins − b_wins|. Opt-out is applied by the caller.
+
+export type RivalryRow = {
+  user_id: string;
+  display_name: string;
+  opponent_user_id: string;
+  opponent_display_name: string;
+  wins: number;
+  losses: number;
+  pushes: number;
+  games_compared: number;
+};
+
+const MIN_RIVALRY_GAMES = 6;
+
+function rivalryIntensity(r: RecapRivalry): number {
+  return r.games - Math.abs(r.a_wins - r.b_wins);
+}
+
+export function selectTopRivalries(rows: RivalryRow[], limit = 1): RecapRivalry[] {
+  const pairs: RecapRivalry[] = [];
+  for (const r of rows) {
+    if (r.user_id >= r.opponent_user_id) continue; // canonical direction only
+    if (r.games_compared < MIN_RIVALRY_GAMES) continue;
+    pairs.push({
+      player_a: { user_id: r.user_id, display_name: r.display_name },
+      player_b: { user_id: r.opponent_user_id, display_name: r.opponent_display_name },
+      a_wins: r.wins,
+      b_wins: r.losses, // A's losses are B's wins
+      pushes: r.pushes,
+      games: r.games_compared
+    });
+  }
+  pairs.sort(
+    (x, y) =>
+      rivalryIntensity(y) - rivalryIntensity(x) ||
+      y.games - x.games ||
+      x.player_a.display_name.localeCompare(y.player_a.display_name) ||
+      x.player_a.user_id.localeCompare(y.player_a.user_id)
+  );
+  return pairs.slice(0, limit);
+}
+
 export async function buildRecapFacts(params: {
   groupId: string;
   weekId: number;
@@ -161,33 +271,42 @@ export async function buildRecapFacts(params: {
     total_points: t.total_points
   }));
 
-  // All-in results: pick_settlement rows for this week's games with weight='A'.
+  // Settled picks for this week's games (all weights). Powers both the All-in
+  // hero/zero facts and the bad-take selector (#295).
   const { data: weekGames } = await supabaseService
     .from('games')
     .select('id')
     .eq('week_id', weekId);
   const gameIds = (weekGames ?? []).map((g) => g.id);
 
-  type AllinRow = { user_id: string; outcome: string; group_id: string };
-  let allinRows: AllinRow[] = [];
+  // Get display names from seasonTotals (already loaded).
+  const displayNameMap = new Map(seasonTotals.map((t) => [t.user_id, t.display_name]));
+
+  type SettlementRow = {
+    user_id: string;
+    game_id: string;
+    outcome: PickOutcome;
+    weight: WeightCode;
+  };
+  let settlementRows: SettlementRow[] = [];
   if (gameIds.length > 0) {
-    const { data: allin, error: allinErr } = await supabaseService
+    const { data: settled, error: settledErr } = await supabaseService
       .from('pick_settlement')
-      .select('user_id, outcome, picks!inner(group_id, weight)')
+      .select('user_id, game_id, outcome, picks!inner(group_id, weight)')
       .in('game_id', gameIds)
-      .eq('picks.weight', 'A')
       .eq('picks.group_id', groupId);
-    if (allinErr) throw allinErr;
-    allinRows = (allin ?? []).map((r) => ({
+    if (settledErr) throw settledErr;
+    settlementRows = (settled ?? []).map((r) => ({
       user_id: r.user_id as string,
-      outcome: r.outcome as string,
-      group_id: (r.picks as { group_id: string }).group_id
+      game_id: r.game_id as string,
+      outcome: r.outcome as PickOutcome,
+      weight: (r.picks as { weight: WeightCode }).weight
     }));
   }
 
+  const allinRows = settlementRows.filter((r) => r.weight === 'A');
+
   // All-in hero: first win; all-in zero: first loss.
-  // Get display names from seasonTotals (already loaded).
-  const displayNameMap = new Map(seasonTotals.map((t) => [t.user_id, t.display_name]));
   const allinWin = allinRows.find((r) => r.outcome === 'win');
   const allinLoss = allinRows.find((r) => r.outcome === 'loss');
   const allinHero = allinWin
@@ -233,6 +352,62 @@ export async function buildRecapFacts(params: {
       }
     : null;
 
+  // Bad takes (#295): flag this week's minority picks so the selector can mark
+  // backfired fades, then build per-pick candidates from the settled rows.
+  const { data: minorityRows, error: minErr } = await supabaseService
+    .from('group_pick_consensus')
+    .select('user_id, game_id')
+    .eq('group_id', groupId)
+    .eq('season_year', seasonYear)
+    .eq('week_number', weekNumber)
+    .eq('is_minority', true);
+  if (minErr) throw minErr;
+  const minoritySet = new Set(
+    (minorityRows ?? []).map((r) => `${r.user_id as string}:${r.game_id as string}`)
+  );
+
+  const badTakeCandidates: BadTakeCandidate[] = settlementRows.map((r) => ({
+    user_id: r.user_id,
+    display_name: displayNameMap.get(r.user_id) ?? r.user_id,
+    weight: r.weight,
+    outcome: r.outcome,
+    is_minority: minoritySet.has(`${r.user_id}:${r.game_id}`)
+  }));
+  // Top 4 keeps the roast focused without enumerating an entire bad week.
+  const badTakes = selectBadTakes(badTakeCandidates, groupMeta.optedOutUserIds).slice(0, 4);
+
+  // Rivalry facts (#295): rank lifetime head-to-head pairs (#280).
+  const { data: h2hRows, error: h2hErr } = await supabaseService
+    .from('stats_head_to_head_alltime')
+    .select(
+      'user_id, display_name, opponent_user_id, opponent_display_name, wins, losses, pushes, games_compared'
+    )
+    .eq('group_id', groupId);
+  if (h2hErr) throw h2hErr;
+  const rivalryRows: RivalryRow[] = (h2hRows ?? []).flatMap((r) => {
+    if (
+      !r.user_id ||
+      !r.opponent_user_id ||
+      r.display_name == null ||
+      r.opponent_display_name == null
+    ) {
+      return [];
+    }
+    return [
+      {
+        user_id: r.user_id,
+        display_name: r.display_name,
+        opponent_user_id: r.opponent_user_id,
+        opponent_display_name: r.opponent_display_name,
+        wins: r.wins ?? 0,
+        losses: r.losses ?? 0,
+        pushes: r.pushes ?? 0,
+        games_compared: r.games_compared ?? 0
+      }
+    ];
+  });
+  const topRivalries = selectTopRivalries(rivalryRows, 2);
+
   // Badges: compute current state, diff against prior week's snapshot.
   const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
   const currentSnapshot = snapshotBadges(badges);
@@ -262,6 +437,13 @@ export async function buildRecapFacts(params: {
     return player;
   }
 
+  // Rivalries: neutralize opted-out names; drop a pair only if BOTH sides opted out
+  // (a "a player vs a player" rivalry carries no signal).
+  const rivalries: RecapRivalry[] = topRivalries.flatMap((r) => {
+    if (optedOutSet.has(r.player_a.user_id) && optedOutSet.has(r.player_b.user_id)) return [];
+    return [{ ...r, player_a: neutralize(r.player_a)!, player_b: neutralize(r.player_b)! }];
+  });
+
   return {
     group_id: groupId,
     group_name: groupMeta.name,
@@ -278,6 +460,8 @@ export async function buildRecapFacts(params: {
     contrarian_hit: neutralize(contrarianHit),
     standings,
     badge_changes: badgeChanges,
+    bad_takes: badTakes,
+    rivalries,
     _badge_snapshot: currentSnapshot
   };
 }

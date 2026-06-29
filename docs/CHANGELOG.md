@@ -48,6 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-29
 
+- **#295** AI recap Wave 2 — rivalry narratives + resurfaced bad takes — the weekly AI recap's `RecapFacts` packet gains two deterministic enrichments: a `bad_take_selector` that surfaces each week's most roastable losing pick per player (busted All-In, backfired fade against the crowd, or a heavy pick that flopped), and top all-time rivalry pairs ranked from the lifetime head-to-head read-model (#280). The roastable-fact allowlist is now explicit and enforced (display names only, opted-out players excluded), the prompt and deterministic fallback consume both new slots, and the existing AI Gateway call + `ai_recaps` JSONB absorb the richer packet with no schema change. files: `src/lib/server/recap/facts.ts`, `src/lib/server/recap/voice.ts`, `src/lib/types/server/recap.ts` · ADR-0008
 - **#328** Instant PWA tab-switch feedback — eliminates the "did my tap register?" dead time when switching tabs. A top progress bar appears on every navigation; the tapped tab highlights immediately using the pending navigation target; and navigating to Stats or Group swaps in section skeletons instead of freezing the previous page while the server load runs. Touch preload (`tap`) starts the data fetch on `touchstart` rather than `hover`. components: `NavProgress.svelte`, `BottomTabBar.svelte`, `AppHeader.svelte` · `+layout.svelte` · `app.html`
 
 ## 2026-06-28
