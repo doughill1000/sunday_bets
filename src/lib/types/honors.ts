@@ -26,18 +26,20 @@ export type LeagueHonors = {
 // (#189) overrides them later via ai_recaps.
 
 export type BadgeId =
-  | 'the-degenerate'
-  | 'mr-calculated'
+  | 'the-grinder'
+  | 'the-sharp'
   | 'the-choker'
   | 'the-ghost'
   | 'the-nemesis'
   | 'the-homer'
   | 'big-game-hunter'
   | 'perfect-week'
-  // Tier-B consensus badges (#294, Wave 2 of epic #277)
-  | 'contrarian'
+  // Tier-B consensus badges (#294, Wave 2 of epic #277; titles refreshed #316)
+  | 'lone-wolf'
   | 'sheep'
-  | 'oracle';
+  | 'oracle'
+  | 'the-fool'
+  | 'the-lemming';
 
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';

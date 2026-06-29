@@ -129,6 +129,8 @@ function aggregateConsensusRows(rows: ConsensusPickRow[]): ConsensusStatsEntry[]
       sumConsensusPct: number;
       contrarian_picks: number;
       contrarian_wins: number;
+      majority_picks: number;
+      majority_wins: number;
     }
   >();
 
@@ -140,13 +142,18 @@ function aggregateConsensusRows(rows: ConsensusPickRow[]): ConsensusStatsEntry[]
       decisions: 0,
       sumConsensusPct: 0,
       contrarian_picks: 0,
-      contrarian_wins: 0
+      contrarian_wins: 0,
+      majority_picks: 0,
+      majority_wins: 0
     };
     acc.decisions++;
     acc.sumConsensusPct += Number(row.consensus_pct ?? 0);
     if (row.is_minority) {
       acc.contrarian_picks++;
       if (row.graded_outcome === 'win') acc.contrarian_wins++;
+    } else {
+      acc.majority_picks++;
+      if (row.graded_outcome === 'win') acc.majority_wins++;
     }
     byUser.set(row.user_id, acc);
   }
@@ -157,7 +164,9 @@ function aggregateConsensusRows(rows: ConsensusPickRow[]): ConsensusStatsEntry[]
     decisions: acc.decisions,
     mean_consensus_pct: acc.decisions > 0 ? acc.sumConsensusPct / acc.decisions : 0,
     contrarian_picks: acc.contrarian_picks,
-    contrarian_wins: acc.contrarian_wins
+    contrarian_wins: acc.contrarian_wins,
+    majority_picks: acc.majority_picks,
+    majority_wins: acc.majority_wins
   }));
 }
 

@@ -67,6 +67,10 @@ export type ConsensusStatsEntry = {
   contrarian_picks: number;
   /** Minority picks that graded as wins. */
   contrarian_wins: number;
+  /** Count of picks where the user was with the majority (!is_minority). */
+  majority_picks: number;
+  /** Majority picks that graded as wins. */
+  majority_wins: number;
 };
 
 export type SeasonStats = {

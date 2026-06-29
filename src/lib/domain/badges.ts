@@ -69,6 +69,10 @@ export type BadgeConsensusEntry = {
   contrarian_picks: number;
   /** Minority picks that graded as wins. */
   contrarian_wins: number;
+  /** Picks where the user was with the majority (!is_minority). */
+  majority_picks: number;
+  /** Majority picks that graded as wins. */
+  majority_wins: number;
 };
 
 export type BadgeInputs = {
@@ -142,7 +146,9 @@ export function badgeInputsFromSeasonStats(
         decisions: c.decisions,
         mean_consensus_pct: c.mean_consensus_pct,
         contrarian_picks: c.contrarian_picks,
-        contrarian_wins: c.contrarian_wins
+        contrarian_wins: c.contrarian_wins,
+        majority_picks: c.majority_picks,
+        majority_wins: c.majority_wins
       })
     )
   };
@@ -183,7 +189,7 @@ function holder(entry: { user_id: string; display_name: string }): BadgeHolder {
 
 // --- Title badge helpers (superlative: one holder or null) ---
 
-function theDegenerate(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
+function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
   const eligible = totals.filter((t) => t.decisions > 0);
   if (eligible.length === 0) return null;
   return holder(
@@ -195,7 +201,7 @@ function theDegenerate(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
   );
 }
 
-function mrCalculated(totals: BadgeSeasonTotalsEntry[], guard: number): BadgeHolder | null {
+function theSharp(totals: BadgeSeasonTotalsEntry[], guard: number): BadgeHolder | null {
   const eligible = totals.filter((t) => t.decisions >= guard && t.wins + t.losses > 0);
   if (eligible.length === 0) return null;
   return holder(
@@ -310,13 +316,14 @@ function theHomer(
   );
 }
 
-// --- Tier-B consensus badge helpers (#294) ---
+// --- Tier-B consensus badge helpers (#294, #316) ---
 
 /**
- * Contrarian: most consistently picks against consensus (lowest mean consensus_pct).
+ * Lone Wolf: most consistently picks against consensus (lowest mean consensus_pct).
+ * Tendency badge — measures how often you deviate, not how well it turned out.
  * Requires `guard` decisions to be eligible (same season-scaled guard as Tier-A).
  */
-function contrarian(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
+function loneWolf(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
   const eligible = consensus.filter((c) => c.decisions >= guard);
   if (eligible.length === 0) return null;
   return holder(
@@ -333,7 +340,7 @@ function contrarian(consensus: BadgeConsensusEntry[], guard: number): BadgeHolde
 
 /**
  * Sheep: most consistently picks with the crowd (highest mean consensus_pct).
- * Requires `guard` decisions to be eligible.
+ * Tendency badge — requires `guard` decisions to be eligible.
  */
 function sheep(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
   const eligible = consensus.filter((c) => c.decisions >= guard);
@@ -352,7 +359,7 @@ function sheep(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | n
 
 /**
  * Oracle: best contrarian-pick win rate above a season-scaled minimum sample.
- * Only picks made against the majority (is_minority = true) count toward the rate.
+ * Verdict badge — only picks made against the majority (is_minority = true) count.
  * Does not award when no player reaches the oracle guard on contrarian picks.
  */
 function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
@@ -370,6 +377,52 @@ function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHol
         if (curr.contrarian_picks === best.contrarian_picks) return alphaFirst(curr, best);
       }
       return best;
+    })
+  );
+}
+
+/**
+ * The Fool: worst contrarian-pick win rate above the oracle guard.
+ * Verdict badge — mirror of oracle() with reduce flipped to find the minimum.
+ * Does not award when no player reaches the oracle guard on contrarian picks.
+ */
+function theFool(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
+  const eligible = consensus.filter(
+    (c) => c.contrarian_picks >= oracleGuard && c.contrarian_picks > 0
+  );
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((worst, curr) => {
+      const currRate = curr.contrarian_wins / curr.contrarian_picks;
+      const worstRate = worst.contrarian_wins / worst.contrarian_picks;
+      if (currRate < worstRate) return curr;
+      if (currRate === worstRate) {
+        if (curr.contrarian_picks > worst.contrarian_picks) return curr;
+        if (curr.contrarian_picks === worst.contrarian_picks) return alphaFirst(curr, worst);
+      }
+      return worst;
+    })
+  );
+}
+
+/**
+ * The Lemming: worst majority-pick win rate above a season-scaled minimum sample.
+ * Verdict badge — flock-side mirror of theFool(); uses majority_picks / majority_wins.
+ * Does not award when no player reaches the guard on majority picks.
+ */
+function theLemming(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
+  const eligible = consensus.filter((c) => c.majority_picks >= oracleGuard && c.majority_picks > 0);
+  if (eligible.length === 0) return null;
+  return holder(
+    eligible.reduce((worst, curr) => {
+      const currRate = curr.majority_wins / curr.majority_picks;
+      const worstRate = worst.majority_wins / worst.majority_picks;
+      if (currRate < worstRate) return curr;
+      if (currRate === worstRate) {
+        if (curr.majority_picks > worst.majority_picks) return curr;
+        if (curr.majority_picks === worst.majority_picks) return alphaFirst(curr, worst);
+      }
+      return worst;
     })
   );
 }
@@ -399,16 +452,16 @@ const FLAVORS: Record<
   BadgeId,
   { label: string; emoji: string; flavor: string; description: string }
 > = {
-  'the-degenerate': {
-    label: 'The Degenerate',
-    emoji: '🎰',
+  'the-grinder': {
+    label: 'The Grinder',
+    emoji: '🪨',
     flavor: "Can't miss a game. Every slate, every week.",
     description: 'Placed the most picks this season.'
   },
-  'mr-calculated': {
-    label: 'Mr. Calculated',
-    emoji: '🧮',
-    flavor: 'Ice in the veins, spreadsheets in the soul.',
+  'the-sharp': {
+    label: 'The Sharp',
+    emoji: '📈',
+    flavor: 'Sharp money. Best closing record in the room.',
     description: 'Best win rate this season (minimum number of picks required).'
   },
   'the-choker': {
@@ -447,12 +500,13 @@ const FLAVORS: Record<
     flavor: 'Not a single wrong pick all week.',
     description: 'Had at least one week with every pick correct and none missed.'
   },
-  // Tier-B consensus badges (#294)
-  contrarian: {
-    label: 'The Contrarian',
-    emoji: '🦅',
-    flavor: 'Always bucks the crowd. Sometimes right, never boring.',
-    description: "Most often picks against the group's consensus (minimum picks required)."
+  // Tier-B consensus badges (#294, #316)
+  'lone-wolf': {
+    label: 'Lone Wolf',
+    emoji: '🐺',
+    flavor: 'Runs with no one. Fades the whole flock.',
+    description:
+      "Fades the group's consensus more often than anyone this season (minimum picks required)."
   },
   sheep: {
     label: 'The Sheep',
@@ -464,7 +518,22 @@ const FLAVORS: Record<
     label: 'The Oracle',
     emoji: '🔮',
     flavor: 'Bucks the crowd and wins. Madness or genius?',
-    description: 'Best win rate on picks made against the majority (minimum picks required).'
+    description:
+      'Best win rate on picks made against the majority this season (minimum picks required).'
+  },
+  'the-fool': {
+    label: 'The Fool',
+    emoji: '🤡',
+    flavor: 'Bucked the crowd. The crowd was right.',
+    description:
+      'Worst win rate on picks made against the majority this season (minimum picks required).'
+  },
+  'the-lemming': {
+    label: 'The Lemming',
+    emoji: '🐹',
+    flavor: 'Followed the herd. Right off the cliff.',
+    description:
+      'Worst win rate on picks made with the majority this season (minimum picks required).'
   }
 };
 
@@ -475,15 +544,17 @@ const FLAVORS: Record<
  * so copy stays single-sourced.
  */
 const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
-  { id: 'the-degenerate', kind: 'title' },
-  { id: 'mr-calculated', kind: 'title' },
+  { id: 'the-grinder', kind: 'title' },
+  { id: 'the-sharp', kind: 'title' },
   { id: 'the-choker', kind: 'title' },
   { id: 'the-ghost', kind: 'title' },
   { id: 'the-nemesis', kind: 'title' },
   { id: 'the-homer', kind: 'title' },
-  { id: 'contrarian', kind: 'title' },
+  { id: 'lone-wolf', kind: 'title' },
   { id: 'sheep', kind: 'title' },
   { id: 'oracle', kind: 'title' },
+  { id: 'the-fool', kind: 'title' },
+  { id: 'the-lemming', kind: 'title' },
   { id: 'big-game-hunter', kind: 'milestone' },
   { id: 'perfect-week', kind: 'milestone' }
 ];
@@ -512,11 +583,11 @@ export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
   const badges: BadgeAward[] = [];
 
   // Tier-A: superlative titles
-  const degen = theDegenerate(seasonTotals);
-  if (degen) badges.push(award('the-degenerate', 'title', [degen]));
+  const degen = theGrinder(seasonTotals);
+  if (degen) badges.push(award('the-grinder', 'title', [degen]));
 
-  const calc = mrCalculated(seasonTotals, guard);
-  if (calc) badges.push(award('mr-calculated', 'title', [calc]));
+  const calc = theSharp(seasonTotals, guard);
+  if (calc) badges.push(award('the-sharp', 'title', [calc]));
 
   const choker = theChoker(weightAccuracy);
   if (choker) badges.push(award('the-choker', 'title', [choker]));
@@ -537,18 +608,24 @@ export function computeBadges(inputs: BadgeInputs): BadgeAward[] {
   const perfecters = perfectWeek(trend);
   if (perfecters.length > 0) badges.push(award('perfect-week', 'milestone', perfecters));
 
-  // Tier-B: consensus titles (#294)
+  // Tier-B: consensus titles (#294, #316)
   if (consensus.length > 0) {
     const oracleGuard = computeOracleGuard(consensus);
 
-    const cont = contrarian(consensus, guard);
-    if (cont) badges.push(award('contrarian', 'title', [cont]));
+    const wolf = loneWolf(consensus, guard);
+    if (wolf) badges.push(award('lone-wolf', 'title', [wolf]));
 
     const sheepHolder = sheep(consensus, guard);
     if (sheepHolder) badges.push(award('sheep', 'title', [sheepHolder]));
 
     const oracleHolder = oracle(consensus, oracleGuard);
     if (oracleHolder) badges.push(award('oracle', 'title', [oracleHolder]));
+
+    const foolHolder = theFool(consensus, oracleGuard);
+    if (foolHolder) badges.push(award('the-fool', 'title', [foolHolder]));
+
+    const lemmingHolder = theLemming(consensus, oracleGuard);
+    if (lemmingHolder) badges.push(award('the-lemming', 'title', [lemmingHolder]));
   }
 
   return badges;
