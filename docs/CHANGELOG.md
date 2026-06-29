@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-28
+
+- **PR #322** Release v2.6.0 — version bump. Milestone: v2.6 (features: #284 weekly AI recap, #294 Tier-B consensus badges, #300 display-name editing, #305 Group tab / App IA; patch: PR #297 stats fan-out, PR #298 test-gate skill, PR #311 Awards UX).
+
 ## 2026-06-29
 
 - **PR #315** Redefine head-to-head as opposite-picks only — `stats_head_to_head` and `stats_head_to_head_alltime` now count only games where the two players backed different teams; agreement games (both picked the same side) are excluded. Missed picks are dropped by the inner-join on `picks.picked_team_id`. The Nemesis badge follows automatically (it reads the same matview). UI copy updated: section descriptions and card subtitles now read "games you disagreed on". views: `stats_head_to_head`, `stats_head_to_head_alltime` · badges: `the-nemesis` · route: `/stats`
