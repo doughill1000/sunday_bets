@@ -4,6 +4,19 @@
 **staging/QA** (`eoncckeqqogezoftooix`) via the Supabase MCP, with explicit owner
 confirmation. This file is the as-run record ADR-0012 §Follow-up calls for.
 
+> **⚠️ Correction (2026-06-29) — Step 3 over-revoked; do not re-run the original SQL.**
+> The 2026-06-26 Step 3 `revoke all … from authenticated` + tight re-grant **omitted the
+> baseline's `grant select` on the 8 base tables** (`games`, `game_lines`, `results`,
+> `totals`, `users`, `weeks`, `seasons`, `teams`). Those grants are required because
+> `picks_group_view` and
+> `picks_status_view_user` are **`security_invoker`** — an authenticated read of them
+> checks privileges on the underlying base tables. The omission caused
+> `42501 permission denied for table users`, which 500'd `/leaderboard?view=weekly` (and
+> picks-status reads) in prod. Fixed 2026-06-29 by re-granting those 8 tables on prod +
+> QA (see [Correction §](#correction-2026-06-29--restore-base-table-grants) at the
+> bottom). The Step 3 SQL and privilege table below have been **amended** to include them;
+> the original run did not.
+
 ADR-0012 PR2 (issue #249, PR #252) collapsed the 63-file migration history into one
 regenerated `supabase/migrations/20260626184826_baseline.sql`. The squash is **history
 only** — it must not re-run DDL against prod, which already physically contains every
@@ -75,6 +88,15 @@ drop function if exists public.fn_picks_lock_guard();
 
 revoke all on all tables in schema public from authenticated;
 
+-- Base reference/score tables — REQUIRED by the security_invoker views
+-- picks_group_view / picks_status_view_user (added 2026-06-29; missing from the
+-- 2026-06-26 run, which is what broke /leaderboard?view=weekly). Matches
+-- supabase/src/grants/player_grants.sql. RLS still gates rows.
+grant select on
+  public.games, public.game_lines, public.results, public.totals,
+  public.users, public.weeks, public.seasons, public.teams
+to authenticated;
+
 grant select on public.audit_log to authenticated;
 grant select, insert, delete on public.comments to authenticated;
 grant select on public.cron_run_log to authenticated;
@@ -96,17 +118,21 @@ commit;
 
 **Resulting `authenticated` table privileges (identical on prod and staging):**
 
-| table                                                                                                                                                                         | privileges                       |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| audit_log, cron_run_log, group_config, group_memberships, group_week_overrides, groups, notification_log, pick_settlement, picks_group_view, picks_status_view_user, settings | `SELECT`                         |
-| group_invites                                                                                                                                                                 | `SELECT, INSERT, UPDATE`         |
-| comments, reactions                                                                                                                                                           | `SELECT, INSERT, DELETE`         |
-| picks, push_subscriptions                                                                                                                                                     | `SELECT, INSERT, UPDATE, DELETE` |
+| table                                                                                                                                                                                                                                                                                      | privileges                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| games, game_lines, results, totals, users, weeks, seasons, teams (base tables — security_invoker view deps), audit_log, cron_run_log, group_config, group_memberships, group_week_overrides, groups, notification_log, pick_settlement, picks_group_view, picks_status_view_user, settings | `SELECT`                         |
+| group_invites                                                                                                                                                                                                                                                                              | `SELECT, INSERT, UPDATE`         |
+| comments, reactions                                                                                                                                                                                                                                                                        | `SELECT, INSERT, DELETE`         |
+| picks, push_subscriptions                                                                                                                                                                                                                                                                  | `SELECT, INSERT, UPDATE, DELETE` |
 
-Every other `public` table/view (`games`, `game_lines`, `results`, `totals`, `teams`,
-`weeks`, `seasons`, `users`, `ui_games`, `current_season_year`, `leaderboard_*`,
-`picks_status_view_admin`, `stats_*`) now grants `authenticated` **nothing** — those reads
-flow through the service-role server layer or SECURITY DEFINER RPCs, matching the baseline.
+The base tables `games, game_lines, results, totals, teams, weeks, seasons, users` grant
+`authenticated` **SELECT** (RLS-gated) — they are read both directly and, critically, as
+the underlying tables of the `security_invoker` views `picks_group_view` /
+`picks_status_view_user`. **This is the line the 2026-06-26 run got wrong** (it granted
+the views but not their base tables), which is why it 500'd the weekly leaderboard. Every
+other `public` table/view (`ui_games`, `current_season_year`, `leaderboard_*`,
+`picks_status_view_admin`, `stats_*`) grants `authenticated` **nothing** — those reads flow
+through the service-role server layer or SECURITY DEFINER RPCs, matching the baseline.
 
 ## Verification (run after each step)
 
@@ -126,6 +152,38 @@ group by table_name order by table_name;
 ```
 
 All three verified GREEN on both projects on 2026-06-26.
+
+## Correction (2026-06-29) — restore base-table grants
+
+**Symptom:** `/leaderboard?view=weekly` returned 500 in prod (and picks-status reads).
+Root cause: Step 3 above revoked `authenticated`'s SELECT on the 8 base tables and never
+re-granted them, but `picks_group_view` / `picks_status_view_user` are `security_invoker`,
+so an authenticated read evaluates privileges on the underlying tables →
+`42501: permission denied for table users`. Standings was unaffected (it uses the SECURITY
+DEFINER `leaderboard_season_page` RPC, which runs as owner). This is a deployed-DB ⇄
+baseline drift only — `supabase/src/grants/player_grants.sql` and the baseline migration
+already grant these 8 tables, so **no src or migration change is required**.
+
+Repair run against BOTH prod (`anzcshrpfpxajcgrwczv`) and QA (`eoncckeqqogezoftooix`) via
+Supabase MCP `execute_sql`:
+
+```sql
+grant select on
+  public.games, public.game_lines, public.results, public.totals,
+  public.users, public.weeks, public.seasons, public.teams
+to authenticated;
+```
+
+**Verified:** `set local role authenticated; select count(*) from public.picks_group_view;`
+and `… from public.picks_status_view_user;` both resolve with no permission error (prod +
+QA); a real Gambling Gods member sees the expected rows; `anon` still has SELECT on none of
+the 8 (RLS + grants intact).
+
+**Why CI missed it:** `db:migration:verify` normalizes away ACL differences (see ADR-0012
+notes), so it cannot detect authenticated-grant drift; and the integration suite reads via
+the **service-role** client, which bypasses table grants. A regression guard that exercises
+a `security_invoker` view as `authenticated` (or a prod grant-parity check) would close this
+gap — tracked under #249.
 
 ## Still open under #249 (not part of this reconciliation)
 
