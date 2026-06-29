@@ -1,7 +1,7 @@
 // AI voice call: Vercel AI Gateway (ADR-0008, boundary 1).
 // Metered, capped at $0.05/group/week. Failures yield deterministic fallback copy.
 import { env } from '$env/dynamic/private';
-import type { RecapFacts, SpiceLevel } from '$lib/types/server/recap';
+import type { RecapFacts, SpiceLevel, BadTakeKind } from '$lib/types/server/recap';
 
 const MODEL = 'openai/gpt-5.4';
 const MAX_TOKENS = 500;
@@ -34,16 +34,51 @@ function buildSystemPrompt(spice: SpiceLevel, isFinalWeek: boolean): string {
     tone,
     'Rules: output ONLY the prose recap — no headers, no lists, no preamble.',
     'Use only the facts provided. Never invent outcomes, scores, or player actions.',
-    'Opted-out players (listed in opted_out_user_ids) are narrated neutrally — no roasting.',
+    'bad_takes lists the week\'s roastable blunders: kind "lost_allin" = a busted All-In bet,',
+    '"backfired_fade" = went against the crowd and lost, "heavy_loss" = a heavy pick that flopped.',
+    'rivalries lists ongoing all-time head-to-head matchups (a_wins vs b_wins) you may reference for flavor.',
+    'Opted-out players (listed in opted_out_user_ids) are narrated neutrally — no roasting,',
+    'even if they appear in bad_takes or rivalries.',
     isFinalWeek ? finalNote : ''
   ]
     .filter(Boolean)
     .join(' ');
 }
 
+// Roastable-fact allowlist (ADR-0008): only these gameplay-fact keys may enter the
+// model packet. Anything else — raw user ids, emails, off-topic data — is stripped
+// before the call as defense-in-depth for the deterministic/voice boundary.
+export const ROASTABLE_FACT_KEYS = [
+  'group',
+  'week',
+  'season',
+  'is_final_week',
+  'opted_out_user_ids',
+  'week_leader',
+  'week_laggard',
+  'perfect_weeks',
+  'allin_hero',
+  'allin_zero',
+  'contrarian_hit',
+  'standings',
+  'badge_changes',
+  'bad_takes',
+  'rivalries'
+] as const;
+
+/** Strip any key not on the roastable-fact allowlist. */
+export function applyRoastableAllowlist(packet: Record<string, unknown>): Record<string, unknown> {
+  const allowed = new Set<string>(ROASTABLE_FACT_KEYS);
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(packet)) {
+    if (allowed.has(key)) out[key] = value;
+  }
+  return out;
+}
+
 /** Build the input packet the model receives (only allowlisted gameplay facts). */
-function buildInputPacket(facts: RecapFacts): object {
-  return {
+export function buildInputPacket(facts: RecapFacts): Record<string, unknown> {
+  return applyRoastableAllowlist({
     group: facts.group_name,
     week: facts.week_number,
     season: facts.season_year,
@@ -65,8 +100,29 @@ function buildInputPacket(facts: RecapFacts): object {
       display_name: s.display_name,
       total_points: s.total_points
     })),
-    badge_changes: facts.badge_changes
-  };
+    badge_changes: facts.badge_changes,
+    // Display names only — never user_id (ADR-0008, no PII).
+    bad_takes: facts.bad_takes.map((b) => ({ display_name: b.display_name, kind: b.kind })),
+    rivalries: facts.rivalries.map((r) => ({
+      player_a: r.player_a.display_name,
+      player_b: r.player_b.display_name,
+      a_wins: r.a_wins,
+      b_wins: r.b_wins,
+      pushes: r.pushes,
+      games: r.games
+    }))
+  });
+}
+
+function badTakeLine(displayName: string, kind: BadTakeKind): string {
+  switch (kind) {
+    case 'lost_allin':
+      return `${displayName}'s All-In bet blew up.`;
+    case 'backfired_fade':
+      return `${displayName} faded the crowd and paid for it.`;
+    case 'heavy_loss':
+      return `${displayName} leaned heavy on a pick that flopped.`;
+  }
 }
 
 /** Deterministic fallback copy when the AI call fails or exceeds budget. */
@@ -80,8 +136,19 @@ export function renderFallback(facts: RecapFacts): string {
     const names = facts.perfect_weeks.map((p) => p.display_name).join(' and ');
     lines.push(`${names} had a perfect week — respect.`);
   }
-  if (facts.allin_zero) {
+  // Prefer the most-severe bad take (selector already ordered them); fall back to
+  // the legacy all-in-zero line only when no bad take qualified.
+  const topBadTake = facts.bad_takes[0];
+  if (topBadTake) {
+    lines.push(badTakeLine(topBadTake.display_name, topBadTake.kind));
+  } else if (facts.allin_zero) {
     lines.push(`${facts.allin_zero.display_name}'s all-in pick did not land this week.`);
+  }
+  const rivalry = facts.rivalries[0];
+  if (rivalry) {
+    lines.push(
+      `The ${rivalry.player_a.display_name}–${rivalry.player_b.display_name} rivalry rolls on (${rivalry.a_wins}-${rivalry.b_wins} all-time).`
+    );
   }
   if (facts.is_final_week) {
     lines.push('That wraps up the regular season. Final standings are set.');

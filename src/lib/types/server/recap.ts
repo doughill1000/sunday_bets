@@ -5,6 +5,21 @@ export type RecapPlayer = {
   display_name: string;
 };
 
+// Resurfaced bad takes (#295). Severity order: lost_allin > backfired_fade > heavy_loss.
+export type BadTakeKind = 'lost_allin' | 'backfired_fade' | 'heavy_loss';
+
+export type RecapBadTake = RecapPlayer & { kind: BadTakeKind };
+
+// Top active rivalry pair from the lifetime head-to-head read-model (#280).
+export type RecapRivalry = {
+  player_a: RecapPlayer;
+  player_b: RecapPlayer;
+  a_wins: number;
+  b_wins: number;
+  pushes: number;
+  games: number;
+};
+
 export type RecapFacts = {
   group_id: string;
   group_name: string;
@@ -26,4 +41,8 @@ export type RecapFacts = {
   standings: (RecapPlayer & { rank: number; total_points: number })[];
   // Badge-change deltas vs prior week's facts packet
   badge_changes: { badge_label: string; new_holders: string[]; prev_holders: string[] }[];
+  // Resurfaced bad takes this week — most roastable pick per player (#295)
+  bad_takes: RecapBadTake[];
+  // Top active rivalry pair(s) from lifetime head-to-head (#295)
+  rivalries: RecapRivalry[];
 };
