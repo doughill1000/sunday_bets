@@ -39,7 +39,10 @@ export type BadgeId =
   | 'sheep'
   | 'oracle'
   | 'the-fool'
-  | 'the-lemming';
+  | 'the-lemming'
+  // Line-side badges (#317): favorite-vs-underdog pick mix
+  | 'chalk-eater'
+  | 'dog-lover';
 
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';

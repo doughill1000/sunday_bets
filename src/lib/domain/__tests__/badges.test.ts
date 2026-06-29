@@ -9,6 +9,7 @@ import {
 import type {
   BadgeConsensusEntry,
   BadgeInputs,
+  BadgeLineSideEntry,
   BadgeSeasonTotalsEntry,
   BadgeWeightEntry,
   BadgeH2HEntry,
@@ -88,7 +89,8 @@ const EMPTY: BadgeInputs = {
   headToHead: [],
   teamAccuracy: [],
   trend: [],
-  consensus: []
+  consensus: [],
+  lineSide: []
 };
 
 function consensus(overrides: Partial<BadgeConsensusEntry> = {}): BadgeConsensusEntry {
@@ -101,6 +103,17 @@ function consensus(overrides: Partial<BadgeConsensusEntry> = {}): BadgeConsensus
     contrarian_wins: 4,
     majority_picks: 4,
     majority_wins: 2,
+    ...overrides
+  };
+}
+
+function lineSide(overrides: Partial<BadgeLineSideEntry> = {}): BadgeLineSideEntry {
+  return {
+    user_id: 'u1',
+    display_name: 'Alice',
+    decisions: 10,
+    chalk_picks: 5,
+    dog_picks: 5,
     ...overrides
   };
 }
@@ -735,6 +748,15 @@ describe('badgeInputsFromSeasonStats', () => {
         majority_picks: 4,
         majority_wins: 2
       }
+    ],
+    lineSide: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        decisions: 10,
+        chalk_picks: 7,
+        dog_picks: 3
+      }
     ]
   };
 
@@ -814,6 +836,9 @@ describe('badgeInputsFromSeasonStats', () => {
         majority_wins: 2
       }
     ]);
+    expect(inputs.lineSide).toEqual([
+      { user_id: 'u1', display_name: 'Alice', decisions: 10, chalk_picks: 7, dog_picks: 3 }
+    ]);
   });
 
   it('feeds computeBadges so derived badges carry through (equivalence to the old getBadges path)', () => {
@@ -826,7 +851,14 @@ describe('badgeInputsFromSeasonStats', () => {
 
   it('returns empty arrays for empty season stats', () => {
     const inputs = badgeInputsFromSeasonStats(
-      { trend: [], teamAccuracy: [], weightAccuracy: [], headToHead: [], consensusStats: [] },
+      {
+        trend: [],
+        teamAccuracy: [],
+        weightAccuracy: [],
+        headToHead: [],
+        consensusStats: [],
+        lineSide: []
+      },
       []
     );
     expect(inputs).toEqual(EMPTY);
@@ -1225,6 +1257,222 @@ describe('The Lemming', () => {
       consensus: []
     };
     expect(ids(computeBadges(inputs))).not.toContain('the-lemming');
+  });
+});
+
+// --- Chalk Eater (line-side) ---
+
+describe('Chalk Eater', () => {
+  it('awards the player with the highest favorite-pick share', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      lineSide: [
+        // Alice: 8/10 favorites; Bob: 4/10 favorites
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          chalk_picks: 8,
+          dog_picks: 2
+        }),
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 10,
+          chalk_picks: 4,
+          dog_picks: 6
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('uses share, not raw count (fewer picks but higher ratio wins)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 8 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 20 })
+      ],
+      lineSide: [
+        // Alice: 7/8 = 87.5%; Bob: 12/20 = 60% — Alice wins on share despite fewer chalk picks
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 8,
+          chalk_picks: 7,
+          dog_picks: 1
+        }),
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 20,
+          chalk_picks: 12,
+          dog_picks: 8
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('excludes players below the sample guard', () => {
+    // u2 has 2 decisions (below the 5 floor) but a perfect chalk ratio → still excluded
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+      ],
+      lineSide: [
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        }),
+        lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 2, dog_picks: 0 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('breaks ties by higher decision count, then alphabetically', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
+        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
+      ],
+      lineSide: [
+        // Both 50% chalk share; Zara has more decisions → wins
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Zara',
+          decisions: 12,
+          chalk_picks: 6,
+          dog_picks: 6
+        }),
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Alice',
+          decisions: 8,
+          chalk_picks: 4,
+          dog_picks: 4
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
+    expect(badge?.holders[0].display_name).toBe('Zara');
+  });
+
+  it('is not awarded when there is no line-side data', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10 })],
+      lineSide: []
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('chalk-eater');
+  });
+});
+
+// --- Dog Lover (line-side) ---
+
+describe('Dog Lover', () => {
+  it('awards the player with the highest underdog-pick share', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      lineSide: [
+        // Bob backs the dog more often: 9/10 vs Alice 2/10
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          chalk_picks: 8,
+          dog_picks: 2
+        }),
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 10,
+          chalk_picks: 1,
+          dog_picks: 9
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'dog-lover');
+    expect(badge?.holders[0].user_id).toBe('u2');
+  });
+
+  it('forms an opposite pair with Chalk Eater on the same axis', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+      ],
+      lineSide: [
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          chalk_picks: 9,
+          dog_picks: 1
+        }),
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 10,
+          chalk_picks: 1,
+          dog_picks: 9
+        })
+      ]
+    };
+    const badges = computeBadges(inputs);
+    expect(badges.find((b) => b.id === 'chalk-eater')?.holders[0].user_id).toBe('u1');
+    expect(badges.find((b) => b.id === 'dog-lover')?.holders[0].user_id).toBe('u2');
+  });
+
+  it('excludes players below the sample guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+      ],
+      lineSide: [
+        lineSide({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        }),
+        lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 0, dog_picks: 2 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'dog-lover');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded when there is no line-side data', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10 })],
+      lineSide: []
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('dog-lover');
   });
 });
 

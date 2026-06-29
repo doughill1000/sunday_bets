@@ -400,8 +400,8 @@ select results_eq(
   'alltime weight accuracy aggregates across all seasons'
 );
 
--- The 8 stats views are materialized (issues #191/#280). security_invoker is a plain-view
--- reloption matviews can't carry; assert they are matviews (relkind 'm') instead.
+-- The 9 stats views are materialized (issues #191/#280/#317). security_invoker is a
+-- plain-view reloption matviews can't carry; assert they are matviews (relkind 'm') instead.
 select results_eq(
   $$
     select count(*)::int
@@ -410,7 +410,7 @@ select results_eq(
       and relname like 'stats_%'
       and relkind = 'm'
   $$,
-  $$ values (8) $$,
+  $$ values (9) $$,
   'all stats views are materialized'
 );
 

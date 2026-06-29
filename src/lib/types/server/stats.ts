@@ -73,6 +73,18 @@ export type ConsensusStatsEntry = {
   majority_wins: number;
 };
 
+/** Per-user favorite-vs-underdog pick mix for the Chalk Eater / Dog Lover badges (#317). */
+export type LineSideStatsEntry = {
+  user_id: string;
+  display_name: string;
+  /** Total non-missed picks in scoring rounds (denominator for both ratios). */
+  decisions: number;
+  /** Picks on the spread favorite (line at pick time). */
+  chalk_picks: number;
+  /** Picks on the spread underdog (line at pick time). */
+  dog_picks: number;
+};
+
 export type SeasonStats = {
   trend: SeasonTrendEntry[];
   teamAccuracy: TeamAccuracyEntry[];
@@ -80,6 +92,8 @@ export type SeasonStats = {
   headToHead: HeadToHeadEntry[];
   /** Per-user consensus aggregates for Tier-B badge derivation (#294). */
   consensusStats: ConsensusStatsEntry[];
+  /** Per-user favorite-vs-underdog pick mix for line-side badges (#317). */
+  lineSide: LineSideStatsEntry[];
 };
 
 export type AllTimeTotalsEntry = {
