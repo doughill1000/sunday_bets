@@ -60,8 +60,10 @@
       <SheetHeader class="pb-4">
         <SheetTitle class="text-2xl">How to Play</SheetTitle>
       </SheetHeader>
-      <HowToPlay />
-      <div class="flex flex-col gap-2 pt-4">
+      <div class="px-4">
+        <HowToPlay />
+      </div>
+      <div class="flex flex-col gap-2 px-4 pt-4">
         <Button data-testid="guide-dismiss" onclick={dismiss}>Got it</Button>
         <Button variant="ghost" onclick={dismiss}>Skip for now</Button>
       </div>

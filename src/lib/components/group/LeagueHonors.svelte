@@ -267,7 +267,7 @@
   <!-- Awards guide: dialog on desktop, bottom sheet on mobile (matches WelcomeGuide). -->
   {#if isDesktop.current}
     <Dialog bind:open={guideOpen}>
-      <DialogContent data-testid="awards-guide" class="max-h-[80vh] max-w-lg overflow-y-auto">
+      <DialogContent data-testid="awards-guide" class="max-h-[80vh] max-w-lg overflow-y-auto px-8">
         <DialogHeader>
           <DialogTitle>Awards guide</DialogTitle>
           <DialogDescription>
@@ -290,7 +290,9 @@
             How each award is earned. Awards update as games are graded.
           </SheetDescription>
         </SheetHeader>
-        {@render awardsGuideBody()}
+        <div class="px-4">
+          {@render awardsGuideBody()}
+        </div>
       </SheetContent>
     </Sheet>
   {/if}
