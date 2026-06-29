@@ -52,6 +52,7 @@ function h2h(overrides: Partial<BadgeH2HEntry> = {}): BadgeH2HEntry {
     user_id: 'u1',
     display_name: 'Alice',
     opponent_user_id: 'u2',
+    opponent_display_name: 'Bob',
     games_compared: 10,
     wins: 7,
     losses: 3,
@@ -424,6 +425,9 @@ describe('The Ghost', () => {
 
 // --- The Nemesis ---
 
+// `stats_head_to_head` is an upper-triangle half-matrix: each pair appears in exactly
+// ONE row, recorded from the smaller-UUID player's perspective (`user_id <
+// opponent_user_id`). These fixtures mirror that shape — never both directions.
 describe('The Nemesis', () => {
   it('awards the player with the most H2H wins summed across opponents', () => {
     const inputs: BadgeInputs = {
@@ -433,15 +437,22 @@ describe('The Nemesis', () => {
         totals({ user_id: 'u2', display_name: 'Bob' })
       ],
       headToHead: [
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', wins: 8, losses: 2 }),
-        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u1', wins: 2, losses: 8 })
+        // Single row for the pair; Alice 8-2 over Bob → Bob is implicitly 2-8.
+        h2h({
+          user_id: 'u1',
+          display_name: 'Alice',
+          opponent_user_id: 'u2',
+          opponent_display_name: 'Bob',
+          wins: 8,
+          losses: 2
+        })
       ]
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
     expect(badge?.holders[0].user_id).toBe('u1');
   });
 
-  it('sums wins across multiple opponents', () => {
+  it('sums wins across multiple opponents, crediting both sides of each row', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
@@ -450,17 +461,38 @@ describe('The Nemesis', () => {
         totals({ user_id: 'u3', display_name: 'Carol' })
       ],
       headToHead: [
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', wins: 6, losses: 4 }),
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u3', wins: 6, losses: 4 }),
-        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u1', wins: 4, losses: 6 }),
-        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u3', wins: 9, losses: 1 }),
-        h2h({ user_id: 'u3', display_name: 'Carol', opponent_user_id: 'u1', wins: 4, losses: 6 }),
-        h2h({ user_id: 'u3', display_name: 'Carol', opponent_user_id: 'u2', wins: 1, losses: 9 })
+        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', opponent_display_name: 'Bob', wins: 6, losses: 4 }), // prettier-ignore
+        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 6, losses: 4 }), // prettier-ignore
+        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 9, losses: 1 }) // prettier-ignore
       ]
     };
-    // Alice: 12 wins; Bob: 13 wins; Carol: 5 wins → Bob is Nemesis
+    // Mirrored totals — Alice: 12-8, Bob: 4+9=13-7, Carol: 4+1=5 → Bob is Nemesis.
     const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
     expect(badge?.holders[0].user_id).toBe('u2');
+  });
+
+  // Regression (#nemesis-half-matrix): aggregating by `user_id` alone handed the title
+  // to whoever owned the smallest UUID, because the upper-triangle view never lists the
+  // largest-UUID player as `user_id`. Here Carol (largest UUID) is the true nemesis but
+  // never appears as a row's `user_id`; the old code would have crowned Alice.
+  it('credits the opponent side so the smallest-UUID player cannot sweep', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice' }),
+        totals({ user_id: 'u2', display_name: 'Bob' }),
+        totals({ user_id: 'u3', display_name: 'Carol' })
+      ],
+      headToHead: [
+        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', opponent_display_name: 'Bob', wins: 1, losses: 9 }), // prettier-ignore
+        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 1, losses: 9 }), // prettier-ignore
+        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 1, losses: 9 }) // prettier-ignore
+      ]
+    };
+    // Mirrored totals — Alice: 2-18, Bob: 10-10, Carol: 18-2 → Carol is the Nemesis.
+    // Buggy (user_id-only) totals would be Alice 2, Bob 1, Carol 0 → Alice.
+    const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
+    expect(badge?.holders[0].display_name).toBe('Carol');
   });
 
   it('is not awarded when there are no H2H entries', () => {
@@ -472,15 +504,17 @@ describe('The Nemesis', () => {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Zara' }),
-        totals({ user_id: 'u2', display_name: 'Alice' })
+        totals({ user_id: 'u2', display_name: 'Alice' }),
+        totals({ user_id: 'u3', display_name: 'Mike' })
       ],
       headToHead: [
-        // Zara: 7 wins, 2 losses — fewer losses than Alice
-        h2h({ user_id: 'u1', display_name: 'Zara', opponent_user_id: 'u2', wins: 7, losses: 2 }),
-        h2h({ user_id: 'u2', display_name: 'Alice', opponent_user_id: 'u1', wins: 7, losses: 3 })
+        h2h({ user_id: 'u1', display_name: 'Zara', opponent_user_id: 'u2', opponent_display_name: 'Alice', wins: 5, losses: 5 }), // prettier-ignore
+        h2h({ user_id: 'u1', display_name: 'Zara', opponent_user_id: 'u3', opponent_display_name: 'Mike', wins: 5, losses: 0 }), // prettier-ignore
+        h2h({ user_id: 'u2', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Mike', wins: 5, losses: 3 }) // prettier-ignore
       ]
     };
-    // Equal wins; Zara has fewer losses → Zara wins
+    // Mirrored totals — Zara: 10-5, Alice: 10-8, Mike: 3-10. Zara and Alice tie on wins;
+    // Zara has fewer losses → Zara wins.
     const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
     expect(badge?.holders[0].display_name).toBe('Zara');
   });
@@ -852,6 +886,7 @@ describe('badgeInputsFromSeasonStats', () => {
         user_id: 'u1',
         display_name: 'Alice',
         opponent_user_id: 'u2',
+        opponent_display_name: 'Bob',
         games_compared: 10,
         wins: 7,
         losses: 3

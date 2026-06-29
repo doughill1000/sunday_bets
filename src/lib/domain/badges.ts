@@ -34,6 +34,7 @@ export type BadgeH2HEntry = {
   user_id: string;
   display_name: string;
   opponent_user_id: string;
+  opponent_display_name: string;
   games_compared: number;
   wins: number;
   losses: number;
@@ -133,6 +134,7 @@ export function badgeInputsFromSeasonStats(
       user_id: h.user_id,
       display_name: h.display_name,
       opponent_user_id: h.opponent_user_id,
+      opponent_display_name: h.opponent_display_name,
       games_compared: h.games_compared,
       wins: h.wins,
       losses: h.losses
@@ -292,19 +294,24 @@ function theNemesis(h2h: BadgeH2HEntry[]): BadgeHolder | null {
     string,
     { user_id: string; display_name: string; wins: number; losses: number }
   >();
-  for (const row of h2h) {
-    const acc = byUser.get(row.user_id);
+  // `stats_head_to_head` is an upper-triangle half-matrix: one row per pair, recorded
+  // from the smaller-UUID player's perspective (`user_id < opponent_user_id`). Credit
+  // BOTH players from each row — the listed user with (wins, losses) and the opponent
+  // with the mirror (losses, wins). Aggregating by `user_id` alone collapses the award
+  // to whoever owns the smallest UUID in the group, since theirs are the only matchups
+  // ever counted. Mirrors `headToHeadForUser` in utils/stats.ts.
+  const add = (id: string, name: string, wins: number, losses: number) => {
+    const acc = byUser.get(id);
     if (acc) {
-      acc.wins += row.wins;
-      acc.losses += row.losses;
+      acc.wins += wins;
+      acc.losses += losses;
     } else {
-      byUser.set(row.user_id, {
-        user_id: row.user_id,
-        display_name: row.display_name,
-        wins: row.wins,
-        losses: row.losses
-      });
+      byUser.set(id, { user_id: id, display_name: name, wins, losses });
     }
+  };
+  for (const row of h2h) {
+    add(row.user_id, row.display_name, row.wins, row.losses);
+    add(row.opponent_user_id, row.opponent_display_name, row.losses, row.wins);
   }
   const players = [...byUser.values()];
   return holder(
