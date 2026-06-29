@@ -339,9 +339,9 @@
     "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_head_to_head.sql": {
-    "hash": "390c4375b9e82bad03bd45ef5271c52f0b6076cb96ae0df083fb02e0f259a9f5",
-    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
-    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+    "hash": "5ad4296f1e7ae613a3bb659c19fc11a38bfc57e91fe6807eb54d32b4e9a6a499",
+    "migration": "20260629010313_head_to_head_opposite_picks.sql",
+    "migrationHash": "778b923971910ccd29355c0bf24e38e1673d8c992cc406c887b8b5aab6fc6c4c"
   },
   "views/stats_season_trend.sql": {
     "hash": "2831f9ec907227ad460aad5a48554303e87db69ad20bb18b0e0c375d4ce4c314",
@@ -676,9 +676,9 @@
     "migrationHash": "2f8bf39366b6fa357077dc667620c88bca07ced51a8291193e1e2c0374d54f9c"
   },
   "views/stats_head_to_head_alltime.sql": {
-    "hash": "3b6a0b2bc83ef0b1a51258bf4a6bcd367afb4869a03a162fbfabe17ec5e744ce",
-    "migration": "20260628033559_lifetime_head_to_head.sql",
-    "migrationHash": "0cec8fb6c86a4d363fffd5ef3b538e6f1a3a14b97a56c0f23a3c2b03d1e36e95"
+    "hash": "84bc82980def784a7da17db1fae1d0caf29de352f104b7f4c6cc8e9d598857bb",
+    "migration": "20260629010313_head_to_head_opposite_picks.sql",
+    "migrationHash": "778b923971910ccd29355c0bf24e38e1673d8c992cc406c887b8b5aab6fc6c4c"
   },
   "views/group_pick_consensus.sql": {
     "hash": "5dc941a5616e6a121722943797cb0169e489506ec33621965818cdc88a24dbd2",

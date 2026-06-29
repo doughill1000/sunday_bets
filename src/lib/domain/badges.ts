@@ -427,7 +427,7 @@ const FLAVORS: Record<
     label: 'The Nemesis',
     emoji: '⚔️',
     flavor: 'Nobody wants to be on the other side of this matchup.',
-    description: 'Best overall head-to-head record against the league this season.'
+    description: 'Best head-to-head record this season on games where you picked the opposite side.'
   },
   'the-homer': {
     label: 'The Homer',

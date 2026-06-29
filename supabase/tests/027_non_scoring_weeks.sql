@@ -98,6 +98,15 @@ join public.games g on g.external_game_id = d.external_game_id
 join public.teams home on home.external_key = 'NSH'
 on conflict (group_id, user_id, game_id) do nothing;
 
+-- ns_b picks the away team (NSA) for the scoring game so it becomes an opposite pick
+-- and is eligible for H2H inclusion. Without this, both players pick NSH (agreement)
+-- and games_compared would be 0 under the opposite-picks-only H2H definition.
+update public.picks
+set picked_team_id        = (select id from public.teams where external_key = 'NSA'),
+    locked_spread_team_id = (select id from public.teams where external_key = 'NSA')
+where user_id = tests.get_supabase_uid('ns_b')
+  and game_id = (select id from public.games where external_game_id = 'ns-score');
+
 insert into public.pick_settlement (
   group_id, user_id, game_id, pick_id, points_delta, outcome, graded_at
 )
