@@ -461,4 +461,35 @@ describe('buildSeasonInputPacket', () => {
     expect(packet.scope).toBe('league');
     expect(JSON.stringify(packet.standings)).not.toContain('u1');
   });
+
+  it('trims the league prompt standings to the top 5 + bottom 5', async () => {
+    const base = await buildSeasonWrappedFacts({ groupId: 'g1', seasonYear: 2024 });
+    // Synthesize a 12-player table so the two edges no longer overlap.
+    const standings = Array.from({ length: 12 }, (_, i) => ({
+      user_id: `p${i + 1}`,
+      display_name: `Player ${i + 1}`,
+      rank: i + 1,
+      total_points: 120 - i * 10
+    }));
+    const packet = buildSeasonInputPacket(
+      leagueSubject({ ...base.league, standings, player_count: standings.length })
+    );
+    const ranks = (packet.standings as { rank: number }[]).map((s) => s.rank);
+    // Top 5 (ranks 1-5) and bottom 5 (ranks 8-12) survive; the middle (6, 7) is dropped.
+    expect(ranks).toEqual([1, 2, 3, 4, 5, 8, 9, 10, 11, 12]);
+  });
+
+  it('keeps every player when the table is small enough to fit both edges', async () => {
+    const base = await buildSeasonWrappedFacts({ groupId: 'g1', seasonYear: 2024 });
+    const standings = Array.from({ length: 8 }, (_, i) => ({
+      user_id: `p${i + 1}`,
+      display_name: `Player ${i + 1}`,
+      rank: i + 1,
+      total_points: 80 - i * 10
+    }));
+    const packet = buildSeasonInputPacket(
+      leagueSubject({ ...base.league, standings, player_count: standings.length })
+    );
+    expect((packet.standings as unknown[]).length).toBe(8);
+  });
 });
