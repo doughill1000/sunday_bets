@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-29
+
+- **#328** Instant PWA tab-switch feedback — eliminates the "did my tap register?" dead time when switching tabs. A top progress bar appears on every navigation; the tapped tab highlights immediately using the pending navigation target; and navigating to Stats or Group swaps in section skeletons instead of freezing the previous page while the server load runs. Touch preload (`tap`) starts the data fetch on `touchstart` rather than `hover`. components: `NavProgress.svelte`, `BottomTabBar.svelte`, `AppHeader.svelte` · `+layout.svelte` · `app.html`
+
 ## 2026-06-28
 
 - **PR #322** Release v2.6.0 — version bump. Milestone: v2.6 (features: #284 weekly AI recap, #294 Tier-B consensus badges, #300 display-name editing, #305 Group tab / App IA; patch: PR #297 stats fan-out, PR #298 test-gate skill, PR #311 Awards UX).
