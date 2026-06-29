@@ -2,7 +2,7 @@
   import { navigating } from '$app/state';
 </script>
 
-{#if navigating}
+{#if navigating.to}
   <div class="nav-progress fixed top-0 left-0 z-[100] h-[3px] bg-primary" aria-hidden="true" />
 {/if}
 
