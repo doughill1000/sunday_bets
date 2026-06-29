@@ -15,7 +15,7 @@
     const year = (e.target as HTMLSelectElement).value;
     const url = new URL(window.location.href);
     url.searchParams.set(paramName, year);
-    void goto(url.toString(), { invalidateAll: true });
+    void goto(url.toString(), { invalidateAll: true, noScroll: true });
   }
 </script>
 
