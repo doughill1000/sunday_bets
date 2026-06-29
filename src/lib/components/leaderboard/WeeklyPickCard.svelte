@@ -50,6 +50,21 @@
     list.sort((a, b) => sideRank(a.side) - sideRank(b.side));
     return list;
   });
+
+  type Outcome = WeeklyPickRow['outcome'];
+
+  function teamRowClass(outcome: Outcome) {
+    if (outcome === 'win') return 'bg-green-50 dark:bg-green-950/30';
+    if (outcome === 'loss') return 'bg-red-50 dark:bg-red-950/30';
+    return '';
+  }
+
+  function teamLabelClass(outcome: Outcome) {
+    if (outcome === 'win') return 'text-green-700 dark:text-green-400';
+    if (outcome === 'loss') return 'text-red-700 dark:text-red-400';
+    if (outcome === 'push') return 'text-yellow-600 dark:text-yellow-400';
+    return '';
+  }
 </script>
 
 <Card class="shadow-sm">
@@ -66,8 +81,11 @@
       <p class="text-sm text-muted-foreground">Picks reveal at kickoff.</p>
     {:else}
       {#each teams as team (team.label)}
-        <div class="flex gap-2">
-          <span class="mt-0.5 w-10 shrink-0 text-xs font-semibold">{team.label}</span>
+        {@const outcome = team.members[0]?.outcome}
+        <div class="flex gap-2 rounded px-1 {teamRowClass(outcome)}">
+          <span class="mt-0.5 w-10 shrink-0 text-xs font-semibold {teamLabelClass(outcome)}">
+            {team.label}
+          </span>
           <ul class="flex flex-1 flex-wrap gap-x-2.5 gap-y-1">
             {#each team.members as p (p.userId)}
               <li class="flex items-center gap-1 text-xs">
