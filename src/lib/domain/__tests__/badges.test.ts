@@ -172,7 +172,7 @@ describe('computeBadges — empty season', () => {
 // --- The Grinder ---
 
 describe('The Grinder', () => {
-  it('awards the player with the most decisions', () => {
+  it('awards the player who placed the most picks', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
@@ -182,6 +182,41 @@ describe('The Grinder', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-grinder');
     expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('ranks by picks placed, not the full slate — the player who missed the most cannot win', () => {
+    // Regression for the 2025 prod bug: once a season has missed picks, every
+    // player shares the same `decisions` (the full schedule). Ranking on that raw
+    // count collapsed the title to an alphabetical tie-break and handed it to the
+    // player who actually placed the fewest picks (and missed the most → The Ghost).
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        // Brett: full slate but missed almost all of it → fewest picks placed.
+        // Sorts first alphabetically, so he'd win a raw-`decisions` tie-break.
+        totals({
+          user_id: 'u1',
+          display_name: 'Brett',
+          decisions: 272,
+          wins: 56,
+          losses: 82,
+          pushes: 1,
+          missed: 133
+        }),
+        // Doug: missed nothing → placed the most picks → the real Grinder.
+        totals({
+          user_id: 'u2',
+          display_name: 'Doug',
+          decisions: 271,
+          wins: 132,
+          losses: 137,
+          pushes: 2,
+          missed: 0
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'the-grinder');
+    expect(badge?.holders[0].display_name).toBe('Doug');
   });
 
   it('breaks ties alphabetically by display_name', () => {
@@ -196,10 +231,21 @@ describe('The Grinder', () => {
     expect(badge?.holders[0].display_name).toBe('Alice');
   });
 
-  it('is not awarded when everyone has 0 decisions', () => {
+  it('is not awarded when nobody placed a pick (all missed or zero slate)', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
-      seasonTotals: [totals({ decisions: 0 })]
+      seasonTotals: [
+        totals({ decisions: 0, wins: 0, losses: 0, pushes: 0, missed: 0 }),
+        totals({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 8,
+          wins: 0,
+          losses: 0,
+          pushes: 0,
+          missed: 8
+        })
+      ]
     };
     expect(ids(computeBadges(inputs))).not.toContain('the-grinder');
   });
