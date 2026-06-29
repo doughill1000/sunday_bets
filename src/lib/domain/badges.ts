@@ -212,13 +212,29 @@ function holder(entry: { user_id: string; display_name: string }): BadgeHolder {
 
 // --- Title badge helpers (superlative: one holder or null) ---
 
+/**
+ * Picks actually placed this season. The matview's `decisions` counts every
+ * settlement row — including `missed` slates a player never picked — so the raw
+ * column equals the full schedule, not participation. Subtracting `missed`
+ * yields the graded picks (wins + losses + pushes) the player truly placed.
+ */
+function placedPicks(t: BadgeSeasonTotalsEntry): number {
+  return t.decisions - t.missed;
+}
+
 function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
-  const eligible = totals.filter((t) => t.decisions > 0);
+  // Rank by picks *placed*, not the raw slate count: once a season has missed
+  // picks, every player shares the same `decisions` (the full schedule), which
+  // collapses the title into an alphabetical tie-break and can hand it to the
+  // player who actually missed the most — the opposite of a grinder.
+  const eligible = totals.filter((t) => placedPicks(t) > 0);
   if (eligible.length === 0) return null;
   return holder(
     eligible.reduce((best, curr) => {
-      if (curr.decisions > best.decisions) return curr;
-      if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      const currPlaced = placedPicks(curr);
+      const bestPlaced = placedPicks(best);
+      if (currPlaced > bestPlaced) return curr;
+      if (currPlaced === bestPlaced) return alphaFirst(curr, best);
       return best;
     })
   );
