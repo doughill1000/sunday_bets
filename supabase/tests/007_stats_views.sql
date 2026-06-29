@@ -410,7 +410,7 @@ select results_eq(
       and relname like 'stats_%'
       and relkind = 'm'
   $$,
-  $$ values (9) $$,
+  $$ values (10) $$,
   'all stats views are materialized'
 );
 

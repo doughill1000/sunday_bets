@@ -42,7 +42,9 @@ export type BadgeId =
   | 'the-lemming'
   // Line-side badges (#317): favorite-vs-underdog pick mix
   | 'chalk-eater'
-  | 'dog-lover';
+  | 'dog-lover'
+  // Tier-C live-form badge (#296, Wave 3 epic #277)
+  | 'hot-hand';
 
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';

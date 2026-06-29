@@ -58,7 +58,8 @@
     weightAccuracy: [],
     headToHead: [],
     consensusStats: [],
-    lineSide: []
+    lineSide: [],
+    streaks: []
   };
 
   // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the

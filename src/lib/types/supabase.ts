@@ -1524,6 +1524,26 @@ export type Database = {
           }
         ];
       };
+      stats_pick_streaks: {
+        Row: {
+          current_streak: number | null;
+          display_name: string | null;
+          graded_picks: number | null;
+          group_id: string | null;
+          max_streak: number | null;
+          season_year: number | null;
+          user_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       stats_season_trend: {
         Row: {
           cumulative_points: number | null;

@@ -57,6 +57,12 @@
 
   const hasBadgePicker = $derived(seasons.length > 1);
 
+  // Season is "complete" once it appears in the trophy case (rank-1 entry exists).
+  // In-season badges are provisional; they crown when the season finalises.
+  const isSeasonComplete = $derived(
+    selectedSeason != null && honors.trophyCase.some((c) => c.season_year === selectedSeason)
+  );
+
   // Pivot awards to a member-first view: one row per holder, their awards collected.
   // Sorted by most-decorated first, then alphabetically for a stable order.
   type AwardHolder = { user_id: string; display_name: string; awards: BadgeAward[] };
@@ -216,6 +222,24 @@
               </p>
               {#if hasBadgePicker && selectedSeason != null}
                 <SeasonPicker {seasons} selected={selectedSeason} />
+              {/if}
+              <!-- Provisional/crowned lifecycle indicator (#296). -->
+              {#if badges.length > 0}
+                {#if isSeasonComplete}
+                  <span
+                    class="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:text-yellow-400"
+                    data-testid="awards-crowned"
+                  >
+                    Crowned
+                  </span>
+                {:else}
+                  <span
+                    class="rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                    data-testid="awards-provisional"
+                  >
+                    Provisional
+                  </span>
+                {/if}
               {/if}
             </div>
             <Button

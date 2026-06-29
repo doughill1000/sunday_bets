@@ -9,6 +9,7 @@ import type {
   ConsensusStatsEntry,
   HeadToHeadEntry,
   LineSideStatsEntry,
+  StreakStatsEntry,
   SeasonStats,
   TeamAccuracyEntry,
   WeightAccuracyEntry
@@ -22,6 +23,7 @@ type AllTimeTotalsRow = Tables<'stats_alltime_totals'>;
 type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
 type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
 type LineSideRow = Tables<'stats_accuracy_by_line_side'>;
+type StreakRow = Tables<'stats_pick_streaks'>;
 // Narrowed shape for the partial select on group_pick_consensus.
 type ConsensusPickRow = Pick<
   Tables<'group_pick_consensus'>,
@@ -191,49 +193,82 @@ function toLineSide(row: LineSideRow): LineSideStatsEntry | null {
   };
 }
 
+function toStreak(row: StreakRow): StreakStatsEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.graded_picks == null ||
+    row.current_streak == null ||
+    row.max_streak == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    graded_picks: row.graded_picks,
+    current_streak: row.current_streak,
+    max_streak: row.max_streak
+  };
+}
+
 export async function getStatsForSeason(seasonYear: number, groupId: string): Promise<SeasonStats> {
-  const [trend, teamResult, weightResult, headToHeadResult, consensusResult, lineSideResult] =
-    await Promise.all([
-      getWeeklyCumulative(seasonYear, groupId),
-      supabaseService
-        .from('stats_accuracy_by_team')
-        .select('*')
-        .eq('season_year', seasonYear)
-        .eq('group_id', groupId)
-        .order('display_name')
-        .order('team_short_name'),
-      supabaseService
-        .from('stats_accuracy_by_weight')
-        .select('*')
-        .eq('season_year', seasonYear)
-        .eq('group_id', groupId)
-        .order('display_name')
-        .order('weight'),
-      supabaseService
-        .from('stats_head_to_head')
-        .select('*')
-        .eq('season_year', seasonYear)
-        .eq('group_id', groupId)
-        .order('display_name')
-        .order('opponent_display_name'),
-      supabaseService
-        .from('group_pick_consensus')
-        .select('user_id, display_name, consensus_pct, is_minority, graded_outcome')
-        .eq('season_year', seasonYear)
-        .eq('group_id', groupId),
-      supabaseService
-        .from('stats_accuracy_by_line_side')
-        .select('*')
-        .eq('season_year', seasonYear)
-        .eq('group_id', groupId)
-        .order('display_name')
-    ]);
+  const [
+    trend,
+    teamResult,
+    weightResult,
+    headToHeadResult,
+    consensusResult,
+    lineSideResult,
+    streakResult
+  ] = await Promise.all([
+    getWeeklyCumulative(seasonYear, groupId),
+    supabaseService
+      .from('stats_accuracy_by_team')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('team_short_name'),
+    supabaseService
+      .from('stats_accuracy_by_weight')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('weight'),
+    supabaseService
+      .from('stats_head_to_head')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
+      .order('display_name')
+      .order('opponent_display_name'),
+    supabaseService
+      .from('group_pick_consensus')
+      .select('user_id, display_name, consensus_pct, is_minority, graded_outcome')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId),
+    supabaseService
+      .from('stats_accuracy_by_line_side')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
+      .order('display_name'),
+    supabaseService
+      .from('stats_pick_streaks')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .eq('group_id', groupId)
+      .order('display_name')
+  ]);
 
   if (teamResult.error) throw teamResult.error;
   if (weightResult.error) throw weightResult.error;
   if (headToHeadResult.error) throw headToHeadResult.error;
   if (consensusResult.error) throw consensusResult.error;
   if (lineSideResult.error) throw lineSideResult.error;
+  if (streakResult.error) throw streakResult.error;
 
   return {
     trend,
@@ -252,6 +287,10 @@ export async function getStatsForSeason(seasonYear: number, groupId: string): Pr
     consensusStats: aggregateConsensusRows(consensusResult.data ?? []),
     lineSide: (lineSideResult.data ?? []).flatMap((row) => {
       const entry = toLineSide(row);
+      return entry ? [entry] : [];
+    }),
+    streaks: (streakResult.data ?? []).flatMap((row) => {
+      const entry = toStreak(row);
       return entry ? [entry] : [];
     })
   };

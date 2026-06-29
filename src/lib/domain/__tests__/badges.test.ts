@@ -3,6 +3,7 @@ import {
   computeBadges,
   computeSampleGuard,
   computeOracleGuard,
+  computeHotHandGuard,
   badgeInputsFromSeasonStats,
   BADGE_GLOSSARY
 } from '../badges';
@@ -11,6 +12,7 @@ import type {
   BadgeInputs,
   BadgeLineSideEntry,
   BadgeSeasonTotalsEntry,
+  BadgeStreakEntry,
   BadgeWeightEntry,
   BadgeH2HEntry,
   BadgeTeamEntry,
@@ -91,7 +93,8 @@ const EMPTY: BadgeInputs = {
   teamAccuracy: [],
   trend: [],
   consensus: [],
-  lineSide: []
+  lineSide: [],
+  streaks: []
 };
 
 function consensus(overrides: Partial<BadgeConsensusEntry> = {}): BadgeConsensusEntry {
@@ -115,6 +118,17 @@ function lineSide(overrides: Partial<BadgeLineSideEntry> = {}): BadgeLineSideEnt
     decisions: 10,
     chalk_picks: 5,
     dog_picks: 5,
+    ...overrides
+  };
+}
+
+function streak(overrides: Partial<BadgeStreakEntry> = {}): BadgeStreakEntry {
+  return {
+    user_id: 'u1',
+    display_name: 'Alice',
+    graded_picks: 10,
+    current_streak: 3,
+    max_streak: 5,
     ...overrides
   };
 }
@@ -837,6 +851,15 @@ describe('badgeInputsFromSeasonStats', () => {
         chalk_picks: 7,
         dog_picks: 3
       }
+    ],
+    streaks: [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        graded_picks: 10,
+        current_streak: 3,
+        max_streak: 5
+      }
     ]
   };
 
@@ -920,6 +943,9 @@ describe('badgeInputsFromSeasonStats', () => {
     expect(inputs.lineSide).toEqual([
       { user_id: 'u1', display_name: 'Alice', decisions: 10, chalk_picks: 7, dog_picks: 3 }
     ]);
+    expect(inputs.streaks).toEqual([
+      { user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3, max_streak: 5 }
+    ]);
   });
 
   it('feeds computeBadges so derived badges carry through (equivalence to the old getBadges path)', () => {
@@ -938,7 +964,8 @@ describe('badgeInputsFromSeasonStats', () => {
         weightAccuracy: [],
         headToHead: [],
         consensusStats: [],
-        lineSide: []
+        lineSide: [],
+        streaks: []
       },
       []
     );
@@ -1580,5 +1607,164 @@ describe('Tier-B and Tier-A badges coexist', () => {
     expect(awarded).toContain('the-grinder');
     // Tier-B: lone-wolf awarded (single eligible player)
     expect(awarded).toContain('lone-wolf');
+  });
+});
+
+// --- computeHotHandGuard ---
+
+describe('computeHotHandGuard', () => {
+  it('returns the floor when the list is empty', () => {
+    expect(computeHotHandGuard([])).toBe(5);
+  });
+
+  it('returns the floor for a low-activity season', () => {
+    const small = [streak({ graded_picks: 4 }), streak({ graded_picks: 4 })];
+    expect(computeHotHandGuard(small)).toBe(5);
+  });
+
+  it('scales up with a high-activity season', () => {
+    const busy = [streak({ graded_picks: 30 }), streak({ graded_picks: 30 })];
+    expect(computeHotHandGuard(busy)).toBe(11);
+  });
+});
+
+// --- Hot Hand (Tier-C) ---
+
+describe('Hot Hand — provisional (in-season, seasonComplete=false)', () => {
+  it('awards the player with the highest current_streak', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 4 }),
+        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 2 })
+      ]
+    };
+    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded when the best current_streak is 0 (all recent picks are losses/misses)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 0 }),
+        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 0 })
+      ]
+    };
+    expect(ids(computeBadges(inputs, false))).not.toContain('hot-hand');
+  });
+
+  it('uses alphabetical tie-break when current_streaks are equal', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 3 }),
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
+      ]
+    };
+    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
+    expect(badge?.holders[0].display_name).toBe('Alice');
+  });
+
+  it('uses graded_picks as secondary tie-break before alpha', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 15, current_streak: 3 }),
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
+      ]
+    };
+    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
+    expect(badge?.holders[0].display_name).toBe('Bob');
+  });
+
+  it('ignores players below the sample guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        // Only one player; guard = max(5, round(2 * 0.35)) = 5; below guard → no award
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 2, current_streak: 2 })
+      ]
+    };
+    expect(ids(computeBadges(inputs, false))).not.toContain('hot-hand');
+  });
+});
+
+describe('Hot Hand — crowned (season complete, seasonComplete=true)', () => {
+  it('awards the player with the highest max_streak', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({
+          user_id: 'u1',
+          display_name: 'Alice',
+          graded_picks: 10,
+          current_streak: 1,
+          max_streak: 6
+        }),
+        streak({
+          user_id: 'u2',
+          display_name: 'Bob',
+          graded_picks: 10,
+          current_streak: 4,
+          max_streak: 4
+        })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'hot-hand');
+    // Alice has the longer max_streak even though Bob's current_streak is higher
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded when all max_streaks are 0', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, max_streak: 0 })]
+    };
+    expect(ids(computeBadges(inputs, true))).not.toContain('hot-hand');
+  });
+
+  it('uses alphabetical tie-break when max_streaks are equal', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      streaks: [
+        streak({ user_id: 'u2', display_name: 'Zara', graded_picks: 10, max_streak: 5 }),
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, max_streak: 5 })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'hot-hand');
+    expect(badge?.holders[0].display_name).toBe('Alice');
+  });
+});
+
+describe('Hot Hand — no streak data', () => {
+  it('is not awarded when streaks array is empty', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
+      streaks: []
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('hot-hand');
+  });
+});
+
+// --- Tier-C and Tier-A coexist ---
+
+describe('Tier-C and Tier-A badges coexist', () => {
+  it('returns Tier-A, Tier-B, and Tier-C badges in the same output', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
+      consensus: [
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 40 })
+      ],
+      streaks: [
+        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
+      ]
+    };
+    const awarded = ids(computeBadges(inputs));
+    expect(awarded).toContain('the-grinder');
+    expect(awarded).toContain('lone-wolf');
+    expect(awarded).toContain('hot-hand');
   });
 });
