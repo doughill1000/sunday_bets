@@ -1793,6 +1793,18 @@ export type Database = {
         };
         Returns: undefined;
       };
+      update_group_recap_settings: {
+        Args: {
+          p_ai_recaps_enabled?: boolean;
+          p_group_id: string;
+          p_spice?: string;
+        };
+        Returns: undefined;
+      };
+      update_recap_opt_out: {
+        Args: { p_ai_recap_opt_out: boolean; p_group_id: string };
+        Returns: undefined;
+      };
       upsert_game_by_external_id: {
         Args: {
           p_away_team_id: number;
