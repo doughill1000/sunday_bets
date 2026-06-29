@@ -189,7 +189,7 @@
         <!-- Wooden spoon: last place of the most-recently-completed season -->
         {#if woodenSpoon}
           <div
-            class="flex items-center gap-2 text-sm text-muted-foreground"
+            class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
             data-testid="wooden-spoon"
           >
             <span aria-hidden="true">🥄</span>
@@ -198,8 +198,10 @@
               displayName={woodenSpoon.display_name}
               size="xs"
             />
-            <span>{nameFor(woodenSpoon.user_id, woodenSpoon.display_name)}</span>
-            <span>— {woodenSpoon.season_year} wooden spoon</span>
+            <span
+              >{nameFor(woodenSpoon.user_id, woodenSpoon.display_name)} — {woodenSpoon.season_year}
+              wooden spoon</span
+            >
           </div>
         {/if}
       {/if}
