@@ -832,6 +832,66 @@ export type Database = {
           }
         ];
       };
+      season_wrapped: {
+        Row: {
+          completion_tokens: number | null;
+          created_at: string;
+          facts: Json;
+          group_id: string;
+          id: string;
+          is_fallback: boolean;
+          model: string | null;
+          prompt_tokens: number | null;
+          prose: string;
+          scope: string;
+          season_year: number;
+          subject_user_id: string | null;
+        };
+        Insert: {
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts: Json;
+          group_id: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          prose: string;
+          scope: string;
+          season_year: number;
+          subject_user_id?: string | null;
+        };
+        Update: {
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts?: Json;
+          group_id?: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          prose?: string;
+          scope?: string;
+          season_year?: number;
+          subject_user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'season_wrapped_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'season_wrapped_subject_user_id_fkey';
+            columns: ['subject_user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       seasons: {
         Row: {
           id: number;

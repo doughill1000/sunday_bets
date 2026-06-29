@@ -18,9 +18,9 @@ import type { Enums } from '$lib/types/supabase';
 
 type PickOutcome = Enums<'pick_outcome'>;
 
-type WeekMeta = { weekNumber: number; seasonYear: number; isFinalWeek: boolean };
+export type WeekMeta = { weekNumber: number; seasonYear: number; isFinalWeek: boolean };
 
-async function loadWeekMeta(weekId: number): Promise<WeekMeta> {
+export async function loadWeekMeta(weekId: number): Promise<WeekMeta> {
   const { data, error } = await supabaseService
     .from('weeks')
     .select('week_number, season_id, seasons!inner(year)')
@@ -47,14 +47,14 @@ async function loadWeekMeta(weekId: number): Promise<WeekMeta> {
   return { weekNumber, seasonYear, isFinalWeek: weekNumber >= maxWeek };
 }
 
-type GroupMeta = {
+export type GroupMeta = {
   name: string;
   spice: SpiceLevel;
   aiRecapsEnabled: boolean;
   optedOutUserIds: string[];
 };
 
-async function loadGroupMeta(groupId: string): Promise<GroupMeta> {
+export async function loadGroupMeta(groupId: string): Promise<GroupMeta> {
   const [groupRes, cfgRes, membersRes] = await Promise.all([
     supabaseService.from('groups').select('name').eq('id', groupId).single(),
     supabaseService
