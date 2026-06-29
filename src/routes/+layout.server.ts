@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { getLatestRecap } from '$lib/server/db/queries/recaps';
+import { getReigningChampion } from '$lib/server/db/queries/honors';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {
   // The hook (injectSession) already validated the JWT via safeGetSession and set
@@ -18,6 +19,15 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
           .catch(() => null)
       : Promise.resolve(null);
 
+  // Streamed so it never blocks navigation. Resolved in the layout template
+  // to show a crown on the header avatar when the current user is the reigning champ.
+  const championUserId: Promise<string | null> =
+    user && locals.groupId
+      ? getReigningChampion(locals.groupId)
+          .then((c) => c?.user_id ?? null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
   return {
     session,
     user,
@@ -26,6 +36,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
     groupId: locals.groupId,
     memberships: locals.memberships,
     cookies: cookies.getAll(),
-    latestRecap
+    latestRecap,
+    championUserId
   };
 };
