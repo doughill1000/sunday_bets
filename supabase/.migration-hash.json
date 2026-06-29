@@ -671,9 +671,9 @@
     "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/league_completed_standings.sql": {
-    "hash": "94fec991300dc699cce0a72a1e286be5f3daf8a1c00830167b095e6de5f316ee",
-    "migration": "20260628214734_completed_season_by_final_scores.sql",
-    "migrationHash": "1164b52b726da6534791fbf5ca8f61bc3d1026c9d226e3db2ee5054c2a40b004"
+    "hash": "0a2638e77eb3f7be637211a9c2d428689847d2ae318ecc7489f87142d4ca0895",
+    "migration": "20260629004040_fix_completed_seasons_or_check.sql",
+    "migrationHash": "2f8bf39366b6fa357077dc667620c88bca07ced51a8291193e1e2c0374d54f9c"
   },
   "views/stats_head_to_head_alltime.sql": {
     "hash": "3b6a0b2bc83ef0b1a51258bf4a6bcd367afb4869a03a162fbfabe17ec5e744ce",
