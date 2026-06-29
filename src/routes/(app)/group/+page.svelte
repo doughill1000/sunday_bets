@@ -40,6 +40,17 @@
   // Revoke invite
   let revokeBusy = $state<string | null>(null); // invite id
 
+  // AI recap settings — commissioner controls (issue #301, ADR-0008)
+  let spice = $state<'mild' | 'medium' | 'spicy'>(data.spice);
+  let aiRecapsEnabled = $state(data.aiRecapsEnabled);
+  let recapSettingsMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let recapSettingsBusy = $state(false);
+
+  // AI recap opt-out — per-player (issue #301, ADR-0008)
+  let aiRecapOptOut = $state(data.aiRecapOptOut);
+  let optOutMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let optOutBusy = $state(false);
+
   // ── Derived ───────────────────────────────────────────────────────────────
 
   const commissionerCount = $derived(data.members.filter((m) => m.role === 'commissioner').length);
@@ -209,6 +220,58 @@
   async function copyInviteLink(code: string) {
     const url = `${window.location.origin}/join/${code}`;
     await navigator.clipboard.writeText(url).catch(() => {});
+  }
+
+  async function saveRecapSettings() {
+    if (recapSettingsBusy) return;
+    recapSettingsMsg = null;
+    recapSettingsBusy = true;
+    try {
+      const res = await fetch('/api/group/update-recap-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spice, ai_recaps_enabled: aiRecapsEnabled })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        recapSettingsMsg = {
+          kind: 'error',
+          text: body.reason ?? 'Could not update AI recap settings.'
+        };
+        return;
+      }
+      recapSettingsMsg = { kind: 'success', text: 'AI recap settings saved.' };
+      await invalidateAll();
+      spice = data.spice;
+      aiRecapsEnabled = data.aiRecapsEnabled;
+    } finally {
+      recapSettingsBusy = false;
+    }
+  }
+
+  async function toggleOptOut(optOut: boolean) {
+    if (optOutBusy) return;
+    optOutMsg = null;
+    optOutBusy = true;
+    try {
+      const res = await fetch('/api/group/recap-opt-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_recap_opt_out: optOut })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        optOutMsg = { kind: 'error', text: body.reason ?? 'Could not update recap preference.' };
+        aiRecapOptOut = !optOut;
+        return;
+      }
+      optOutMsg = {
+        kind: 'success',
+        text: optOut ? "Opted out — you'll appear as neutral facts." : 'Opted back in.'
+      };
+    } finally {
+      optOutBusy = false;
+    }
   }
 </script>
 
@@ -531,7 +594,116 @@
         {/if}
       </CardContent>
     </Card>
+    <!-- AI recap settings (issue #301, ADR-0008) -->
+    <Card class="p-6">
+      <CardHeader class="mb-2 p-0">
+        <CardTitle class="text-xl font-bold">AI Recap</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-5 p-0 pt-2">
+        <p class="text-sm text-muted-foreground">
+          Control how the weekly AI recap reads for your group.
+        </p>
+        <form
+          class="space-y-5"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void saveRecapSettings();
+          }}
+        >
+          <!-- Enable / disable recaps -->
+          <div class="flex items-start gap-3">
+            <input
+              id="ai-recaps-enabled"
+              type="checkbox"
+              bind:checked={aiRecapsEnabled}
+              disabled={recapSettingsBusy}
+              class="border-input mt-1 h-4 w-4 rounded border"
+            />
+            <div class="space-y-0.5">
+              <Label for="ai-recaps-enabled">Enable weekly AI recap</Label>
+              <p class="text-xs text-muted-foreground">
+                When off, the grade-cron skips recap generation for this group.
+              </p>
+            </div>
+          </div>
+
+          <!-- Spice picker -->
+          <div
+            class="space-y-1"
+            class:opacity-50={!aiRecapsEnabled}
+            class:pointer-events-none={!aiRecapsEnabled}
+          >
+            <Label for="spice">Recap tone (spice)</Label>
+            <select
+              id="spice"
+              bind:value={spice}
+              disabled={recapSettingsBusy || !aiRecapsEnabled}
+              class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="mild">Mild — light ribbing, low-key commentary</option>
+              <option value="medium">Medium — playful trash talk and hype (default)</option>
+              <option value="spicy">Spicy — harder roasts and bravado</option>
+            </select>
+            <p class="text-xs text-muted-foreground">
+              All tones stay fact-faithful and in-app gameplay only.
+            </p>
+          </div>
+
+          <Button type="submit" size="sm" disabled={recapSettingsBusy}>
+            {recapSettingsBusy ? 'Saving…' : 'Save'}
+          </Button>
+        </form>
+
+        {#if recapSettingsMsg}
+          <div
+            class="rounded-xl border p-3 text-sm"
+            class:border-success={recapSettingsMsg.kind === 'success'}
+            class:border-destructive={recapSettingsMsg.kind === 'error'}
+          >
+            {recapSettingsMsg.text}
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
   {/if}
+
+  <!-- AI recap opt-out — visible to every member (issue #301, ADR-0008) -->
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Roast me?</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <p class="text-sm text-muted-foreground">
+        When on, you may appear in the weekly recap with personalised commentary. When off, you'll
+        show up only as neutral facts — wins, losses, points.
+      </p>
+      <div class="flex items-center gap-3">
+        <input
+          id="ai-recap-opt-out"
+          type="checkbox"
+          checked={!aiRecapOptOut}
+          disabled={optOutBusy}
+          class="border-input h-4 w-4 rounded border"
+          onchange={(e) => {
+            const optOut = !(e.currentTarget as HTMLInputElement).checked;
+            aiRecapOptOut = optOut;
+            void toggleOptOut(optOut);
+          }}
+        />
+        <Label for="ai-recap-opt-out">Include me in the AI recap</Label>
+      </div>
+
+      {#if optOutMsg}
+        <div
+          class="rounded-xl border p-3 text-sm"
+          class:border-success={optOutMsg.kind === 'success'}
+          class:border-destructive={optOutMsg.kind === 'error'}
+        >
+          {optOutMsg.text}
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
 
   <!-- Leave group -->
   <Card class="p-6">

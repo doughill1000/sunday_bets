@@ -27,7 +27,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     supabaseService.from('groups').select('id, name').eq('id', groupId).single(),
     supabaseService
       .from('group_memberships')
-      .select('role')
+      .select('role, ai_recap_opt_out')
       .eq('group_id', groupId)
       .eq('user_id', user.id)
       .maybeSingle()
@@ -71,6 +71,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   let gradingPreset: 'house' | 'gamer' = 'house';
   let dropWorstWeek = false;
   let presetLocked = false;
+  // AI recap settings (commissioner-only, issue #301, ADR-0008).
+  let spice: 'mild' | 'medium' | 'spicy' = 'medium';
+  let aiRecapsEnabled = true;
   if (isCommissioner) {
     const [inviteResult, cfg, lockedResult] = await Promise.all([
       supabaseService
@@ -88,7 +91,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     dropWorstWeek =
       (cfg?.scoring_rules as { drop_worst_week?: boolean } | null)?.drop_worst_week ?? false;
     presetLocked = lockedResult.data ?? false;
+    const rawSpice = cfg?.spice;
+    spice = rawSpice === 'mild' || rawSpice === 'spicy' ? rawSpice : 'medium';
+    aiRecapsEnabled = cfg?.ai_recaps_enabled ?? true;
   }
+
+  const aiRecapOptOut = myMembershipResult.data?.ai_recap_opt_out ?? false;
 
   return {
     group,
@@ -103,6 +111,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     invites,
     gradingPreset,
     dropWorstWeek,
-    presetLocked
+    presetLocked,
+    spice,
+    aiRecapsEnabled,
+    aiRecapOptOut
   };
 };
