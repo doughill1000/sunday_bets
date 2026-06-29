@@ -23,7 +23,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   const cursor = event.url.searchParams.get('cursor');
 
   const [currentSeasonYear, availableSeasons] = await Promise.all([
-    getCurrentSeasonYear(),
+    event.locals.currentSeasonYear ?? getCurrentSeasonYear(),
     getAvailableSeasons(groupId)
   ]);
 

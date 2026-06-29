@@ -22,10 +22,25 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   // League Honors (#305): the Group tab is now the home for trophies, the wooden
   // spoon, and identity badges (moved off Stats). Champion/spoon come from
   // getLeagueHonors; badges derive from the selected season's stats + standings.
-  const [currentSeasonYear, availableSeasons] = await Promise.all([
-    getCurrentSeasonYear(),
-    getAvailableSeasons(groupId)
+  //
+  // Group name and current-user role run in the same block — neither depends on
+  // badgeSeasonYear and they were the former sequential tail.
+  const [currentSeasonYear, availableSeasons, groupResult, myMembershipResult] = await Promise.all([
+    locals.currentSeasonYear ?? getCurrentSeasonYear(),
+    getAvailableSeasons(groupId),
+    supabaseService.from('groups').select('id, name').eq('id', groupId).single(),
+    supabaseService
+      .from('group_memberships')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', user.id)
+      .maybeSingle()
   ]);
+
+  const { data: group, error: groupErr } = groupResult;
+  if (groupErr || !group) throw redirect(303, '/auth/error?reason=no-group');
+
+  const isCommissioner = myMembershipResult.data?.role === 'commissioner';
 
   const badgeSeasonYear = resolveSeasonYear(
     url.searchParams.get('season'),
@@ -46,25 +61,6 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
   const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
 
-  // Load group name.
-  const { data: group, error: groupErr } = await supabaseService
-    .from('groups')
-    .select('id, name')
-    .eq('id', groupId)
-    .single();
-
-  if (groupErr || !group) throw redirect(303, '/auth/error?reason=no-group');
-
-  // The current user's role via a direct PK lookup -- they may not be on the first
-  // members page, so we can't derive this from the page above.
-  const { data: myMembership } = await supabaseService
-    .from('group_memberships')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-  const isCommissioner = myMembership?.role === 'commissioner';
-
   // Load active invites if commissioner.
   let invites: {
     id: string;
@@ -80,23 +76,22 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   let dropWorstWeek = false;
   let presetLocked = false;
   if (isCommissioner) {
-    const { data: inviteData } = await supabaseService
-      .from('group_invites')
-      .select('id, code, expires_at, max_uses, used_count, revoked_at, created_at')
-      .eq('group_id', groupId)
-      .is('revoked_at', null)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    invites = inviteData ?? [];
-
-    const cfg = await getGroupConfig(groupId);
-    const { data: locked } = await supabaseService.rpc('group_active_season_settled', {
-      p_group_id: groupId
-    });
+    const [inviteResult, cfg, lockedResult] = await Promise.all([
+      supabaseService
+        .from('group_invites')
+        .select('id, code, expires_at, max_uses, used_count, revoked_at, created_at')
+        .eq('group_id', groupId)
+        .is('revoked_at', null)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      getGroupConfig(groupId),
+      supabaseService.rpc('group_active_season_settled', { p_group_id: groupId })
+    ]);
+    invites = inviteResult.data ?? [];
     gradingPreset = cfg?.grading_preset === 'gamer' ? 'gamer' : 'house';
     dropWorstWeek =
       (cfg?.scoring_rules as { drop_worst_week?: boolean } | null)?.drop_worst_week ?? false;
-    presetLocked = locked ?? false;
+    presetLocked = lockedResult.data ?? false;
   }
 
   return {

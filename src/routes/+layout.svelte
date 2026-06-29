@@ -20,7 +20,6 @@
   const userProfile = $derived(data.userProfile ?? null);
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
-  const latestRecap = $derived(data.latestRecap ?? null);
 
   onMount(() => {
     // autoUpdate strategy: the SW installs silently and onNeedRefresh never
@@ -92,7 +91,9 @@
   {#if user}
     <BottomTabBar />
     <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
-    <RecapFlash recap={latestRecap} />
+    {#await data.latestRecap then recap}
+      <RecapFlash {recap} />
+    {/await}
   {/if}
 </div>
 

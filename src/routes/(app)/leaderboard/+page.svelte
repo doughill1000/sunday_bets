@@ -34,7 +34,7 @@
       weeklyNavigated = true;
       const url = new URL(window.location.href);
       url.searchParams.set('view', 'weekly');
-      void goto(url.toString(), { invalidateAll: true, noScroll: true, keepFocus: true });
+      void goto(url.toString(), { noScroll: true, keepFocus: true });
     }
     if (activeTab === 'standings') {
       weeklyNavigated = false;

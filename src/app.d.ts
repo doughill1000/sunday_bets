@@ -19,6 +19,8 @@ declare global {
       groupId: string | null;
       /** All active group memberships for the authenticated user (empty for guests). */
       memberships: Array<{ groupId: string; groupName: string; role: string }>;
+      /** Per-request memoized season-year promise; null for unauthenticated requests. */
+      currentSeasonYear: Promise<number> | null;
     }
   }
 }
