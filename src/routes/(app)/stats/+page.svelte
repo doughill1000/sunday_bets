@@ -1,5 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { createQuery } from '@tanstack/svelte-query';
+  import { queryKeys } from '$lib/query/keys';
+  import { fetchStats } from '$lib/query/fetchers';
+  import type { StatsCachePayload } from '$lib/query/types';
   import type { PageData } from './$types';
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
@@ -26,7 +30,40 @@
   import { weightLabel } from '$lib/domain/scoring';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
-  let { data }: { data: PageData } = $props();
+  let { data: pageData }: { data: PageData } = $props();
+
+  // The heavy Stats payload (totals / accuracy / head-to-head) comes from a cached
+  // `createQuery` keyed by `(groupId, season)`: a revisit renders the last value instantly
+  // and revalidates in the background (ADR-0017). `pageData.initialStats` is the
+  // server-prefetched value (present on the initial/SSR request) used as `initialData`, so
+  // first paint has no flash; on a client-side cache miss the query loads and the skeleton
+  // below shows. The light page `load` still supplies the season metadata + streamed career
+  // detail, which merge over the query data.
+  const statsQuery = createQuery(() => ({
+    queryKey: queryKeys.stats(pageData.groupId, pageData.seasonYear),
+    queryFn: () => fetchStats(fetch, pageData.groupId, pageData.seasonYear),
+    initialData: pageData.initialStats
+  }));
+
+  // Empty shape so the per-player/season derivations below stay valid while the query is
+  // still loading on a cache miss (the pending branch in the template gates real render).
+  // `seasonYear` here is a placeholder — `data` spreads `pageData` last, so the real
+  // (reactive) season always wins.
+  const EMPTY_STATS: StatsCachePayload = {
+    seasonYear: 0,
+    totals: [],
+    allTimeTotals: [],
+    trend: [],
+    teamAccuracy: [],
+    weightAccuracy: [],
+    headToHead: [],
+    consensusStats: [],
+    lineSide: []
+  };
+
+  // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the
+  // cached/empty payload supplies totals / accuracy / head-to-head.
+  const data = $derived({ ...(statsQuery.data ?? EMPTY_STATS), ...pageData });
 
   // All-time detail (team/weight/head-to-head) streams in after first paint, so it is a
   // promise on `data`. This alias lets comparators reference its resolved element types.
@@ -59,7 +96,11 @@
     return you ? [you, ...others] : data.allTimeTotals;
   });
 
-  let selectedUserId = $state<string | null>(
+  // Derived (not plain `$state`) so it recomputes when the cached query resolves on a miss
+  // — a `$state` initializer would capture the empty loading shape and never recover.
+  // Reassignable on click for an explicit pick (Svelte 5 derived-override), the same
+  // pattern as `selectedSeasonYear` below.
+  let selectedUserId: string | null = $derived(
     data.allTimeTotals.some((t) => t.user_id === data.currentUserId)
       ? data.currentUserId
       : (data.allTimeTotals[0]?.user_id ?? null)
@@ -187,6 +228,31 @@
   }
 </script>
 
+{#snippet loadingState()}
+  <!-- Cache miss (no SSR initialData, nothing cached yet): show a skeleton while the
+       query loads, rather than the empty-state card. -->
+  <div class="space-y-6" aria-hidden="true">
+    <div class="flex gap-2">
+      {#each [0, 1, 2, 3] as i (i)}
+        <div class="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
+      {/each}
+    </div>
+    <div class="h-64 w-full animate-pulse rounded-xl bg-muted"></div>
+    <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
+  </div>
+{/snippet}
+
+{#snippet errorState()}
+  <Card class="border-dashed">
+    <CardHeader>
+      <CardTitle>Couldn't load stats</CardTitle>
+      <CardDescription>
+        Something went wrong fetching your stats. Refresh the page to try again.
+      </CardDescription>
+    </CardHeader>
+  </Card>
+{/snippet}
+
 {#snippet wlp(wins: number, losses: number, pushes: number)}
   <span class="tabular-nums text-white">{wins}-{losses}-{pushes}</span>
 {/snippet}
@@ -221,7 +287,11 @@
     </div>
   </div>
 
-  {#if data.allTimeTotals.length === 0}
+  {#if statsQuery.isPending}
+    {@render loadingState()}
+  {:else if statsQuery.isError}
+    {@render errorState()}
+  {:else if data.allTimeTotals.length === 0}
     <Card class="border-dashed">
       <CardHeader>
         <CardTitle>No settled picks yet</CardTitle>

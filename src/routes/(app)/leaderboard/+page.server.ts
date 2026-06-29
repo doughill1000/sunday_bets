@@ -1,7 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getSeasonLeaderboardPage, getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
-import { getReigningChampion } from '$lib/server/db/queries/honors';
+import { getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
@@ -16,7 +15,6 @@ export const load: PageServerLoad = async (event) => {
 async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: string) {
   const view = event.url.searchParams.get('view') ?? 'standings';
   const weekParam = event.url.searchParams.get('week');
-  const cursor = event.url.searchParams.get('cursor');
 
   const [currentSeasonYear, availableSeasons] = await Promise.all([
     event.locals.getCurrentSeasonYear(),
@@ -31,26 +29,21 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
 
   // The hook (injectSession) already validated the JWT via safeGetSession, so trust
   // locals.user instead of a second auth.getUser() round-trip.
-  const [page, champion] = await Promise.all([
-    getSeasonLeaderboardPage(seasonYear, groupId, { cursor }),
-    getReigningChampion(groupId)
-  ]);
-
   const currentUserId = event.locals.user?.id ?? null;
-  // Crown only shown when viewing the current in-progress season.
-  const championUserId = seasonYear === currentSeasonYear ? (champion?.user_id ?? null) : null;
-  const totals = page.entries;
-  const totalsCursor = page.nextCursor;
 
+  // Season standings (shareable) now come from the client `createQuery` keyed by
+  // `(groupId, season)` so a revisit renders from cache (ADR-0017); `+page.ts` prefetches
+  // them on the server for a flash-free first paint. This load stays light. For the Weekly
+  // view only it composes the user-specific, RLS-gated pick breakdown — which is read
+  // through the user-scoped client with a kickoff gate, so it differs per user and is NEVER
+  // cached or persisted (boundary 3); it stays here on the server load.
   if (view !== 'weekly') {
     return {
+      groupId,
       currentSeasonYear,
       seasonYear,
       availableSeasons,
-      totals,
-      totalsCursor,
       currentUserId,
-      championUserId,
       view: 'standings' as const,
       weeks: null,
       selectedWeek: null,
@@ -70,13 +63,11 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
       : [];
 
   return {
+    groupId,
     currentSeasonYear,
     seasonYear,
     availableSeasons,
-    totals,
-    totalsCursor,
     currentUserId,
-    championUserId,
     view: 'weekly' as const,
     weeks,
     selectedWeek: selectedWeek ?? null,
