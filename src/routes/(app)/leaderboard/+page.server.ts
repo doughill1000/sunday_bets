@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
+import { getWrappedSeasons } from '$lib/server/db/queries/seasonWrapped';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
@@ -16,9 +17,10 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   const view = event.url.searchParams.get('view') ?? 'standings';
   const weekParam = event.url.searchParams.get('week');
 
-  const [currentSeasonYear, availableSeasons] = await Promise.all([
+  const [currentSeasonYear, availableSeasons, wrappedSeasons] = await Promise.all([
     event.locals.getCurrentSeasonYear(),
-    getAvailableSeasons(groupId)
+    getAvailableSeasons(groupId),
+    getWrappedSeasons(groupId)
   ]);
 
   const seasonYear = resolveSeasonYear(
@@ -26,6 +28,11 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
     availableSeasons,
     currentSeasonYear
   );
+
+  // The most-recent completed season that has a generated Wrapped drives the seasonal CTA
+  // (WrappedPromo). null when no Wrapped exists yet (in-season / before backfill). The promo
+  // is its own dismissable surface, so it shows regardless of the standings season in view.
+  const latestWrappedSeason = wrappedSeasons[0] ?? null;
 
   // The hook (injectSession) already validated the JWT via safeGetSession, so trust
   // locals.user instead of a second auth.getUser() round-trip.
@@ -43,6 +50,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
       currentSeasonYear,
       seasonYear,
       availableSeasons,
+      latestWrappedSeason,
       currentUserId,
       view: 'standings' as const,
       weeks: null,
@@ -67,6 +75,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
     currentSeasonYear,
     seasonYear,
     availableSeasons,
+    latestWrappedSeason,
     currentUserId,
     view: 'weekly' as const,
     weeks,

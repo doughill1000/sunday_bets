@@ -23,6 +23,7 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
+  import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
@@ -114,6 +115,10 @@
     </div>
     <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
   </div>
+
+  {#if data.latestWrappedSeason != null}
+    <WrappedPromo groupId={data.groupId} seasonYear={data.latestWrappedSeason} />
+  {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
     <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">

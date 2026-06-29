@@ -324,6 +324,21 @@ export function applySeasonAllowlist(packet: Record<string, unknown>): Record<st
   return out;
 }
 
+// The card shows every player, but the model only needs the extremes: the top of the
+// table (the bragging) and the bottom (the "they sucked" roasts). Carrying the whole
+// table into the prompt bloats tokens without adding flavor, so trim to top N + bottom N,
+// deduped by rank for small leagues where the two ends overlap.
+const SEASON_PROMPT_STANDINGS_EDGE = 5;
+
+function standingsEdgesForPrompt<T extends { rank: number }>(standings: T[]): T[] {
+  if (standings.length <= SEASON_PROMPT_STANDINGS_EDGE * 2) return standings;
+  const seen = new Set<number>();
+  return [
+    ...standings.slice(0, SEASON_PROMPT_STANDINGS_EDGE),
+    ...standings.slice(-SEASON_PROMPT_STANDINGS_EDGE)
+  ].filter((s) => (seen.has(s.rank) ? false : (seen.add(s.rank), true)));
+}
+
 /** Build the season input packet the model receives (allowlisted facts, display names only). */
 export function buildSeasonInputPacket(subject: SeasonWrappedSubject): Record<string, unknown> {
   if (subject.scope === 'league') {
@@ -334,7 +349,7 @@ export function buildSeasonInputPacket(subject: SeasonWrappedSubject): Record<st
       season: subject.season_year,
       champion: f.champion,
       wooden_spoon: f.wooden_spoon,
-      standings: f.standings.map((s) => ({
+      standings: standingsEdgesForPrompt(f.standings).map((s) => ({
         rank: s.rank,
         display_name: s.display_name,
         total_points: s.total_points

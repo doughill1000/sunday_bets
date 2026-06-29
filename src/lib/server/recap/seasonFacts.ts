@@ -23,8 +23,6 @@ import type {
 
 // A nemesis needs enough shared games to be signal, not noise (cf. MIN_RIVALRY_GAMES).
 const NEMESIS_MIN_GAMES = 4;
-// Top-N standings carried into the league packet for context.
-const STANDINGS_LIMIT = 5;
 
 /** Replace an opted-out player's name with 'a player'; leave others untouched. */
 function neutralizeName(displayName: string, userId: string, optedOut: Set<string>): string {
@@ -168,7 +166,7 @@ export async function buildSeasonWrappedFacts(params: {
           total_points: spoonEntry.total_points
         }
       : null,
-    standings: seasonTotals.slice(0, STANDINGS_LIMIT).map((t) => ({
+    standings: seasonTotals.map((t) => ({
       user_id: t.user_id,
       display_name: neutralizeName(t.display_name, t.user_id, optedOut),
       rank: t.rank,
