@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/state';
+  import { page, navigating } from '$app/state';
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
@@ -19,7 +19,8 @@
   style="padding-bottom: env(safe-area-inset-bottom)"
 >
   {#each tabs as { href, label, Icon } (href)}
-    {@const active = page.url.pathname.startsWith(href)}
+    {@const pendingPath = navigating?.to?.url.pathname ?? page.url.pathname}
+    {@const active = pendingPath.startsWith(href)}
     <a
       {href}
       class="flex flex-1 flex-col items-center gap-1 px-2 py-3.5 text-[10px] font-medium transition-colors
