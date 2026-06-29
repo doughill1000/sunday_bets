@@ -183,7 +183,7 @@
     selectedSeasonYear = year;
     const url = new URL(window.location.href);
     url.searchParams.set('season', year);
-    void goto(url.toString(), { invalidateAll: true });
+    void goto(url.toString());
   }
 </script>
 

@@ -8,6 +8,7 @@ import { supabaseService } from '$lib/supabase/service';
 import type { Database } from '$lib/types/supabase';
 import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-resolver';
 import { getAuthContext } from '$lib/server/auth-context-cache';
+import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
 
 const supabase: Handle = async ({ event, resolve }) => {
@@ -50,26 +51,32 @@ const supabase: Handle = async ({ event, resolve }) => {
    * Unlike `supabase.auth.getSession()`, which returns the session _without_
    * validating the JWT, this function also calls `getUser()` to validate the
    * JWT before returning the session.
+   *
+   * Memoized per request: the first call fires the getUser() network round-trip;
+   * subsequent calls (e.g. from the root layout load) return the same Promise,
+   * so getUser() is never called more than once per request.
    */
-  event.locals.safeGetSession = async () => {
-    const {
-      data: { session }
-    } = await event.locals.supabase.auth.getSession();
-    if (!session) {
-      return { session: null, user: null };
-    }
+  let _sessionCache: ReturnType<(typeof event.locals)['safeGetSession']> | null = null;
+  event.locals.safeGetSession = () =>
+    (_sessionCache ??= (async () => {
+      const {
+        data: { session }
+      } = await event.locals.supabase.auth.getSession();
+      if (!session) {
+        return { session: null, user: null };
+      }
 
-    const {
-      data: { user },
-      error
-    } = await event.locals.supabase.auth.getUser();
-    if (error) {
-      // JWT validation has failed
-      return { session: null, user: null };
-    }
+      const {
+        data: { user },
+        error
+      } = await event.locals.supabase.auth.getUser();
+      if (error) {
+        // JWT validation has failed
+        return { session: null, user: null };
+      }
 
-    return { session, user };
-  };
+      return { session, user };
+    })());
 
   return resolve(event, {
     filterSerializedResponseHeaders(name) {
@@ -89,6 +96,12 @@ const injectSession: Handle = async ({ event, resolve }) => {
   event.locals.userProfile = null;
   event.locals.groupId = null;
   event.locals.memberships = [];
+  // Lazily memoize the season-year lookup: the first consumer (layout or a page
+  // load) fires one DB round-trip and every later caller shares it. Unlike an eager
+  // kick-off, requests that never read it (API routes, form actions) pay nothing and
+  // leave no unconsumed promise to reject.
+  let _seasonYear: Promise<number> | null = null;
+  event.locals.getCurrentSeasonYear = () => (_seasonYear ??= getCurrentSeasonYear());
 
   if (user) {
     // Per-request auth-hook DB cost: a parent span over the two service-role
