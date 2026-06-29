@@ -2,12 +2,14 @@
   import '../app.css';
   import AppHeader from '$lib/components/app-header/AppHeader.svelte';
   import BottomTabBar from '$lib/components/app-header/BottomTabBar.svelte';
+  import NavProgress from '$lib/components/app-header/NavProgress.svelte';
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
   import RecapFlash from '$lib/components/recap/RecapFlash.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
+  import { navigating } from '$app/state';
   import { registerSW } from 'virtual:pwa-register';
 
   let { children, data } = $props();
@@ -57,6 +59,8 @@
   });
 </script>
 
+<NavProgress />
+
 <div class="flex min-h-svh flex-col bg-background text-foreground">
   <header
     class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
@@ -75,7 +79,13 @@
 
   <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
     <EngagementBanner {user} />
-    {@render children()}
+    {#if navigating?.to?.url.pathname.startsWith('/stats')}
+      {@render statsSkeleton()}
+    {:else if navigating?.to?.url.pathname.startsWith('/group')}
+      {@render groupSkeleton()}
+    {:else}
+      {@render children()}
+    {/if}
     <Toaster />
   </main>
 
@@ -85,3 +95,29 @@
     <RecapFlash recap={latestRecap} />
   {/if}
 </div>
+
+{#snippet statsSkeleton()}
+  <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-hidden="true">
+    <div class="h-8 w-48 animate-pulse rounded bg-muted" />
+    <div class="flex gap-2">
+      {#each [0, 1, 2, 3] as i (i)}
+        <div class="h-8 w-20 animate-pulse rounded-md bg-muted" />
+      {/each}
+    </div>
+    <div class="flex gap-2">
+      <div class="h-10 w-24 animate-pulse rounded bg-muted" />
+      <div class="h-10 w-24 animate-pulse rounded bg-muted" />
+    </div>
+    <div class="h-64 w-full animate-pulse rounded-xl bg-muted" />
+    <div class="h-48 w-full animate-pulse rounded-xl bg-muted" />
+    <div class="h-40 w-full animate-pulse rounded-xl bg-muted" />
+  </section>
+{/snippet}
+
+{#snippet groupSkeleton()}
+  <section class="mx-auto max-w-2xl space-y-6 p-4" aria-hidden="true">
+    <div class="h-8 w-56 animate-pulse rounded bg-muted" />
+    <div class="h-64 w-full animate-pulse rounded-xl bg-muted" />
+    <div class="h-48 w-full animate-pulse rounded-xl bg-muted" />
+  </section>
+{/snippet}

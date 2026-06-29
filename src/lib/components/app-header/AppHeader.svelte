@@ -1,7 +1,15 @@
 <script lang="ts">
   import type { User } from '@supabase/supabase-js';
+  import { page, navigating } from '$app/state';
   import HeaderAccount from '$lib/components/app-header/HeaderAccount.svelte';
   import GroupSwitcher from '$lib/components/app-header/GroupSwitcher.svelte';
+
+  const navLinks = [
+    { href: '/picks', label: 'Picks' },
+    { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/stats', label: 'Stats' },
+    { href: '/group', label: 'Group' }
+  ];
 
   interface Membership {
     groupId: string;
@@ -32,12 +40,17 @@
 <div class="relative flex w-full items-center">
   <!-- Desktop inline nav (hidden on mobile — bottom tab bar takes over) -->
   <nav data-testid="primary-nav" class="hidden sm:flex items-center gap-1 text-sm font-medium">
-    <a href="/picks" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Picks</a>
-    <a href="/leaderboard" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
-      >Leaderboard</a
-    >
-    <a href="/stats" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Stats</a>
-    <a href="/group" class="px-3 py-1.5 rounded-md hover:bg-accent transition-colors">Group</a>
+    {#each navLinks as { href, label } (href)}
+      {@const pendingPath = navigating?.to?.url.pathname ?? page.url.pathname}
+      {@const active = pendingPath.startsWith(href)}
+      <a
+        {href}
+        class="px-3 py-1.5 rounded-md transition-colors {active
+          ? 'bg-accent text-foreground font-semibold'
+          : 'hover:bg-accent'}"
+        aria-current={active ? 'page' : undefined}>{label}</a
+      >
+    {/each}
   </nav>
 
   <!-- Group switcher (multi-group only; renders nothing otherwise). A single instance
