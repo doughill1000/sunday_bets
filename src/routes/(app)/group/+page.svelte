@@ -299,11 +299,17 @@
         {#each data.members as member (member.userId)}
           {@const isSelf = member.userId === data.currentUserId}
           {@const isOnlyCommissioner = member.role === 'commissioner' && commissionerCount === 1}
+          {@const isChampion = member.userId === data.honors.reigningChampion?.user_id}
           <li
             class="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           >
             <div class="flex min-w-0 items-center gap-3">
-              <UserAvatar displayName={member.displayName} avatarKey={member.avatarKey} size="sm" />
+              <UserAvatar
+                displayName={member.displayName}
+                avatarKey={member.avatarKey}
+                size="sm"
+                champion={isChampion}
+              />
               <div class="min-w-0">
                 <div class="truncate font-medium">
                   {member.displayName}{isSelf ? ' (you)' : ''}

@@ -20,9 +20,16 @@
     canSeeAdmin?: boolean;
     displayName?: string;
     avatarKey?: string | null;
+    champion?: boolean;
   }
 
-  let { user = null, canSeeAdmin = false, displayName = '', avatarKey = null }: Props = $props();
+  let {
+    user = null,
+    canSeeAdmin = false,
+    displayName = '',
+    avatarKey = null,
+    champion = false
+  }: Props = $props();
 
   let open = $state(false);
 
@@ -53,14 +60,14 @@
           data-testid="account-menu-trigger"
           {...props}
         >
-          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
+          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" {champion} />
         </Button>
       {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="w-56">
       <DropdownMenuLabel class="font-normal">
         <div class="flex items-center gap-2">
-          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" />
+          <UserAvatar {avatarKey} displayName={effectiveDisplayName} size="sm" {champion} />
           <span class="truncate text-sm font-medium">{effectiveDisplayName}</span>
         </div>
       </DropdownMenuLabel>

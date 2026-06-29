@@ -25,6 +25,12 @@
   );
 
   let avatarKey = $state<string | null>(data.userProfile?.avatarKey ?? null);
+  let isChampion = $state(false);
+  $effect(() => {
+    void data.championUserId?.then((champId) => {
+      isChampion = champId != null && champId === data.user?.id;
+    });
+  });
   let avatarMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let currentPassword = $state('');
   let newPassword = $state('');
@@ -280,7 +286,7 @@
     </CardHeader>
     <CardContent class="space-y-4 p-0 pt-2">
       <div class="flex items-center gap-3">
-        <UserAvatar {avatarKey} {displayName} size="md" />
+        <UserAvatar {avatarKey} {displayName} size="md" champion={isChampion} />
         <span class="font-medium">{displayName}</span>
       </div>
 

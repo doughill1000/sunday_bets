@@ -24,6 +24,7 @@
     avatarKey?: string | null;
     memberships?: Membership[];
     activeGroupId?: string | null;
+    champion?: boolean;
   }
 
   let {
@@ -32,7 +33,8 @@
     displayName = '',
     avatarKey = null,
     memberships = [],
-    activeGroupId = null
+    activeGroupId = null,
+    champion = false
   }: Props = $props();
 </script>
 
@@ -79,5 +81,5 @@
   </div>
 
   <!-- Avatar dropdown — always far right -->
-  <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} />
+  <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} {champion} />
 </div>

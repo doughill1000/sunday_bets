@@ -21,6 +21,13 @@
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
 
+  let isChampion = $state(false);
+  $effect(() => {
+    void data.championUserId?.then((champId) => {
+      isChampion = champId != null && champId === data.user?.id;
+    });
+  });
+
   // Show a section skeleton only when *entering* Stats/Group from another section —
   // not on intra-section navigations (e.g. season switches via goto), which would
   // otherwise blank the current page to a skeleton on every filter change.
@@ -85,6 +92,7 @@
         avatarKey={userProfile?.avatarKey ?? null}
         {memberships}
         activeGroupId={groupId}
+        champion={isChampion}
       />
     </div>
   </header>
