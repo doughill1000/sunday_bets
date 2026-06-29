@@ -11,8 +11,9 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
   // resolves it via {#await} and passes the result to RecapFlash.svelte.
   // Always a Promise so the template can unconditionally {#await} it.
   const latestRecap: Promise<Awaited<ReturnType<typeof getLatestRecap>>> =
-    user && locals.groupId && locals.currentSeasonYear
-      ? locals.currentSeasonYear
+    user && locals.groupId
+      ? locals
+          .getCurrentSeasonYear()
           .then((seasonYear) => getLatestRecap(locals.groupId!, seasonYear))
           .catch(() => null)
       : Promise.resolve(null);

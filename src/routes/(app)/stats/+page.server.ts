@@ -1,10 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import {
-  getCurrentSeasonYear,
-  getSeasonLeaderboard,
-  getAvailableSeasons
-} from '$lib/server/db/queries/leaderboard';
+import { getSeasonLeaderboard, getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import {
   getStatsForSeason,
   getAllTimeTotals,
@@ -24,7 +20,7 @@ async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) 
   // The hook (injectSession) already validated the JWT via safeGetSession, so trust
   // locals.user instead of a second auth.getUser() round-trip.
   const [currentSeasonYear, availableSeasons] = await Promise.all([
-    event.locals.currentSeasonYear ?? getCurrentSeasonYear(),
+    event.locals.getCurrentSeasonYear(),
     getAvailableSeasons(groupId)
   ]);
 

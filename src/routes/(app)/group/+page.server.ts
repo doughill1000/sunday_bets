@@ -6,11 +6,7 @@ import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { getGroupMembersPage } from '$lib/server/db/queries/getGroupMembers';
 import { getLeagueHonors } from '$lib/server/db/queries/honors';
-import {
-  getCurrentSeasonYear,
-  getSeasonLeaderboard,
-  getAvailableSeasons
-} from '$lib/server/db/queries/leaderboard';
+import { getSeasonLeaderboard, getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
@@ -26,7 +22,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   // Group name and current-user role run in the same block — neither depends on
   // badgeSeasonYear and they were the former sequential tail.
   const [currentSeasonYear, availableSeasons, groupResult, myMembershipResult] = await Promise.all([
-    locals.currentSeasonYear ?? getCurrentSeasonYear(),
+    locals.getCurrentSeasonYear(),
     getAvailableSeasons(groupId),
     supabaseService.from('groups').select('id, name').eq('id', groupId).single(),
     supabaseService

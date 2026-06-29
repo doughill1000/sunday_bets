@@ -19,8 +19,13 @@ declare global {
       groupId: string | null;
       /** All active group memberships for the authenticated user (empty for guests). */
       memberships: Array<{ groupId: string; groupName: string; role: string }>;
-      /** Per-request memoized season-year promise; null for unauthenticated requests. */
-      currentSeasonYear: Promise<number> | null;
+      /**
+       * Per-request memoized accessor for the current season year. The first call
+       * fires the DB round-trip; later callers (layout + page loads) share the same
+       * Promise. Lazy, so requests that never need it (API routes, form actions)
+       * pay nothing and leave no unconsumed promise to reject.
+       */
+      getCurrentSeasonYear: () => Promise<number>;
     }
   }
 }

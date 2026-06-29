@@ -1,10 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import {
-  getCurrentSeasonYear,
-  getSeasonLeaderboardPage,
-  getAvailableSeasons
-} from '$lib/server/db/queries/leaderboard';
+import { getSeasonLeaderboardPage, getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
@@ -23,7 +19,7 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
   const cursor = event.url.searchParams.get('cursor');
 
   const [currentSeasonYear, availableSeasons] = await Promise.all([
-    event.locals.currentSeasonYear ?? getCurrentSeasonYear(),
+    event.locals.getCurrentSeasonYear(),
     getAvailableSeasons(groupId)
   ]);
 
@@ -33,13 +29,14 @@ async function loadLeaderboard(event: Parameters<PageServerLoad>[0], groupId: st
     currentSeasonYear
   );
 
-  const [{ data: auth }, page, champion] = await Promise.all([
-    event.locals.supabase.auth.getUser(),
+  // The hook (injectSession) already validated the JWT via safeGetSession, so trust
+  // locals.user instead of a second auth.getUser() round-trip.
+  const [page, champion] = await Promise.all([
     getSeasonLeaderboardPage(seasonYear, groupId, { cursor }),
     getReigningChampion(groupId)
   ]);
 
-  const currentUserId = auth?.user?.id ?? null;
+  const currentUserId = event.locals.user?.id ?? null;
   // Crown only shown when viewing the current in-progress season.
   const championUserId = seasonYear === currentSeasonYear ? (champion?.user_id ?? null) : null;
   const totals = page.entries;
