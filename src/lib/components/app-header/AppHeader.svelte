@@ -4,11 +4,12 @@
   import HeaderAccount from '$lib/components/app-header/HeaderAccount.svelte';
   import GroupSwitcher from '$lib/components/app-header/GroupSwitcher.svelte';
 
+  // Wrapped is intentionally absent here: it is a seasonal moment surfaced via the
+  // Leaderboard CTA + Group honors link, not a permanent nav destination (see BottomTabBar).
   const navLinks = [
     { href: '/picks', label: 'Picks' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/stats', label: 'Stats' },
-    { href: '/wrapped', label: 'Wrapped' },
     { href: '/group', label: 'Group' }
   ];
 

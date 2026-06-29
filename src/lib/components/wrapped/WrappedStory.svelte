@@ -9,9 +9,15 @@
 
   type CardDef = { label: string; value: string; sub?: string; emoji?: string };
 
+  const playerFacts = $derived(row.scope === 'player' ? (row.facts as PlayerWrappedFacts) : null);
+  const leagueFacts = $derived(row.scope === 'league' ? (row.facts as LeagueWrappedFacts) : null);
+
+  // Numeric stat cards only. Badges are a celebratory moment, not a metric, so they render in
+  // their own emoji-forward showcase below rather than as stat cards whose value duplicates
+  // the label.
   const cards = $derived.by((): CardDef[] => {
-    if (row.scope === 'player') {
-      const f = row.facts as PlayerWrappedFacts;
+    if (playerFacts) {
+      const f = playerFacts;
       const result: CardDef[] = [];
 
       result.push({
@@ -56,17 +62,9 @@
         });
       }
 
-      for (const badge of f.badges) {
-        result.push({
-          label: badge.label,
-          value: badge.label,
-          emoji: badge.emoji
-        });
-      }
-
       return result;
-    } else {
-      const f = row.facts as LeagueWrappedFacts;
+    } else if (leagueFacts) {
+      const f = leagueFacts;
       const result: CardDef[] = [];
 
       if (f.champion) {
@@ -94,13 +92,12 @@
 
       return result;
     }
+    return [];
   });
-
-  const leagueFacts = $derived(row.scope === 'league' ? (row.facts as LeagueWrappedFacts) : null);
 </script>
 
 <div data-testid="wrapped-story" class="space-y-6">
-  <!-- Stat cards grid -->
+  <!-- Stat cards grid (numbers only) -->
   {#if cards.length > 0}
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {#each cards as card (card.label)}
@@ -109,23 +106,25 @@
     </div>
   {/if}
 
-  <!-- League-only: standings table -->
-  {#if leagueFacts && leagueFacts.standings.length > 0}
-    <div class="space-y-2">
+  <!-- Player-only: badge showcase. Emoji-forward medallions, distinct from the stat grid —
+       the celebratory counterpart to the Group honors ledger. -->
+  {#if playerFacts && playerFacts.badges.length > 0}
+    <div class="space-y-3" data-testid="wrapped-badges">
       <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Season Standings
+        Your Badges
       </h3>
-      <div class="overflow-hidden rounded-lg border border-border">
-        {#each leagueFacts.standings as entry (entry.user_id)}
-          <div
-            class="flex items-center justify-between border-b border-border/50 px-4 py-2 last:border-0"
+      <ul class="flex flex-wrap gap-3">
+        {#each playerFacts.badges as badge (badge.id)}
+          <li
+            class="flex w-24 flex-col items-center gap-1.5 rounded-xl border border-border/50 bg-card px-2 py-3 text-center"
+            data-testid="wrapped-badge-{badge.id}"
+            title={badge.label}
           >
-            <span class="text-sm text-muted-foreground">{entry.rank}.</span>
-            <span class="flex-1 px-3 text-sm font-medium">{entry.display_name}</span>
-            <span class="text-sm tabular-nums text-muted-foreground">{entry.total_points} pts</span>
-          </div>
+            <span class="text-3xl leading-none" aria-hidden="true">{badge.emoji}</span>
+            <span class="text-xs font-medium leading-tight">{badge.label}</span>
+          </li>
         {/each}
-      </div>
+      </ul>
     </div>
   {/if}
 
@@ -146,7 +145,7 @@
     </div>
   {/if}
 
-  <!-- AI blurb -->
+  <!-- AI blurb — placed above the standings table so the recap isn't buried at the bottom. -->
   <Card class="border-border/50 bg-card" data-testid="wrapped-blurb">
     <CardHeader class="pb-2">
       <CardTitle class="flex items-center gap-2 text-base font-semibold">
@@ -163,4 +162,25 @@
       {/if}
     </CardContent>
   </Card>
+
+  <!-- League-only: full season standings. Last — it's the reference table, after the
+       celebratory cards, titles, and recap. -->
+  {#if leagueFacts && leagueFacts.standings.length > 0}
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Season Standings
+      </h3>
+      <div class="overflow-hidden rounded-lg border border-border">
+        {#each leagueFacts.standings as entry (entry.user_id)}
+          <div
+            class="flex items-center justify-between border-b border-border/50 px-4 py-2 last:border-0"
+          >
+            <span class="text-sm text-muted-foreground">{entry.rank}.</span>
+            <span class="flex-1 px-3 text-sm font-medium">{entry.display_name}</span>
+            <span class="text-sm tabular-nums text-muted-foreground">{entry.total_points} pts</span>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 </div>

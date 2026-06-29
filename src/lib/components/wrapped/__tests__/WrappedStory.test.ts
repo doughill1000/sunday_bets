@@ -107,6 +107,32 @@ describe('WrappedStory — player', () => {
     render(WrappedStory, { props: { row: fallbackRow } });
     expect(screen.getByText(/deterministic summary/i)).toBeInTheDocument();
   });
+
+  it('does not render the badge showcase when the player earned none', () => {
+    render(WrappedStory, { props: { row: playerRow } });
+    expect(screen.queryByTestId('wrapped-badges')).not.toBeInTheDocument();
+  });
+
+  it('renders earned badges in a dedicated showcase, not as stat cards', () => {
+    const row: SeasonWrappedRow = {
+      ...playerRow,
+      facts: {
+        ...playerFacts,
+        badges: [
+          { id: 'sharp', label: 'The Sharp', emoji: '🎯', kind: 'title' },
+          { id: 'centurion', label: 'Centurion', emoji: '💯', kind: 'milestone' }
+        ]
+      }
+    };
+    render(WrappedStory, { props: { row } });
+    const showcase = screen.getByTestId('wrapped-badges');
+    expect(showcase).toBeInTheDocument();
+    expect(screen.getByText('Your Badges')).toBeInTheDocument();
+    expect(screen.getByTestId('wrapped-badge-sharp')).toHaveTextContent('The Sharp');
+    expect(screen.getByTestId('wrapped-badge-centurion')).toHaveTextContent('Centurion');
+    // The showcase is separate from the numeric stat grid, which still renders its cards.
+    expect(screen.getAllByTestId('wrapped-card').length).toBeGreaterThan(0);
+  });
 });
 
 describe('WrappedStory — league', () => {

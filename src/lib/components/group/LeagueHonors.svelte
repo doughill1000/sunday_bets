@@ -28,6 +28,8 @@
   import type { BadgeAward, LeagueHonors } from '$lib/types/honors';
   import Trophy from '@lucide/svelte/icons/trophy';
   import Info from '@lucide/svelte/icons/info';
+  import Gift from '@lucide/svelte/icons/gift';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
 
   let {
     honors,
@@ -286,6 +288,21 @@
             <p class="text-sm text-muted-foreground">No badges awarded this season.</p>
           {/if}
         </div>
+      {/if}
+
+      <!-- Season Wrapped entry point. A reigning champion implies at least one finalised
+           season, which is exactly when a Wrapped exists — the seasonal moment lives here
+           and on the Leaderboard CTA rather than in a permanent nav tab. -->
+      {#if reigning}
+        <a
+          href="/wrapped"
+          data-testid="wrapped-honors-link"
+          class="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary/10"
+        >
+          <Gift class="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <span class="flex-1">See the full Season Wrapped</span>
+          <ArrowRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </a>
       {/if}
     </CardContent>
   </Card>

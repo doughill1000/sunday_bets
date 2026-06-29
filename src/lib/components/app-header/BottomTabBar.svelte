@@ -3,14 +3,16 @@
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
-  import Gift from '@lucide/svelte/icons/gift';
   import Users from '@lucide/svelte/icons/users';
 
+  // Wrapped is a seasonal moment, not a year-round destination — it has no content until a
+  // season finalises. Rather than burn a permanent tab on an empty-most-of-the-year page,
+  // it is surfaced via a seasonal CTA on the Leaderboard (WrappedPromo) and a link from the
+  // Group honors card when a Wrapped exists.
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
     { href: '/stats', label: 'Stats', Icon: BarChart2 },
-    { href: '/wrapped', label: 'Wrapped', Icon: Gift },
     { href: '/group', label: 'Group', Icon: Users }
   ];
 </script>
