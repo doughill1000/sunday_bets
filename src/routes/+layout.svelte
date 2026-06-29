@@ -20,7 +20,6 @@
   const userProfile = $derived(data.userProfile ?? null);
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
-  const latestRecap = $derived(data.latestRecap ?? null);
 
   // Show a section skeleton only when *entering* Stats/Group from another section —
   // not on intra-section navigations (e.g. season switches via goto), which would
@@ -105,7 +104,9 @@
   {#if user}
     <BottomTabBar />
     <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
-    <RecapFlash recap={latestRecap} />
+    {#await data.latestRecap then recap}
+      <RecapFlash {recap} />
+    {/await}
   {/if}
 </div>
 
