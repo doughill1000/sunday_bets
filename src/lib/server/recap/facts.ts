@@ -10,8 +10,13 @@ import type {
   SpiceLevel,
   BadTakeKind,
   RecapBadTake,
-  RecapRivalry
+  RecapRivalry,
+  RecapRankMover,
+  RecapLeadChange,
+  RecapStreak,
+  RecapTitleRace
 } from '$lib/types/server/recap';
+import type { SeasonTrendEntry, StreakStatsEntry } from '$lib/types/server/stats';
 import type { BadgeAward } from '$lib/types/honors';
 import type { WeightCode } from '$lib/types/domain';
 import type { Enums } from '$lib/types/supabase';
@@ -221,6 +226,114 @@ export function selectTopRivalries(rows: RivalryRow[], limit = 1): RecapRivalry[
   return pairs.slice(0, limit);
 }
 
+// ── Storyline selectors ──────────────────────────────────────────────────────────
+// Pure, deterministic beats derived from the per-week trend (cumulative_rank_this_week)
+// and win-streak data. They surface the week's DRAMA — who moved, who seized the lead,
+// who's hot, how tight the title race is — instead of a flat rank table. Opt-out is
+// applied by the caller (buildRecapFacts) via neutralize(), exactly like week_leader.
+
+/** A player's season-long standing at a given week: rank + cumulative points. */
+export type WeekStanding = {
+  user_id: string;
+  display_name: string;
+  rank: number;
+  cumulative_points: number;
+};
+
+/** Standings at a given week from the season trend, ordered by rank (deterministic ties). */
+export function weekStandings(trend: SeasonTrendEntry[], weekNumber: number): WeekStanding[] {
+  return trend
+    .filter((r) => r.week_number === weekNumber)
+    .map((r) => ({
+      user_id: r.user_id,
+      display_name: r.display_name,
+      rank: r.cumulative_rank_this_week,
+      cumulative_points: r.cumulative_points
+    }))
+    .sort(
+      (a, b) =>
+        a.rank - b.rank ||
+        a.display_name.localeCompare(b.display_name) ||
+        a.user_id.localeCompare(b.user_id)
+    );
+}
+
+/**
+ * The week's biggest climber and biggest faller by rank delta vs the prior week
+ * (delta = prevRank − currRank; positive = climbed). Returns nulls in week 1 (no prior),
+ * with <2 players, or when nobody moved. Only players present in BOTH weeks can move.
+ */
+export function selectRankMovers(
+  curr: WeekStanding[],
+  prev: WeekStanding[]
+): { riser: RecapRankMover | null; faller: RecapRankMover | null } {
+  if (prev.length === 0 || curr.length < 2) return { riser: null, faller: null };
+  const prevRankById = new Map(prev.map((s) => [s.user_id, s.rank]));
+  const moves: RecapRankMover[] = [];
+  for (const s of curr) {
+    const from = prevRankById.get(s.user_id);
+    if (from === undefined) continue; // new entrant — no prior rank to move from
+    const delta = from - s.rank;
+    if (delta === 0) continue;
+    moves.push({
+      user_id: s.user_id,
+      display_name: s.display_name,
+      from_rank: from,
+      to_rank: s.rank,
+      delta
+    });
+  }
+  // Tie-break: bigger move → better current rank → display name → user id (all deterministic).
+  const byTo = (a: RecapRankMover, b: RecapRankMover) =>
+    a.to_rank - b.to_rank ||
+    a.display_name.localeCompare(b.display_name) ||
+    a.user_id.localeCompare(b.user_id);
+  const risers = moves.filter((m) => m.delta > 0).sort((a, b) => b.delta - a.delta || byTo(a, b));
+  const fallers = moves.filter((m) => m.delta < 0).sort((a, b) => a.delta - b.delta || byTo(a, b));
+  return { riser: risers[0] ?? null, faller: fallers[0] ?? null };
+}
+
+/** Set only when a NEW player holds #1 vs the prior week; null otherwise (incl. week 1). */
+export function selectLeadChange(
+  curr: WeekStanding[],
+  prev: WeekStanding[]
+): RecapLeadChange | null {
+  if (prev.length === 0 || curr.length === 0) return null;
+  const newLeader = curr.find((s) => s.rank === 1);
+  const oldLeader = prev.find((s) => s.rank === 1);
+  if (!newLeader || !oldLeader || newLeader.user_id === oldLeader.user_id) return null;
+  return {
+    new_leader: { user_id: newLeader.user_id, display_name: newLeader.display_name },
+    old_leader: { user_id: oldLeader.user_id, display_name: oldLeader.display_name }
+  };
+}
+
+/** The hottest live win streak (current_streak ≥ minLen); null if nobody clears the bar. */
+export function selectHotStreak(streaks: StreakStatsEntry[], minLen = 3): RecapStreak | null {
+  const top = [...streaks]
+    .filter((s) => s.current_streak >= minLen)
+    .sort(
+      (a, b) =>
+        b.current_streak - a.current_streak ||
+        a.display_name.localeCompare(b.display_name) ||
+        a.user_id.localeCompare(b.user_id)
+    )[0];
+  return top
+    ? { user_id: top.user_id, display_name: top.display_name, streak: top.current_streak }
+    : null;
+}
+
+/** Tightness at the top: #1 vs #2 and the points between them. Null with <2 players. */
+export function selectTitleRace(curr: WeekStanding[]): RecapTitleRace | null {
+  if (curr.length < 2) return null;
+  const [leader, runnerUp] = curr; // weekStandings is rank-ordered
+  return {
+    leader: { user_id: leader.user_id, display_name: leader.display_name },
+    runner_up: { user_id: runnerUp.user_id, display_name: runnerUp.display_name },
+    margin: leader.cumulative_points - runnerUp.cumulative_points
+  };
+}
+
 export async function buildRecapFacts(params: {
   groupId: string;
   weekId: number;
@@ -263,13 +376,23 @@ export async function buildRecapFacts(params: {
     )
     .map((r) => ({ user_id: r.user_id, display_name: r.display_name }));
 
-  // Season standings (top 5).
-  const standings = seasonTotals.slice(0, 5).map((t) => ({
+  // Full season standings for context (was top 5; metering no longer forces a trim).
+  const standings = seasonTotals.map((t) => ({
     user_id: t.user_id,
     display_name: t.display_name,
     rank: t.rank,
     total_points: t.total_points
   }));
+
+  // Storyline beats from the per-week trend: who moved, who seized #1, who's hot, how
+  // tight the title race is. Computed raw here; opt-out neutralization happens at the
+  // return alongside week_leader et al.
+  const currStandings = weekStandings(seasonStats.trend, weekNumber);
+  const prevStandings = weekNumber > 1 ? weekStandings(seasonStats.trend, weekNumber - 1) : [];
+  const rankMovers = selectRankMovers(currStandings, prevStandings);
+  const leadChange = selectLeadChange(currStandings, prevStandings);
+  const hotStreak = selectHotStreak(seasonStats.streaks);
+  const titleRace = selectTitleRace(currStandings);
 
   // Settled picks for this week's games (all weights). Powers both the All-in
   // hero/zero facts and the bad-take selector (#295).
@@ -458,7 +581,26 @@ export async function buildRecapFacts(params: {
     allin_hero: neutralize(allinHero),
     allin_zero: neutralize(allinZero),
     contrarian_hit: neutralize(contrarianHit),
-    standings,
+    rank_movers: {
+      riser: neutralize(rankMovers.riser),
+      faller: neutralize(rankMovers.faller)
+    },
+    lead_change: leadChange
+      ? {
+          new_leader: neutralize(leadChange.new_leader)!,
+          old_leader: neutralize(leadChange.old_leader)!
+        }
+      : null,
+    hot_streak: neutralize(hotStreak),
+    title_race: titleRace
+      ? {
+          leader: neutralize(titleRace.leader)!,
+          runner_up: neutralize(titleRace.runner_up)!,
+          margin: titleRace.margin
+        }
+      : null,
+    // Full standings, opt-out neutralized (now the whole table reaches the packet).
+    standings: standings.map((s) => neutralize(s)!),
     badge_changes: badgeChanges,
     bad_takes: badTakes,
     rivalries,

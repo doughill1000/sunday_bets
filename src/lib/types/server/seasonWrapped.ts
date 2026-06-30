@@ -45,6 +45,10 @@ export type PlayerWrappedFacts = {
   contrarian_picks: number;
   nemesis: WrappedNemesis | null;
   badges: WrappedBadge[];
+  /** Best (lowest) cumulative rank the player held in any scoring week; null if none. */
+  best_rank: number | null;
+  /** Longest consecutive-win run achieved this season (stats_pick_streaks.max_streak). */
+  longest_streak: number;
   /** True when this player opted out of AI roasting (group_memberships.ai_recap_opt_out). */
   opted_out: boolean;
 };
@@ -55,16 +59,47 @@ export type WrappedHonor = { display_name: string; total_points: number };
 /** A season-long title badge and who earned it (display names, opt-out neutralized). */
 export type WrappedTitleBadge = { label: string; emoji: string; holders: string[] };
 
+/** A player's season-long rank journey (first scoring week → final), opt-out neutralized. */
+export type WrappedRankJourney = {
+  display_name: string;
+  from_rank: number;
+  to_rank: number;
+  /** from_rank − to_rank; positive = climbed, negative = slid. */
+  delta: number;
+};
+
+/** How the #1 spot behaved across the season (from the per-week rank-1 holder sequence). */
+export type WrappedLeadSummary = {
+  /** Number of scoring weeks where the #1 holder differed from the prior week. */
+  changes: number;
+  /** True when one player held #1 every scoring week (≥2 weeks). */
+  wire_to_wire: boolean;
+  /** Player who held #1 the most weeks (display name, opt-out neutralized) + the count. */
+  most_weeks_leader: { display_name: string; weeks: number } | null;
+};
+
+/** The season's longest win streak (stats_pick_streaks.max_streak), opt-out neutralized. */
+export type WrappedHeater = { display_name: string; streak: number };
+
 /** The league's year-in-review packet. The blurb is 3rd-person and neutralizes opt-outs. */
 export type LeagueWrappedFacts = {
   champion: WrappedHonor | null;
   wooden_spoon: WrappedHonor | null;
-  /** Top-N season standings for context (display names, opt-out neutralized). */
+  /** Full season standings for context (display names, opt-out neutralized). */
   standings: (RecapPlayer & { rank: number; total_points: number })[];
   /** Season title badges with their holders (e.g. The Sharp, The Grinder). */
   title_badges: WrappedTitleBadge[];
   /** Number of active players in the league this season. */
   player_count: number;
+  /** Biggest rise / fall in the standings over the season (null if no qualifying journey). */
+  biggest_climber: WrappedRankJourney | null;
+  biggest_faller: WrappedRankJourney | null;
+  /** Story of the #1 spot: how often it changed hands, wire-to-wire, who held it longest. */
+  lead: WrappedLeadSummary;
+  /** Longest win streak anyone strung together this season. */
+  longest_heater: WrappedHeater | null;
+  /** Champion − runner-up points (the margin of victory); null with <2 players. */
+  title_margin: number | null;
 };
 
 /** The full builder output: the league packet plus one packet per active player. */
