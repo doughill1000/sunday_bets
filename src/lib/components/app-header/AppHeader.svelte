@@ -57,8 +57,9 @@
     {/each}
   </nav>
 
-  <!-- Group switcher (multi-group only; renders nothing otherwise). A single instance
-       repositioned by breakpoint via auto-margins:
+  <!-- Group name/switcher: plain text for single-group users, dropdown for multi-group
+       (renders nothing with zero memberships). A single instance repositioned by
+       breakpoint via auto-margins:
          mobile  — far-left slot (the desktop nav is hidden here, so the left is free,
                    and this keeps the multi-group chip from colliding with the centered
                    logo); `mr-auto` pushes the avatar to the far right.
