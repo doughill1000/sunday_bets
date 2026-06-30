@@ -16,7 +16,7 @@ select columns_are(
   'stats_season_trend',
   array[
     'group_id', 'user_id', 'display_name', 'season_year', 'week_number', 'week_points',
-    'week_wins', 'week_losses', 'week_pushes', 'week_missed',
+    'week_wins', 'week_losses', 'week_pushes', 'week_missed', 'is_dropped_week',
     'cumulative_points', 'season_total', 'cumulative_rank_this_week'
   ],
   'stats_season_trend includes group_id and matches WeeklyCumulativeEntry'

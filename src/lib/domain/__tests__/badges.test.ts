@@ -782,6 +782,7 @@ describe('badgeInputsFromSeasonStats', () => {
         week_losses: 0,
         week_pushes: 0,
         week_missed: 0,
+        is_dropped_week: false,
         cumulative_points: 5,
         season_total: 5,
         cumulative_rank_this_week: 1

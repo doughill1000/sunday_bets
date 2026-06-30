@@ -1610,6 +1610,7 @@ export type Database = {
           cumulative_rank_this_week: number | null;
           display_name: string | null;
           group_id: string | null;
+          is_dropped_week: boolean | null;
           season_total: number | null;
           season_year: number | null;
           user_id: string | null;
@@ -1868,6 +1869,7 @@ export type Database = {
       update_group_config: {
         Args: {
           p_drop_worst_week?: boolean;
+          p_drop_worst_week_start_year?: number;
           p_grading_preset?: string;
           p_group_id: string;
         };

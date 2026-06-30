@@ -208,11 +208,14 @@ describe('update_group_config end-to-end', () => {
     const before = await getSeasonLeaderboard(UGC_SEASON_YEAR, GROUP_ID);
     expect(before.find((e) => e.user_id === COMMISSIONER_ID)?.total_points).toBe(6);
 
+    // ADR-0018 requires drop_worst_week_start_year alongside the boolean, or the
+    // rule is inert; scope it to this suite's own season.
     const asCommissioner = createUserClient(COMMISSIONER_ID);
     const { error } = await asCommissioner.rpc('update_group_config', {
       p_group_id: GROUP_ID,
       p_grading_preset: 'house',
-      p_drop_worst_week: true
+      p_drop_worst_week: true,
+      p_drop_worst_week_start_year: UGC_SEASON_YEAR
     });
     expect(error).toBeNull();
 
@@ -232,8 +235,13 @@ describe('update_group_config end-to-end', () => {
       .select('scoring_rules')
       .eq('group_id', GROUP_ID)
       .single();
-    const rules = cfg?.scoring_rules as { drop_worst_week?: boolean; missed_pick_penalty?: number };
+    const rules = cfg?.scoring_rules as {
+      drop_worst_week?: boolean;
+      drop_worst_week_start_year?: number;
+      missed_pick_penalty?: number;
+    };
     expect(rules.drop_worst_week).toBe(true);
+    expect(rules.drop_worst_week_start_year).toBe(UGC_SEASON_YEAR);
     expect(rules.missed_pick_penalty).toBe(-2);
   });
 });

@@ -10,17 +10,19 @@
 --   6. Re-submitting the SAME grading_preset on that settled group is allowed (no-op).
 --   7. drop_worst_week stays freely editable even on a settled group (freeze ignores it).
 --   8. A drop_worst_week write preserves other scoring_rules keys (missed_pick_penalty).
+--   9. Commissioner can set drop_worst_week_start_year on an unsettled group (ADR-0018).
+--  10. drop_worst_week_start_year stays freely editable on a settled group too.
 
 begin;
 
-select plan(12);
+select plan(17);
 
 -- ── Schema sanity checks ──────────────────────────────────────────────────────
 
 select has_function(
   'public', 'update_group_config',
-  array['uuid','text','boolean'],
-  'update_group_config(uuid, text, boolean) exists'
+  array['uuid','text','boolean','integer'],
+  'update_group_config(uuid, text, boolean, int) exists'
 );
 select has_function(
   'public', 'group_active_season_settled',
@@ -115,6 +117,28 @@ select results_eq(
   'missed_pick_penalty key preserved after drop_worst_week update'
 );
 
+-- ── 9. Commissioner sets drop_worst_week_start_year on the unsettled group ────
+-- (ADR-0018: the start year that makes drop_worst_week non-retroactive.)
+
+select lives_ok(
+  $$ select public.update_group_config('00000000-0000-4154-8000-000000000001', null, null, 2030) $$,
+  'commissioner can set drop_worst_week_start_year on an unsettled group'
+);
+
+select results_eq(
+  $$ select (scoring_rules->>'drop_worst_week_start_year')::int
+     from public.group_config where group_id = '00000000-0000-4154-8000-000000000001' $$,
+  $$ values (2030) $$,
+  'drop_worst_week_start_year was written'
+);
+
+select results_eq(
+  $$ select (scoring_rules->>'drop_worst_week')::boolean, (scoring_rules->>'missed_pick_penalty')::int
+     from public.group_config where group_id = '00000000-0000-4154-8000-000000000001' $$,
+  $$ values (true, -2) $$,
+  'drop_worst_week and missed_pick_penalty keys preserved after a start_year-only update'
+);
+
 -- ── 3. Commissioner sets grading_preset on the unsettled group ────────────────
 
 select lives_ok(
@@ -168,6 +192,20 @@ select results_eq(
      from public.group_config where group_id = '00000000-0000-4154-8000-000000000002' $$,
   $$ values (true) $$,
   'drop_worst_week written on the settled group'
+);
+
+-- ── 10. drop_worst_week_start_year stays editable on the settled group too ────
+
+select lives_ok(
+  $$ select public.update_group_config('00000000-0000-4154-8000-000000000002', 'house', null, 2031) $$,
+  'drop_worst_week_start_year is freely editable on a settled group (freeze ignores it)'
+);
+
+select results_eq(
+  $$ select (scoring_rules->>'drop_worst_week_start_year')::int
+     from public.group_config where group_id = '00000000-0000-4154-8000-000000000002' $$,
+  $$ values (2031) $$,
+  'drop_worst_week_start_year written on the settled group'
 );
 
 select * from finish();

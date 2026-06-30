@@ -1,14 +1,20 @@
 -- update_group_config: commissioner edits per-group league rules (issue #154).
 --
--- Two dials, both on group_config:
+-- Dials, all on group_config:
 --   * grading_preset ('house' | 'gamer') — fairness. Frozen per season (ADR-0007):
 --     changeable only while the active season has no settled games for this group.
 --   * scoring_rules.drop_worst_week (boolean) — forgiveness. Freely editable.
+--   * scoring_rules.drop_worst_week_start_year (int) — forgiveness scope (ADR-0018,
+--     superseding ADR-0005): the first season the drop applies to. Freely editable,
+--     same as the boolean; required alongside it for the rule to have any effect
+--     (see leaderboard_season_totals.sql), which is what makes the rule
+--     non-retroactive by construction. No UI sets this yet (commissioner control is
+--     a follow-up issue) — service-role/SQL only for now.
 --
 -- Runs as SECURITY DEFINER so it can bypass the no-client-update RLS policy on
 -- group_config (upd_group_config_no_client); the is_commissioner check is the
 -- trust boundary. Nullable params mean "leave unchanged"; the UI sends the full
--- desired state of both fields.
+-- desired state of the fields it owns (grading_preset, drop_worst_week).
 --
 -- Error codes:
 --   P0001  not authenticated
@@ -17,7 +23,8 @@
 create or replace function public.update_group_config(
   p_group_id uuid,
   p_grading_preset text default null,
-  p_drop_worst_week boolean default null
+  p_drop_worst_week boolean default null,
+  p_drop_worst_week_start_year int default null
 )
 returns void
 language plpgsql
@@ -53,10 +60,17 @@ begin
                          when p_drop_worst_week is not null
                            then scoring_rules || jsonb_build_object('drop_worst_week', p_drop_worst_week)
                          else scoring_rules
-                       end,
+                       end
+                       || case
+                            when p_drop_worst_week_start_year is not null
+                              then jsonb_build_object(
+                                     'drop_worst_week_start_year', p_drop_worst_week_start_year
+                                   )
+                            else '{}'::jsonb
+                          end,
       updated_at     = now()
   where group_id = p_group_id;
 end;
 $$;
 
-revoke execute on function public.update_group_config(uuid, text, boolean) from public, anon;
+revoke execute on function public.update_group_config(uuid, text, boolean, int) from public, anon;

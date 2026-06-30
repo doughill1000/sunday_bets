@@ -289,9 +289,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "views/leaderboard_season_totals.sql": {
-    "hash": "23d9af78d3c93bd7e2917a2fe5c99afd3c6e93444df4e263038fd36ef76523fd",
-    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
-    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+    "hash": "8af40d49ef2c5fb985a26cb957c4d8faa8473b6d0e877478d691a6567ede7b51",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "views/leaderboard_weekly_cumulative.sql": {
     "hash": "909c45594410b1b70b515e43860fa91fa318f74a048c0babc2b13c9ff5fcebcf",
@@ -334,9 +334,9 @@
     "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/stats_alltime_totals.sql": {
-    "hash": "97e46bcb10fa3552f93f593af9949402327a6d2fba4ec2fad55806fd343f6fad",
-    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
-    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+    "hash": "801ac9e57b8a51b093487ef66980bbdea29c5500a0f3d49253640da84501c6af",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "views/stats_head_to_head.sql": {
     "hash": "5ad4296f1e7ae613a3bb659c19fc11a38bfc57e91fe6807eb54d32b4e9a6a499",
@@ -344,9 +344,9 @@
     "migrationHash": "778b923971910ccd29355c0bf24e38e1673d8c992cc406c887b8b5aab6fc6c4c"
   },
   "views/stats_season_trend.sql": {
-    "hash": "2831f9ec907227ad460aad5a48554303e87db69ad20bb18b0e0c375d4ce4c314",
-    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
-    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+    "hash": "49e16cfa4d581e10ef560289b7003241a791f23f73a3fe73a3c72c88d6042996",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "views/ui_games.sql": {
     "hash": "3c66e6fe9838699bfe6d1723d7040e3dbd662ea7f137a45e73098c45ab64d9e4",
@@ -599,9 +599,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/group_grants.sql": {
-    "hash": "0aa15cbc8d479fb675724c2963ede37503faffc0259f848c11964b29360085ac",
-    "migration": "20260629192117_add_season_wrapped.sql",
-    "migrationHash": "f0c2e9c58869006c802c4ef20350f1ee295ea905a4c051a106fea49cb5a6b7e6"
+    "hash": "691a2cfdc9b5d249fb86ed716c2c6b5cc2bfa5b2b6ba25e60c9979cc0af758c2",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "grants/picks_fanout_grants.sql": {
     "hash": "def61327db9284563b9334f36bb237027b2b9ec5299975eae818a4015821a0df",
@@ -632,10 +632,10 @@
     "migrationHash": "ec89398c0ec5c594e69525ac0323fd3f67469b1c357a29e6dd91e0bd2692f0c2"
   },
   "functions/groups/update_group_config.sql": {
-    "hash": "299a4ed2a5ba3b73bc7bd261dc7b3a3923ac399d194be7579506f957303670d5",
-    "signature": "public.update_group_config(uuid, text, boolean)",
-    "migration": "20260627014310_add_update_group_config_rpc.sql",
-    "migrationHash": "ec89398c0ec5c594e69525ac0323fd3f67469b1c357a29e6dd91e0bd2692f0c2"
+    "hash": "bc4a20f62ea54b59f795dde0f48a7bb9b9821b27823096fbd6f3c9b55d85e142",
+    "signature": "public.update_group_config(uuid, text, boolean, int)",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "schemas/0222_users_display_name_length.sql": {
     "hash": "62c77c28a135ba708a93306e5508ca1d291f1394b526cf5f4a4a8f0b3418b0a1",
@@ -660,10 +660,10 @@
     "migrationHash": "0dd44bdc94f3cdf3db631da725671dde80c6533ea9ec53230d9ec589eacf2831"
   },
   "functions/stats/leaderboard_season_page.sql": {
-    "hash": "94c34cf1b9a7e4580f0975c6983a08f6a60d34358b9f8bebb441cc3e022b293f",
+    "hash": "ced4cb54c908da8f91c67a53b4ed78dbde89baba4aafef817f50d3ef37a90974",
     "signature": "public.leaderboard_season_page(uuid, int, int, int, int, int, uuid)",
-    "migration": "20260628010353_non_scoring_weeks_and_preseason.sql",
-    "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "schemas/0223_weeks_is_scoring.sql": {
     "hash": "fd4cd66ff103577284e4f0fd564d6cdd209904687d4d55a583f340b661bff5b0",
@@ -671,9 +671,9 @@
     "migrationHash": "d3c9ecb01c88f7344288730fe817be4ff1771f66bdc0664845730264b2d43e87"
   },
   "views/league_completed_standings.sql": {
-    "hash": "0a2638e77eb3f7be637211a9c2d428689847d2ae318ecc7489f87142d4ca0895",
-    "migration": "20260629004040_fix_completed_seasons_or_check.sql",
-    "migrationHash": "2f8bf39366b6fa357077dc667620c88bca07ced51a8291193e1e2c0374d54f9c"
+    "hash": "2ad91e196943e8c33f7744cc8efc9d999406555c38f1a5dfdf2ef0a98c4c2e8a",
+    "migration": "20260630205753_drop_worst_week_non_retroactive_standings.sql",
+    "migrationHash": "4ffe8c54715905f81c0b234a43fc65d66f6e24151e34f2f0897656ee3c312a67"
   },
   "views/stats_head_to_head_alltime.sql": {
     "hash": "84bc82980def784a7da17db1fae1d0caf29de352f104b7f4c6cc8e9d598857bb",

@@ -66,6 +66,7 @@ function trendRow(over: Partial<SeasonTrendEntry> & { user_id: string }): Season
     week_losses: 0,
     week_pushes: 0,
     week_missed: 0,
+    is_dropped_week: false,
     cumulative_points: 0,
     season_total: 0,
     cumulative_rank_this_week: 1,
