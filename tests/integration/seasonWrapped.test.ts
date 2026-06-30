@@ -89,6 +89,33 @@ describe('generateSeasonWrapped', () => {
     expect(await rows(fx.groupAId, fx.seasonYear)).toHaveLength(3);
   });
 
+  it('force regenerates and replaces every existing subject without duplicating rows', async () => {
+    await generateSeasonWrapped(fx.groupAId, fx.seasonYear);
+    const before = await admin
+      .from('season_wrapped')
+      .select('id')
+      .eq('group_id', fx.groupAId)
+      .eq('season_year', fx.seasonYear);
+    const beforeIds = (before.data ?? []).map((r) => r.id).sort();
+
+    const forced = await generateSeasonWrapped(fx.groupAId, fx.seasonYear, { force: true });
+
+    expect(forced.evaluated).toBe(3);
+    expect(forced.skipped).toBe(0); // force never skips
+    expect(forced.replaced).toBe(3); // every existing row overwritten
+    expect(forced.fallback).toBe(3); // still no gateway → fallback prose
+
+    // Still exactly 3 rows, but each was replaced (regenerate-then-delete → new ids).
+    const after = await admin
+      .from('season_wrapped')
+      .select('id')
+      .eq('group_id', fx.groupAId)
+      .eq('season_year', fx.seasonYear);
+    const afterIds = (after.data ?? []).map((r) => r.id).sort();
+    expect(afterIds).toHaveLength(3);
+    expect(afterIds).not.toEqual(beforeIds);
+  });
+
   it('persists a player packet with the expected shape', async () => {
     await generateSeasonWrapped(fx.groupAId, fx.seasonYear);
     const players = (await rows(fx.groupAId, fx.seasonYear)).filter((r) => r.scope === 'player');

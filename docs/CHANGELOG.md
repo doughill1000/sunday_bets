@@ -48,6 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-06-30
 
+- **PR #NNN** Season Wrapped force-refresh — adds `?force=true` to the manual `backfill-wrapped` cron so existing Wrapped blurbs are regenerated and replaced (fresh AI prose) instead of skipped, with each subject re-voiced before its old row is dropped so a failed voice keeps the existing blurb. New `pnpm refresh-wrapped:prod` wrapper POSTs the endpoint (no local DB creds; sidesteps the PowerShell/CSRF friction of a raw curl). files: `seasonWrapped.ts`, `db/queries/seasonWrapped.ts`, `api/cron/backfill-wrapped`, `supabase/scripts/refresh-wrapped/` · ADR-0008
 - **PR #353** AI recap voice + storyline-first facts — refines the shared Commissioner voice for the weekly recap and Season Wrapped (ADR-0008) and replaces rank-ordered standings with deterministic storyline beats: biggest rank mover, lead change, hottest win streak, and title-race tightness (weekly) plus biggest climber/faller, a lead summary, longest heater, and title margin (season). Now sends the full standings (reverses the season top/bottom-5 prompt trim from PR #351); per-call + per-season cost caps and the deterministic fallback stay as the backstop. No DB change (facts packet is JSONB; UI unchanged). files: `recap/facts.ts`, `recap/seasonFacts.ts`, `recap/voice.ts`, `types/server/recap.ts`, `types/server/seasonWrapped.ts` · ADR-0008
 
 ## 2026-06-29
