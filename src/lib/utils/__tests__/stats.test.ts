@@ -17,6 +17,7 @@ const trendRow = (
   week_losses: 0,
   week_pushes: 0,
   week_missed: 0,
+  is_dropped_week: false,
   cumulative_points,
   season_total: cumulative_points,
   cumulative_rank_this_week: 1

@@ -19,9 +19,13 @@
 -- service_role EXECUTE comes from the blanket grant in grants/admin_grants.sql; the
 -- closed-by-default ACL guard strips the implicit PUBLIC grant.
 --
--- Re-emitted with #274: this function `returns setof` leaderboard_season_totals, so any
--- re-emission of that matview must CASCADE-drop this function (see the view source) and
--- recreate it here afterward. The ACL guard + default privileges re-close/grant on recreate.
+-- Re-emitted with #274 and #357/ADR-0018: this function `returns setof`
+-- leaderboard_season_totals, so any re-emission of that matview must CASCADE-drop this
+-- function (see the view source) and recreate it here afterward. The ACL guard +
+-- default privileges re-close/grant on recreate. Touch this file (even with no
+-- functional change) in every migration that re-emits leaderboard_season_totals.sql,
+-- so the generator bundles both in the same migration -- otherwise the CASCADE drop
+-- has no recreate to pair with.
 create or replace function public.leaderboard_season_page(
   p_group_id uuid,
   p_season_year int,

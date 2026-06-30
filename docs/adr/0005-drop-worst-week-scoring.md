@@ -1,6 +1,6 @@
 # ADR-0005: Drop-worst-week scoring
 
-- Status: Accepted
+- Status: Superseded by ADR-0018
 - Date: 2026-06-24
 - Issue: #107
 - Supersedes: None

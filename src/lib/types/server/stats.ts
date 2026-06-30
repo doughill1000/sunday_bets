@@ -10,6 +10,10 @@ export type SeasonTrendEntry = {
   week_losses: number;
   week_pushes: number;
   week_missed: number;
+  /** True for the single week drop-worst-week (ADR-0018) forgave, if active for this
+   *  (group, season). week_points/cumulative_points/season_total stay raw regardless —
+   *  this only marks which week a Leaderboard standings total dropped. */
+  is_dropped_week: boolean;
   cumulative_points: number;
   season_total: number;
   cumulative_rank_this_week: number;
@@ -113,6 +117,8 @@ export type SeasonStats = {
 export type AllTimeTotalsEntry = {
   user_id: string;
   display_name: string;
+  /** Sum of each season's drop-aware standings total (ADR-0018) — equals the sum of
+   *  this player's per-season leaderboard cards, regardless of drop_worst_week state. */
   total_points: number;
   decisions: number;
   wins: number;

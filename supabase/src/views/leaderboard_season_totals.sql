@@ -1,9 +1,17 @@
 -- One row per user per (group, season) with totals + ranks.
--- Drop-worst-week (ADR-0005): when a group enables
--- group_config.scoring_rules.drop_worst_week, a player's single lowest-scoring
--- week is omitted from total_points once they have 2+ settled weeks. The drop
--- forgives points only -- the W/L/push record and tie-breakers still count the
--- dropped week.
+-- Drop-worst-week (ADR-0018, superseding ADR-0005): when a group enables
+-- group_config.scoring_rules.drop_worst_week AND sets a
+-- drop_worst_week_start_year, a player's single lowest-scoring week is omitted
+-- from total_points for that season and every later one, once they have 2+
+-- settled weeks. Requiring a start year makes the rule non-retroactive by
+-- construction -- seasons before it are always raw, matching the historical
+-- sheets exactly. The drop forgives points only -- the W/L/push record and
+-- tie-breakers still count the dropped week.
+-- The "is drop active for this (group, season_year)" predicate is inlined here
+-- (and in stats_alltime_totals.sql / stats_season_trend.sql) rather than pulled
+-- into a shared SQL function, to avoid adding another CASCADE dependency edge to
+-- the matview re-emission described below (ADR-0018). Keep all three copies
+-- textually identical.
 -- Materialized (issue #191): season standings are recomputed only at the end of a
 -- grading run via public.refresh_leaderboard_stats(), not on every page load. The
 -- query body below is unchanged from the prior regular view.
@@ -11,10 +19,16 @@
 -- later re-emission of this file (e.g. issue #152's keyset index below, or #274's
 -- is_scoring filter) runs against a DB where it is already a matview, and `drop view`
 -- errors on a matview. IF EXISTS keeps the from-empty baseline a clean no-op.
--- CASCADE: leaderboard_season_page() is `returns setof` this matview — a hard type
--- dependency that blocks a plain drop. CASCADE drops that function too; it is recreated
--- by functions/stats/leaderboard_season_page.sql (emitted after views), and the ADR-0011
--- ACL guard + service_role default privileges restore its grant on recreation.
+-- CASCADE: two objects hard-depend on this matview and get dropped with it, so both
+-- must be touched (re-emitted) in any migration that re-emits this file, or the
+-- CASCADE drop has no recreate to pair with:
+--   * leaderboard_season_page() is `returns setof` this matview (a hard type
+--     dependency); recreated by functions/stats/leaderboard_season_page.sql (emitted
+--     after views), with its grant restored by the ADR-0011 ACL guard + service_role
+--     default privileges.
+--   * league_completed_standings is a plain view selecting from this matview (a
+--     regular pg_depend dependency); recreated by
+--     views/league_completed_standings.sql (emitted after this file, alphabetically).
 drop materialized view if exists public.leaderboard_season_totals cascade;
 
 create materialized view public.leaderboard_season_totals as
@@ -77,11 +91,12 @@ min(wk_points)::int as lowest_week_points
 from week_points
 group by user_id, season_year, group_id
 )
--- Resolved drop-worst-week flag per group (default false when no config row).
+-- Resolved drop-worst-week config per group (defaults: off, no start year).
 , group_drop as (
 select
 g.id as group_id,
-coalesce((gc.scoring_rules ->> 'drop_worst_week')::boolean, false) as drop_worst_week
+coalesce((gc.scoring_rules ->> 'drop_worst_week')::boolean, false) as drop_worst_week,
+(gc.scoring_rules ->> 'drop_worst_week_start_year')::int as drop_worst_week_start_year
 from public.groups g
 left join public.group_config gc on gc.group_id = g.id
 )
@@ -97,10 +112,16 @@ t.wins,
 t.losses,
 t.pushes,
 t.missed,
--- Drop the single lowest week's points only when the group enables it AND the
--- player has 2+ settled weeks (ADR-0005). Otherwise the raw total stands.
+-- Drop the single lowest week's points only when the group enables it, a
+-- start year is set and this season is at or after it (non-retroactive by
+-- construction, ADR-0018), AND the player has 2+ settled weeks. Otherwise the
+-- raw total stands -- this is also what keeps every season before the start
+-- year byte-identical to the historical sheets.
 case
-when gd.drop_worst_week and ws.weeks_played >= 2
+when gd.drop_worst_week
+ and gd.drop_worst_week_start_year is not null
+ and t.season_year >= gd.drop_worst_week_start_year
+ and ws.weeks_played >= 2
 then t.raw_total - ws.lowest_week_points
 else t.raw_total
 end::int as total_points

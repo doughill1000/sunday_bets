@@ -4,6 +4,11 @@
 -- for the reigning champion (rank 1 of the most-recently-completed season), the trophy
 -- case (rank 1 of every completed season), and the wooden spoon (max rank of the
 -- most-recently-completed season).
+-- A plain view selecting from a matview is a hard pg_depend dependency, so
+-- `drop materialized view leaderboard_season_totals cascade` (see that file) also drops
+-- THIS object. Touch this file (even with no functional change) in every migration that
+-- re-emits leaderboard_season_totals.sql, so the generator bundles both in the same
+-- migration -- otherwise the CASCADE drop has no recreate to pair with (ADR-0018/#357).
 create or replace view public.league_completed_standings as
 with completed_seasons as (
   -- "Completed" = every scoreable (non-postponed/cancelled) game in the season's scoring

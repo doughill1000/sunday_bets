@@ -2,9 +2,11 @@
 //
 // Verifies drop-worst-week via getSeasonLeaderboard (TypeScript path).
 //
-// ADR-0005 rule: when a group has group_config.scoring_rules.drop_worst_week=true
-// and a player has 2+ settled weeks, the single lowest-scoring week is excluded
-// from total_points (the W/L record still counts that week).
+// ADR-0018 (superseding ADR-0005) rule: when a group has
+// group_config.scoring_rules.drop_worst_week=true AND a drop_worst_week_start_year
+// at or before this suite's season, and a player has 2+ settled weeks, the single
+// lowest-scoring week is excluded from total_points (the W/L record still counts
+// that week).
 //
 // Strategy: seed season 2098 / week 1 and week 2 with two groups:
 //   - Group DROP  (drop_worst_week: true)
@@ -179,13 +181,16 @@ beforeAll(async () => {
   await ensureMembership(admin, DROP_GROUP_ID, [CANARY_USER_ID, CONTROL_USER_ID]);
   await ensureMembership(admin, NODROP_GROUP_ID, [CANARY_USER_ID]);
 
-  // group_config: DROP group opts in; NODROP group has no row (default false)
-  const { error: cfgErr } = await admin
-    .from('group_config')
-    .upsert(
-      { group_id: DROP_GROUP_ID, line_source: 'fanduel', scoring_rules: { drop_worst_week: true } },
-      { onConflict: 'group_id' }
-    );
+  // group_config: DROP group opts in, scoped to start at this suite's season (ADR-0018
+  // requires a start year or the rule is inert); NODROP group has no row (default false)
+  const { error: cfgErr } = await admin.from('group_config').upsert(
+    {
+      group_id: DROP_GROUP_ID,
+      line_source: 'fanduel',
+      scoring_rules: { drop_worst_week: true, drop_worst_week_start_year: DW_SEASON_YEAR }
+    },
+    { onConflict: 'group_id' }
+  );
   if (cfgErr) throw new Error('dropWorstWeek: upsert group_config: ' + cfgErr.message);
 
   // Season + weeks
