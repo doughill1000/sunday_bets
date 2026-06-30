@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-06-30
+
+- **PR #353** AI recap voice + storyline-first facts — refines the shared Commissioner voice for the weekly recap and Season Wrapped (ADR-0008) and replaces rank-ordered standings with deterministic storyline beats: biggest rank mover, lead change, hottest win streak, and title-race tightness (weekly) plus biggest climber/faller, a lead summary, longest heater, and title margin (season). Now sends the full standings (reverses the season top/bottom-5 prompt trim from PR #351); per-call + per-season cost caps and the deterministic fallback stay as the backstop. No DB change (facts packet is JSONB; UI unchanged). files: `recap/facts.ts`, `recap/seasonFacts.ts`, `recap/voice.ts`, `types/server/recap.ts`, `types/server/seasonWrapped.ts` · ADR-0008
+
 ## 2026-06-29
 
 - **PR #351** Season Wrapped — seasonal CTA instead of a permanent nav tab + differentiated badges. Drops Wrapped from the primary nav (back to the four-tab IA `nav.spec` documents) and surfaces it as a seasonal moment: a dismissible `WrappedPromo` on the Leaderboard (shown only when a Wrapped exists, dismissal kept in localStorage per group/season) and a link from the Group League Honors card. On Wrapped, player badges move out of the numeric stat grid into a dedicated emoji-forward showcase, and the AI recap is reordered above the standings table. Also trims the season AI prompt to the top/bottom-5 standings edges. files: `WrappedPromo.svelte`, `WrappedStory.svelte`, `BottomTabBar.svelte`, `AppHeader.svelte`, `LeagueHonors.svelte`, `leaderboard/`, `recap/voice.ts` · ADR-0008 / ADR-0013 / ADR-0002
