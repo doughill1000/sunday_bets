@@ -97,15 +97,20 @@
     return you ? [you, ...others] : data.allTimeTotals;
   });
 
-  // Derived (not plain `$state`) so it recomputes when the cached query resolves on a miss
-  // — a `$state` initializer would capture the empty loading shape and never recover.
-  // Reassignable on click for an explicit pick (Svelte 5 derived-override), the same
-  // pattern as `selectedSeasonYear` below.
-  let selectedUserId: string | null = $derived(
-    data.allTimeTotals.some((t) => t.user_id === data.currentUserId)
+  // Plain `$state`, set explicitly on click and otherwise left alone — a `$derived` here
+  // would recompute (and stomp the user's pick) whenever `data.allTimeTotals` gets a new
+  // object identity, which happens on every season change via `goto`. The `$effect` below
+  // only steps in to pick a default/repair an invalid selection, never to "follow" the
+  // season.
+  let selectedUserId = $state<string | null>(null);
+  $effect(() => {
+    if (selectedUserId !== null && data.allTimeTotals.some((t) => t.user_id === selectedUserId)) {
+      return;
+    }
+    selectedUserId = data.allTimeTotals.some((t) => t.user_id === data.currentUserId)
       ? data.currentUserId
-      : (data.allTimeTotals[0]?.user_id ?? null)
-  );
+      : (data.allTimeTotals[0]?.user_id ?? null);
+  });
   let selectedSeasonYear = $derived(String(data.seasonYear));
 
   const selected = $derived(data.totals.find((t) => t.user_id === selectedUserId) ?? null);
