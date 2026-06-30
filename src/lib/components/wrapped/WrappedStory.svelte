@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import Sparkles from '@lucide/svelte/icons/sparkles';
+  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import WrappedCard from './WrappedCard.svelte';
   import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
   import type { PlayerWrappedFacts, LeagueWrappedFacts } from '$lib/types/server/seasonWrapped';
@@ -110,9 +111,12 @@
        the celebratory counterpart to the Group honors ledger. -->
   {#if playerFacts && playerFacts.badges.length > 0}
     <div class="space-y-3" data-testid="wrapped-badges">
-      <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Your Badges
-      </h3>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Your Badges
+        </h3>
+        <AwardsGuide />
+      </div>
       <ul class="flex flex-wrap gap-3">
         {#each playerFacts.badges as badge (badge.id)}
           <li
@@ -131,9 +135,12 @@
   <!-- League-only: season title badges -->
   {#if leagueFacts && leagueFacts.title_badges.length > 0}
     <div class="space-y-2">
-      <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Season Titles
-      </h3>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Season Titles
+        </h3>
+        <AwardsGuide />
+      </div>
       <div class="space-y-1">
         {#each leagueFacts.title_badges as badge (badge.label)}
           <div class="flex items-start gap-2 text-sm">
