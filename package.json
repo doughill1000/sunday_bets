@@ -13,6 +13,7 @@
     "db:import-historical:generate": "tsx supabase/scripts/import-historical/generate.ts",
     "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production",
     "db:refresh-matviews:prod": "node -r dotenv/config supabase/scripts/refresh-matviews.mjs dotenv_config_path=.env.production",
+    "refresh-wrapped:prod": "cross-env DOTENV_CONFIG_PATH=.env.production node -r dotenv/config --import tsx supabase/scripts/refresh-wrapped/index.ts",
     "db:clone:dev": "cd supabase/scripts/ && tsx cloneDb.ts --target=dev --reset",
     "db:clone:local": "cd supabase/scripts/ && tsx cloneDb.ts --target=local --reset",
     "db:reset:local": "supabase db reset --local --yes && pnpm db:clone:local",

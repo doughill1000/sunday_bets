@@ -30,6 +30,12 @@ export async function getSeasonWrappedRow(
   return (data as SeasonWrappedRow | null) ?? null;
 }
 
+/** Remove one persisted row by id — used by the force-refresh path (regenerate then replace). */
+export async function deleteSeasonWrappedRow(id: string): Promise<void> {
+  const { error } = await supabaseService.from('season_wrapped').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export type SeasonWrappedBundle = {
   league: SeasonWrappedRow | null;
   player: SeasonWrappedRow | null;

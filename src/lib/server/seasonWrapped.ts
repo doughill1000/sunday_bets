@@ -19,6 +19,7 @@ import { loadGroupMeta, loadWeekMeta } from '$lib/server/recap/facts';
 import {
   getSeasonWrappedRow,
   insertSeasonWrapped,
+  deleteSeasonWrappedRow,
   isSeasonComplete
 } from '$lib/server/db/queries/seasonWrapped';
 
@@ -41,20 +42,39 @@ export type SeasonWrappedSummary = {
   evaluated: number; // subjects considered (league + active players)
   generated: number; // AI prose persisted
   fallback: number; // deterministic fallback persisted
-  skipped: number; // already existed
+  skipped: number; // already existed (idempotent skip; never set when force is on)
+  replaced: number; // existing row regenerated and overwritten (force only)
 };
 
-const EMPTY: SeasonWrappedSummary = { evaluated: 0, generated: 0, fallback: 0, skipped: 0 };
+const EMPTY: SeasonWrappedSummary = {
+  evaluated: 0,
+  generated: 0,
+  fallback: 0,
+  skipped: 0,
+  replaced: 0
+};
+
+export type GenerateSeasonWrappedOptions = {
+  /**
+   * Overwrite existing rows instead of skipping them: each subject is re-voiced and its old
+   * row is replaced. The new prose is persisted only after a successful voice, so a failed
+   * regeneration leaves the existing blurb untouched.
+   */
+  force?: boolean;
+};
 
 /**
  * Generate and persist the Season Wrapped for one group's completed season: one league row
  * plus one row per active player. No-op (empty summary) if the season is not complete or the
- * group has AI recaps disabled. Idempotent: subjects with an existing row are skipped.
+ * group has AI recaps disabled. Idempotent: subjects with an existing row are skipped unless
+ * `force` is set, in which case each existing row is regenerated and replaced.
  */
 export async function generateSeasonWrapped(
   groupId: string,
-  seasonYear: number
+  seasonYear: number,
+  options: GenerateSeasonWrappedOptions = {}
 ): Promise<SeasonWrappedSummary> {
+  const { force = false } = options;
   const summary: SeasonWrappedSummary = { ...EMPTY };
 
   // Only completed seasons get a Wrapped (#347 AC).
@@ -74,14 +94,15 @@ export async function generateSeasonWrapped(
   for (const subject of subjects) {
     summary.evaluated++;
 
-    // Idempotent: skip subjects already persisted for this group/season.
+    // Idempotent: skip subjects already persisted for this group/season — unless force is
+    // set, in which case the existing row is regenerated and replaced below.
     const existing = await getSeasonWrappedRow(
       groupId,
       seasonYear,
       subject.scope,
       subject.subject_user_id
     );
-    if (existing) {
+    if (existing && !force) {
       summary.skipped++;
       continue;
     }
@@ -101,6 +122,11 @@ export async function generateSeasonWrapped(
         spentUsd += estimateCostUsd(voice.prompt_tokens, voice.completion_tokens);
       }
 
+      // Replace only after a successful voice: drop the stale row, then insert the new one.
+      // (Plain INSERT, not upsert — the partial unique indexes can't serve as a conflict
+      // arbiter; see insertSeasonWrapped.)
+      if (existing) await deleteSeasonWrappedRow(existing.id);
+
       await insertSeasonWrapped({
         groupId,
         seasonYear,
@@ -116,6 +142,7 @@ export async function generateSeasonWrapped(
 
       if (voice.is_fallback) summary.fallback++;
       else summary.generated++;
+      if (existing) summary.replaced++;
     } catch (err) {
       // Log but don't throw — a per-subject failure must not cancel the rest or grading.
       console.error(
@@ -169,6 +196,7 @@ export async function sendSeasonWrappeds(weekId: number): Promise<SendSeasonWrap
     totals.generated += s.generated;
     totals.fallback += s.fallback;
     totals.skipped += s.skipped;
+    totals.replaced += s.replaced;
     if (s.evaluated > 0) totals.groups++;
   }
   return totals;
