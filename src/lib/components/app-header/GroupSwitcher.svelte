@@ -23,7 +23,6 @@
 
   let { memberships, activeGroupId }: Props = $props();
 
-  // Only render when the user belongs to more than one group.
   const activeGroup = $derived(
     memberships.find((m) => m.groupId === activeGroupId) ?? memberships[0]
   );
@@ -43,7 +42,17 @@
   }
 </script>
 
-{#if memberships.length > 1}
+{#if memberships.length === 1}
+  <!-- Single-group users still see the group name, but as inert text — no dropdown
+       needed when there's nothing to switch to. Width capped to stay clear of the
+       absolutely-centered logo (see AppHeader.svelte). -->
+  <span
+    class="max-w-[120px] truncate text-xs font-medium text-muted-foreground sm:max-w-[160px] sm:text-sm"
+    data-testid="group-switcher-label"
+  >
+    {activeGroup?.groupName ?? ''}
+  </span>
+{:else if memberships.length > 1}
   <DropdownMenu>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
