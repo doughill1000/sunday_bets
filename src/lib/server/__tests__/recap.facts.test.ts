@@ -4,9 +4,16 @@ import {
   diffBadges,
   selectBadTakes,
   selectTopRivalries,
+  weekStandings,
+  selectRankMovers,
+  selectLeadChange,
+  selectHotStreak,
+  selectTitleRace,
   type BadTakeCandidate,
-  type RivalryRow
+  type RivalryRow,
+  type WeekStanding
 } from '$lib/server/recap/facts';
+import type { SeasonTrendEntry, StreakStatsEntry } from '$lib/types/server/stats';
 import {
   renderFallback,
   buildInputPacket,
@@ -32,6 +39,10 @@ const baseFacts: RecapFacts = {
   allin_hero: null,
   allin_zero: null,
   contrarian_hit: null,
+  rank_movers: { riser: null, faller: null },
+  lead_change: null,
+  hot_streak: null,
+  title_race: null,
   standings: [
     { user_id: 'u1', display_name: 'Alice', rank: 1, total_points: 90 },
     { user_id: 'u2', display_name: 'Bob', rank: 2, total_points: 75 }
@@ -345,6 +356,169 @@ describe('selectTopRivalries', () => {
   });
 });
 
+// ── storyline selectors ──────────────────────────────────────────────────────────
+
+const ws = (
+  user_id: string,
+  display_name: string,
+  rank: number,
+  cumulative_points = 0
+): WeekStanding => ({ user_id, display_name, rank, cumulative_points });
+
+function trendRow(over: Partial<SeasonTrendEntry> & { user_id: string }): SeasonTrendEntry {
+  return {
+    display_name: over.display_name ?? over.user_id,
+    season_year: 2025,
+    week_number: 1,
+    week_points: 0,
+    week_wins: 0,
+    week_losses: 0,
+    week_pushes: 0,
+    week_missed: 0,
+    cumulative_points: 0,
+    season_total: 0,
+    cumulative_rank_this_week: 1,
+    ...over
+  };
+}
+
+const streakRow = (over: Partial<StreakStatsEntry> & { user_id: string }): StreakStatsEntry => ({
+  display_name: over.display_name ?? over.user_id,
+  graded_picks: 10,
+  current_streak: 0,
+  max_streak: 0,
+  ...over
+});
+
+describe('weekStandings', () => {
+  it('filters to the week and orders by cumulative rank', () => {
+    const rows = [
+      trendRow({
+        user_id: 'u2',
+        display_name: 'Bob',
+        week_number: 2,
+        cumulative_rank_this_week: 1,
+        cumulative_points: 50
+      }),
+      trendRow({
+        user_id: 'u1',
+        display_name: 'Alice',
+        week_number: 2,
+        cumulative_rank_this_week: 2,
+        cumulative_points: 40
+      }),
+      trendRow({
+        user_id: 'u3',
+        display_name: 'Carol',
+        week_number: 1,
+        cumulative_rank_this_week: 1,
+        cumulative_points: 20
+      })
+    ];
+    const out = weekStandings(rows, 2);
+    expect(out.map((s) => s.user_id)).toEqual(['u2', 'u1']);
+    expect(out[0]).toEqual({ user_id: 'u2', display_name: 'Bob', rank: 1, cumulative_points: 50 });
+  });
+
+  it('returns empty for a week with no rows', () => {
+    expect(weekStandings([], 1)).toEqual([]);
+  });
+});
+
+describe('selectRankMovers', () => {
+  it('returns nulls when there is no prior week (week 1)', () => {
+    expect(selectRankMovers([ws('u1', 'Alice', 1), ws('u2', 'Bob', 2)], [])).toEqual({
+      riser: null,
+      faller: null
+    });
+  });
+
+  it('returns nulls with fewer than two players', () => {
+    expect(selectRankMovers([ws('u1', 'Alice', 1)], [ws('u1', 'Alice', 2)])).toEqual({
+      riser: null,
+      faller: null
+    });
+  });
+
+  it('finds the biggest climber and biggest faller', () => {
+    // Carol climbs 3→1 (+2), Bob slides 1→3 (−2), Alice stays put (excluded).
+    const prev = [ws('u2', 'Bob', 1), ws('u1', 'Alice', 2), ws('u3', 'Carol', 3)];
+    const curr = [ws('u3', 'Carol', 1), ws('u1', 'Alice', 2), ws('u2', 'Bob', 3)];
+    const { riser, faller } = selectRankMovers(curr, prev);
+    expect(riser).toMatchObject({ display_name: 'Carol', from_rank: 3, to_rank: 1, delta: 2 });
+    expect(faller).toMatchObject({ display_name: 'Bob', from_rank: 1, to_rank: 3, delta: -2 });
+  });
+
+  it('ignores non-movers and new entrants', () => {
+    const prev = [ws('u1', 'Alice', 1), ws('u2', 'Bob', 2)];
+    const curr = [ws('u1', 'Alice', 1), ws('u2', 'Bob', 2), ws('u3', 'Carol', 3)]; // Carol new
+    expect(selectRankMovers(curr, prev)).toEqual({ riser: null, faller: null });
+  });
+});
+
+describe('selectLeadChange', () => {
+  it('returns null in week 1 (no prior)', () => {
+    expect(selectLeadChange([ws('u1', 'Alice', 1)], [])).toBeNull();
+  });
+
+  it('returns null when the leader is unchanged', () => {
+    expect(selectLeadChange([ws('u1', 'Alice', 1)], [ws('u1', 'Alice', 1)])).toBeNull();
+  });
+
+  it('flags a new #1 holder', () => {
+    const out = selectLeadChange(
+      [ws('u2', 'Bob', 1), ws('u1', 'Alice', 2)],
+      [ws('u1', 'Alice', 1), ws('u2', 'Bob', 2)]
+    );
+    expect(out).toEqual({
+      new_leader: { user_id: 'u2', display_name: 'Bob' },
+      old_leader: { user_id: 'u1', display_name: 'Alice' }
+    });
+  });
+});
+
+describe('selectHotStreak', () => {
+  it('returns null when nobody clears the default floor', () => {
+    expect(selectHotStreak([streakRow({ user_id: 'u1', current_streak: 2 })])).toBeNull();
+  });
+
+  it('returns the hottest current streak at/above the floor', () => {
+    const out = selectHotStreak([
+      streakRow({ user_id: 'u1', display_name: 'Alice', current_streak: 4 }),
+      streakRow({ user_id: 'u2', display_name: 'Bob', current_streak: 6 })
+    ]);
+    expect(out).toEqual({ user_id: 'u2', display_name: 'Bob', streak: 6 });
+  });
+
+  it('honors a custom minimum length', () => {
+    expect(selectHotStreak([streakRow({ user_id: 'u1', current_streak: 3 })], 5)).toBeNull();
+  });
+});
+
+describe('selectTitleRace', () => {
+  it('returns null with fewer than two players', () => {
+    expect(selectTitleRace([ws('u1', 'Alice', 1, 50)])).toBeNull();
+  });
+
+  it('computes the margin between #1 and #2', () => {
+    const out = selectTitleRace([
+      ws('u1', 'Alice', 1, 50),
+      ws('u2', 'Bob', 2, 38),
+      ws('u3', 'Carol', 3, 20)
+    ]);
+    expect(out).toEqual({
+      leader: { user_id: 'u1', display_name: 'Alice' },
+      runner_up: { user_id: 'u2', display_name: 'Bob' },
+      margin: 12
+    });
+  });
+
+  it('reports a dead heat as margin 0', () => {
+    const out = selectTitleRace([ws('u1', 'Alice', 1, 50), ws('u2', 'Bob', 2, 50)]);
+    expect(out?.margin).toBe(0);
+  });
+});
+
 // ── roastable-fact allowlist (#295, ADR-0008) ───────────────────────────────────
 
 describe('applyRoastableAllowlist', () => {
@@ -366,6 +540,13 @@ describe('applyRoastableAllowlist', () => {
   it('allows the rivalry and bad-take slots', () => {
     expect(ROASTABLE_FACT_KEYS).toContain('rivalries');
     expect(ROASTABLE_FACT_KEYS).toContain('bad_takes');
+  });
+
+  it('allows the storyline beat slots', () => {
+    expect(ROASTABLE_FACT_KEYS).toContain('rank_movers');
+    expect(ROASTABLE_FACT_KEYS).toContain('lead_change');
+    expect(ROASTABLE_FACT_KEYS).toContain('hot_streak');
+    expect(ROASTABLE_FACT_KEYS).toContain('title_race');
   });
 });
 
@@ -394,6 +575,47 @@ describe('buildInputPacket', () => {
     // The settled-fact user_id must not leak into the model packet.
     expect(JSON.stringify(packet.rivalries)).not.toContain('u1');
     expect(JSON.stringify(packet.bad_takes)).not.toContain('u2');
+  });
+
+  it('maps storyline beats to display names only (no user_id)', () => {
+    const facts: RecapFacts = {
+      ...baseFacts,
+      rank_movers: {
+        riser: { user_id: 'u3', display_name: 'Carol', from_rank: 4, to_rank: 1, delta: 3 },
+        faller: { user_id: 'u2', display_name: 'Bob', from_rank: 1, to_rank: 3, delta: -2 }
+      },
+      lead_change: {
+        new_leader: { user_id: 'u3', display_name: 'Carol' },
+        old_leader: { user_id: 'u2', display_name: 'Bob' }
+      },
+      hot_streak: { user_id: 'u3', display_name: 'Carol', streak: 5 },
+      title_race: {
+        leader: { user_id: 'u3', display_name: 'Carol' },
+        runner_up: { user_id: 'u1', display_name: 'Alice' },
+        margin: 7
+      }
+    };
+    const packet = buildInputPacket(facts) as {
+      rank_movers: {
+        riser: { display_name: string } | null;
+        faller: { display_name: string } | null;
+      };
+      lead_change: { new_leader: string; old_leader: string };
+      hot_streak: { display_name: string; streak: number };
+      title_race: { leader: string; runner_up: string; margin: number };
+    };
+    expect(packet.rank_movers.riser).toEqual({
+      display_name: 'Carol',
+      from_rank: 4,
+      to_rank: 1,
+      delta: 3
+    });
+    expect(packet.lead_change).toEqual({ new_leader: 'Carol', old_leader: 'Bob' });
+    expect(packet.hot_streak).toEqual({ display_name: 'Carol', streak: 5 });
+    expect(packet.title_race).toEqual({ leader: 'Carol', runner_up: 'Alice', margin: 7 });
+    // No user_id anywhere in the storyline beats.
+    expect(JSON.stringify(packet.rank_movers)).not.toContain('u3');
+    expect(JSON.stringify(packet.lead_change)).not.toContain('u2');
   });
 });
 

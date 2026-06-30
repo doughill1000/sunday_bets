@@ -18,8 +18,12 @@ import type {
   LeagueWrappedFacts,
   WrappedNemesis,
   WrappedWeekExtreme,
-  WrappedBadge
+  WrappedBadge,
+  WrappedRankJourney,
+  WrappedLeadSummary,
+  WrappedHeater
 } from '$lib/types/server/seasonWrapped';
+import type { SeasonTrendEntry, StreakStatsEntry } from '$lib/types/server/stats';
 
 // A nemesis needs enough shared games to be signal, not noise (cf. MIN_RIVALRY_GAMES).
 const NEMESIS_MIN_GAMES = 4;
@@ -27,6 +31,144 @@ const NEMESIS_MIN_GAMES = 4;
 /** Replace an opted-out player's name with 'a player'; leave others untouched. */
 function neutralizeName(displayName: string, userId: string, optedOut: Set<string>): string {
   return optedOut.has(userId) ? 'a player' : displayName;
+}
+
+// ── Season storyline selectors ─────────────────────────────────────────────────────
+// Pure, deterministic season-long beats from the per-week trend + streak data. They each
+// take the opted-out set and return display-name-only fact shapes (the season packet never
+// carries user_id), so neutralization lives with the selector — mirroring nemesis/standings.
+
+// A heater shorter than this isn't a story — matches the weekly hot-streak floor.
+const MIN_SEASON_HEATER = 3;
+
+type RankJourneyRow = {
+  user_id: string;
+  display_name: string;
+  from_rank: number;
+  to_rank: number;
+  delta: number;
+};
+
+/** Each player's first-scoring-week rank → final rank (needs ≥2 weeks to be a journey). */
+function rankJourneys(trend: SeasonTrendEntry[]): RankJourneyRow[] {
+  const byUser = new Map<string, SeasonTrendEntry[]>();
+  for (const r of trend) {
+    const arr = byUser.get(r.user_id);
+    if (arr) arr.push(r);
+    else byUser.set(r.user_id, [r]);
+  }
+  const journeys: RankJourneyRow[] = [];
+  for (const [userId, rows] of byUser) {
+    if (rows.length < 2) continue;
+    const sorted = [...rows].sort((a, b) => a.week_number - b.week_number);
+    const from = sorted[0].cumulative_rank_this_week;
+    const to = sorted[sorted.length - 1].cumulative_rank_this_week;
+    journeys.push({
+      user_id: userId,
+      display_name: sorted[sorted.length - 1].display_name,
+      from_rank: from,
+      to_rank: to,
+      delta: from - to // positive = climbed
+    });
+  }
+  return journeys;
+}
+
+/** The season's biggest climber and biggest faller (by rank delta), opt-out neutralized. */
+export function selectRankJourneys(
+  trend: SeasonTrendEntry[],
+  optedOut: Set<string>
+): { biggest_climber: WrappedRankJourney | null; biggest_faller: WrappedRankJourney | null } {
+  const journeys = rankJourneys(trend);
+  const tie = (a: RankJourneyRow, b: RankJourneyRow) =>
+    a.to_rank - b.to_rank ||
+    a.display_name.localeCompare(b.display_name) ||
+    a.user_id.localeCompare(b.user_id);
+  const climber = journeys
+    .filter((j) => j.delta > 0)
+    .sort((a, b) => b.delta - a.delta || tie(a, b))[0];
+  const faller = journeys
+    .filter((j) => j.delta < 0)
+    .sort((a, b) => a.delta - b.delta || tie(a, b))[0];
+  const toFact = (j: RankJourneyRow): WrappedRankJourney => ({
+    display_name: neutralizeName(j.display_name, j.user_id, optedOut),
+    from_rank: j.from_rank,
+    to_rank: j.to_rank,
+    delta: j.delta
+  });
+  return {
+    biggest_climber: climber ? toFact(climber) : null,
+    biggest_faller: faller ? toFact(faller) : null
+  };
+}
+
+/** The ordered #1-holder per scoring week (deterministic tie-break on display name). */
+function leaderByWeek(trend: SeasonTrendEntry[]): { user_id: string; display_name: string }[] {
+  const weeks = [...new Set(trend.map((r) => r.week_number))].sort((a, b) => a - b);
+  const out: { user_id: string; display_name: string }[] = [];
+  for (const w of weeks) {
+    const leader = trend
+      .filter((r) => r.week_number === w && r.cumulative_rank_this_week === 1)
+      .sort(
+        (a, b) => a.display_name.localeCompare(b.display_name) || a.user_id.localeCompare(b.user_id)
+      )[0];
+    if (leader) out.push({ user_id: leader.user_id, display_name: leader.display_name });
+  }
+  return out;
+}
+
+/** Story of the #1 spot: lead changes, wire-to-wire, and who held it most weeks. */
+export function selectLeadSummary(
+  trend: SeasonTrendEntry[],
+  optedOut: Set<string>
+): WrappedLeadSummary {
+  const seq = leaderByWeek(trend);
+  if (seq.length === 0) return { changes: 0, wire_to_wire: false, most_weeks_leader: null };
+  let changes = 0;
+  for (let i = 1; i < seq.length; i++) {
+    if (seq[i].user_id !== seq[i - 1].user_id) changes++;
+  }
+  const tally = new Map<string, { display_name: string; weeks: number }>();
+  for (const s of seq) {
+    const t = tally.get(s.user_id);
+    if (t) t.weeks++;
+    else tally.set(s.user_id, { display_name: s.display_name, weeks: 1 });
+  }
+  const [topId, top] = [...tally.entries()].sort(
+    (a, b) =>
+      b[1].weeks - a[1].weeks ||
+      a[1].display_name.localeCompare(b[1].display_name) ||
+      a[0].localeCompare(b[0])
+  )[0];
+  return {
+    changes,
+    wire_to_wire: tally.size === 1 && seq.length >= 2,
+    most_weeks_leader: {
+      display_name: neutralizeName(top.display_name, topId, optedOut),
+      weeks: top.weeks
+    }
+  };
+}
+
+/** The season's longest win streak (max_streak ≥ floor), opt-out neutralized. */
+export function selectLongestHeater(
+  streaks: StreakStatsEntry[],
+  optedOut: Set<string>
+): WrappedHeater | null {
+  const top = [...streaks]
+    .filter((s) => s.max_streak >= MIN_SEASON_HEATER)
+    .sort(
+      (a, b) =>
+        b.max_streak - a.max_streak ||
+        a.display_name.localeCompare(b.display_name) ||
+        a.user_id.localeCompare(b.user_id)
+    )[0];
+  return top
+    ? {
+        display_name: neutralizeName(top.display_name, top.user_id, optedOut),
+        streak: top.max_streak
+      }
+    : null;
 }
 
 export async function buildSeasonWrappedFacts(params: {
@@ -120,6 +262,11 @@ export async function buildSeasonWrappedFacts(params: {
       .filter((b) => b.holders.some((holder) => holder.user_id === userId))
       .map((b) => ({ id: b.id, label: b.label, emoji: b.emoji, kind: b.kind }));
 
+    // Season-long personal bests for the 2nd-person blurb.
+    const bestRank =
+      userTrend.length > 0 ? Math.min(...userTrend.map((r) => r.cumulative_rank_this_week)) : null;
+    const streakRow = seasonStats.streaks.find((s) => s.user_id === userId);
+
     return {
       user_id: userId,
       display_name: entry.display_name,
@@ -134,6 +281,8 @@ export async function buildSeasonWrappedFacts(params: {
       contrarian_picks: consensus?.contrarian_picks ?? 0,
       nemesis,
       badges: playerBadges,
+      best_rank: bestRank,
+      longest_streak: streakRow?.max_streak ?? 0,
       opted_out: optedOut.has(userId)
     };
   });
@@ -152,6 +301,14 @@ export async function buildSeasonWrappedFacts(params: {
       emoji: b.emoji,
       holders: b.holders.map((h) => neutralizeName(h.display_name, h.user_id, optedOut))
     }));
+
+  // Season storyline beats (drama over the whole arc, not just the final table).
+  const { biggest_climber, biggest_faller } = selectRankJourneys(seasonStats.trend, optedOut);
+  const lead = selectLeadSummary(seasonStats.trend, optedOut);
+  const longestHeater = selectLongestHeater(seasonStats.streaks, optedOut);
+  // Margin of victory: champion − runner-up points (seasonTotals is rank-ordered).
+  const titleMargin =
+    seasonTotals.length >= 2 ? seasonTotals[0].total_points - seasonTotals[1].total_points : null;
 
   const league: LeagueWrappedFacts = {
     champion: championEntry
@@ -173,7 +330,12 @@ export async function buildSeasonWrappedFacts(params: {
       total_points: t.total_points
     })),
     title_badges: titleBadges,
-    player_count: activeEntries.length
+    player_count: activeEntries.length,
+    biggest_climber,
+    biggest_faller,
+    lead,
+    longest_heater: longestHeater,
+    title_margin: titleMargin
   };
 
   return {

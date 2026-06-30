@@ -31,14 +31,39 @@ export function estimateCostUsd(
   );
 }
 
+// ── Shared voice (the Commissioner) ───────────────────────────────────────────────────
+// One persona across the weekly recap and Season Wrapped so the voice never drifts. Spice
+// only changes how hard he roasts (see spiceInstruction); the swagger is constant.
+const PERSONA =
+  'You are the Commissioner of the Sunday Bets league: a cocky, self-appointed ringmaster ' +
+  'who lives to crown the winners and bury the losers, holding court over a sports-betting ' +
+  'group chat and loving every second of it.';
+
+// Craft rules that separate a recap that lands from a list of facts read aloud.
+const CRAFT_RULES = [
+  'Build the story around the 2-3 juiciest beats — do NOT recite every fact you are handed.',
+  'Cite the real numbers (points, consensus %, win-loss records): specifics are what make a flex earned and a burn sting.',
+  'Vary your structure week to week — do not always open on the leader or in the same shape.',
+  'At most one or two emojis, and only to punctuate a genuine beat — never as decoration.',
+  'On a quiet week with little to work with, stay short and dry rather than padding it out.'
+].join(' ');
+
+// Safety/fairness rails (ADR-0008). The packet is already display-names-only and allowlisted;
+// these reinforce the boundary in-prompt and keep the roast on gameplay, not people.
+const SAFETY_RULES = [
+  'Use ONLY the facts in the packet. Never invent outcomes, scores, picks, numbers, or player actions.',
+  'Every joke is about in-app betting performance — never about anyone personally, and no low blows.',
+  'Output ONLY the prose recap: no headers, no lists, no labels, no preamble, and no sign-off or signature.'
+].join(' ');
+
 function spiceInstruction(spice: SpiceLevel): string {
   switch (spice) {
     case 'mild':
-      return 'Keep the tone warm and encouraging — light ribbing only, no edge.';
+      return 'Tonight you are in a generous mood: hype the winners hard, tease the stragglers gently, keep it warm. No profanity.';
     case 'spicy':
-      return 'Go all in: harder roasts, bravado, and sharp commentary. Stay fact-faithful.';
+      return 'Full villain mode: harder roasts, maximum bravado, twist the knife on the losers and let the winners gloat. Mild profanity (damn, hell, "got cooked") is fair game — never below the belt.';
     default:
-      return 'Playful trash talk and hype — medium energy, keep it fun.';
+      return 'Hold court with swagger: real hype for the winners, playful trash talk for the rest. Keep it clean.';
   }
 }
 
@@ -145,22 +170,29 @@ async function callGateway(
 // ── Weekly recap voice ──────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(spice: SpiceLevel, isFinalWeek: boolean): string {
-  const tone = spiceInstruction(spice);
-  const finalNote = isFinalWeek
-    ? ' This is the FINAL week of the regular season — do NOT mention "next week", "playoffs", or future games.'
-    : '';
   return [
-    "You are the Sunday Bets AI League Commentator. Your job is to narrate the week's results",
-    'in a short, punchy paragraph (3-5 sentences) for a sports betting group chat.',
-    tone,
-    'Rules: output ONLY the prose recap — no headers, no lists, no preamble.',
-    'Use only the facts provided. Never invent outcomes, scores, or player actions.',
-    'bad_takes lists the week\'s roastable blunders: kind "lost_allin" = a busted All-In bet,',
-    '"backfired_fade" = went against the crowd and lost, "heavy_loss" = a heavy pick that flopped.',
-    'rivalries lists ongoing all-time head-to-head matchups (a_wins vs b_wins) you may reference for flavor.',
-    'Opted-out players (listed in opted_out_user_ids) are narrated neutrally — no roasting,',
-    'even if they appear in bad_takes or rivalries.',
-    isFinalWeek ? finalNote : ''
+    PERSONA,
+    "Narrate this week's results in a short, punchy paragraph (3-5 sentences) for the group chat.",
+    spiceInstruction(spice),
+    CRAFT_RULES,
+    // Data dictionary so the model reads each fact key correctly.
+    "Reading the facts: week_leader/week_laggard are the week's high and low scorers; perfect_weeks " +
+      'went flawless; allin_hero/allin_zero hit or busted an All-In bet; contrarian_hit won on a pick ' +
+      'almost nobody made (lower consensus_pct = gutsier); badge_changes are titles that just changed ' +
+      'hands; standings are the full season-long race.',
+    "The storyline beats are your best angles: rank_movers.riser/faller are the week's biggest climber " +
+      'and slider in the standings (delta = spots moved, from_rank→to_rank); lead_change means a new ' +
+      'player just seized #1 (new_leader overtook old_leader); hot_streak is the hottest active win run ' +
+      '(streak = wins in a row); title_race.margin is the points between #1 and #2 — small = nail-biter, ' +
+      'big = runaway. Lead with whichever of these actually popped this week.',
+    'bad_takes are this week\'s roastable blunders: "lost_allin" = a busted All-In, "backfired_fade" = ' +
+      'faded the crowd and lost, "heavy_loss" = a heavy pick that flopped. rivalries are ongoing all-time ' +
+      'head-to-head matchups (a_wins vs b_wins) — prime material for needling.',
+    'Any player shown as "a player" has opted out of being named — narrate them neutrally and never roast them, even in bad_takes or rivalries.',
+    SAFETY_RULES,
+    isFinalWeek
+      ? 'This is the FINAL week of the regular season — do NOT mention "next week", "playoffs", or future games. Send the season off.'
+      : ''
   ]
     .filter(Boolean)
     .join(' ');
@@ -181,6 +213,10 @@ export const ROASTABLE_FACT_KEYS = [
   'allin_hero',
   'allin_zero',
   'contrarian_hit',
+  'rank_movers',
+  'lead_change',
+  'hot_streak',
+  'title_race',
   'standings',
   'badge_changes',
   'bad_takes',
@@ -214,6 +250,41 @@ export function buildInputPacket(facts: RecapFacts): Record<string, unknown> {
       ? {
           display_name: facts.contrarian_hit.display_name,
           consensus_pct: facts.contrarian_hit.consensus_pct
+        }
+      : null,
+    // Storyline beats — display names only (facts are already opt-out neutralized).
+    rank_movers: {
+      riser: facts.rank_movers.riser
+        ? {
+            display_name: facts.rank_movers.riser.display_name,
+            from_rank: facts.rank_movers.riser.from_rank,
+            to_rank: facts.rank_movers.riser.to_rank,
+            delta: facts.rank_movers.riser.delta
+          }
+        : null,
+      faller: facts.rank_movers.faller
+        ? {
+            display_name: facts.rank_movers.faller.display_name,
+            from_rank: facts.rank_movers.faller.from_rank,
+            to_rank: facts.rank_movers.faller.to_rank,
+            delta: facts.rank_movers.faller.delta
+          }
+        : null
+    },
+    lead_change: facts.lead_change
+      ? {
+          new_leader: facts.lead_change.new_leader.display_name,
+          old_leader: facts.lead_change.old_leader.display_name
+        }
+      : null,
+    hot_streak: facts.hot_streak
+      ? { display_name: facts.hot_streak.display_name, streak: facts.hot_streak.streak }
+      : null,
+    title_race: facts.title_race
+      ? {
+          leader: facts.title_race.leader.display_name,
+          runner_up: facts.title_race.runner_up.display_name,
+          margin: facts.title_race.margin
         }
       : null,
     standings: facts.standings.map((s) => ({
@@ -305,13 +376,20 @@ export const SEASON_ROASTABLE_FACT_KEYS = [
   'contrarian_picks',
   'nemesis',
   'badges',
+  'best_rank',
+  'longest_streak',
   'opted_out',
   // league packet
   'champion',
   'wooden_spoon',
   'standings',
   'title_badges',
-  'player_count'
+  'player_count',
+  'biggest_climber',
+  'biggest_faller',
+  'lead',
+  'longest_heater',
+  'title_margin'
 ] as const;
 
 /** Strip any key not on the season allowlist. */
@@ -324,21 +402,6 @@ export function applySeasonAllowlist(packet: Record<string, unknown>): Record<st
   return out;
 }
 
-// The card shows every player, but the model only needs the extremes: the top of the
-// table (the bragging) and the bottom (the "they sucked" roasts). Carrying the whole
-// table into the prompt bloats tokens without adding flavor, so trim to top N + bottom N,
-// deduped by rank for small leagues where the two ends overlap.
-const SEASON_PROMPT_STANDINGS_EDGE = 5;
-
-function standingsEdgesForPrompt<T extends { rank: number }>(standings: T[]): T[] {
-  if (standings.length <= SEASON_PROMPT_STANDINGS_EDGE * 2) return standings;
-  const seen = new Set<number>();
-  return [
-    ...standings.slice(0, SEASON_PROMPT_STANDINGS_EDGE),
-    ...standings.slice(-SEASON_PROMPT_STANDINGS_EDGE)
-  ].filter((s) => (seen.has(s.rank) ? false : (seen.add(s.rank), true)));
-}
-
 /** Build the season input packet the model receives (allowlisted facts, display names only). */
 export function buildSeasonInputPacket(subject: SeasonWrappedSubject): Record<string, unknown> {
   if (subject.scope === 'league') {
@@ -349,13 +412,20 @@ export function buildSeasonInputPacket(subject: SeasonWrappedSubject): Record<st
       season: subject.season_year,
       champion: f.champion,
       wooden_spoon: f.wooden_spoon,
-      standings: standingsEdgesForPrompt(f.standings).map((s) => ({
+      // Full table — metering no longer forces a top/bottom trim.
+      standings: f.standings.map((s) => ({
         rank: s.rank,
         display_name: s.display_name,
         total_points: s.total_points
       })),
       title_badges: f.title_badges,
-      player_count: f.player_count
+      player_count: f.player_count,
+      // Season storyline beats (display names only; already opt-out neutralized).
+      biggest_climber: f.biggest_climber,
+      biggest_faller: f.biggest_faller,
+      lead: f.lead,
+      longest_heater: f.longest_heater,
+      title_margin: f.title_margin
     });
   }
 
@@ -383,36 +453,39 @@ export function buildSeasonInputPacket(subject: SeasonWrappedSubject): Record<st
         }
       : null,
     badges: f.badges.map((b) => b.label),
+    best_rank: f.best_rank,
+    longest_streak: f.longest_streak,
     opted_out: f.opted_out
   });
 }
 
 function buildSeasonSystemPrompt(subject: SeasonWrappedSubject): string {
-  const tone = spiceInstruction(subject.spice);
-
   if (subject.scope === 'league') {
     return [
-      'You are the Sunday Bets AI League Commentator writing the LEAGUE\'s end-of-season "Wrapped".',
-      "Narrate the season's story in a short, punchy paragraph (3-5 sentences) for a sports betting group chat.",
-      tone,
-      'Rules: output ONLY the prose recap — no headers, no lists, no preamble.',
-      'Use only the facts provided. Never invent outcomes, scores, or player actions.',
-      'The regular season is OVER — do NOT mention "next week", "playoffs", or future games.',
-      'Any player shown as "a player" has opted out of being named — keep them neutral, never single them out.'
+      PERSONA,
+      'You are delivering the LEAGUE\'s end-of-season "Wrapped" — the whole season\'s story in a short, punchy paragraph (3-5 sentences) for the group chat.',
+      spiceInstruction(subject.spice),
+      CRAFT_RULES,
+      'Reading the facts: champion won it all, wooden_spoon finished dead last, standings are the full final table, title_badges are season-long awards and who earned them.',
+      "The season-arc beats are your richest material: biggest_climber/biggest_faller rose or slid the most over the year (from_rank→to_rank, delta = spots); lead.changes is how many times #1 changed hands, lead.wire_to_wire means one player led every single week, lead.most_weeks_leader held the top spot longest; longest_heater is the season's best win streak; title_margin is the champion's winning margin in points — a tiny margin was a dogfight, a huge one a coronation. Build the recap around the ones with real drama.",
+      SAFETY_RULES,
+      'The regular season is OVER — do NOT mention "next week", "playoffs", or future games; this is the final word.',
+      'Any player shown as "a player" opted out of being named — keep them neutral, never single them out.'
     ].join(' ');
   }
 
   const optOutNote = subject.facts.opted_out
-    ? ' This player opted out of roasting — keep their recap warm and neutral, no jokes at their expense.'
+    ? ' This player opted OUT of roasting — drop the villain act for them and keep their Wrapped genuinely warm and complimentary, no jokes at their expense, whatever the tone above says.'
     : '';
   return [
-    'You are the Sunday Bets AI League Commentator writing ONE player\'s end-of-season "Wrapped".',
-    'Address the player directly in the SECOND PERSON ("you", "your") in a short, punchy paragraph (3-5 sentences) for a sports betting group chat.',
-    tone,
-    'Rules: output ONLY the prose recap — no headers, no lists, no preamble.',
-    'Use only the facts provided. Never invent outcomes, scores, or player actions.',
-    'The regular season is OVER — do NOT mention "next week", "playoffs", or future games.',
-    'Your nemesis is named by display name only; reference them for flavor.' + optOutNote
+    PERSONA,
+    'You are delivering ONE player\'s end-of-season "Wrapped." Address them directly as "you" — their year in review, in a short, punchy paragraph (3-5 sentences) for the group chat.',
+    spiceInstruction(subject.spice) + optOutNote,
+    CRAFT_RULES,
+    'Reading the facts: rank/total_points/record are your season finish; best_week/worst_week your high and low; allin your All-In record; contrarian_wins/contrarian_picks how often you zagged from the crowd and it paid; nemesis the opponent who owned you; badges what you earned; best_rank the highest you ever climbed; longest_streak your hottest win run of the year.',
+    SAFETY_RULES,
+    'The regular season is OVER — do NOT mention "next week", "playoffs", or future games; this is the final word.',
+    'Your nemesis is named by display name only — reference them for flavor.'
   ].join(' ');
 }
 

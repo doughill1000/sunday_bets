@@ -18,6 +18,8 @@ const playerFacts: PlayerWrappedFacts = {
   contrarian_picks: 0,
   nemesis: null,
   badges: [],
+  best_rank: 1,
+  longest_streak: 4,
   opted_out: false
 };
 
@@ -48,7 +50,12 @@ const leagueFacts: LeagueWrappedFacts = {
     { label: 'The Sharp', emoji: '🎯', holders: ['Bob'] },
     { label: 'The Grinder', emoji: '⚙️', holders: ['Alice'] }
   ],
-  player_count: 3
+  player_count: 3,
+  biggest_climber: { display_name: 'Alice', from_rank: 5, to_rank: 2, delta: 3 },
+  biggest_faller: { display_name: 'Charlie', from_rank: 1, to_rank: 3, delta: -2 },
+  lead: { changes: 1, wire_to_wire: false, most_weeks_leader: { display_name: 'Bob', weeks: 8 } },
+  longest_heater: { display_name: 'Bob', streak: 6 },
+  title_margin: 65
 };
 
 const leagueRow: SeasonWrappedRow = {
