@@ -718,7 +718,7 @@ const FLAVORS: Record<
 };
 
 /**
- * Ordered glossary of every possible award for the "Awards guide" modal — titles
+ * Ordered glossary of every possible award for the "Awards legend" modal — titles
  * (one holder per season) first, then milestones (anyone who clears the bar). Order
  * mirrors `computeBadges`. Derived from the same `FLAVORS` slots the engine awards from,
  * so copy stays single-sourced.

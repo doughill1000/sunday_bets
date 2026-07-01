@@ -60,11 +60,11 @@ export type BadgeAward = {
   emoji: string;
   /** Hardcoded flavor; AI layer (#189) can override this slot later. */
   flavor: string;
-  /** Plain-English criteria — how the award is earned. Shown in the "Awards guide" modal. */
+  /** Plain-English criteria — how the award is earned. Shown in the "Awards legend" modal. */
   description: string;
   kind: BadgeKind;
   holders: BadgeHolder[];
 };
 
-/** One award in the "Awards guide" modal: every possible award, minus this season's holders. */
+/** One award in the "Awards legend" modal: every possible award, minus this season's holders. */
 export type BadgeGlossaryEntry = Omit<BadgeAward, 'holders'>;
