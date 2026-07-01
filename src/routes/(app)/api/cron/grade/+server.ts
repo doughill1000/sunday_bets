@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import * as Sentry from '@sentry/sveltekit';
 import { gradeWeek } from '$lib/server/grading';
-import { sendResultsRecap } from '$lib/server/notifications';
+import { sendResultsRecap, sendAIRecapPushes } from '$lib/server/notifications';
 import { sendAIRecaps } from '$lib/server/aiRecap';
 import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
 import { requireCronSecret, withCronLog } from '$lib/server/cron';
@@ -50,6 +50,24 @@ export const POST: RequestHandler = async (event) => {
       })
     );
 
+    // After AI recaps generate, push a "recap ready" notification per opted-in
+    // member (#302, reuses the results-recap dedup shape). Evaluates whichever
+    // ai_recaps rows now exist, so it's a no-op for groups that didn't generate
+    // one. Errors → Sentry only; never fail grading.
+    const aiRecapPushes = await Promise.all(
+      weeks.map(async (w) => {
+        try {
+          return { weekId: w.id, ...(await sendAIRecapPushes(w.id)) };
+        } catch (e) {
+          Sentry.captureException(e);
+          return {
+            weekId: w.id,
+            error: e instanceof Error ? e.message : 'ai recap push failed'
+          };
+        }
+      })
+    );
+
     // After the weekly AI recap, generate Season Wrapped at season's end (#347, ADR-0008).
     // No-op except on a fully-graded FINAL week of a complete season; idempotent per subject.
     // Errors → Sentry only; never fail grading.
@@ -67,7 +85,14 @@ export const POST: RequestHandler = async (event) => {
       })
     );
 
-    return { weekIds: weeks.map((w) => w.id), results, recaps, aiRecaps, seasonWrappeds };
+    return {
+      weekIds: weeks.map((w) => w.id),
+      results,
+      recaps,
+      aiRecaps,
+      aiRecapPushes,
+      seasonWrappeds
+    };
   });
   return new Response(JSON.stringify(jobResult), {
     status: jobResult.ok ? 200 : 500,

@@ -153,7 +153,9 @@
       <BottomTabBar />
       <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
       {#await data.latestRecap then recap}
-        <RecapFlash {recap} />
+        {#await data.recapSeen then seen}
+          <RecapFlash {recap} alreadySeen={seen} />
+        {/await}
       {/await}
     {/if}
   </div>

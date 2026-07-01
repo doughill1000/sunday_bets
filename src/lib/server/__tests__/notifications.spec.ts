@@ -13,10 +13,12 @@ type BuilderState = {
 let db: {
   gamesNullCount: number;
   gameRows: { id: string }[];
-  week: { week_number: number } | null;
+  week: { week_number: number; seasons?: { year: number } } | null;
   users: { id: string; notification_prefs: unknown }[];
-  recapLogs: { user_id: string }[];
+  recapLogs: { user_id: string; group_id?: string }[];
   settlements: { user_id: string; outcome: string; points_delta: number }[];
+  aiRecapRows: { group_id: string }[];
+  memberships: { group_id: string; user_id: string }[];
   insertedLogs: Array<Record<string, unknown>>;
 };
 
@@ -38,6 +40,10 @@ function resolve(state: BuilderState) {
       return { data: db.recapLogs, error: null };
     case 'pick_settlement':
       return { data: db.settlements, error: null };
+    case 'ai_recaps':
+      return { data: db.aiRecapRows, error: null };
+    case 'group_memberships':
+      return { data: db.memberships, error: null };
     default:
       return { data: [], error: null };
   }
@@ -77,7 +83,7 @@ vi.mock('$lib/supabase/service', () => ({
   }
 }));
 
-import { sendResultsRecap } from '../notifications';
+import { sendResultsRecap, sendAIRecapPushes } from '../notifications';
 
 const PREFS_ON = { enabled: true, pick_reminders: true, results_recap: true };
 
@@ -90,6 +96,8 @@ beforeEach(() => {
     users: [],
     recapLogs: [],
     settlements: [],
+    aiRecapRows: [],
+    memberships: [],
     insertedLogs: []
   };
   sendToUser.mockResolvedValue({ sent: 1, pruned: 0 });
@@ -130,6 +138,7 @@ describe('sendResultsRecap', () => {
         kind: 'results_recap',
         game_id: null,
         week_id: 5,
+        group_id: null,
         detail: { wins: 1, losses: 1, pushes: 0, missed: 0, net: 2 }
       }
     ]);
@@ -186,6 +195,93 @@ describe('sendResultsRecap', () => {
     const res = await sendResultsRecap(5);
 
     expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1 });
+    expect(sendToUser).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendAIRecapPushes', () => {
+  beforeEach(() => {
+    db.week = { week_number: 5, seasons: { year: 2025 } };
+  });
+
+  it('is a no-op when no ai_recaps rows exist for the week', async () => {
+    db.aiRecapRows = [];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
+  });
+
+  it('sends one push per opted-in group member and logs it with group_id', async () => {
+    db.aiRecapRows = [{ group_id: 'g1' }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith('u1', {
+      title: 'Week 5 recap is ready',
+      body: 'Your league’s AI recap just dropped.',
+      url: '/recap',
+      tag: 'ai-recap-g1-week-5'
+    });
+    expect(db.insertedLogs).toEqual([
+      {
+        user_id: 'u1',
+        kind: 'ai_recap',
+        game_id: null,
+        week_id: 5,
+        group_id: 'g1',
+        detail: null
+      }
+    ]);
+  });
+
+  it('sends a separate push per group when a user belongs to more than one', async () => {
+    db.aiRecapRows = [{ group_id: 'g1' }, { group_id: 'g2' }];
+    db.memberships = [
+      { group_id: 'g1', user_id: 'u1' },
+      { group_id: 'g2', user_id: 'u1' }
+    ];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 2, sent: 2, skipped: 0 });
+    expect(sendToUser).toHaveBeenCalledTimes(2);
+  });
+
+  it('respects opt-out (master off or ai_recap off)', async () => {
+    db.aiRecapRows = [{ group_id: 'g1' }];
+    db.memberships = [
+      { group_id: 'g1', user_id: 'u1' },
+      { group_id: 'g1', user_id: 'u2' }
+    ];
+    db.users = [
+      { id: 'u1', notification_prefs: { ...PREFS_ON, enabled: false } },
+      { id: 'u2', notification_prefs: { ...PREFS_ON, ai_recap: false } }
+    ];
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
+  });
+
+  it('dedupes a (user, group) already pushed for the week', async () => {
+    db.aiRecapRows = [{ group_id: 'g1' }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.recapLogs = [{ user_id: 'u1', group_id: 'g1' }];
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 1, sent: 0, skipped: 1 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 });

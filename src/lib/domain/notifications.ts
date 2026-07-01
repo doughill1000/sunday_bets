@@ -13,6 +13,8 @@ export type NotificationPrefs = {
   pick_reminders: boolean;
   /** Post-grading recap of the user's week (wins/losses/net). */
   results_recap: boolean;
+  /** "Recap ready" push once the AI recap for a group/week is generated (#302). */
+  ai_recap: boolean;
   line_shift: LineShiftPrefs;
 };
 
@@ -20,6 +22,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   enabled: false,
   pick_reminders: true,
   results_recap: true,
+  ai_recap: true,
   line_shift: { enabled: true, threshold: 2 }
 };
 
@@ -53,6 +56,7 @@ export function parseNotificationPrefs(raw: unknown): NotificationPrefs {
     pick_reminders:
       typeof obj.pick_reminders === 'boolean' ? obj.pick_reminders : base.pick_reminders,
     results_recap: typeof obj.results_recap === 'boolean' ? obj.results_recap : base.results_recap,
+    ai_recap: typeof obj.ai_recap === 'boolean' ? obj.ai_recap : base.ai_recap,
     line_shift: {
       enabled: typeof lsRaw.enabled === 'boolean' ? lsRaw.enabled : base.line_shift.enabled,
       threshold:

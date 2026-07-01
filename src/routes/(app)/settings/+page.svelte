@@ -195,6 +195,7 @@
   let enabled = $state(data.prefs.enabled);
   let pickReminders = $state(data.prefs.pick_reminders);
   let resultsRecap = $state(data.prefs.results_recap);
+  let aiRecap = $state(data.prefs.ai_recap);
   let lineShiftEnabled = $state(data.prefs.line_shift.enabled);
   let threshold = $state(data.prefs.line_shift.threshold);
 
@@ -223,6 +224,7 @@
         enabled,
         pick_reminders: pickReminders,
         results_recap: resultsRecap,
+        ai_recap: aiRecap,
         line_shift: { enabled: lineShiftEnabled, threshold: Number(threshold) }
       })
     });
@@ -556,6 +558,22 @@
             <span class="font-medium">Results recap</span>
             <p class="text-sm text-muted-foreground">
               A summary of your record and points once the week is fully graded.
+            </p>
+          </span>
+        </label>
+
+        <label class="flex items-start gap-3">
+          <input
+            type="checkbox"
+            class="mt-1 size-4"
+            bind:checked={aiRecap}
+            onchange={onSubPrefChange}
+            disabled={!enabled}
+          />
+          <span>
+            <span class="font-medium">Recap ready</span>
+            <p class="text-sm text-muted-foreground">
+              A push when your league's AI recap is ready to read.
             </p>
           </span>
         </label>

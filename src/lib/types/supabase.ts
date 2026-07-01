@@ -505,6 +505,7 @@ export type Database = {
           created_at: string;
           detail: Json | null;
           game_id: string | null;
+          group_id: string | null;
           id: string;
           kind: string;
           user_id: string;
@@ -514,6 +515,7 @@ export type Database = {
           created_at?: string;
           detail?: Json | null;
           game_id?: string | null;
+          group_id?: string | null;
           id?: string;
           kind: string;
           user_id: string;
@@ -523,6 +525,7 @@ export type Database = {
           created_at?: string;
           detail?: Json | null;
           game_id?: string | null;
+          group_id?: string | null;
           id?: string;
           kind?: string;
           user_id?: string;
@@ -541,6 +544,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'ui_games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notification_log_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
             referencedColumns: ['id'];
           },
           {
@@ -789,6 +799,45 @@ export type Database = {
           },
           {
             foreignKeyName: 'reactions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      recap_seen: {
+        Row: {
+          group_id: string;
+          season_year: number;
+          seen_at: string;
+          user_id: string;
+          week_number: number;
+        };
+        Insert: {
+          group_id: string;
+          season_year: number;
+          seen_at?: string;
+          user_id: string;
+          week_number: number;
+        };
+        Update: {
+          group_id?: string;
+          season_year?: number;
+          seen_at?: string;
+          user_id?: string;
+          week_number?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'recap_seen_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'recap_seen_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users';

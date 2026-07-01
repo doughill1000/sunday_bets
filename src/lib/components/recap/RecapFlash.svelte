@@ -1,32 +1,35 @@
 <script lang="ts">
-  // Once-per-week flash modal showing the latest AI recap.
-  // Tracks seen state in localStorage keyed by (group_id, season_year, week_number).
-  import { browser } from '$app/environment';
+  // Once-per-week flash modal showing the latest AI recap. Seen state is a
+  // server-side marker (recap_seen, #302) keyed by (user, group, season, week),
+  // so it's consistent across a player's devices rather than per-device.
   import { onMount } from 'svelte';
   import RecapCard from './RecapCard.svelte';
   import type { RecapRow } from '$lib/server/db/queries/recaps';
   import X from '@lucide/svelte/icons/x';
 
-  let { recap }: { recap: RecapRow | null } = $props();
+  let { recap, alreadySeen }: { recap: RecapRow | null; alreadySeen: boolean } = $props();
 
   let visible = $state(false);
 
-  function seenKey(r: RecapRow) {
-    return `recap_seen_${r.group_id}_${r.season_year}_${r.week_number}`;
-  }
-
   onMount(() => {
-    if (!browser || !recap) return;
-    const key = seenKey(recap);
-    if (!localStorage.getItem(key)) {
-      visible = true;
-    }
+    visible = !!recap && !alreadySeen;
   });
 
-  function dismiss() {
-    if (!recap) return;
-    if (browser) localStorage.setItem(seenKey(recap), '1');
+  async function dismiss() {
     visible = false;
+    if (!recap) return;
+    try {
+      await fetch('/api/recap/mark-seen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          seasonYear: recap.season_year,
+          weekNumber: recap.week_number
+        })
+      });
+    } catch {
+      // Best-effort: worst case the flash reappears next load, no worse than before.
+    }
   }
 </script>
 
