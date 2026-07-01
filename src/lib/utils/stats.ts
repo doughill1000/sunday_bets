@@ -3,6 +3,9 @@ import type { HeadToHeadEntry, SeasonTrendEntry } from '$lib/types/server/stats'
 export type TrendPoint = {
   week_number: number;
   cumulative_points: number;
+  /** True for the single week drop-worst-week forgave from standings (ADR-0018). The line
+   *  itself stays raw cumulative — this only flags which point to annotate. */
+  is_dropped_week: boolean;
 };
 
 export type TrendSeries = {
@@ -22,7 +25,8 @@ export function buildTrendSeries(rows: SeasonTrendEntry[]): TrendSeries[] {
     };
     series.points.push({
       week_number: row.week_number,
-      cumulative_points: row.cumulative_points
+      cumulative_points: row.cumulative_points,
+      is_dropped_week: row.is_dropped_week
     });
     grouped.set(row.user_id, series);
   }

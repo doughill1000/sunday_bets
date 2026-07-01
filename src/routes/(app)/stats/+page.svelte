@@ -53,6 +53,7 @@
     seasonYear: 0,
     totals: [],
     allTimeTotals: [],
+    dropActive: false,
     trend: [],
     teamAccuracy: [],
     weightAccuracy: [],
@@ -364,20 +365,9 @@
                 <CardTitle class="text-2xl">{subjectLabel}</CardTitle>
               </CardHeader>
               <CardContent>
+                <!-- Analytics only: standings score + rank live on the Leaderboard now
+                     (ADR-0018). These tiles describe actual performance, always raw. -->
                 <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">Rank</dt>
-                    <dd class="text-2xl font-bold">
-                      #{selected.rank}
-                      <span class="text-base font-normal text-muted-foreground"
-                        >of {data.totals.length}</span
-                      >
-                    </dd>
-                  </div>
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">Points</dt>
-                    <dd class="text-2xl font-bold">{selected.total_points}</dd>
-                  </div>
                   <div>
                     <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
                     <dd class="text-2xl font-bold">
@@ -390,6 +380,14 @@
                   <div>
                     <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
                     <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">Decisions</dt>
+                    <dd class="text-2xl font-bold">{selected.decisions}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-xs font-medium text-muted-foreground">Missed</dt>
+                    <dd class="text-2xl font-bold">{selected.missed}</dd>
                   </div>
                 </dl>
               </CardContent>
@@ -540,7 +538,7 @@
 
         <TabsContent value="career" class="space-y-6">
           <!-- Career summary -->
-          <CareerSummary entry={selectedCareer} isYou={isCareerYou} />
+          <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
 
           <!-- All-time accuracy breakdowns (streamed off the critical path) -->
           {#await data.allTimeDetail}

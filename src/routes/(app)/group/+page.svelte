@@ -62,8 +62,19 @@
   // League rules (grading preset + drop-worst-week)
   let preset = $state<'house' | 'gamer'>(data.gradingPreset);
   let dropWorst = $state(data.dropWorstWeek);
+  // Season the drop applies from (ADR-0018). Defaults to the upcoming season so enabling
+  // the rule never silently rewrites a finished one; a saved value is honored on reload.
+  let dropWorstStartYear = $state<number>(data.dropWorstWeekStartYear ?? data.currentSeasonYear);
   let configMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let configBusy = $state(false);
+
+  // Selectable "apply from" seasons: every season the group has played plus the upcoming
+  // one, and any already-saved start year (e.g. set via SQL) so it always shows as chosen.
+  const startYearOptions = $derived.by(() => {
+    const years = [...data.availableSeasons, data.currentSeasonYear];
+    if (data.dropWorstWeekStartYear != null) years.push(data.dropWorstWeekStartYear);
+    return years.filter((year, i) => years.indexOf(year) === i).sort((a, b) => a - b);
+  });
 
   // Per-member busy states
   let memberBusy = $state<string | null>(null); // userId currently being acted on
@@ -135,7 +146,11 @@
       const res = await fetch('/api/group/update-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ grading_preset: preset, drop_worst_week: dropWorst })
+        body: JSON.stringify({
+          grading_preset: preset,
+          drop_worst_week: dropWorst,
+          drop_worst_week_start_year: dropWorstStartYear
+        })
       });
       const body = (await res.json().catch(() => ({}))) as { reason?: string };
       if (!res.ok) {
@@ -703,21 +718,44 @@
           {/if}
         </div>
 
-        <!-- Drop worst week (freely editable) -->
-        <div class="flex items-start gap-3">
-          <input
-            id="drop-worst-week"
-            type="checkbox"
-            bind:checked={dropWorst}
-            disabled={configBusy}
-            class="border-input mt-1 h-4 w-4 rounded border"
-          />
-          <div class="space-y-0.5">
-            <Label for="drop-worst-week">Drop each player's worst week</Label>
-            <p class="text-xs text-muted-foreground">
-              Exclude every member's lowest-scoring week from their season total.
-            </p>
+        <!-- Drop worst week + apply-from season (ADR-0018, freely editable) -->
+        <div class="space-y-3">
+          <div class="flex items-start gap-3">
+            <input
+              id="drop-worst-week"
+              type="checkbox"
+              bind:checked={dropWorst}
+              disabled={configBusy}
+              class="border-input mt-1 h-4 w-4 rounded border"
+            />
+            <div class="space-y-0.5">
+              <Label for="drop-worst-week">Drop each player's worst week</Label>
+              <p class="text-xs text-muted-foreground">
+                Exclude every member's lowest-scoring week from their standings total. Standings
+                only — the win-loss record still counts every week.
+              </p>
+            </div>
           </div>
+
+          {#if dropWorst}
+            <div class="ml-7 space-y-1">
+              <Label for="drop-worst-week-start-year">Apply from season</Label>
+              <select
+                id="drop-worst-week-start-year"
+                bind:value={dropWorstStartYear}
+                disabled={configBusy}
+                class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-40"
+              >
+                {#each startYearOptions as year (year)}
+                  <option value={year}>{year}</option>
+                {/each}
+              </select>
+              <p class="text-xs text-muted-foreground">
+                Applies to this season and every season after it. Earlier seasons stay untouched —
+                the rule is never applied retroactively.
+              </p>
+            </div>
+          {/if}
         </div>
 
         <Button type="submit" size="sm" disabled={configBusy}>
