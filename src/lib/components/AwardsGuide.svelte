@@ -71,7 +71,7 @@
   onclick={() => (guideOpen = true)}
 >
   <Info class="size-3.5" aria-hidden="true" />
-  How awards work?
+  Awards legend
 </Button>
 
 <!-- Awards guide: dialog on desktop, bottom sheet on mobile (matches WelcomeGuide). -->
@@ -79,9 +79,9 @@
   <Dialog bind:open={guideOpen}>
     <DialogContent data-testid="awards-guide" class="max-h-[80vh] max-w-lg overflow-y-auto px-8">
       <DialogHeader>
-        <DialogTitle>Awards guide</DialogTitle>
+        <DialogTitle>Awards legend</DialogTitle>
         <DialogDescription>
-          How each award is earned. Awards update as games are graded.
+          What each award means and how it's earned. Updates as games are graded.
         </DialogDescription>
       </DialogHeader>
       {@render awardsGuideBody()}
@@ -95,9 +95,9 @@
       class="max-h-[85vh] overflow-y-auto rounded-t-xl pb-8"
     >
       <SheetHeader class="pb-2">
-        <SheetTitle>Awards guide</SheetTitle>
+        <SheetTitle>Awards legend</SheetTitle>
         <SheetDescription>
-          How each award is earned. Awards update as games are graded.
+          What each award means and how it's earned. Updates as games are graded.
         </SheetDescription>
       </SheetHeader>
       <div class="px-4">
