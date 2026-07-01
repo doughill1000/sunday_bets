@@ -79,6 +79,44 @@ test('sign-up form submits and shows confirmation message', async ({ page }) => 
   await expect(page.getByText('Check your email for a confirmation link')).toBeVisible({
     timeout: 8000
   });
+
+  // The card also switches to a dedicated "check your email" screen (not just
+  // the toast) with the address, a resend action, and a way back to sign-in.
+  await expect(auth.checkEmailTitle()).toBeVisible();
+  await expect(page.getByText(uniqueEmail)).toBeVisible();
+  await expect(auth.resendButton()).toBeVisible();
+
+  await auth.backToSignInButton().click();
+  await expect(auth.cardTitle()).toHaveText('Sign in');
+});
+
+test('resend confirmation email shows a success toast', async ({ page }) => {
+  const auth = authPage(page);
+  await auth.goto();
+
+  await expect(async () => {
+    await auth.switchToSignUp().click();
+    await expect(auth.cardTitle()).toHaveText('Create account', { timeout: 1000 });
+  }).toPass({ timeout: 10000 });
+
+  const uniqueEmail = `e2e-resend-${Date.now()}@example.com`;
+  await auth.emailInput().fill(uniqueEmail);
+  await auth.passwordInput().fill('e2e-resend-pw-ok');
+
+  const signedUp = page.waitForResponse(
+    (r) => r.url().includes('/auth') && r.request().method() === 'POST'
+  );
+  await auth.submitButton().click();
+  await signedUp;
+  await expect(auth.checkEmailTitle()).toBeVisible();
+
+  const resent = page.waitForResponse(
+    (r) => r.url().includes('/auth') && r.request().method() === 'POST'
+  );
+  await auth.resendButton().click();
+  await resent;
+
+  await expect(page.getByText('Confirmation email resent')).toBeVisible({ timeout: 8000 });
 });
 
 // SKIPPED (pre-existing failure, separate follow-up): the reset itself now works
