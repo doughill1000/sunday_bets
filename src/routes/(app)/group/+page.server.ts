@@ -51,6 +51,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   // League rules (commissioner-only): current values + season-freeze lock flag.
   let gradingPreset: 'house' | 'gamer' = 'house';
   let dropWorstWeek = false;
+  // Season the drop applies from (ADR-0018): null until a commissioner commits to one,
+  // which is what keeps the rule non-retroactive. Drives the "Apply from season" control.
+  let dropWorstWeekStartYear: number | null = null;
   let presetLocked = false;
   // AI recap settings (commissioner-only, issue #301, ADR-0008).
   let spice: 'mild' | 'medium' | 'spicy' = 'medium';
@@ -69,8 +72,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     ]);
     invites = inviteResult.data ?? [];
     gradingPreset = cfg?.grading_preset === 'gamer' ? 'gamer' : 'house';
-    dropWorstWeek =
-      (cfg?.scoring_rules as { drop_worst_week?: boolean } | null)?.drop_worst_week ?? false;
+    const scoringRules = cfg?.scoring_rules as {
+      drop_worst_week?: boolean;
+      drop_worst_week_start_year?: number | null;
+    } | null;
+    dropWorstWeek = scoringRules?.drop_worst_week ?? false;
+    dropWorstWeekStartYear = scoringRules?.drop_worst_week_start_year ?? null;
     presetLocked = lockedResult.data ?? false;
     const rawSpice = cfg?.spice;
     spice = rawSpice === 'mild' || rawSpice === 'spicy' ? rawSpice : 'medium';
@@ -85,9 +92,13 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     currentUserId: user.id,
     availableSeasons,
     badgeSeasonYear,
+    // The active/upcoming season year — the default "apply from" season for a
+    // freshly-enabled drop-worst-week rule (ADR-0018).
+    currentSeasonYear,
     invites,
     gradingPreset,
     dropWorstWeek,
+    dropWorstWeekStartYear,
     presetLocked,
     spice,
     aiRecapsEnabled,

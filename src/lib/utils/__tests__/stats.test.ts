@@ -52,9 +52,20 @@ describe('stats utilities', () => {
 
     expect(result.map((series) => series.displayName)).toEqual(['Alex', 'Beth']);
     expect(result[1].points).toEqual([
-      { week_number: 1, cumulative_points: 1 },
-      { week_number: 2, cumulative_points: 4 }
+      { week_number: 1, cumulative_points: 1, is_dropped_week: false },
+      { week_number: 2, cumulative_points: 4, is_dropped_week: false }
     ]);
+  });
+
+  it('threads the dropped-week flag onto trend points', () => {
+    const droppedRow = trendRow('a', 'Alex', 3, 9);
+    const result = buildTrendSeries([
+      trendRow('a', 'Alex', 1, 3),
+      { ...droppedRow, is_dropped_week: true },
+      trendRow('a', 'Alex', 2, 6)
+    ]);
+
+    expect(result[0].points.map((p) => p.is_dropped_week)).toEqual([false, false, true]);
   });
 
   it('formats accuracy', () => {

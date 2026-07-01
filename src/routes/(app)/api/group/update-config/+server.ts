@@ -9,7 +9,10 @@ import { refreshLeaderboardStats } from '$lib/server/grading';
 
 const bodySchema = z.object({
   grading_preset: z.enum(['house', 'gamer']),
-  drop_worst_week: z.boolean()
+  drop_worst_week: z.boolean(),
+  // Season the drop applies from (ADR-0018). Nullable so the field can be cleared;
+  // the RPC treats null as "leave unchanged", so the UI sends the chosen year.
+  drop_worst_week_start_year: z.number().int().nullable()
 });
 
 function errReason(code: string | undefined): string {
@@ -25,11 +28,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) return json({ reason: 'Invalid payload' }, { status: 400 });
 
-  const { grading_preset, drop_worst_week } = parsed.data;
+  const { grading_preset, drop_worst_week, drop_worst_week_start_year } = parsed.data;
   const { error } = await supabase.rpc('update_group_config', {
     p_group_id: groupId,
     p_grading_preset: grading_preset,
-    p_drop_worst_week: drop_worst_week
+    p_drop_worst_week: drop_worst_week,
+    // null → RPC leaves the stored start year unchanged (its "leave unchanged" convention).
+    p_drop_worst_week_start_year: drop_worst_week_start_year ?? undefined
   });
 
   if (error) return json({ reason: errReason(error.code) }, { status: 400 });

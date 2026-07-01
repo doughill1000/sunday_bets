@@ -11,10 +11,13 @@
 
   let {
     entry,
-    isYou
+    isYou,
+    dropActive = false
   }: {
     entry: AllTimeTotalsEntry;
     isYou: boolean;
+    /** Group has drop-worst-week active (ADR-0018) — captions the reconciled headline. */
+    dropActive?: boolean;
   } = $props();
 
   const subjectLabel = $derived(isYou ? 'You' : entry.display_name);
@@ -32,8 +35,11 @@
   <CardContent>
     <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
       <div>
-        <dt class="text-xs font-medium text-muted-foreground">Total points</dt>
+        <dt class="text-xs font-medium text-muted-foreground">Standings points</dt>
         <dd class="text-2xl font-bold">{entry.total_points}</dd>
+        {#if dropActive}
+          <p class="text-xs text-muted-foreground">lowest week dropped per season</p>
+        {/if}
       </div>
       <div>
         <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>

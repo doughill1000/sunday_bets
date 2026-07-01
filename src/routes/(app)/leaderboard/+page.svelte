@@ -47,7 +47,8 @@
     seasonYear: 0,
     totals: [],
     totalsCursor: null,
-    championUserId: null
+    championUserId: null,
+    dropActive: false
   };
 
   const data = $derived({ ...(leaderboardQuery.data ?? EMPTY_LEADERBOARD), ...pageData });
@@ -207,6 +208,11 @@
                 {/each}
               </TableBody>
             </Table>
+            {#if data.dropActive}
+              <p class="mt-3 text-xs text-muted-foreground" data-testid="drop-worst-week-footnote">
+                Total drops each player's lowest week. W-L-P count every week.
+              </p>
+            {/if}
           </CardContent>
         </Card>
       {/if}

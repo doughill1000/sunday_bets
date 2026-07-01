@@ -15,6 +15,10 @@ export type StatsCachePayload = SeasonStats & {
   seasonYear: number;
   totals: SeasonLeaderboardEntry[];
   allTimeTotals: AllTimeTotalsEntry[];
+  /** Group-level: drop-worst-week is enabled with a committed start year (ADR-0018).
+   *  Drives the Career "Standings points" caption, which spans every season rather than
+   *  the one in view, so it is not season-scoped like the Leaderboard's flag. */
+  dropActive: boolean;
 };
 
 /**
@@ -46,4 +50,7 @@ export type LeaderboardCachePayload = {
   totalsCursor: string | null;
   /** Champion crown, shown only while viewing the current in-progress season. */
   championUserId: string | null;
+  /** Drop-worst-week is active for THIS displayed season (ADR-0018): enabled, a start year
+   *  is set, and `seasonYear >= startYear`. Drives the standings footnote. */
+  dropActive: boolean;
 };

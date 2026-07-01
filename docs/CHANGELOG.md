@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-01
+
+- **#358** Drop-worst-week UX — commissioner control + standings/analytics split. Phase 2 (UX) of the #357 redesign: commissioners can now enable the rule and pick "apply from season \_\_\_" from the group Manage tab (no more service-role-only writes; copy states it affects standings only and is never retroactive). Draws a sharp line between standings and performance — the Stats season card drops Points + Rank (analytics only; Leaderboard owns standings), the season trend rings the forgiven week with a caption while the line stays raw, the Career headline reads "Standings points" (reconciled) with a per-season-drop caption, and the Leaderboard gains a footnote when the drop is active for the displayed season. No DB change. files: `group/+page.svelte`+`+page.server.ts`, `api/group/update-config`, `stats/+page.svelte`, `CareerSummary.svelte`, `SeasonTrendChart.svelte`, `utils/stats.ts`, `leaderboard/+page.svelte`, `readModels/{leaderboard,stats}Cache.ts`, `domain/scoring.ts` · ADR-0018
+
 ## 2026-06-30
 
 - **#357** Non-retroactive drop-worst-week + standings reconciliation — fixes two defects in the ADR-0005 drop-worst-week rule: it applied retroactively to the imported 2022–2024 seasons the instant a group enabled it, and career totals diverged from the sum of the season cards. Adds a `drop_worst_week_start_year` config field so the rule never reaches a season before it (inert by construction without one), reworks career totals to sum each season's drop-aware standings total, and adds a season-trend `is_dropped_week` marker (trend stays raw; it's an annotation, not a second total). Records/breakdowns stay raw everywhere. views: `leaderboard_season_totals`, `stats_alltime_totals`, `stats_season_trend`, `league_completed_standings` · function: `update_group_config` · ADR-0018 (supersedes ADR-0005)
