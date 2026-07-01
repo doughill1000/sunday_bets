@@ -6,6 +6,8 @@
 // part of this payload: it stays streamed off the page `load` critical path.
 import { getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason, getAllTimeTotals } from '$lib/server/db/queries/stats';
+import { getGroupConfig } from '$lib/server/groupConfig';
+import { isDropWorstWeekEnabled, type DropWorstWeekRules } from '$lib/domain/scoring';
 import type { StatsCachePayload } from '$lib/query/types';
 
 export type { StatsCachePayload };
@@ -14,11 +16,15 @@ export async function getStatsCachePayload(
   groupId: string,
   seasonYear: number
 ): Promise<StatsCachePayload> {
-  const [allTimeTotals, stats, totals] = await Promise.all([
+  const [allTimeTotals, stats, totals, config] = await Promise.all([
     getAllTimeTotals(groupId),
     getStatsForSeason(seasonYear, groupId),
-    getSeasonLeaderboard(seasonYear, groupId)
+    getSeasonLeaderboard(seasonYear, groupId),
+    getGroupConfig(groupId)
   ]);
 
-  return { seasonYear, totals, allTimeTotals, ...stats };
+  // Group-level (cross-season) flag for the Career "Standings points" caption (ADR-0018).
+  const dropActive = isDropWorstWeekEnabled(config?.scoring_rules as DropWorstWeekRules);
+
+  return { seasonYear, totals, allTimeTotals, dropActive, ...stats };
 }

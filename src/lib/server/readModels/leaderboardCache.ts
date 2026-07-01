@@ -8,6 +8,8 @@
 // persisted (boundary 3). Reuses existing query functions — no new SQL.
 import { getSeasonLeaderboardPage } from '$lib/server/db/queries/leaderboard';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
+import { getGroupConfig } from '$lib/server/groupConfig';
+import { isDropWorstWeekActive, type DropWorstWeekRules } from '$lib/domain/scoring';
 import type { LeaderboardCachePayload } from '$lib/query/types';
 
 export type { LeaderboardCachePayload };
@@ -18,18 +20,23 @@ export async function getLeaderboardStandingsPayload(
   currentSeasonYear: number,
   opts: { cursor?: string | null } = {}
 ): Promise<LeaderboardCachePayload> {
-  const [page, champion] = await Promise.all([
+  const [page, champion, config] = await Promise.all([
     getSeasonLeaderboardPage(seasonYear, groupId, { cursor: opts.cursor ?? null }),
-    getReigningChampion(groupId)
+    getReigningChampion(groupId),
+    getGroupConfig(groupId)
   ]);
 
   // Crown only shown when viewing the current in-progress season.
   const championUserId = seasonYear === currentSeasonYear ? (champion?.user_id ?? null) : null;
 
+  // Season-scoped drop-worst-week flag for the standings footnote (ADR-0018).
+  const dropActive = isDropWorstWeekActive(config?.scoring_rules as DropWorstWeekRules, seasonYear);
+
   return {
     seasonYear,
     totals: page.entries,
     totalsCursor: page.nextCursor,
-    championUserId
+    championUserId,
+    dropActive
   };
 }
