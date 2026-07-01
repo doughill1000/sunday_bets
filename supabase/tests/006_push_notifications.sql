@@ -3,7 +3,7 @@
 
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(15);
 
 -- Structure -----------------------------------------------------------------
 SELECT has_table('public', 'push_subscriptions', 'public.push_subscriptions exists');
@@ -12,6 +12,7 @@ SELECT has_column('public', 'push_subscriptions', 'endpoint', 'push_subscription
 SELECT has_column('public', 'push_subscriptions', 'p256dh',   'push_subscriptions has p256dh');
 SELECT has_column('public', 'push_subscriptions', 'auth_key', 'push_subscriptions has auth_key');
 SELECT has_table('public', 'notification_log', 'public.notification_log exists');
+SELECT has_column('public', 'notification_log', 'group_id', 'notification_log has group_id (#302, ai_recap dedup)');
 
 -- Seed users ----------------------------------------------------------------
 SELECT tests.create_supabase_user('push_a');

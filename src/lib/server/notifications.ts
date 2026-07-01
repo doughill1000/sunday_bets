@@ -25,6 +25,7 @@ const LINE_SHIFT_CAP_MS = 24 * 60 * 60 * 1000;
 export type ReminderSummary = { evaluated: number; sent: number; skipped: number };
 export type LineShiftSummary = { evaluated: number; sent: number };
 export type RecapSummary = { evaluated: number; sent: number; skipped: number };
+export type AIRecapPushSummary = { evaluated: number; sent: number; skipped: number };
 
 async function loadPrefs(userIds: string[]): Promise<Map<string, NotificationPrefs>> {
   const map = new Map<string, NotificationPrefs>();
@@ -45,6 +46,7 @@ async function logNotification(entry: {
   kind: string;
   game_id?: string | null;
   week_id?: number | null;
+  group_id?: string | null;
   detail?: Json;
 }) {
   const { error } = await supabaseService.from('notification_log').insert({
@@ -52,6 +54,7 @@ async function logNotification(entry: {
     kind: entry.kind,
     game_id: entry.game_id ?? null,
     week_id: entry.week_id ?? null,
+    group_id: entry.group_id ?? null,
     detail: entry.detail ?? null
   });
   if (error) throw error;
@@ -387,6 +390,87 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
         net: tally.net
       }
     });
+    sent++;
+  }
+
+  return { evaluated, sent, skipped };
+}
+
+/**
+ * Push each opted-in group member a "recap ready" notification once their
+ * group's AI recap has been generated for a week (#302, reuses the #178
+ * sendResultsRecap dedup shape). Evaluates whichever `ai_recaps` rows exist for
+ * the week — generation (sendAIRecaps) is the gate, so a group with no row yet
+ * (disabled, or not fully graded) is simply not evaluated here. Deduped per
+ * (user, group, week) via notification_log so repeated grade-cron runs don't
+ * re-send.
+ */
+export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSummary> {
+  const { data: weekRow, error: weekErr } = await supabaseService
+    .from('weeks')
+    .select('week_number, seasons!inner(year)')
+    .eq('id', weekId)
+    .single();
+  if (weekErr || !weekRow) return { evaluated: 0, sent: 0, skipped: 0 };
+  const seasonYear = (weekRow.seasons as { year: number }).year;
+  const weekNumber = weekRow.week_number;
+
+  const { data: recaps, error: recapErr } = await supabaseService
+    .from('ai_recaps')
+    .select('group_id')
+    .eq('season_year', seasonYear)
+    .eq('week_number', weekNumber);
+  if (recapErr) throw recapErr;
+  const groupIds = [...new Set((recaps ?? []).map((r) => r.group_id))];
+  if (groupIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+
+  const { data: memberships, error: memErr } = await supabaseService
+    .from('group_memberships')
+    .select('group_id, user_id')
+    .in('group_id', groupIds)
+    .eq('status', 'active');
+  if (memErr) throw memErr;
+  if (!memberships || memberships.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+
+  const prefsByUser = await loadPrefs([...new Set(memberships.map((m) => m.user_id))]);
+
+  // Per-(user, group, week) dedup: skip anyone already pushed for this group/week.
+  const { data: logs, error: logsErr } = await supabaseService
+    .from('notification_log')
+    .select('user_id, group_id')
+    .eq('kind', 'ai_recap')
+    .eq('week_id', weekId)
+    .in('group_id', groupIds);
+  if (logsErr) throw logsErr;
+  const notified = new Set((logs ?? []).map((l) => `${l.user_id}:${l.group_id}`));
+
+  let evaluated = 0;
+  let sent = 0;
+  let skipped = 0;
+
+  for (const { group_id, user_id } of memberships) {
+    const prefs = prefsByUser.get(user_id);
+    if (!prefs?.enabled || !prefs.ai_recap) continue;
+    evaluated++;
+
+    if (notified.has(`${user_id}:${group_id}`)) {
+      skipped++;
+      continue;
+    }
+
+    await sendToUser(user_id, {
+      title: `Week ${weekNumber} recap is ready`,
+      body: 'Your league’s AI recap just dropped.',
+      url: '/recap',
+      tag: `ai-recap-${group_id}-week-${weekId}`
+    });
+    await logNotification({
+      user_id,
+      kind: 'ai_recap',
+      week_id: weekId,
+      group_id
+    });
+    notified.add(`${user_id}:${group_id}`);
     sent++;
   }
 

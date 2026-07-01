@@ -48,6 +48,7 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
     groupId: data.groupId,
     memberships: data.memberships,
     latestRecap: data.latestRecap ?? null,
+    recapSeen: data.recapSeen ?? true,
     championUserId: data.championUserId ?? null
   };
 };

@@ -33,6 +33,13 @@ describe('parseNotificationPrefs', () => {
     expect(parseNotificationPrefs({ results_recap: false }).results_recap).toBe(false);
     expect(parseNotificationPrefs({ results_recap: 'yes' }).results_recap).toBe(true);
   });
+
+  it('defaults ai_recap when absent and parses it when present', () => {
+    // Rows written before the field existed fall back to the default (true).
+    expect(parseNotificationPrefs({ enabled: true }).ai_recap).toBe(true);
+    expect(parseNotificationPrefs({ ai_recap: false }).ai_recap).toBe(false);
+    expect(parseNotificationPrefs({ ai_recap: 'yes' }).ai_recap).toBe(true);
+  });
 });
 
 describe('formatRecapBody', () => {
