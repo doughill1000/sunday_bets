@@ -10,3 +10,10 @@
 alter table public.users
   add column if not exists notification_prefs jsonb not null default
     '{"enabled": false, "pick_reminders": true, "ai_recap": true, "line_shift": {"enabled": true, "threshold": 2}}'::jsonb;
+
+-- The ADD COLUMN above is a no-op once the column already exists (from the
+-- original migration, before "ai_recap" existed), so the default must also be
+-- set explicitly for it to actually change on already-migrated databases.
+alter table public.users
+  alter column notification_prefs set default
+    '{"enabled": false, "pick_reminders": true, "ai_recap": true, "line_shift": {"enabled": true, "threshold": 2}}'::jsonb;

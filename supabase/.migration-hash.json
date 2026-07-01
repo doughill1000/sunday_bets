@@ -144,14 +144,14 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "schemas/0206_notification_log.sql": {
-    "hash": "504fa30c625ed5371529a9ac02ae741cb2b951f9fea00c463333f6e376e4311c",
-    "migration": "20260701170049_ai_recap_push_and_seen_marker.sql",
-    "migrationHash": "7fc22aa214a1eb63f66083fcd7ca4ec8d6cabb1111a2e6f0d5870b54f71429b6"
+    "hash": "46e80ca53ba67e3868cfcebe819081a0d91098e8adc3019af628f10b94b9d524",
+    "migration": "20260701185238_fix_notification_log_group_fk_ordering.sql",
+    "migrationHash": "96038c5df7527b6f874be28409327ec4dab06198b1200dc59a59b1666f4544c0"
   },
   "schemas/0207_notification_prefs.sql": {
-    "hash": "e59d483581588d7be51da2e48b6bcf247c40ba54b162f92ca562ebb7f037911e",
-    "migration": "20260701170049_ai_recap_push_and_seen_marker.sql",
-    "migrationHash": "7fc22aa214a1eb63f66083fcd7ca4ec8d6cabb1111a2e6f0d5870b54f71429b6"
+    "hash": "c4b7f176c54e7c68b0909f6d6d6cf73ed93705d9052f58cf69ccc891aaf6572c",
+    "migration": "20260701185238_fix_notification_log_group_fk_ordering.sql",
+    "migrationHash": "96038c5df7527b6f874be28409327ec4dab06198b1200dc59a59b1666f4544c0"
   },
   "schemas/0208_groups.sql": {
     "hash": "4683f7ab0393bbb9ceb27f77a92da1b53f496ba71f7061d017087ecbba15a283",
@@ -736,5 +736,10 @@
     "hash": "5ad7db39543cba643e52fe646359b8328a85bd5f2027d8f113e386057fe67346",
     "migration": "20260701170049_ai_recap_push_and_seen_marker.sql",
     "migrationHash": "7fc22aa214a1eb63f66083fcd7ca4ec8d6cabb1111a2e6f0d5870b54f71429b6"
+  },
+  "schemas/0227_notification_log_group_fk.sql": {
+    "hash": "a11dfeb457a5bbd5c6af443a62e42003a9196736ee6e2d76919a14b8ced38c2a",
+    "migration": "20260701185238_fix_notification_log_group_fk_ordering.sql",
+    "migrationHash": "96038c5df7527b6f874be28409327ec4dab06198b1200dc59a59b1666f4544c0"
   }
 }

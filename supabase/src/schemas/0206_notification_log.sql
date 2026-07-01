@@ -12,14 +12,16 @@ create table if not exists public.notification_log (
   kind       text not null,
   game_id    uuid references public.games(id) on delete cascade,
   week_id    integer references public.weeks(id) on delete cascade,
-  group_id   uuid references public.groups(id) on delete cascade,
+  group_id   uuid,
   detail     jsonb,
   created_at timestamptz not null default now()
 );
 
 -- Additive column for existing DBs (must run before the group_id index below).
+-- No inline FK: public.groups is defined later (0208_groups.sql); the FK
+-- constraint is added in 0227_notification_log_group_fk.sql once it exists.
 alter table public.notification_log
-  add column if not exists group_id uuid references public.groups(id) on delete cascade;
+  add column if not exists group_id uuid;
 
 create index if not exists idx_notification_log_user_kind_game
   on public.notification_log (user_id, kind, game_id);
