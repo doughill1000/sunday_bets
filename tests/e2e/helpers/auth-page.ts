@@ -58,6 +58,23 @@ export function authPage(page: Page) {
       return page.getByTestId('auth-switch-signup');
     },
 
+    // --- post-signup "check your email" screen (/auth) ---
+
+    /** The "Check your email" heading shown after a successful sign-up. */
+    checkEmailTitle(): Locator {
+      return page.getByTestId('auth-check-email-title');
+    },
+
+    /** The resend-confirmation-email button on the check-email screen. */
+    resendButton(): Locator {
+      return page.getByTestId('auth-resend-submit');
+    },
+
+    /** The "Back to sign in" button on the check-email screen. */
+    backToSignInButton(): Locator {
+      return page.getByTestId('auth-back-to-signin');
+    },
+
     // --- reset page (/auth/reset) ---
 
     /** The card title on /auth/reset. */

@@ -78,6 +78,21 @@ export const actions: Actions = {
     return { ok: true, message: 'Check your email for a confirmation link' };
   },
 
+  resend: async ({ request, locals, url }) => {
+    const form = await request.formData();
+    const email = String(form.get('email') ?? '').trim();
+    if (!email) return fail(400, { ok: false, message: 'Email is required' });
+
+    const { error } = await locals.supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${url.origin}/auth/confirm` }
+    });
+
+    if (error) return fail(400, { ok: false, message: error.message ?? 'Could not resend email' });
+    return { ok: true, message: 'Confirmation email resent' };
+  },
+
   resetRequest: async ({ request, locals, url }) => {
     const form = await request.formData();
     const email = String(form.get('email') ?? '').trim();
