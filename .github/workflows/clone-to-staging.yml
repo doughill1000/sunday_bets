@@ -112,6 +112,43 @@ jobs:
             --file=/tmp/prod_data.dump
           echo "Dump size: $(du -sh /tmp/prod_data.dump | cut -f1)"
 
+      # public.users.id is a foreign key to auth.users(id), but this workflow only
+      # clones the public schema. Staging's auth.users is a standalone set of test
+      # accounts seeded independently of prod, so any prod user id missing from it
+      # breaks the public.users restore below (issue: staging clone failure after a
+      # new prod signup). Mirror missing ids as inert placeholder rows — unconfirmed,
+      # no password, no real email — so the FK is satisfiable without carrying any
+      # prod PII into staging. Existing staging auth.users rows are left untouched.
+      - name: Sync missing auth.users placeholders to staging
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          PSQL=/usr/lib/postgresql/${{ env.PG_VERSION }}/bin/psql
+          "$PSQL" "$SUPABASE_DB_URL" -Atc "select id from auth.users" > /tmp/prod_auth_ids.txt
+          echo "Prod auth.users ids: $(wc -l < /tmp/prod_auth_ids.txt)"
+
+          "$PSQL" "$SUPABASE_STAGING_DB_URL" -v ON_ERROR_STOP=1 <<'EOSQL'
+          begin;
+          create temporary table _prod_auth_ids (id uuid);
+          \copy _prod_auth_ids from '/tmp/prod_auth_ids.txt'
+
+          insert into auth.users (
+            instance_id, id, aud, role, email, raw_app_meta_data, raw_user_meta_data,
+            created_at, updated_at, confirmation_token, recovery_token,
+            email_change_token_new, email_change, phone_change, phone_change_token,
+            reauthentication_token, email_change_token_current
+          )
+          select
+            '00000000-0000-0000-0000-000000000000', id, 'authenticated', 'authenticated',
+            id::text || '@placeholder.local',
+            '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+            now(), now(), '', '', '', '', '', '', '', ''
+          from _prod_auth_ids
+          on conflict (id) do nothing;
+          commit;
+          EOSQL
+
       - name: Clear staging public schema data
         env:
           SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
