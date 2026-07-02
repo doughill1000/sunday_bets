@@ -2,12 +2,7 @@
 // Returns a discriminated union so each step maps to distinct banner copy.
 
 export type EngagementStep =
-  | 'install-ios'
-  | 'install-prompt'
-  | 'install-fallback'
-  | 'notif-enable'
-  | 'notif-denied'
-  | 'none';
+  'install-ios' | 'install-prompt' | 'install-fallback' | 'notif-enable' | 'notif-denied' | 'none';
 
 export interface EngagementInput {
   isStandalone: boolean;
