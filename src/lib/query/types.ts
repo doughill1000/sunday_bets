@@ -54,3 +54,24 @@ export type LeaderboardCachePayload = {
    *  is set, and `seasonYear >= startYear`. Drives the standings footnote. */
   dropActive: boolean;
 };
+
+/** One row of the All-time leaderboard: `stats_alltime_totals` plus a client-computed dense
+ *  rank (`total_points desc, wins desc, pushes desc`, ties share a rank) and the member's
+ *  avatar, joined by `user_id` in the read model since the matview has no `avatar_key`. */
+export type AllTimeLeaderboardEntry = AllTimeTotalsEntry & {
+  avatar_key: string | null;
+  rank: number;
+};
+
+/**
+ * All-time (career) standings payload cached under `['leaderboard', groupId, 0, 'alltime',
+ * null, null]` — season-independent, so it is keyed the same regardless of the season the
+ * Standings/Weekly tabs have selected (issue #376).
+ */
+export type AllTimeLeaderboardPayload = {
+  totals: AllTimeLeaderboardEntry[];
+  /** Group-level (cross-season) drop-worst-week flag (ADR-0018), same semantics as the Stats
+   *  Career caption — every member's total already sums drop-aware season totals once this
+   *  is true, regardless of which season a commissioner started the rule from. */
+  dropActive: boolean;
+};

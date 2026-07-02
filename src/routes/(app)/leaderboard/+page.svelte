@@ -2,8 +2,8 @@
   import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
-  import { fetchLeaderboard } from '$lib/query/fetchers';
-  import type { LeaderboardCachePayload } from '$lib/query/types';
+  import { fetchLeaderboard, fetchAllTimeLeaderboard } from '$lib/query/fetchers';
+  import type { LeaderboardCachePayload, AllTimeLeaderboardPayload } from '$lib/query/types';
   import type { PageData } from './$types';
   import {
     Card,
@@ -41,6 +41,15 @@
     initialData: pageData.initialLeaderboard
   }));
 
+  // All-time (career) totals (#376) — season-independent, so the query key uses a fixed
+  // season/week slot (`0`, `null`) rather than `pageData.seasonYear`; it stays cached across
+  // season switches on the other two tabs.
+  const allTimeQuery = createQuery(() => ({
+    queryKey: queryKeys.leaderboard(pageData.groupId, 0, 'alltime', null, null),
+    queryFn: () => fetchAllTimeLeaderboard(fetch, pageData.groupId),
+    initialData: pageData.initialAllTime
+  }));
+
   // Empty shape so the standings render stays valid while the query loads on a cache miss
   // (the pending branch in the Standings panel gates real render).
   const EMPTY_LEADERBOARD: LeaderboardCachePayload = {
@@ -51,14 +60,20 @@
     dropActive: false
   };
 
+  const EMPTY_ALLTIME: AllTimeLeaderboardPayload = {
+    totals: [],
+    dropActive: false
+  };
+
   const data = $derived({ ...(leaderboardQuery.data ?? EMPTY_LEADERBOARD), ...pageData });
+  const allTime = $derived(allTimeQuery.data ?? EMPTY_ALLTIME);
 
   // `data.championUserId` would resolve to the layout's streamed champion Promise (added in
   // #339); the reigning champion for the standings crown comes from the cached standings
   // payload instead, which carries it synchronously.
   const championUserId = $derived((leaderboardQuery.data ?? EMPTY_LEADERBOARD).championUserId);
 
-  let activeTab = $state(pageData.view);
+  let activeTab = $state<'standings' | 'weekly' | 'alltime'>(pageData.view);
 
   // When the user clicks the Weekly tab and we haven't loaded weekly data yet, trigger a navigation.
   let weeklyNavigated = $state(pageData.view === 'weekly');
@@ -70,7 +85,7 @@
       url.searchParams.set('view', 'weekly');
       void goto(url.toString(), { noScroll: true, keepFocus: true });
     }
-    if (activeTab === 'standings') {
+    if (activeTab !== 'weekly') {
       weeklyNavigated = false;
     }
   });
@@ -112,9 +127,15 @@
       >
         Leaderboard
       </h1>
-      <p class="mt-1 text-muted-foreground">{data.seasonYear} season.</p>
+      <p class="mt-1 text-muted-foreground" data-testid="leaderboard-subtitle">
+        {activeTab === 'alltime'
+          ? 'All-time · every season combined.'
+          : `${data.seasonYear} season.`}
+      </p>
     </div>
-    <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
+    {#if activeTab !== 'alltime'}
+      <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
+    {/if}
   </div>
 
   {#if data.latestWrappedSeason != null}
@@ -122,7 +143,7 @@
   {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
-    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
+    <TabsList class="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
       <TabsTrigger
         value="standings"
         data-testid="leaderboard-tab-standings"
@@ -132,6 +153,11 @@
         value="weekly"
         data-testid="leaderboard-tab-weekly"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Weekly</TabsTrigger
+      >
+      <TabsTrigger
+        value="alltime"
+        data-testid="leaderboard-tab-alltime"
+        class={ACTIVE_TAB_TRIGGER_CLASS}>All-time</TabsTrigger
       >
     </TabsList>
 
@@ -227,6 +253,87 @@
         />
       {:else}
         <p class="text-sm text-muted-foreground">Loading…</p>
+      {/if}
+    </TabsContent>
+
+    <TabsContent value="alltime" data-testid="alltime-panel">
+      {#if allTimeQuery.isPending}
+        {@render standingsLoading()}
+      {:else if allTimeQuery.isError}
+        {@render standingsError()}
+      {:else if allTime.totals.length === 0}
+        <Card class="border-dashed" data-testid="alltime-empty">
+          <CardHeader>
+            <CardTitle>No all-time standings yet</CardTitle>
+            <CardDescription>
+              All-time totals will appear once a season has been graded.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      {:else}
+        <Card class="overflow-x-auto shadow-sm">
+          <CardHeader>
+            <CardTitle>All-time standings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table data-testid="alltime-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead class="w-12 text-center">#</TableHead>
+                  <TableHead>Player</TableHead>
+                  <TableHead class="text-right">W</TableHead>
+                  <TableHead class="text-right">L</TableHead>
+                  <TableHead class="text-right">P</TableHead>
+                  <TableHead class="text-right">Miss</TableHead>
+                  <TableHead class="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {#each allTime.totals as r (r.user_id)}
+                  {@const isYou = r.user_id === data.currentUserId}
+                  {@const isFirst = r.rank === 1}
+                  <TableRow
+                    class={isYou
+                      ? 'bg-primary/10 font-semibold'
+                      : isFirst
+                        ? 'bg-muted/40'
+                        : undefined}
+                  >
+                    <TableCell class="text-center">
+                      {#if isFirst}
+                        <span class="text-base" aria-label="rank 1">🏆</span>
+                      {:else}
+                        <span class="font-semibold tabular-nums">{r.rank}</span>
+                      {/if}
+                    </TableCell>
+                    <TableCell>
+                      <div class="flex items-center gap-2">
+                        <UserAvatar
+                          avatarKey={r.avatar_key ?? null}
+                          displayName={r.display_name}
+                          size="xs"
+                        />
+                        {isYou ? `${r.display_name} (you)` : r.display_name}
+                      </div>
+                    </TableCell>
+                    <TableCell class="text-right tabular-nums">{r.wins}</TableCell>
+                    <TableCell class="text-right tabular-nums">{r.losses}</TableCell>
+                    <TableCell class="text-right tabular-nums">{r.pushes}</TableCell>
+                    <TableCell class="text-right tabular-nums">{r.missed}</TableCell>
+                    <TableCell class="text-right font-semibold tabular-nums"
+                      >{r.total_points}</TableCell
+                    >
+                  </TableRow>
+                {/each}
+              </TableBody>
+            </Table>
+            {#if allTime.dropActive}
+              <p class="mt-3 text-xs text-muted-foreground" data-testid="drop-worst-week-footnote">
+                Total drops each player's lowest week per season. W-L-P count every week.
+              </p>
+            {/if}
+          </CardContent>
+        </Card>
       {/if}
     </TabsContent>
   </Tabs>

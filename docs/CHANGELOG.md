@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-02
 
+- **#376** All-time (career) group leaderboard — a third "All-time" tab on the
+  Leaderboard, next to Standings and Weekly, ranking `stats_alltime_totals` with a
+  client-computed dense rank (`total_points desc, wins desc, pushes desc`, ties share a
+  rank — no schema change) and each member's avatar joined by `user_id`. Season-
+  independent: the season dropdown hides and relabels while the tab is active, and
+  reappears on the prior season when switching back. files:
+  `readModels/leaderboardCache.ts`, `domain/leaderboard.ts`, `api/leaderboard/alltime`,
+  `leaderboard/+page.svelte` · ADR-0017 / ADR-0018
 - **PR #374** Self-heal staging `auth.users` FK gap in `clone-to-staging` — the workflow only ever restored the `public` schema, but `public.users.id` FKs to `auth.users(id)` and staging's `auth.users` was seeded once manually; any prod user who signed up afterward broke the clone with a FK violation on `pg_restore`. Adds a step that mirrors missing prod `auth.users` ids into staging as inert placeholder rows (`<id>@placeholder.local`, unconfirmed, no password, no PII) before the restore runs. files: `.github/workflows/clone-to-staging.yml`
 
 ## 2026-07-01

@@ -3,7 +3,12 @@
 // Shared by the universal `+page.ts` SSR prefetch (passing SvelteKit's `fetch`) and the
 // component `createQuery` (passing the global `fetch`), so both paths hit the same
 // `/api/*` endpoint with identical params and cannot drift.
-import type { StatsCachePayload, GroupCachePayload, LeaderboardCachePayload } from './types';
+import type {
+  StatsCachePayload,
+  GroupCachePayload,
+  LeaderboardCachePayload,
+  AllTimeLeaderboardPayload
+} from './types';
 
 type FetchFn = typeof fetch;
 
@@ -41,4 +46,13 @@ export async function fetchLeaderboard(
   );
   if (!res.ok) throw new Error(`Failed to load leaderboard (${res.status})`);
   return res.json() as Promise<LeaderboardCachePayload>;
+}
+
+export async function fetchAllTimeLeaderboard(
+  fetchFn: FetchFn,
+  groupId: string
+): Promise<AllTimeLeaderboardPayload> {
+  const res = await fetchFn(`/api/leaderboard/alltime?groupId=${encodeURIComponent(groupId)}`);
+  if (!res.ok) throw new Error(`Failed to load all-time leaderboard (${res.status})`);
+  return res.json() as Promise<AllTimeLeaderboardPayload>;
 }
