@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-02
+
+- **PR #374** Self-heal staging `auth.users` FK gap in `clone-to-staging` — the workflow only ever restored the `public` schema, but `public.users.id` FKs to `auth.users(id)` and staging's `auth.users` was seeded once manually; any prod user who signed up afterward broke the clone with a FK violation on `pg_restore`. Adds a step that mirrors missing prod `auth.users` ids into staging as inert placeholder rows (`<id>@placeholder.local`, unconfirmed, no password, no PII) before the restore runs. files: `.github/workflows/clone-to-staging.yml`
+
 ## 2026-07-01
 
 - **#367** Fix broken signup/reset confirmation email links + post-signup check-email UX — `supabase/config.toml` only customized the magic-link email template, so signup-confirmation and password-reset emails fell back to Supabase's default template, which drops the `token_hash`/`type` params `/auth/confirm` and `/auth/reset` require ("Missing token" even though the account was actually confirmed). Adds `confirmation.html`/`recovery.html` templates mirroring the existing magic-link pattern. Also replaces the post-signup toast with a dedicated "check your email" screen (resend action, back-to-sign-in). Prod/staging Dashboard templates still need a manual paste (config.toml only reaches local). files: `supabase/config.toml`, `supabase/confirmation.html`, `supabase/recovery.html`, `auth/+page.svelte`, `auth/+page.server.ts` · ADR-0004
