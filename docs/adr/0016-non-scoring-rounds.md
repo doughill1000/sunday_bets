@@ -1,6 +1,6 @@
 # ADR-0016: Non-scoring rounds and ESPN preseason sourcing
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-27
 - Issue: #274
 - Supersedes: None
