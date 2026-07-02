@@ -541,8 +541,7 @@ export async function buildRecapFacts(params: {
   if (priorWeekNumber >= 1) {
     const priorRecap = await getRecapForWeek(groupId, seasonYear, priorWeekNumber);
     const priorFacts = priorRecap?.facts as
-      | (RecapFacts & { _badge_snapshot?: BadgeSnapshot })
-      | null;
+      (RecapFacts & { _badge_snapshot?: BadgeSnapshot }) | null;
     if (priorFacts?._badge_snapshot) {
       badgeChanges = diffBadges(badges, priorFacts._badge_snapshot);
     }

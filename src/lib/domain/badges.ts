@@ -174,36 +174,30 @@ export function badgeInputsFromSeasonStats(
       week_losses: r.week_losses,
       week_missed: r.week_missed
     })),
-    consensus: season.consensusStats.map(
-      (c: ConsensusStatsEntry): BadgeConsensusEntry => ({
-        user_id: c.user_id,
-        display_name: c.display_name,
-        decisions: c.decisions,
-        mean_consensus_pct: c.mean_consensus_pct,
-        contrarian_picks: c.contrarian_picks,
-        contrarian_wins: c.contrarian_wins,
-        majority_picks: c.majority_picks,
-        majority_wins: c.majority_wins
-      })
-    ),
-    lineSide: season.lineSide.map(
-      (l: LineSideStatsEntry): BadgeLineSideEntry => ({
-        user_id: l.user_id,
-        display_name: l.display_name,
-        decisions: l.decisions,
-        chalk_picks: l.chalk_picks,
-        dog_picks: l.dog_picks
-      })
-    ),
-    streaks: season.streaks.map(
-      (s: StreakStatsEntry): BadgeStreakEntry => ({
-        user_id: s.user_id,
-        display_name: s.display_name,
-        graded_picks: s.graded_picks,
-        current_streak: s.current_streak,
-        max_streak: s.max_streak
-      })
-    )
+    consensus: season.consensusStats.map((c: ConsensusStatsEntry): BadgeConsensusEntry => ({
+      user_id: c.user_id,
+      display_name: c.display_name,
+      decisions: c.decisions,
+      mean_consensus_pct: c.mean_consensus_pct,
+      contrarian_picks: c.contrarian_picks,
+      contrarian_wins: c.contrarian_wins,
+      majority_picks: c.majority_picks,
+      majority_wins: c.majority_wins
+    })),
+    lineSide: season.lineSide.map((l: LineSideStatsEntry): BadgeLineSideEntry => ({
+      user_id: l.user_id,
+      display_name: l.display_name,
+      decisions: l.decisions,
+      chalk_picks: l.chalk_picks,
+      dog_picks: l.dog_picks
+    })),
+    streaks: season.streaks.map((s: StreakStatsEntry): BadgeStreakEntry => ({
+      user_id: s.user_id,
+      display_name: s.display_name,
+      graded_picks: s.graded_picks,
+      current_streak: s.current_streak,
+      max_streak: s.max_streak
+    }))
   };
 }
 

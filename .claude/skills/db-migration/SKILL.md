@@ -12,7 +12,7 @@ agent-facing rules in `docs/agent-context/database.md` and `AGENTS.md`
 ## Steps
 
 1. **Edit `supabase/src/**`only** —`schemas/`, `views/`, `functions/`, `policies/`,
-`grants/`. One primary object per file.
+   `grants/`. One primary object per file.
 2. Generate the migration + update the ledger:
    `pnpm db:migration --name=describe_the_change`
    (Codex/Windows: `corepack pnpm db:migration --name=...`)
