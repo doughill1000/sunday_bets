@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { guardGroupScopedRead } from '$lib/server/api/groupScopedRead';
+import { guardGroupScopedRead, guardGroupRead } from '$lib/server/api/groupScopedRead';
 
 // The guard is the trust boundary for the `/api/{stats,group,leaderboard}` read routes
 // (ADR-0017 boundary 1): authenticate, parse `?groupId=&season=`, and authorize the group
@@ -73,5 +73,33 @@ describe('guardGroupScopedRead', () => {
       expect(guard.groupId).toBe(MEMBER_GROUP);
       expect(guard.seasonYear).toBe(2024);
     }
+  });
+});
+
+// guardGroupRead is the season-independent variant used by the All-time leaderboard route
+// (#376) — same 401/400/403 contract as guardGroupScopedRead, minus the `season` param.
+describe('guardGroupRead', () => {
+  it('returns 401 when there is no authenticated user', () => {
+    const guard = guardGroupRead(makeLocals({ user: null }), urlFor({ groupId: MEMBER_GROUP }));
+    expect(guard.ok).toBe(false);
+    if (!guard.ok) expect(guard.response.status).toBe(401);
+  });
+
+  it('returns 400 when groupId is missing', () => {
+    const guard = guardGroupRead(makeLocals(), urlFor({}));
+    expect(guard.ok).toBe(false);
+    if (!guard.ok) expect(guard.response.status).toBe(400);
+  });
+
+  it('returns 403 when the user is not a member of the requested group', () => {
+    const guard = guardGroupRead(makeLocals(), urlFor({ groupId: OTHER_GROUP }));
+    expect(guard.ok).toBe(false);
+    if (!guard.ok) expect(guard.response.status).toBe(403);
+  });
+
+  it('authorizes a member and returns the parsed groupId without requiring season', () => {
+    const guard = guardGroupRead(makeLocals(), urlFor({ groupId: MEMBER_GROUP }));
+    expect(guard.ok).toBe(true);
+    if (guard.ok) expect(guard.groupId).toBe(MEMBER_GROUP);
   });
 });

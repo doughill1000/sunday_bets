@@ -20,6 +20,27 @@ test('leaderboard renders Standings and Weekly tabs', { tag: '@smoke' }, async (
   await expect(lb.weeklyBreakdown()).toBeVisible();
 });
 
+test('all-time tab renders career standings and hides the season picker', async ({ page }) => {
+  const lb = leaderboardPage(page);
+  await lb.goto();
+
+  const standingsSubtitle = await lb.subtitle().textContent();
+  const seasonPickerVisibleBefore = (await lb.seasonPicker().count()) > 0;
+
+  await lb.allTimeTab().click();
+  await expect(lb.allTimeTable().or(lb.allTimeEmpty())).toBeVisible();
+  await expect(lb.subtitle()).toHaveText('All-time · every season combined.');
+  await expect(lb.seasonPicker()).toBeHidden();
+
+  // Switching back to Standings restores the same season (the subtitle text, which
+  // encodes the season year, is unchanged from before the All-time tab was opened).
+  await lb.standingsTab().click();
+  await expect(lb.subtitle()).toHaveText(standingsSubtitle ?? '');
+  if (seasonPickerVisibleBefore) {
+    await expect(lb.seasonPicker()).toBeVisible();
+  }
+});
+
 test('weekly tab shows a jump-to-week dropdown', async ({ page }) => {
   const lb = leaderboardPage(page);
   await lb.goto();

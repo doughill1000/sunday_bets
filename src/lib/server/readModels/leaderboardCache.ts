@@ -8,11 +8,18 @@
 // persisted (boundary 3). Reuses existing query functions — no new SQL.
 import { getSeasonLeaderboardPage } from '$lib/server/db/queries/leaderboard';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
+import { getAllTimeTotals } from '$lib/server/db/queries/stats';
+import { getPlayers } from '$lib/server/db/queries/getPlayers';
 import { getGroupConfig } from '$lib/server/groupConfig';
-import { isDropWorstWeekActive, type DropWorstWeekRules } from '$lib/domain/scoring';
-import type { LeaderboardCachePayload } from '$lib/query/types';
+import {
+  isDropWorstWeekActive,
+  isDropWorstWeekEnabled,
+  type DropWorstWeekRules
+} from '$lib/domain/scoring';
+import { denseRankAllTime } from '$lib/domain/leaderboard';
+import type { LeaderboardCachePayload, AllTimeLeaderboardPayload } from '$lib/query/types';
 
-export type { LeaderboardCachePayload };
+export type { LeaderboardCachePayload, AllTimeLeaderboardPayload };
 
 export async function getLeaderboardStandingsPayload(
   groupId: string,
@@ -39,4 +46,32 @@ export async function getLeaderboardStandingsPayload(
     championUserId,
     dropActive
   };
+}
+
+/**
+ * The All-time (career) leaderboard tab (#376): `stats_alltime_totals` ranked with a
+ * client-computed dense rank (no schema change — ADR-0013's matview keeps no `rank` column
+ * for this surface) and enriched with each member's avatar, joined by `user_id` since the
+ * matview carries none. Season-independent — no `seasonYear` param.
+ */
+export async function getAllTimeStandingsPayload(
+  groupId: string
+): Promise<AllTimeLeaderboardPayload> {
+  const [allTimeTotals, players, config] = await Promise.all([
+    getAllTimeTotals(groupId),
+    getPlayers(groupId),
+    getGroupConfig(groupId)
+  ]);
+
+  const avatarByUserId = new Map(players.map((p) => [p.id, p.avatar_key]));
+  const enriched = allTimeTotals.map((entry) => ({
+    ...entry,
+    avatar_key: avatarByUserId.get(entry.user_id) ?? null
+  }));
+
+  // Group-level (cross-season) flag, same as the Stats Career caption (ADR-0018): every
+  // member's total_points already sums drop-aware season totals once this is true.
+  const dropActive = isDropWorstWeekEnabled(config?.scoring_rules as DropWorstWeekRules);
+
+  return { totals: denseRankAllTime(enriched), dropActive };
 }

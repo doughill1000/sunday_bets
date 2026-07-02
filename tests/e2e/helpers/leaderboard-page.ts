@@ -45,6 +45,16 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('leaderboard-tab-weekly');
     },
 
+    allTimeTab(): Locator {
+      return page.getByTestId('leaderboard-tab-alltime');
+    },
+
+    /** The subtitle line under the heading — swaps between "<year> season." and the
+     *  All-time copy depending on the active tab. */
+    subtitle(): Locator {
+      return page.getByTestId('leaderboard-subtitle');
+    },
+
     // --- standings panel -----------------------------------------------------
 
     /** The standings results table (present only when standings exist). */
@@ -77,6 +87,26 @@ export function leaderboardPage(page: Page) {
       await expect(async () => {
         await api.weeklyTab().click();
         await expect(api.weeklyBreakdown()).toBeVisible({ timeout: 5000 });
+      }).toPass({ timeout: 8000 });
+    },
+
+    // --- all-time panel --------------------------------------------------------
+
+    /** The all-time results table (present only when career totals exist). */
+    allTimeTable(): Locator {
+      return page.getByTestId('alltime-table');
+    },
+
+    /** The "No all-time standings yet" empty-state card. */
+    allTimeEmpty(): Locator {
+      return page.getByTestId('alltime-empty');
+    },
+
+    /** Click the All-time tab and wait for its content to load. */
+    async openAllTime() {
+      await expect(async () => {
+        await api.allTimeTab().click();
+        await expect(api.allTimeTable().or(api.allTimeEmpty())).toBeVisible({ timeout: 5000 });
       }).toPass({ timeout: 8000 });
     },
 
