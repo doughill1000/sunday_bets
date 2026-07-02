@@ -8,8 +8,7 @@
 import { json } from '@sveltejs/kit';
 
 export type GroupScopedReadParams =
-  | { ok: true; groupId: string; seasonYear: number }
-  | { ok: false; response: Response };
+  { ok: true; groupId: string; seasonYear: number } | { ok: false; response: Response };
 
 export type GroupOnlyReadParams = { ok: true; groupId: string } | { ok: false; response: Response };
 
