@@ -121,6 +121,15 @@
       </CardFooter>
     {:else}
       <CardHeader class="space-y-1">
+        <!-- Brand block: makes it unmistakable which app this is before you sign in. -->
+        <div class="mb-4 flex flex-col items-center gap-2 text-center">
+          <img src="/logo-mark.png" alt="" class="h-16 w-16" />
+          <span class="text-2xl font-bold uppercase tracking-widest">Sunday Bets</span>
+          <p class="text-sm text-muted-foreground">
+            Weekly NFL picks against the spread with friends.
+          </p>
+        </div>
+
         <CardTitle class="text-3xl" data-testid="auth-card-title">{titles[mode]}</CardTitle>
         <CardDescription data-testid="auth-description">{descriptions[mode]}</CardDescription>
       </CardHeader>
