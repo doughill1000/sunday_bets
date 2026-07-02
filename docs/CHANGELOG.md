@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-02
+
+- **PR #374** Self-heal staging `auth.users` FK gap in `clone-to-staging` — the workflow only ever restored the `public` schema, but `public.users.id` FKs to `auth.users(id)` and staging's `auth.users` was seeded once manually; any prod user who signed up afterward broke the clone with a FK violation on `pg_restore`. Adds a step that mirrors missing prod `auth.users` ids into staging as inert placeholder rows (`<id>@placeholder.local`, unconfirmed, no password, no PII) before the restore runs. files: `.github/workflows/clone-to-staging.yml`
+
 ## 2026-07-01
 
 - **PR #369** Release v2.8.0 — version bump. Milestone: v2.8 (minor: #358 drop-worst-week UX, #347 Season Wrapped in-app, #302 recap push notification; patch: #357 non-retroactive drop-worst-week fix, PR #351 Wrapped seasonal CTA, PR #352 awards guide on Wrapped, PR #353 recap voice + storyline facts, PR #354 Wrapped force-refresh cron, PR #355 stats season-switch fix, PR #356 show group name, PR #363 awards legend reword, PR #364 Manage tab split).
