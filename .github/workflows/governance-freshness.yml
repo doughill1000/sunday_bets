@@ -1,0 +1,47 @@
+# .github/workflows/governance-freshness.yml
+#
+# CI backstop for the two manual `finish-pr` governance steps (flip a shipped ADR's
+# Status to Accepted; log every merged PR in docs/CHANGELOG.md). Both are plain file
+# edits with no enforcement, so they lapse silently whenever a PR skips the skill.
+# Runs on every PR to master (catches drift before more work stacks on top) and daily
+# (catches drift introduced without a PR, e.g. an issue closed outside finish-pr).
+name: Governance freshness
+
+on:
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: '17 13 * * *' # once daily, off the hour to avoid GitHub's peak-minute queueing
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: ./pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm governance:check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
