@@ -9,7 +9,7 @@
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
-  import { navigating } from '$app/state';
+  import { page, navigating } from '$app/state';
   import { browser, dev } from '$app/environment';
   import { registerSW } from 'virtual:pwa-register';
   import { QueryClientProvider } from '@tanstack/svelte-query';
@@ -35,6 +35,13 @@
   const userProfile = $derived(data.userProfile ?? null);
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
+
+  // Auth screens (/auth, /auth/reset, /auth/error) own the full viewport: their own
+  // centered brand lockup is the only logo, so the app-shell chrome — the header (which
+  // carries a second logo + nav to gated pages) and the bottom tab bar — is suppressed
+  // here. This makes the pre-login experience read like a native app's launch screen
+  // rather than a logged-out app section.
+  const isAuthRoute = $derived(page.url.pathname.startsWith('/auth'));
 
   let isChampion = $state(false);
   $effect(() => {
@@ -121,43 +128,52 @@
   <NavProgress />
 
   <div class="flex min-h-svh flex-col bg-background text-foreground">
-    <header
-      class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-    >
-      <div class="container mx-auto flex h-14 items-center px-4">
-        <AppHeader
-          {user}
-          canSeeAdmin={isAdmin}
-          displayName={userProfile?.displayName ?? ''}
-          avatarKey={userProfile?.avatarKey ?? null}
-          {memberships}
-          activeGroupId={groupId}
-          champion={isChampion}
-        />
-      </div>
-    </header>
-
-    <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
-      <EngagementBanner {user} />
-      {#if enteringSection === '/stats'}
-        {@render statsSkeleton()}
-      {:else if enteringSection === '/group'}
-        {@render groupSkeleton()}
-      {:else}
+    {#if isAuthRoute}
+      <!-- Bare auth screen: no header/tab bar, and the page is vertically centered so
+           its brand lockup sits front and center like a native launch/login screen. -->
+      <main class="container mx-auto flex flex-1 flex-col justify-center p-4">
         {@render children()}
-      {/if}
-      <Toaster />
-    </main>
+      </main>
+    {:else}
+      <header
+        class="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      >
+        <div class="container mx-auto flex h-14 items-center px-4">
+          <AppHeader
+            {user}
+            canSeeAdmin={isAdmin}
+            displayName={userProfile?.displayName ?? ''}
+            avatarKey={userProfile?.avatarKey ?? null}
+            {memberships}
+            activeGroupId={groupId}
+            champion={isChampion}
+          />
+        </div>
+      </header>
 
-    {#if user}
-      <BottomTabBar />
-      <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
-      {#await data.latestRecap then recap}
-        {#await data.recapSeen then seen}
-          <RecapFlash {recap} alreadySeen={seen} />
+      <main class="container mx-auto flex-1 p-4 pb-20 sm:pb-4">
+        <EngagementBanner {user} />
+        {#if enteringSection === '/stats'}
+          {@render statsSkeleton()}
+        {:else if enteringSection === '/group'}
+          {@render groupSkeleton()}
+        {:else}
+          {@render children()}
+        {/if}
+      </main>
+
+      {#if user}
+        <BottomTabBar />
+        <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
+        {#await data.latestRecap then recap}
+          {#await data.recapSeen then seen}
+            <RecapFlash {recap} alreadySeen={seen} />
+          {/await}
         {/await}
-      {/await}
+      {/if}
     {/if}
+
+    <Toaster />
   </div>
 {/snippet}
 
