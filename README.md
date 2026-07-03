@@ -121,25 +121,29 @@ happens on short-lived branches that PR into `master`; there is no `develop` bra
 - **App:** Vercel's automatic Git deploys are **disabled** (`vercel.json`
   `git.deploymentEnabled: false`). Deploys run through GitHub Actions instead, which
   keeps daily deployment creations under Vercel's Hobby cap of 100/day (ADR-0010):
-  - **Production** (`deploy-prod.yml`) deploys only when `package.json` `"version"`
-    changes on a push to `master`, or via a manual **Run workflow**
-    (`workflow_dispatch`) for an off-cycle cut. A version-bump deploy also tags a
-    `v<version>` GitHub Release. **A plain merge to `master` no longer ships** — bump
-    the version (or dispatch) to release.
+  - **Production** (`deploy-prod.yml`) deploys only via a manual **Run workflow**
+    (`workflow_dispatch`) — there is no push-triggered path. That single dispatch runs
+    the whole release in order: migration-ledger check → prod DB backup → apply
+    pending migrations → build & deploy → tag the `v<version>` GitHub Release (read
+    from `package.json` at dispatch time). **A plain merge to `master` never ships** —
+    someone must run the workflow to release (see ADR-0010's amendment).
   - **Previews** (`deploy-preview.yml`) deploy **once per PR** (opened / ready /
     reopened, drafts skipped) **plus on demand** via a `/preview` PR comment from an
     authorized author. Previews use Vercel's Preview env (backed by the **staging**
     Supabase project) and the URL is posted back as a PR comment. There is no longer a
     preview on every push.
-- **Database:** pushing changes under `supabase/**` to `master` deploys to prod
-  (after a `pg_dump` backup to OneDrive). PRs get a source-integrity check plus a
-  `supabase db push --dry-run` against prod. See `.github/workflows/migrate-db.yml`
-  and `migrate-dry-run.yml`. DB migrations deploy independently of the app, so prod DB
-  can run ahead of the deployed app between releases — **bump the version in the same
-  PR** when a schema change needs new app code so they ship together.
-- **Staging DB:** kept as a recent prod mirror via `pnpm db:clone:dev`. Most PRs
-  need nothing extra; for a PR that changes `supabase/**` and whose preview should
-  exercise the new schema, run `pnpm db:push:dev` first (then clone-reset after).
+- **Database:** migrations apply to prod only as part of the manual `deploy-prod.yml`
+  release (after a `pg_dump` backup to OneDrive, before the app deploy — see
+  `.github/workflows/deploy-prod.yml` and ADR-0010). A merge to `master` never touches
+  prod's schema by itself. PRs still get a source-integrity check plus a
+  `supabase db push --dry-run` against prod via `migrate-dry-run.yml`.
+- **Staging DB:** `.github/workflows/clone-to-staging.yml` pushes migrations and
+  clones prod's data into staging automatically once `deploy-prod.yml` completes
+  successfully, so staging never runs ahead of (or behind) the released prod schema.
+  It can also be run on demand via **Run workflow**, or locally with
+  `pnpm db:clone:dev`. For a PR that changes `supabase/**` and whose preview should
+  exercise the new schema before a release, run `pnpm db:push:dev` first (then
+  clone-reset after).
 
 The deploy workflows authenticate with the Vercel CLI via three GitHub secrets —
 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` (the org/project IDs come from

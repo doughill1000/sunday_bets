@@ -1,6 +1,6 @@
 # ADR-0015: Versioning and release policy (label-driven SemVer)
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-27
 - Issue: #265
 - Supersedes: None
