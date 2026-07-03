@@ -1,9 +1,18 @@
 # .github/workflows/clone-to-staging.yml
 name: Clone Production → Staging
 
+# ADR-0010's amendment folded migrations into deploy-prod.yml's manual dispatch and
+# deleted migrate-db.yml, so "push to master" no longer correlates with a production
+# migration at all. Triggering on push (as this workflow used to) let staging's schema
+# run ahead of prod for however long a release cycle lasted, then receive a prod data
+# restore into that mismatched schema. Trigger on deploy-prod.yml completing instead —
+# that's the actual release signal, and it guarantees prod's migration succeeded before
+# staging pushes the same migrations and clones prod's (now-consistent) data.
 on:
-  push:
-    branches: [master]
+  workflow_run:
+    workflows: ['Deploy Production']
+    types: [completed]
+  workflow_dispatch: {} # manual re-clone without waiting for a release
 
 concurrency:
   group: supabase-staging-clone
@@ -14,16 +23,24 @@ env:
   PG_VERSION: 17
 
 permissions:
-  actions: read
+  contents: read
 
 jobs:
   clone:
+    # Skip entirely if deploy-prod ran but failed (or was cancelled) — cloning after a
+    # failed release would push a migration prod never actually applied. A manual
+    # dispatch has no workflow_run context, so it always proceeds.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: Production
     steps:
+      # Clone the exact commit that was deployed, not whatever HEAD happens to be when
+      # this job starts.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Install pg client ${{ env.PG_VERSION }}
         run: |
@@ -41,58 +58,10 @@ jobs:
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
-      # If supabase/** changed, migrate-db.yml is also running on this SHA.
-      # Wait for it to finish so staging gets the post-migration schema.
-      #
-      # A bare `pending == 0` is ambiguous: it's true both when a migration has
-      # finished AND when none was ever triggered (supabase/** unchanged). So we
-      # first count whether any migrate-db run exists for this SHA, and only poll
-      # when one does. If the poll ceiling is hit while a run is still in flight we
-      # fail loudly rather than cloning a half-migrated (or pre-migration) schema.
-      - name: Wait for production migration (if triggered)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TOTAL=$(gh run list \
-            --repo "$GITHUB_REPOSITORY" \
-            --workflow=migrate-db.yml \
-            --commit "$GITHUB_SHA" \
-            --json databaseId \
-            --jq 'length')
-          if [ "$TOTAL" = "0" ]; then
-            echo "No migrate-db run for $GITHUB_SHA (supabase/** unchanged) — nothing to wait for."
-            exit 0
-          fi
-          echo "$TOTAL migrate-db run(s) found for this SHA — waiting for completion..."
-          for i in $(seq 1 20); do
-            PENDING=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow=migrate-db.yml \
-              --commit "$GITHUB_SHA" \
-              --json status \
-              --jq '[.[] | select(.status != "completed")] | length')
-            [ "$PENDING" = "0" ] && { echo "Migration run(s) completed."; exit 0; }
-            echo "Waiting for migrate-db ($i/20, ${PENDING} pending)..."
-            sleep 30
-          done
-          echo "::error::migrate-db still running after 10 min — aborting staging clone to avoid cloning a pre-migration schema."
-          exit 1
-
-      - name: Abort if production migration failed
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          FAILED=$(gh run list \
-            --repo "$GITHUB_REPOSITORY" \
-            --workflow=migrate-db.yml \
-            --commit "$GITHUB_SHA" \
-            --json conclusion \
-            --jq '[.[] | select(.conclusion == "failure")] | length')
-          if [ "$FAILED" != "0" ]; then
-            echo "::error::Production migration failed — aborting staging clone."
-            exit 1
-          fi
-
+      # deploy-prod.yml's `migrate` job already applied these to prod before this
+      # workflow was triggered (or, on a manual dispatch, prod is already wherever it
+      # is) — this just brings staging's schema to the same state. Idempotent no-op if
+      # staging is already current.
       - name: Push migrations to staging
         env:
           SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}

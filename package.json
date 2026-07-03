@@ -26,6 +26,7 @@
     "db:push:dev": "supabase link --project-ref eoncckeqqogezoftooix && supabase db push --yes",
     "db:push:local": "supabase db push --local --yes && pnpm db:types",
     "db:types": "supabase gen types typescript --local > src/lib/types/supabase.ts",
+    "governance:check": "tsx scripts/check-governance-freshness.ts",
     "users:provision:local": "tsx supabase/scripts/provision-users.ts --env=.env.local --file=supabase/scripts/users.json",
     "users:provision:dev": "tsx supabase/scripts/provision-users.ts --env=.env.staging --file=supabase/scripts/users.json",
     "users:provision:prod": "tsx supabase/scripts/provision-users.ts --env=.env.production --file=supabase/scripts/users.json",
