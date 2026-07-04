@@ -46,6 +46,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-03
+
+- **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now
+  shows Apple's Share glyph (□↑) inline beside the word "Share" so non-technical
+  iPhone users can find the action; adds an on-device iOS 16.4+ install→permission→push
+  verification runbook (the path is uncoverable in CI). Client-only polish over the
+  already-shipped push infra (#92); no ADR, no DB/backend change. files:
+  `components/pwa/EngagementBanner.svelte` · `docs/runbooks/ios-pwa-install-verification.md`
+
 ## 2026-07-02
 
 - **#376** All-time (career) group leaderboard — a third "All-time" tab on the
