@@ -1,6 +1,6 @@
 # ADR-0018: Non-retroactive drop-worst-week scoping and standings reconciliation
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-30
 - Issue: #357
 - Supersedes: ADR-0005

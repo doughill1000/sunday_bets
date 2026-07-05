@@ -1,6 +1,6 @@
 # ADR-0013: Leaderboard and stats served from materialized views refreshed on grading
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-26
 - Issue: #191
 - Supersedes: None
