@@ -11,7 +11,10 @@ const gitignorePath = fileURLToPath(new URL('./.gitignore', import.meta.url));
 
 export default ts.config(
   includeIgnoreFile(gitignorePath),
-  { ignores: ['src/lib/components/ui/**'] },
+  // mobile/ is a self-contained Expo app with its own ESLint 9 + eslint-config-expo
+  // setup (`pnpm -C mobile lint`); its plugins don't support the root's ESLint 10,
+  // so keep it out of the root sweep entirely.
+  { ignores: ['src/lib/components/ui/**', 'mobile/**'] },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...svelte.configs.recommended,

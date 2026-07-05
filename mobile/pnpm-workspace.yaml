@@ -1,0 +1,4 @@
+# Marks mobile/ as its own pnpm project root. Without this, pnpm walks up to the
+# repo root (which has its own pnpm-lock.yaml) and hoists the app's dependencies
+# into the web app's node_modules.
+packages: []

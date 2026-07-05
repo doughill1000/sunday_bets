@@ -28,3 +28,7 @@ supabase/migrations/**
 .claude/skills/supabase/
 .claude/skills/supabase-postgres-best-practices/
 
+# Expo mobile app — generated/tool output (node_modules & dist covered above)
+mobile/.expo/
+mobile/expo-env.d.ts
+
