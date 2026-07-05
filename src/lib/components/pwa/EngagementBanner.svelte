@@ -3,7 +3,7 @@
   import type { User } from '@supabase/supabase-js';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent } from '$lib/components/ui/card';
-  import { X, Bell, Download, Smartphone } from '@lucide/svelte';
+  import { X, Bell, Download, Smartphone, SquareArrowUp } from '@lucide/svelte';
   import { chooseEngagementStep, type EngagementStep } from '$lib/pwa/engagement';
   import {
     isStandalone,
@@ -78,8 +78,13 @@
         <div class="flex-1">
           <p class="text-sm font-medium">Add Sunday Bets to your Home Screen</p>
           <p class="mt-0.5 text-xs text-muted-foreground">
-            Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> in Safari. Requires iOS 16.4+
-            for push notifications.
+            Tap <strong class="whitespace-nowrap"
+              >Share <SquareArrowUp
+                class="inline size-3.5 align-text-bottom"
+                aria-hidden="true"
+              /></strong
+            >
+            → <strong>Add to Home Screen</strong> in Safari. Requires iOS 16.4+ for push notifications.
           </p>
         </div>
         <button

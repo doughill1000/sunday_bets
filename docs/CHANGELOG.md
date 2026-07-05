@@ -46,6 +46,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-03
+
+- **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now
+  shows Apple's Share glyph (□↑) inline beside the word "Share" so non-technical
+  iPhone users can find the action; adds an on-device iOS 16.4+ install→permission→push
+  verification runbook (the path is uncoverable in CI). Client-only polish over the
+  already-shipped push infra (#92); no ADR, no DB/backend change. files:
+  `components/pwa/EngagementBanner.svelte` · `docs/runbooks/ios-pwa-install-verification.md`
+
 ## 2026-07-02
 
 - **PR #379** Audit remediation — fix staging clone gating, collapse duplicate RLS source, add governance freshness gate — three P1 fixes from the 2026-07-02 pattern audit (`docs/audits/2026-07-02-pattern-audit.md`). `clone-to-staging.yml` now triggers on `deploy-prod.yml` completing (the real release signal) instead of every push to `master`, and no longer polls the deleted `migrate-db.yml`, closing the window where staging's schema could run ahead of prod before receiving a prod data restore; `README.md`'s stale workflow pointers are corrected. `supabase/src/schemas/0300_rls.sql` — a dead, already-drifted duplicate of `supabase/src/policies/*` — is collapsed to a documentary no-op via an explicit migration, making `policies/` the sole RLS source of truth (verified live: 59 policies, no duplicates, RLS enabled on all 25 tables). A new `governance:check` CI job (`.github/workflows/governance-freshness.yml`) fails when a shipped ADR is still `Proposed`, or a merged PR (post-cutoff) has no `docs/CHANGELOG.md` entry. files: `.github/workflows/{clone-to-staging,governance-freshness}.yml`, `README.md`, `supabase/src/schemas/0300_rls.sql`, `supabase/migrations/20260702200954_collapse_legacy_rls_schema_file.sql`, `scripts/check-governance-freshness.ts`
