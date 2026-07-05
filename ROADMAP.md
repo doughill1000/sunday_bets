@@ -15,74 +15,95 @@ migration material only.
 
 ## Release direction
 
-| Release | Outcome                                                     | State   |
-| ------- | ----------------------------------------------------------- | ------- |
-| v1.2    | Reliability, cleanup, auth unification, and quota tracking  | Shipped |
-| v1.3    | E2E safety net and Svelte 5 migration                       | Shipped |
-| v1.4    | Automated odds sync, grading, and week rollover             | Shipped |
-| v1.5    | Push notifications and player notification preferences      | Shipped |
-| v1.6    | Stats, history, and operational cleanup                     | Shipped |
-| v1.7    | Group tenancy foundation (internal; original group only)    | Shipped |
-| v1.8    | Season launch — social play and configurable gameplay rules | Shipped |
-| v1.9    | New-player onboarding and a pre-v2 regression safety net    | Now     |
-| v2.0    | Self-service groups (create, join, invite, switch)          | Next    |
-| v2.1    | Commissioner depth, House grading, and engagement polish    | Planned |
+| Release    | Outcome                                                                                 | State   |
+| ---------- | --------------------------------------------------------------------------------------- | ------- |
+| v1.2–v1.8  | Reliability → automation → notifications → stats → group tenancy → social season launch | Shipped |
+| v1.9       | New-player onboarding and a pre-v2 regression safety net                                | Shipped |
+| v2.0       | Self-service groups (create, join, invite, switch)                                      | Shipped |
+| v2.1–v2.3  | Commissioner depth, House grading preset, global picks, engagement polish               | Shipped |
+| v2.4       | Non-scoring rounds, AI foundation (ADR-0008), label-driven releases                     | Shipped |
+| v2.5–v2.7  | League identity: honors, badges, lifetime H2H, weekly AI recap waves, PWA speed         | Shipped |
+| v2.8       | Season Wrapped, non-retroactive drop-worst-week, recap push                             | Shipped |
+| v2.9       | The reveal ritual — reveal-timing decision (#383) + synchronized kickoff reveal (#359)  | Now     |
+| v2.10      | All-In as a signature moment (#360) + 2026 season-readiness patches                     | Next    |
+| v2.11      | The Sunday live layer — sweat board (#386), nudge board (#388), share card (#389)       | Planned |
+| v2.12      | The league history layer — weekly hardware & records book (#387), career rating (#361)  | Planned |
+| Season end | Shareable Wrapped acquisition loop (#348, privacy-ADR-gated)                            | Planned |
 
 Dates belong on milestones and issues, where they can be revised without turning
 this strategy document into a second project board.
 
-The product's defining boundary is single-group → multi-group, not the version
-number. The tenancy foundation (v1.7) lands first and invisibly so that the social
-and gameplay-rule features in v1.8 are built group-aware from the start and never
-need a later `group_id` retrofit. v2.0 marks the groups epoch, where members
-create, join, and switch between groups; v1.9 is the deliberate on-ramp that ships
-a regression safety net and onboarding before those access paths change.
+The groups epoch (v2.0) shipped; the boundary that organizes releases now is social:
+the app is the league's **memory, scoreboard, and referee** — it feeds the group chat
+instead of competing with it (#383). The pre-season releases assemble the weekly
+ritual (pick → reveal → sweat → recap → share) before NFL kickoff; the season-end
+release turns Wrapped into the invite loop. The August preseason slate (non-scoring
+rounds) is the live testbed for the game-day features.
 
 ## Now
 
-### v1.9 - Onboarding and a pre-v2 safety net
+### v2.9 — The reveal ritual
 
-Ship the two safe, self-contained pieces before the multi-group access paths change: a
-new-player "How to Play" onboarding guide, and a regression test suite that locks in
-current gameplay, group-isolation, and self-sign-up behavior. This is the on-ramp — it
-gives the v2.0 refactor a net to land on.
+Settle reveal timing as a written decision (#383: a two-axis Sealed / Deadline / Open
+model, Sealed stays the default, non-retroactive by construction) and ship the
+synchronized kickoff reveal (#359) so every week has a shared appointment moment.
+Deadline/Open remain future modes, not 2026 builds.
 
 ## Next
 
-### v2.0 - Self-service groups
+### v2.10 — The All-In moment + season readiness
 
-Add create, join, invite, and group-switching flows now that the tenancy foundation is
-proven, using expiring single-use tokens or shareable codes rather than exposed user
-IDs. A user may belong to multiple groups; commissioners manage their group's name and
-members. Because v1.7 already established the data model, the remaining work is UI and
-access, not a schema retrofit: one invite table, the create/redeem RPCs, commissioner
-write policies, and a persisted active-group selection.
+Elevate the All-In into a public, scarce, on-the-record declaration with the
+"Guarantee" badge (#360, ADR-gated). Alongside it, the pre-kickoff readiness patches:
+staging-clone release gating (#390), governance freshness and its CI gate (#391),
+single-owner RLS source (#392), raw Odds payload persistence for dispute resolution
+(#382), and Sentry cron missed-run monitors (#206).
 
 ## Planned
 
-### v2.1 - Commissioner depth, House grading, and engagement
+### v2.11 — The Sunday live layer
 
-Give commissioners per-group rules editing and the membership/RLS hardening that v2.0
-deferred; add the House closing-line grading preset (every member graded on the same
-number) once its decision is Accepted; and layer in engagement polish (install and
-notification nudges, pick-and-results reminders).
+Make game day a second-screen habit: live scores with per-pick cover status (#386),
+the who's-picked nudge board (#388), and the iMessage share card that feeds the chat
+(#389). Scale-readiness alerts and the kickoff load test (#155) land here, before
+Week 1 traffic.
+
+### v2.12 — The league history layer
+
+Weekly hardware and the all-time records book with record-broken alerts (#387), plus
+the persisted cross-season "who knows ball" rating (#361, ADR-gated). Display-only
+lore — safe to land around kickoff.
+
+### Season end — the acquisition loop
+
+Shareable Season Wrapped (#348): the privacy ADR first (a public route is a
+deliberate exception to the group-scoping boundary), then the public card and social
+unfurl. This is the friends-of-friends invite loop, timed for January.
 
 ## Off the dated roadmap
 
 These tracks are real work but are deliberately not tied to a version, so the release
 line stays honest about what is committed.
 
-- **Scaling (measurement-gated).** Observability first to define "measured scale," then
-  response caching, bounded and paginated leaderboards, and operational alerts and
-  load-testing — each triggered by a metric crossing a threshold, not by a date. This
-  honors the guardrail that infrastructure is revisited only from measurements. The
-  baseline signals and their Tier A/B trigger thresholds are defined in
+- **Architecture (parallel offseason track).** #381 consolidates page-load reads
+  behind `+server.ts` endpoints consumed by client-side queries — the snappier-PWA
+  and future-mobile-client enabler. It lands route-by-route between releases rather
+  than as its own release.
+- **Scaling (measurement-gated).** Observability first to define "measured scale,"
+  then response caching and deeper operational work — each triggered by a metric
+  crossing a threshold, not by a date. The alerting and kickoff load-test slice is
+  scheduled into v2.11 (#155); everything beyond it stays metric-triggered per
   [`docs/observability/scaling-signals.md`](docs/observability/scaling-signals.md).
-- **Gameplay decisions and research.** Catch-up mechanics, auto-pick defaults, and the
-  more experimental scoring and side-game ideas stay in a decide-when-wanted backlog;
-  each is gated on writing and accepting its ADR before any build.
-- **AI (research spike).** A data-only "starter" exploration with a measured-cost spike
-  and a foundation ADR, pulled in only when there is appetite to invest.
+- **Gameplay decisions and research.** Catch-up mechanics (#109), auto-pick (#181),
+  auto-pilot picks (#182), best-N scoring (#180), and the line-lock variant (#184)
+  stay in the decide-when-wanted backlog; none are 2026-launch work, and each is
+  gated on writing and accepting its ADR before any build.
+- **Growth switches (parked).** Open group creation (#156) waits until growth beyond
+  invite-driven friends-of-friends is wanted; the Callsign rename (#231) becomes real
+  only if store or ad distribution friction materializes.
+- **AI voice (foundation shipped).** ADR-0008, the weekly recap, and Season Wrapped
+  are live; the remaining wave is the badge-voice override (#283 Wave 3), pulled in
+  when there is appetite.
 
 ## Architectural guardrails
 
