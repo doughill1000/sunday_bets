@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#397** Comeback & weekly honors — four non-scoring recognition badges (The
+  Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
+  reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
+  load (no new query, no matview change). file: `domain/badges.ts` · ADR-0020
 - **#109** Ratify ADR-0020 (catch-up mechanics — no scoring equalizer) — decides against
   a points-equalizer mechanic for trailing players, grounded in the league's real
   2022–2025 history (frequent late comebacks already occur; a 2024 98-point runaway
