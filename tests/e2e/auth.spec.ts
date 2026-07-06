@@ -45,8 +45,13 @@ test(
 
     await expect(page).toHaveURL(/\/picks/);
     await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
-    // 'E2' is the real fixture user's display initial — content under test, not chrome.
-    await expect(page.getByText('E2')).toBeVisible();
+    // The header account menu shows the fixture user's display initial ("E2") once
+    // signed in — content under test. Scope to the trigger, not a page-wide text
+    // match: /picks now also renders member names/avatars (the who's-picked board,
+    // #388) whose initials would otherwise make 'E2' ambiguous.
+    const accountMenu = page.getByTestId('account-menu-trigger');
+    await expect(accountMenu).toBeVisible();
+    await expect(accountMenu).toContainText(/E2/i);
   }
 );
 
