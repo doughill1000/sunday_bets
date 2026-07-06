@@ -44,7 +44,13 @@ export type BadgeId =
   | 'chalk-eater'
   | 'dog-lover'
   // Tier-C live-form badge (#296, Wave 3 epic #277)
-  | 'hot-hand';
+  | 'hot-hand'
+  // Comeback & weekly honors (#397): non-scoring recognition for trailing/mid-pack
+  // players, per ADR-0020 (no catch-up scoring mechanic).
+  | 'the-comeback'
+  | 'week-winner'
+  | 'best-of-the-rest'
+  | 'cardiac';
 
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';

@@ -13,6 +13,24 @@ permissions:
   contents: read
 
 jobs:
+  # Docs-only PRs (ADRs, README, CHANGELOG, etc.) don't need unit tests or a full
+  # build. `code` is true if ANY changed file falls outside docs/** and *.md, so new
+  # code directories are covered without needing to enumerate them here.
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -47,6 +65,8 @@ jobs:
       - run: pnpm run check
 
   unit:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -70,6 +90,8 @@ jobs:
       - run: pnpm run test:unit
 
   build:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -96,3 +118,35 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec svelte-kit sync
       - run: pnpm run build
+
+  # Wrapper jobs so the required-status-check names ("unit-result"/"build-result")
+  # still report even when the underlying job is skipped — mirrors pgTap-result /
+  # verify-result / dry-run-result rather than relying on GitHub treating a skipped
+  # job as a passing required check.
+  unit-result:
+    needs: unit
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.unit.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
+  build-result:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.build.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi

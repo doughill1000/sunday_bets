@@ -61,6 +61,10 @@ export type BadgeTrendEntry = {
   week_wins: number;
   week_losses: number;
   week_missed: number;
+  /** Raw points scored this week (#397 comeback/weekly honors). */
+  week_points: number;
+  /** Dense rank on cumulative points as of this week, ties share a rank (#397). */
+  cumulative_rank_this_week: number;
 };
 
 // Tier-B consensus input (per-user aggregate from group_pick_consensus matview, #294).
@@ -172,7 +176,9 @@ export function badgeInputsFromSeasonStats(
       week_number: r.week_number,
       week_wins: r.week_wins,
       week_losses: r.week_losses,
-      week_missed: r.week_missed
+      week_missed: r.week_missed,
+      week_points: r.week_points,
+      cumulative_rank_this_week: r.cumulative_rank_this_week
     })),
     consensus: season.consensusStats.map((c: ConsensusStatsEntry): BadgeConsensusEntry => ({
       user_id: c.user_id,
@@ -580,6 +586,128 @@ function hotHand(
   return holder(best);
 }
 
+// --- Comeback & weekly honors (#397): non-scoring recognition, ADR-0020 ---
+
+/**
+ * The Comeback: biggest rank climb from a player's season low point (their worst
+ * cumulative_rank_this_week) to their final week's rank. Season-end only — the "low
+ * point" isn't meaningful until the season stops adding weeks. No holder if nobody's
+ * final rank beat their own low point.
+ */
+function theComeback(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHolder | null {
+  if (!seasonComplete) return null;
+  const byUser = new Map<string, BadgeTrendEntry[]>();
+  for (const r of trend) {
+    const rows = byUser.get(r.user_id);
+    if (rows) rows.push(r);
+    else byUser.set(r.user_id, [r]);
+  }
+
+  type Candidate = { user_id: string; display_name: string; delta: number };
+  const climbers: Candidate[] = [];
+  for (const rows of byUser.values()) {
+    const sorted = [...rows].sort((a, b) => a.week_number - b.week_number);
+    const finalRow = sorted[sorted.length - 1];
+    const lowPointRank = Math.max(...rows.map((r) => r.cumulative_rank_this_week));
+    const delta = lowPointRank - finalRow.cumulative_rank_this_week; // positive = climbed
+    if (delta > 0) {
+      climbers.push({ user_id: finalRow.user_id, display_name: finalRow.display_name, delta });
+    }
+  }
+  if (climbers.length === 0) return null;
+  return holder(
+    climbers.reduce((best, curr) => {
+      if (curr.delta > best.delta) return curr;
+      if (curr.delta === best.delta) return alphaFirst(curr, best);
+      return best;
+    })
+  );
+}
+
+/** The single highest week_points in a set of same-week rows; alphaFirst tie-break. */
+function weeklyTopScorer(rows: BadgeTrendEntry[]): BadgeTrendEntry | null {
+  if (rows.length === 0) return null;
+  return rows.reduce((best, curr) => {
+    if (curr.week_points > best.week_points) return curr;
+    if (curr.week_points === best.week_points) return alphaFirst(curr, best);
+    return best;
+  });
+}
+
+/**
+ * Week Winner: led weekly scoring (highest week_points, alphaFirst tie-break per week)
+ * in more weeks than anyone else. Always eligible to award — not season-end gated,
+ * since it's a running tally, not a final-standing judgment.
+ */
+function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {
+  const weeks = [...new Set(trend.map((r) => r.week_number))];
+  const tally = new Map<string, { user_id: string; display_name: string; weeksLed: number }>();
+  for (const w of weeks) {
+    const top = weeklyTopScorer(trend.filter((r) => r.week_number === w));
+    if (!top) continue;
+    const acc = tally.get(top.user_id);
+    if (acc) acc.weeksLed++;
+    else
+      tally.set(top.user_id, { user_id: top.user_id, display_name: top.display_name, weeksLed: 1 });
+  }
+  const candidates = [...tally.values()];
+  if (candidates.length === 0) return null;
+  return holder(
+    candidates.reduce((best, curr) => {
+      if (curr.weeksLed > best.weeksLed) return curr;
+      if (curr.weeksLed === best.weeksLed) return alphaFirst(curr, best);
+      return best;
+    })
+  );
+}
+
+/**
+ * Cardiac: the player who ends the season as sole leader, but only if they first
+ * reached sole possession of 1st within the final one or two weeks (i.e. they held no
+ * share of 1st — sole or tied — any earlier). Season-end only; no holder if the final
+ * week is tied at 1st, or the eventual leader was already leading earlier.
+ */
+function theCardiac(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHolder | null {
+  if (!seasonComplete || trend.length === 0) return null;
+  const finalWeek = Math.max(...trend.map((r) => r.week_number));
+  const finalWeekLeaders = trend.filter(
+    (r) => r.week_number === finalWeek && r.cumulative_rank_this_week === 1
+  );
+  if (finalWeekLeaders.length !== 1) return null;
+  const leader = finalWeekLeaders[0];
+  const ledEarlier = trend.some(
+    (r) =>
+      r.user_id === leader.user_id &&
+      r.week_number <= finalWeek - 2 &&
+      r.cumulative_rank_this_week === 1
+  );
+  if (ledEarlier) return null;
+  return holder(leader);
+}
+
+/**
+ * Best of the Rest: every player who posted a week's single highest score (alphaFirst
+ * excluded — ties for the week's top score all qualify) while sitting in the bottom
+ * half of the standings that week (cumulative_rank_this_week > half the active field),
+ * at least once this season. Milestone — zero or more holders, not season-end gated.
+ */
+function bestOfTheRest(trend: BadgeTrendEntry[]): BadgeHolder[] {
+  const weeks = [...new Set(trend.map((r) => r.week_number))];
+  const seen = new Map<string, BadgeHolder>();
+  for (const w of weeks) {
+    const rows = trend.filter((r) => r.week_number === w);
+    if (rows.length === 0) continue;
+    const maxPoints = Math.max(...rows.map((r) => r.week_points));
+    const fieldSize = rows.length;
+    for (const r of rows) {
+      if (r.week_points === maxPoints && r.cumulative_rank_this_week > fieldSize / 2) {
+        seen.set(r.user_id, { user_id: r.user_id, display_name: r.display_name });
+      }
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.display_name.localeCompare(b.display_name));
+}
+
 // --- Milestone badge helpers (threshold: zero or more holders) ---
 
 function bigGameHunter(weights: BadgeWeightEntry[]): BadgeHolder[] {
@@ -708,6 +836,33 @@ const FLAVORS: Record<
     flavor: "Can't miss right now. Every pick is money.",
     description:
       'Longest correct-pick streak this season (minimum picks required). Provisional in-season; crowned at season end on the longest run achieved.'
+  },
+  // Comeback & weekly honors (#397, ADR-0020)
+  'the-comeback': {
+    label: 'The Comeback',
+    emoji: '🧗',
+    flavor: 'Started in the basement. Finished somewhere else entirely.',
+    description: 'Climbed further from their season low point to their final rank than anyone else.'
+  },
+  'week-winner': {
+    label: 'Week Winner',
+    emoji: '🏆',
+    flavor: "Every week's its own title fight — and you keep winning it.",
+    description: 'Led the league in weekly scoring more often than anyone else this season.'
+  },
+  'best-of-the-rest': {
+    label: 'Best of the Rest',
+    emoji: '🌟',
+    flavor: 'Buried in the standings. Unbeatable for a week.',
+    description:
+      "Posted a week's single highest score at least once while sitting in the bottom half of the standings."
+  },
+  cardiac: {
+    label: 'Cardiac',
+    emoji: '💓',
+    flavor: 'Never led all year. Then it mattered most.',
+    description:
+      "Took sole possession of first place for the first time in the season's final week or two."
   }
 };
 
@@ -733,7 +888,12 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'dog-lover', kind: 'title' },
   { id: 'hot-hand', kind: 'title' },
   { id: 'big-game-hunter', kind: 'milestone' },
-  { id: 'perfect-week', kind: 'milestone' }
+  { id: 'perfect-week', kind: 'milestone' },
+  // Comeback & weekly honors (#397, ADR-0020)
+  { id: 'the-comeback', kind: 'title' },
+  { id: 'week-winner', kind: 'title' },
+  { id: 'cardiac', kind: 'title' },
+  { id: 'best-of-the-rest', kind: 'milestone' }
 ];
 
 export const BADGE_GLOSSARY: BadgeGlossaryEntry[] = GLOSSARY_ORDER.map(({ id, kind }) => ({
@@ -831,6 +991,22 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
     const hotHandGuard = computeHotHandGuard(streaks);
     const hand = hotHand(streaks, hotHandGuard, seasonComplete);
     if (hand) badges.push(award('hot-hand', 'title', [hand]));
+  }
+
+  // Comeback & weekly honors (#397, ADR-0020): non-scoring recognition, zero effect
+  // on standings.
+  if (trend.length > 0) {
+    const comeback = theComeback(trend, seasonComplete);
+    if (comeback) badges.push(award('the-comeback', 'title', [comeback]));
+
+    const winner = weekWinner(trend);
+    if (winner) badges.push(award('week-winner', 'title', [winner]));
+
+    const cardiacHolder = theCardiac(trend, seasonComplete);
+    if (cardiacHolder) badges.push(award('cardiac', 'title', [cardiacHolder]));
+
+    const rest = bestOfTheRest(trend);
+    if (rest.length > 0) badges.push(award('best-of-the-rest', 'milestone', rest));
   }
 
   return badges;

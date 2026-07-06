@@ -46,8 +46,78 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-06
+
+- **#391** Backfill v2.8 CHANGELOG gaps — adds standalone entries for #302, PR #352,
+  PR #355, PR #356, PR #363, and PR #364 (missing from the v2.8 release rollup line)
+  and resolves the literal `PR #NNN` placeholder in the 2026-06-30 section to its real
+  number, `PR #354`. Docs-only.
+- **PR #409** Accept ADR-0023 (All-In signature moment) — flips ADR-0023 status
+  `Proposed` → `Accepted` and adds its `docs/adr/README.md` index row (missed by the
+  propose PR), clearing the ADR gate so #360's implementation (declarations view/RPC,
+  weight-scoped RLS, pgTAP, The Whale badge) can proceed in its own PR. Docs-only.
+  files: `docs/adr/0023-all-in-signature-moment.md`, `docs/adr/README.md` · ADR-0023
+- **PR #407** Propose ADR-0023: All-In as a signature moment — a locked All-In
+  (`weight='A'`) pick becomes visible to co-members immediately on lock (game + side/
+  team + weight), a narrow extension of ADR-0019's sealed-envelope boundary scoped to
+  All-In only; every other weight stays sealed until kickoff. Declaration is automatic
+  — locking an All-In _is_ the declaration, no opt-in gesture. Drops the originally
+  scoped per-season scarcity budget (the existing weekly cap is unchanged) and renames
+  the badge from "Guarantee" to **The Whale** (best All-In record, non-scoring, mirrors
+  ADR-0020's The Choker). Docs-only; implementation follows in a separate PR. file:
+  `docs/adr/0023-all-in-signature-moment.md` · ADR-0023 (extends ADR-0019)
+- **PR #404** Propose ADR-0021: caller-scoped standings RPC for non-web clients —
+  records the decision gating the mobile companion app (PR #394) graduating from
+  experiment to a supported client: since standings matviews are service-role only
+  (ADR-0013) and can't carry RLS, a backendless client must go through a single
+  `SECURITY DEFINER` RPC over the leaderboard matviews, filtered by
+  `auth.uid() → group_memberships`, with pgTAP cross-group-denial coverage. Gates
+  graduation only — PR #394 stays parked with its client-side mirror meanwhile.
+  Status: Proposed. Docs-only. file: `docs/adr/0021-caller-scoped-standings-rpc.md` ·
+  ADR-0021
+- **PR #403** Auto-union CHANGELOG.md merge conflicts — adds `.gitattributes`
+  (`docs/CHANGELOG.md merge=union`) so same-day changelog bullet collisions
+  auto-resolve instead of raising a manual merge conflict, automating the "keep both
+  entries" policy this file already documents (conflicts had hit #398, #399, and #402
+  this week). Config-only. file: `.gitattributes`
+- **#400** Over/Under (totals) market — **decision: deferred** for 2026, no code
+  change. Records that head-to-head comparison forbids per-player market choice — the
+  market must be a collective, group-level setting — and fixes the shape to adopt if it
+  is ever built: a per-group, season-long spread-vs-totals mode. file:
+  `docs/adr/0022-over-under-totals-market.md` · ADR-0022
+- **PR #401** Backfill missing CHANGELOG entry for PR #398 — PR #398 (ADR-0020, #109
+  catch-up mechanics) merged without a `docs/CHANGELOG.md` entry, tripping the
+  governance-freshness gate for every PR after it; the entry now lives above under
+  **#109**. Docs-only.
+- **#383** Accept ADR-0019 (configurable pick-reveal timing model) — adopts the
+  two-axis Sealed/Deadline/Open reveal-timing model conceptually while keeping Sealed
+  as the sole implemented default, codifies the non-retroactive invariant (mirrors
+  ADR-0018), and authorizes a narrow counts-only status carve-out (group-scoped,
+  `is_member()`-scoped, `security_invoker`, pgTAP-proven) for #388's who's-picked
+  status board. Mode granularity and market fit (CFB vs NFL) explicitly deferred.
+  Docs-only. file: `docs/adr/0019-pick-reveal-timing-model.md` · ADR-0019
+- **#397** Comeback & weekly honors — four non-scoring recognition badges (The
+  Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
+  reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
+  load (no new query, no matview change). file: `domain/badges.ts` · ADR-0020
+- **#109** Ratify ADR-0020 (catch-up mechanics — no scoring equalizer) — decides against
+  a points-equalizer mechanic for trailing players, grounded in the league's real
+  2022–2025 history (frequent late comebacks already occur; a 2024 98-point runaway
+  shows an equalizer would misfire). Engagement for trailing players is redirected to
+  non-scoring honor badges, tracked separately as #397. No change to `pick_settlement`,
+  matviews, or grading. file: `docs/adr/0020-catch-up-mechanics.md` · ADR-0020
+- **PR #396** Release v2.9.0 — version bump for the v2.9 milestone: All-time (career)
+  group leaderboard (#376), broken signup/reset confirmation email links + check-email
+  UX (#367/#368), and the iOS Share glyph install-banner polish (#380/#385). No app
+  behavior change beyond what those PRs already shipped. file: `package.json`
+
 ## 2026-07-03
 
+- **PR #384** Drop app-shell chrome on the auth screen — `/auth*` rendered the app logo
+  twice (persistent app-shell header + the auth card's own brand lockup from #373) and
+  surfaced primary nav links above the sign-in form. Now `/auth*` is a bare, centered
+  launch/login screen with a single brand lockup; authenticated routes are unchanged.
+  Presentational fix, no ADR. file: `src/routes/+layout.svelte`
 - **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now
   shows Apple's Share glyph (□↑) inline beside the word "Share" so non-technical
   iPhone users can find the action; adds an on-device iOS 16.4+ install→permission→push
@@ -76,12 +146,18 @@ Project `Done` column, and Releases remain the sources of truth — see
 - **PR #369** Release v2.8.0 — version bump. Milestone: v2.8 (minor: #358 drop-worst-week UX, #347 Season Wrapped in-app, #302 recap push notification; patch: #357 non-retroactive drop-worst-week fix, PR #351 Wrapped seasonal CTA, PR #352 awards guide on Wrapped, PR #353 recap voice + storyline facts, PR #354 Wrapped force-refresh cron, PR #355 stats season-switch fix, PR #356 show group name, PR #363 awards legend reword, PR #364 Manage tab split).
 - **#367** Fix broken signup/reset confirmation email links + post-signup check-email UX — `supabase/config.toml` only customized the magic-link email template, so signup-confirmation and password-reset emails fell back to Supabase's default template, which drops the `token_hash`/`type` params `/auth/confirm` and `/auth/reset` require ("Missing token" even though the account was actually confirmed). Adds `confirmation.html`/`recovery.html` templates mirroring the existing magic-link pattern. Also replaces the post-signup toast with a dedicated "check your email" screen (resend action, back-to-sign-in). Prod/staging Dashboard templates still need a manual paste (config.toml only reaches local). files: `supabase/config.toml`, `supabase/confirmation.html`, `supabase/recovery.html`, `auth/+page.svelte`, `auth/+page.server.ts` · ADR-0004
 - **#358** Drop-worst-week UX — commissioner control + standings/analytics split. Phase 2 (UX) of the #357 redesign: commissioners can now enable the rule and pick "apply from season \_\_\_" from the group Manage tab (no more service-role-only writes; copy states it affects standings only and is never retroactive). Draws a sharp line between standings and performance — the Stats season card drops Points + Rank (analytics only; Leaderboard owns standings), the season trend rings the forgiven week with a caption while the line stays raw, the Career headline reads "Standings points" (reconciled) with a per-season-drop caption, and the Leaderboard gains a footnote when the drop is active for the displayed season. No DB change. files: `group/+page.svelte`+`+page.server.ts`, `api/group/update-config`, `stats/+page.svelte`, `CareerSummary.svelte`, `SeasonTrendChart.svelte`, `utils/stats.ts`, `leaderboard/+page.svelte`, `readModels/{leaderboard,stats}Cache.ts`, `domain/scoring.ts` · ADR-0018
+- **#302** Recap push notification + cross-device seen-marker — once a group's weekly AI recap generates in the grade cron, opted-in members get a "recap ready" push to `/recap`, reusing the #178 `notification_log` dedup shape but keyed per `(user, group, week)` via a new nullable `notification_log.group_id`, gated by a new `notification_prefs.ai_recap` toggle (default on). The once-per-week `/recap` flash "seen" marker moves from per-device `localStorage` to a server-side `recap_seen` table (RLS-gated, player-writable) so dismissal is consistent across a player's devices. tables: `recap_seen`, `notification_log.group_id` · files: `notifications.ts`, `api/cron/grade`, `api/recap/mark-seen`, `RecapFlash.svelte` · ADR-0008
+- **PR #364** Split commissioner controls into a Manage tab — the Group page's commissioner-only config (rename, invites, league rules, AI Recap) moves off the shared page into a dedicated `League | Manage` tab set; the League tab keeps everything every member sees (honors, roster, leave-group). Non-commissioners see no tab bar — their page is unchanged. Presentation-only. file: `group/+page.svelte`
+- **PR #363** Reword the awards guide as a "legend" — the "How awards work?" trigger/dialog framed the badge list as step-by-step mechanics; reworded to "Awards legend" to match what it actually is, a reference of what each badge means (plus matching comment updates). files: `AwardsGuide.svelte`, `badges.ts`, `honors.ts`
 
 ## 2026-06-30
 
 - **#357** Non-retroactive drop-worst-week + standings reconciliation — fixes two defects in the ADR-0005 drop-worst-week rule: it applied retroactively to the imported 2022–2024 seasons the instant a group enabled it, and career totals diverged from the sum of the season cards. Adds a `drop_worst_week_start_year` config field so the rule never reaches a season before it (inert by construction without one), reworks career totals to sum each season's drop-aware standings total, and adds a season-trend `is_dropped_week` marker (trend stays raw; it's an annotation, not a second total). Records/breakdowns stay raw everywhere. views: `leaderboard_season_totals`, `stats_alltime_totals`, `stats_season_trend`, `league_completed_standings` · function: `update_group_config` · ADR-0018 (supersedes ADR-0005)
-- **PR #NNN** Season Wrapped force-refresh — adds `?force=true` to the manual `backfill-wrapped` cron so existing Wrapped blurbs are regenerated and replaced (fresh AI prose) instead of skipped, with each subject re-voiced before its old row is dropped so a failed voice keeps the existing blurb. New `pnpm refresh-wrapped:prod` wrapper POSTs the endpoint (no local DB creds; sidesteps the PowerShell/CSRF friction of a raw curl). files: `seasonWrapped.ts`, `db/queries/seasonWrapped.ts`, `api/cron/backfill-wrapped`, `supabase/scripts/refresh-wrapped/` · ADR-0008
+- **PR #354** Season Wrapped force-refresh — adds `?force=true` to the manual `backfill-wrapped` cron so existing Wrapped blurbs are regenerated and replaced (fresh AI prose) instead of skipped, with each subject re-voiced before its old row is dropped so a failed voice keeps the existing blurb. New `pnpm refresh-wrapped:prod` wrapper POSTs the endpoint (no local DB creds; sidesteps the PowerShell/CSRF friction of a raw curl). files: `seasonWrapped.ts`, `db/queries/seasonWrapped.ts`, `api/cron/backfill-wrapped`, `supabase/scripts/refresh-wrapped/` · ADR-0008
 - **PR #353** AI recap voice + storyline-first facts — refines the shared Commissioner voice for the weekly recap and Season Wrapped (ADR-0008) and replaces rank-ordered standings with deterministic storyline beats: biggest rank mover, lead change, hottest win streak, and title-race tightness (weekly) plus biggest climber/faller, a lead summary, longest heater, and title margin (season). Now sends the full standings (reverses the season top/bottom-5 prompt trim from PR #351); per-call + per-season cost caps and the deterministic fallback stay as the backstop. No DB change (facts packet is JSONB; UI unchanged). files: `recap/facts.ts`, `recap/seasonFacts.ts`, `recap/voice.ts`, `types/server/recap.ts`, `types/server/seasonWrapped.ts` · ADR-0008
+- **PR #356** Show the active group's name in the header — single-group users previously saw nothing in the `GroupSwitcher` slot (it only rendered for multi-group users); they now see their group's name as inert text, while multi-group users keep the dropdown. files: `AppHeader.svelte`, `GroupSwitcher.svelte`
+- **PR #355** Keep the selected player when switching season on Stats — `selectedUserId` was a `$derived`, so changing the season (which gives the page data a new object identity via `goto`) silently reset the player picker back to "You"; switched to plain `$state` with an `$effect` that only repairs the selection when it's actually invalid (e.g. the player left the group). file: `stats/+page.svelte`
+- **PR #352** Surface the awards guide on Season Wrapped — extracts the Group page's "How awards work?" dialog/sheet + badge glossary out of `LeagueHonors.svelte` into a reusable `AwardsGuide.svelte` and adds it to `WrappedStory.svelte` beside the player-badges and league-titles headings; glossary copy stays single-sourced. files: `AwardsGuide.svelte`, `LeagueHonors.svelte`, `WrappedStory.svelte`
 
 ## 2026-06-29
 
