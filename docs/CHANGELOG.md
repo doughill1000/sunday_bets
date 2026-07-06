@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **PR #418** Agent workflow improvements — four new skills (`land-pr`, `ci-triage`,
+  `season-ops`, `dependabot-sweep`) closing gaps in the delivery loop; the
+  non-interactive-shell PATH fix moved from a per-command workaround to
+  `.claude/settings.json`; and a PR-time changelog gate added to
+  `governance-freshness.yml` so a missing entry is caught before merge instead of via
+  a backfill PR. Also fixes a doc bug in `testing.md`/`test-gate` that mis-described
+  CI's test coverage.
 - **#388** Who's-picked status board — group-visible, **counts-only** pick status for
   the active week: each active member's picks-made-vs-available count (e.g. 9/13) plus
   a done/pending flag, never any pick content. A `SECURITY DEFINER` RPC re-imposes the
