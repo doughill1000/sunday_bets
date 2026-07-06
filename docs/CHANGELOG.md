@@ -64,6 +64,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   `oddsApiResponses.ts` · pgTAP `037`
 - **PR #412** Backfill the CHANGELOG entry for PR #410 (the docs-only skip-jobs CI
   change). Docs-only.
+- **#392** RLS-enable guard — new set-based pgTAP assertion (one pass over
+  `pg_class.relrowsecurity`) fails CI if any `public` base table ships without RLS
+  enabled, closing the audit's P2 #9 gap so a forgotten enable line can't silently
+  expose full-table reads to `authenticated`. Self-verifying via a born-without-RLS
+  probe. The `0300_rls.sql` collapse was already shipped by PR #379. test:
+  `supabase/tests/039_all_tables_rls_enabled.sql` · ADR-0011
 - **PR #410** Skip unit/build/smoke for docs-only PRs — adds a `detect-changes` job
   (the `dorny/paths-filter` pattern already used by `ci-pgtap.yml` /
   `ci-migration-verify.yml`) to `ci-tests.yml` and `playwright.yml`; `unit`, `build`,
