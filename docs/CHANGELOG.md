@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **PR #417** Release v2.10.0 — version bump. Milestone: v2.10 (minor: #360 All-In
+  signature moment + The Whale badge, #388 who's-picked status board, #397 comeback &
+  weekly honors badges; patch: #382 raw Odds API payload persistence, #390 clone-to-staging
+  trigger fix, #391 changelog repair, #392 set-based RLS guard). Production ships via the
+  separate manual `deploy-prod` dispatch, which tags `v2.10.0` (ADR-0010). · ADR-0015
 - **#388** Who's-picked status board — group-visible, **counts-only** pick status for
   the active week: each active member's picks-made-vs-available count (e.g. 9/13) plus
   a done/pending flag, never any pick content. A `SECURITY DEFINER` RPC re-imposes the
