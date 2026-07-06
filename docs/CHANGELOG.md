@@ -52,6 +52,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
   reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
   load (no new query, no matview change). file: `domain/badges.ts` · ADR-0020
+- **#109** Ratify ADR-0020 (catch-up mechanics — no scoring equalizer) — decides against
+  a points-equalizer mechanic for trailing players, grounded in the league's real
+  2022–2025 history (frequent late comebacks already occur; a 2024 98-point runaway
+  shows an equalizer would misfire). Engagement for trailing players is redirected to
+  non-scoring honor badges, tracked separately as #397. No change to `pick_settlement`,
+  matviews, or grading. file: `docs/adr/0020-catch-up-mechanics.md` · ADR-0020
 - **PR #396** Release v2.9.0 — version bump for the v2.9 milestone: All-time (career)
   group leaderboard (#376), broken signup/reset confirmation email links + check-email
   UX (#367/#368), and the iOS Share glyph install-banner polish (#380/#385). No app
