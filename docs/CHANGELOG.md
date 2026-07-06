@@ -48,6 +48,17 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **PR #410** Skip unit/build/smoke for docs-only PRs — adds a `detect-changes` job
+  (the `dorny/paths-filter` pattern already used by `ci-pgtap.yml` /
+  `ci-migration-verify.yml`) to `ci-tests.yml` and `playwright.yml`; `unit`, `build`,
+  `smoke`, and `full` now skip when every changed file is under `docs/**` or `*.md`,
+  via `unit-result`/`build-result`/`smoke-result` wrapper jobs so required-status
+  checks still report a conclusion instead of relying on GitHub treating a skipped
+  job as passing. `lint` and `governance` stay ungated — both check things relevant to
+  docs-only PRs. Follow-up (not done here): the branch ruleset still lists the raw
+  `unit`/`build`/`smoke` names as required checks and needs updating to the
+  `-result` variants before docs-only PRs actually stop blocking. files:
+  `.github/workflows/{ci-tests,playwright}.yml`
 - **#391** Backfill v2.8 CHANGELOG gaps — adds standalone entries for #302, PR #352,
   PR #355, PR #356, PR #363, and PR #364 (missing from the v2.8 release rollup line)
   and resolves the literal `PR #NNN` placeholder in the 2026-06-30 section to its real
