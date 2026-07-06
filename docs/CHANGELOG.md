@@ -55,9 +55,6 @@ Project `Done` column, and Releases remain the sources of truth — see
   while base-table picks RLS keeps pick content sealed (same mechanism as ADR-0023's
   all-in surface). function: `picks_status_board` · component: `PicksStatusBoard.svelte`
   · route: `/picks` · ADR-0019
-- **#392** pgTAP RLS guard — a set-based test asserts every table in the `public`
-  schema has row level security enabled, so a new table cannot ship without RLS.
-  test-only. pgTAP.
 - **#382** Persist raw Odds API payloads — stores each Odds API response verbatim for
   later dispute resolution / replay, alongside the parsed lines it already ingests. No
   new ADR (audit-log precedent, ADR-0011). table: `odds_api_responses` ·
