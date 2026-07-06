@@ -30,6 +30,13 @@ jobs:
       PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
       SUPABASE_SERVICE_ROLE: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
       JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      # The odds-api-raw-response-retention integration test (#382) exercises
+      # fetchNFLSpreadsForWeek for real (fetch itself is mocked), so $env/static/public's
+      # PUBLIC_ODDS_API_BASE must resolve to a real URL at build time or the request
+      # fails with "Invalid URL". Same throwaway values as ci-tests.yml/playwright.yml.
+      PUBLIC_ODDS_API_BASE: https://api.the-odds-api.com/v4
+      ODDS_API_KEY1: integration-placeholder
+      ODDS_API_KEY2: integration-placeholder
     steps:
       - name: Checkout
         uses: actions/checkout@v7
