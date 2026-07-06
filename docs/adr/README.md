@@ -65,6 +65,7 @@ current status.
 | [ADR-0018](0018-non-retroactive-drop-worst-week.md)        | Non-retroactive drop-worst-week scoping and standings reconciliation                  |
 | [ADR-0019](0019-pick-reveal-timing-model.md)               | Configurable pick-reveal timing model and counts-only status carve-out                |
 | [ADR-0020](0020-catch-up-mechanics.md)                     | Catch-up mechanics — recognition, not a scoring equalizer                             |
+| [ADR-0021](0021-caller-scoped-standings-rpc.md)            | Caller-scoped `SECURITY DEFINER` standings RPC for non-web clients                    |
 | [ADR-0022](0022-over-under-totals-market.md)               | Over/Under (totals) market — deferred; per-group season mode if built                 |
 
 _The numbering is sequential; the next ADR is 0023._
