@@ -1,0 +1,5 @@
+# CHANGELOG entries are appended by every merging PR right after the same
+# `## <date>` heading, which routinely collides when two PRs land the same day.
+# Per docs/CHANGELOG.md's own policy ("keep both entries, never take one side
+# wholesale"), let git auto-union those additions instead of conflicting.
+docs/CHANGELOG.md merge=union
