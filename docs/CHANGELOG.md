@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#397** Comeback & weekly honors — four non-scoring recognition badges (The
+  Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
+  reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
+  load (no new query, no matview change). file: `domain/badges.ts` · ADR-0020
 - **PR #396** Release v2.9.0 — version bump for the v2.9 milestone: All-time (career)
   group leaderboard (#376), broken signup/reset confirmation email links + check-email
   UX (#367/#368), and the iOS Share glyph install-banner polish (#380/#385). No app
