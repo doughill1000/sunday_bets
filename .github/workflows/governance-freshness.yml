@@ -1,9 +1,10 @@
 # .github/workflows/governance-freshness.yml
 #
-# CI backstop for the two manual `finish-pr` governance steps (flip a shipped ADR's
-# Status to Accepted; log every merged PR in docs/CHANGELOG.md). Both are plain file
-# edits with no enforcement, so they lapse silently whenever a PR skips the skill.
-# Runs on every PR to master (catches drift before more work stacks on top) and daily
+# CI backstop for the manual `finish-pr` governance steps (flip a shipped ADR's Status
+# to Accepted; log every merged PR in docs/CHANGELOG.md). Both are plain file edits
+# with no enforcement, so they lapse silently whenever a PR skips the skill.
+# Runs on every PR to master — which also gates the PR's OWN diff for a
+# docs/CHANGELOG.md change (see PR_NUMBER below), not just past merged PRs — and daily
 # (catches drift introduced without a PR, e.g. an issue closed outside finish-pr).
 name: Governance freshness
 
@@ -45,3 +46,8 @@ jobs:
       - run: pnpm governance:check
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Only set on the pull_request trigger — unset on the daily schedule run,
+          # which has no "current PR" and falls back to the retroactive check.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}

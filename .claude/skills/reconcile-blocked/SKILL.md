@@ -17,10 +17,9 @@ prerequisite ships; once that lands in `docs/CHANGELOG.md` (or the gating ADR re
 
 ## Steps
 
-1. **Pull the live blocked set.** `gh` is not on PATH and PowerShell splits `--jq`
-   strings with spaces — prepend the path and process JSON with `ConvertFrom-Json`:
+1. **Pull the live blocked set.** PowerShell splits `--jq` strings with spaces — process
+   JSON with `ConvertFrom-Json` instead:
    ```powershell
-   $env:Path += ";C:\Program Files\GitHub CLI"
    gh issue list --repo doughill1000/sunday_bets --state open --label blocked --limit 100 `
      --json number,title,body,milestone | ConvertFrom-Json
    ```
@@ -54,9 +53,8 @@ prerequisite ships; once that lands in `docs/CHANGELOG.md` (or the gating ADR re
 
 ## Remember
 
-- `gh` lives at `C:\Program Files\GitHub CLI`; in PowerShell fetch `--json` and use
-  `ConvertFrom-Json` — `--jq` strings with spaces get split and fail. The Bash tool's
-  `gh` also resolves once the path is added.
+- In PowerShell, fetch `--json` and use `ConvertFrom-Json` — `--jq` strings with spaces
+  get split and fail. Run `gh` via PowerShell, not Bash (see `AGENTS.md`).
 - **Shipped = in `docs/CHANGELOG.md`; ADR-gated = `Status: Accepted` in `docs/adr/`.**
   Never infer completion from code or a version bump.
 - **Confirm before any write.** `CLAUDE.md` requires explicit approval for GitHub

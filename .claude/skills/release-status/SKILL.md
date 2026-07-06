@@ -23,11 +23,9 @@ work that "0 open issues" hides.
    "self-service groups"). While there, note what the roadmap says the **next** version
    explicitly defers _from_ this one (phrasing like "the membership/RLS hardening that
    vN deferred") — those are your prime leftover candidates.
-2. **Pull the GitHub milestone truth.** `gh` is not on PATH and PowerShell mangles
-   `--jq` expressions that contain spaces, so prepend the path and fetch `--json`, then
-   process with `ConvertFrom-Json`:
+2. **Pull the GitHub milestone truth.** PowerShell mangles `--jq` expressions that
+   contain spaces, so fetch `--json` and process with `ConvertFrom-Json` instead:
    ```powershell
-   $env:Path += ";C:\Program Files\GitHub CLI"
    # milestone open/closed counts
    gh api "repos/doughill1000/sunday_bets/milestones?state=all" | ConvertFrom-Json |
      ForEach-Object { "{0} [{1}] open={2} closed={3}" -f $_.title,$_.state,$_.open_issues,$_.closed_issues }
@@ -61,8 +59,8 @@ work that "0 open issues" hides.
 
 - `ROADMAP.md` is authoritative for version→scope; the **archived** roadmap is stale —
   never map versions from it.
-- `gh` lives at `C:\Program Files\GitHub CLI`; in PowerShell fetch `--json` and use
-  `ConvertFrom-Json` — `--jq` strings with spaces get split and fail.
+- In PowerShell, fetch `--json` and use `ConvertFrom-Json` — `--jq` strings with spaces
+  get split and fail.
 - **"0 open issues" ≠ "nothing missing."** Always surface deferred-to-next and blocked work.
 - Read-only by design. If a status finding warrants a GitHub write (relabel, milestone move,
   comment), **confirm with Doug first** — that is `scope-issue`/`issue-author` territory.

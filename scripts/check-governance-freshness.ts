@@ -1,25 +1,31 @@
 /**
  * Governance freshness gate (audit 2026-07-02, P1 #4).
  *
- * The two manual `finish-pr` steps that keep docs/adr/*.md and docs/CHANGELOG.md
+ * The manual `finish-pr` steps that keep docs/adr/*.md and docs/CHANGELOG.md
  * trustworthy — flipping a shipped ADR's Status to Accepted, and logging every merged
  * PR — have no CI backstop, so they lapse silently whenever a PR skips the skill
  * (release/dependabot/hotfix PRs, or a patch cluster). This script is that backstop:
  *
  *   1. ADR staleness — an ADR still `Status: Proposed` whose linked `Issue: #NNN` is
  *      already closed on GitHub means the ratification step was missed.
- *   2. Changelog gaps — a merged PR (to `master`, non-bot, merged on/after the
- *      enforcement cutoff below) with neither its own PR number nor a closed-issue
- *      number it references anywhere in docs/CHANGELOG.md means the changelog step
- *      was missed.
+ *   2. Changelog gaps (retroactive) — a merged PR (to `master`, non-bot, merged
+ *      on/after the enforcement cutoff below) with neither its own PR number nor a
+ *      closed-issue number it references anywhere in docs/CHANGELOG.md means the
+ *      changelog step was missed.
+ *   3. Changelog gap (current PR) — on a `pull_request`-triggered run only, the PR
+ *      being opened/updated is itself checked for a docs/CHANGELOG.md change in its
+ *      diff. This is what actually stops a merge from shipping without an entry;
+ *      check #2 can only catch it retroactively, after the PR has already merged
+ *      (its own `docs(changelog): backfill ...` PRs are the evidence this gap is
+ *      real, not theoretical).
  *
- * The changelog check is deliberately NOT retroactive: docs/CHANGELOG.md pre-dates
- * this gate by weeks and already has real historical gaps (e.g. #330/PR #341 — a
- * confirmed finding of the 2026-07-02 audit that introduced this script). Scanning
- * all history would make the check permanently, un-fixably red on day one. Instead it
- * enforces the rule only for PRs merged after the cutoff, so it catches new drift
- * without demanding a backfill project first. Bump the cutoff (or backfill the gap
- * and move it) if it starts hiding a real new gap behind old history.
+ * The retroactive changelog check is deliberately NOT full-history: docs/CHANGELOG.md
+ * pre-dates this gate by weeks and already has real historical gaps (e.g. #330/PR
+ * #341 — a confirmed finding of the 2026-07-02 audit that introduced this script).
+ * Scanning all history would make the check permanently, un-fixably red on day one.
+ * Instead it enforces the rule only for PRs merged after the cutoff, so it catches
+ * new drift without demanding a backfill project first. Bump the cutoff (or backfill
+ * the gap and move it) if it starts hiding a real new gap behind old history.
  *
  * Requires GITHUB_TOKEN (or GH_TOKEN) and GITHUB_REPOSITORY ("owner/repo") — both are
  * set automatically in GitHub Actions. Not meant to be run outside CI/gh context.
@@ -44,6 +50,10 @@ type GitHubPullRequest = {
   body: string | null;
   merged_at: string | null;
   user: { login: string } | null;
+};
+
+type GitHubPullRequestFile = {
+  filename: string;
 };
 
 function githubRepo(): string {
@@ -144,13 +154,43 @@ async function checkChangelogFreshness(): Promise<string[]> {
   return failures;
 }
 
+/**
+ * Gates the PR actually being opened/updated, not just history. Only meaningful on a
+ * `pull_request`-triggered run — PR_NUMBER is unset on the daily `schedule` run, which
+ * has no "current PR" to check, so this returns early and leaves that run to
+ * checkChangelogFreshness()'s retroactive sweep.
+ */
+async function checkCurrentPrChangelog(): Promise<string[]> {
+  const prNumber = process.env.PR_NUMBER;
+  if (!prNumber) return [];
+
+  const author = process.env.PR_AUTHOR ?? '';
+  if (BOT_LOGINS.has(author)) return [];
+
+  const labels = (process.env.PR_LABELS ?? '').split(',').map((l) => l.trim());
+  if (labels.includes('changelog-exempt')) return [];
+
+  const files = await githubApi<GitHubPullRequestFile[]>(
+    `/repos/${githubRepo()}/pulls/${prNumber}/files?per_page=100`
+  );
+  const touchesChangelog = files.some((f) => f.filename === 'docs/CHANGELOG.md');
+  if (touchesChangelog) return [];
+
+  return [
+    `This PR (#${prNumber}) has no docs/CHANGELOG.md change in its diff — add an entry ` +
+      `(see the finish-pr skill's step 3), or apply the "changelog-exempt" label if this ` +
+      `genuinely doesn't need one.`
+  ];
+}
+
 async function main() {
-  const [adrFailures, changelogFailures] = await Promise.all([
+  const [adrFailures, changelogFailures, currentPrFailures] = await Promise.all([
     checkAdrFreshness(),
-    checkChangelogFreshness()
+    checkChangelogFreshness(),
+    checkCurrentPrChangelog()
   ]);
 
-  const failures = [...adrFailures, ...changelogFailures];
+  const failures = [...adrFailures, ...changelogFailures, ...currentPrFailures];
   if (failures.length === 0) {
     console.log('Governance freshness check passed.');
     return;
