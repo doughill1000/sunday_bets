@@ -7,6 +7,7 @@ import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
 import { getReactionsForGames } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
+import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
@@ -59,6 +60,7 @@ async function loadPicks(
       social: {},
       groupPicks: [],
       allInDeclarations: [],
+      pickStatusBoard: [],
       userId,
       currentUserDisplayName,
       isLastWeek: false,
@@ -66,14 +68,16 @@ async function loadPicks(
       membershipCount
     };
 
-  const [games, picks, groupPicks, allInDeclarations, gameplay, lastWeek] = await Promise.all([
-    getActiveWeekGames(),
-    getMyPicks(event, week.id, groupId),
-    getGroupPicks(event, week.id, groupId),
-    getAllInDeclarations(event, week.id, groupId),
-    getGameplaySettings(),
-    isLastWeekOfSeason(week.week_number, week.season_id)
-  ]);
+  const [games, picks, groupPicks, allInDeclarations, pickStatusBoard, gameplay, lastWeek] =
+    await Promise.all([
+      getActiveWeekGames(),
+      getMyPicks(event, week.id, groupId),
+      getGroupPicks(event, week.id, groupId),
+      getAllInDeclarations(event, week.id, groupId),
+      getPicksStatusBoard(event, week.id, groupId),
+      getGameplaySettings(),
+      isLastWeekOfSeason(week.week_number, week.season_id)
+    ]);
 
   // Load comments and reactions for started games only (RLS also enforces this gate).
   // Two batched queries (one per table) instead of a per-game N+1.
@@ -101,6 +105,7 @@ async function loadPicks(
     social,
     groupPicks,
     allInDeclarations,
+    pickStatusBoard,
     userId,
     currentUserDisplayName,
     isLastWeek: lastWeek,

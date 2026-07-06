@@ -48,6 +48,19 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#388** Who's-picked status board — group-visible, **counts-only** pick status for
+  the active week: each active member's picks-made-vs-available count (e.g. 9/13) plus
+  a done/pending flag, never any pick content. A `SECURITY DEFINER` RPC re-imposes the
+  `is_member()` gate and projects counts only, so co-member counts show pre-kickoff
+  while base-table picks RLS keeps pick content sealed (same mechanism as ADR-0023's
+  all-in surface). function: `picks_status_board` · component: `PicksStatusBoard.svelte`
+  · route: `/picks` · ADR-0019
+- **#382** Persist raw Odds API payloads — stores each Odds API response verbatim for
+  later dispute resolution / replay, alongside the parsed lines it already ingests. No
+  new ADR (audit-log precedent, ADR-0011). table: `odds_api_responses` ·
+  `oddsApiResponses.ts` · pgTAP `037`
+- **PR #412** Backfill the CHANGELOG entry for PR #410 (the docs-only skip-jobs CI
+  change). Docs-only.
 - **#392** RLS-enable guard — new set-based pgTAP assertion (one pass over
   `pg_class.relrowsecurity`) fails CI if any `public` base table ships without RLS
   enabled, closing the audit's P2 #9 gap so a forgotten enable line can't silently
