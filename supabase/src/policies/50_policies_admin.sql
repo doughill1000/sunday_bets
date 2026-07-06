@@ -30,3 +30,9 @@ create policy admin_sel_cron_run_log
   on public.cron_run_log for select
   to authenticated
   using (public.is_admin());
+
+drop policy if exists admin_sel_odds_api_responses on public.odds_api_responses;
+create policy admin_sel_odds_api_responses
+  on public.odds_api_responses for select
+  to authenticated
+  using (public.is_admin());

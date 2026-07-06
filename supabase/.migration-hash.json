@@ -584,9 +584,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "policies/50_policies_admin.sql": {
-    "hash": "46f10bec07ef26456b336ce7cad0c6fde88742c85d0d969807af3e5c4043f67a",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "dd53e6e3efcb082a316ec1e008408031294a615dd0a06129a83368dfd6e60dab",
+    "migration": "20260706195657_odds_api_responses.sql",
+    "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
   },
   "grants/admin_grants.sql": {
     "hash": "59cd97277566e8fe4096d5fde1c49c456aba2323e9f869a49874dd725a284b7c",
@@ -609,9 +609,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/player_grants.sql": {
-    "hash": "e5002ae560be9c3a5607c6f48c08453fbd8386e2192a6c2f992aea7f99185362",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "870ccc40f7f7a61a4e44e40b1ea11d3a97b3b700d29eb5db4d8452c414e83eb0",
+    "migration": "20260706195657_odds_api_responses.sql",
+    "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
   },
   "functions/_private/capture_closing_line.sql": {
     "hash": "2ebf7db4f020f56cbab1fa206dd9660b75ca3330210b3bf8c3603aab99ad2707",
@@ -741,5 +741,10 @@
     "hash": "a11dfeb457a5bbd5c6af443a62e42003a9196736ee6e2d76919a14b8ced38c2a",
     "migration": "20260701185238_fix_notification_log_group_fk_ordering.sql",
     "migrationHash": "96038c5df7527b6f874be28409327ec4dab06198b1200dc59a59b1666f4544c0"
+  },
+  "schemas/0200_12_odds_api_responses.sql": {
+    "hash": "58d314b69a1d5eb3fd56eae712d5058690ff100c303647108412af3d921d40fd",
+    "migration": "20260706195657_odds_api_responses.sql",
+    "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
   }
 }

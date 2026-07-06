@@ -29,6 +29,27 @@ async function recordUsage(res: Response) {
   }
 }
 
+// Raw-response retention (issue #382) must never break a sync/grade: same
+// swallow-all-errors tolerance as recordUsage above.
+async function recordRawResponse(
+  endpoint: string,
+  params: URLSearchParams,
+  httpStatus: number,
+  body: unknown
+) {
+  try {
+    const { recordOddsApiResponse, sanitizeParams } = await import('./oddsApiResponses');
+    await recordOddsApiResponse({
+      endpoint,
+      requestParams: sanitizeParams(params),
+      httpStatus,
+      body
+    });
+  } catch {
+    // ignore
+  }
+}
+
 function sportKeyForWeek(week: WeekWindow) {
   return week.weekNumber < 0 ? 'americanfootball_nfl_preseason' : 'americanfootball_nfl';
 }
@@ -55,10 +76,13 @@ export async function fetchNFLSpreadsForWeek(week: WeekWindow): Promise<OddsGame
   const res = await fetch(url);
   if (!res.ok) {
     const text = await res.text();
+    await recordRawResponse('spreads', params, res.status, text);
     throw new Error(`Odds API ${res.status}: ${text}`);
   }
   await recordUsage(res);
-  return res.json();
+  const body = await res.json();
+  await recordRawResponse('spreads', params, res.status, body);
+  return body;
 }
 
 // NEW: fetch scores/finals (use daysFrom=1 for same-day, 3 for backfill)
@@ -72,10 +96,13 @@ export async function fetchNFLScores(daysFrom = 1): Promise<OddsScore[]> {
   const res = await fetch(url);
   if (!res.ok) {
     const text = await res.text();
+    await recordRawResponse('scores', params, res.status, text);
     throw new Error(`Odds API scores ${res.status}: ${text}`);
   }
   await recordUsage(res);
-  return res.json();
+  const body = await res.json();
+  await recordRawResponse('scores', params, res.status, body);
+  return body;
 }
 
 export function extractFanduelSpread(g: OddsGame) {
