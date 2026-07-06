@@ -63,7 +63,7 @@ current status.
 | [ADR-0016](0016-non-scoring-rounds.md)                     | Non-scoring rounds (`weeks.is_scoring`) and ESPN preseason sourcing                   |
 | [ADR-0017](0017-client-data-cache.md)                      | Client-side stale-while-revalidate cache (TanStack Query) for read screens            |
 | [ADR-0018](0018-non-retroactive-drop-worst-week.md)        | Non-retroactive drop-worst-week scoping and standings reconciliation                  |
+| [ADR-0019](0019-pick-reveal-timing-model.md)               | Configurable pick-reveal timing model and counts-only status carve-out                |
 | [ADR-0020](0020-catch-up-mechanics.md)                     | Catch-up mechanics — recognition, not a scoring equalizer                             |
 
-_The numbering is sequential; the next ADR is 0021. (ADR-0019 is the concurrent
-pick-reveal-timing record, added by its own in-flight PR — #383.)_
+_The numbering is sequential; the next ADR is 0021._

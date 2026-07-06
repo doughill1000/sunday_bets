@@ -55,6 +55,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-03
 
+- **PR #384** Drop app-shell chrome on the auth screen — `/auth*` rendered the app logo
+  twice (persistent app-shell header + the auth card's own brand lockup from #373) and
+  surfaced primary nav links above the sign-in form. Now `/auth*` is a bare, centered
+  launch/login screen with a single brand lockup; authenticated routes are unchanged.
+  Presentational fix, no ADR. file: `src/routes/+layout.svelte`
 - **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now
   shows Apple's Share glyph (□↑) inline beside the word "Share" so non-technical
   iPhone users can find the action; adds an on-device iOS 16.4+ install→permission→push
