@@ -67,4 +67,3 @@ current status.
 | [ADR-0020](0020-catch-up-mechanics.md)                     | Catch-up mechanics — recognition, not a scoring equalizer                             |
 
 _The numbering is sequential; the next ADR is 0021._
->>>>>>> a80d7a1 (docs(adr): accept ADR-0019 for configurable pick-reveal timing model)
