@@ -48,11 +48,54 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#391** Backfill v2.8 CHANGELOG gaps — adds standalone entries for #302, PR #352,
+  PR #355, PR #356, PR #363, and PR #364 (missing from the v2.8 release rollup line)
+  and resolves the literal `PR #NNN` placeholder in the 2026-06-30 section to its real
+  number, `PR #354`. Docs-only.
+- **PR #409** Accept ADR-0023 (All-In signature moment) — flips ADR-0023 status
+  `Proposed` → `Accepted` and adds its `docs/adr/README.md` index row (missed by the
+  propose PR), clearing the ADR gate so #360's implementation (declarations view/RPC,
+  weight-scoped RLS, pgTAP, The Whale badge) can proceed in its own PR. Docs-only.
+  files: `docs/adr/0023-all-in-signature-moment.md`, `docs/adr/README.md` · ADR-0023
+- **PR #407** Propose ADR-0023: All-In as a signature moment — a locked All-In
+  (`weight='A'`) pick becomes visible to co-members immediately on lock (game + side/
+  team + weight), a narrow extension of ADR-0019's sealed-envelope boundary scoped to
+  All-In only; every other weight stays sealed until kickoff. Declaration is automatic
+  — locking an All-In _is_ the declaration, no opt-in gesture. Drops the originally
+  scoped per-season scarcity budget (the existing weekly cap is unchanged) and renames
+  the badge from "Guarantee" to **The Whale** (best All-In record, non-scoring, mirrors
+  ADR-0020's The Choker). Docs-only; implementation follows in a separate PR. file:
+  `docs/adr/0023-all-in-signature-moment.md` · ADR-0023 (extends ADR-0019)
+- **PR #404** Propose ADR-0021: caller-scoped standings RPC for non-web clients —
+  records the decision gating the mobile companion app (PR #394) graduating from
+  experiment to a supported client: since standings matviews are service-role only
+  (ADR-0013) and can't carry RLS, a backendless client must go through a single
+  `SECURITY DEFINER` RPC over the leaderboard matviews, filtered by
+  `auth.uid() → group_memberships`, with pgTAP cross-group-denial coverage. Gates
+  graduation only — PR #394 stays parked with its client-side mirror meanwhile.
+  Status: Proposed. Docs-only. file: `docs/adr/0021-caller-scoped-standings-rpc.md` ·
+  ADR-0021
+- **PR #403** Auto-union CHANGELOG.md merge conflicts — adds `.gitattributes`
+  (`docs/CHANGELOG.md merge=union`) so same-day changelog bullet collisions
+  auto-resolve instead of raising a manual merge conflict, automating the "keep both
+  entries" policy this file already documents (conflicts had hit #398, #399, and #402
+  this week). Config-only. file: `.gitattributes`
 - **#400** Over/Under (totals) market — **decision: deferred** for 2026, no code
   change. Records that head-to-head comparison forbids per-player market choice — the
   market must be a collective, group-level setting — and fixes the shape to adopt if it
   is ever built: a per-group, season-long spread-vs-totals mode. file:
   `docs/adr/0022-over-under-totals-market.md` · ADR-0022
+- **PR #401** Backfill missing CHANGELOG entry for PR #398 — PR #398 (ADR-0020, #109
+  catch-up mechanics) merged without a `docs/CHANGELOG.md` entry, tripping the
+  governance-freshness gate for every PR after it; the entry now lives above under
+  **#109**. Docs-only.
+- **#383** Accept ADR-0019 (configurable pick-reveal timing model) — adopts the
+  two-axis Sealed/Deadline/Open reveal-timing model conceptually while keeping Sealed
+  as the sole implemented default, codifies the non-retroactive invariant (mirrors
+  ADR-0018), and authorizes a narrow counts-only status carve-out (group-scoped,
+  `is_member()`-scoped, `security_invoker`, pgTAP-proven) for #388's who's-picked
+  status board. Mode granularity and market fit (CFB vs NFL) explicitly deferred.
+  Docs-only. file: `docs/adr/0019-pick-reveal-timing-model.md` · ADR-0019
 - **#397** Comeback & weekly honors — four non-scoring recognition badges (The
   Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
   reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
