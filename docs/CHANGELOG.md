@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#400** Over/Under (totals) market — **decision: deferred** for 2026, no code
+  change. Records that head-to-head comparison forbids per-player market choice — the
+  market must be a collective, group-level setting — and fixes the shape to adopt if it
+  is ever built: a per-group, season-long spread-vs-totals mode. file:
+  `docs/adr/0022-over-under-totals-market.md` · ADR-0022
 - **#397** Comeback & weekly honors — four non-scoring recognition badges (The
   Comeback, Week Winner, Best of the Rest, Cardiac) for trailing/mid-pack players,
   reusing `week_points`/`cumulative_rank_this_week` already fetched by every `/stats`
