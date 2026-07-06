@@ -1,6 +1,6 @@
 # ADR-0023: All-In as a signature moment — pre-kickoff declaration carve-out and The Whale title
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-06
 - Issue: #360
 - Supersedes: None (extends ADR-0019)

@@ -67,5 +67,6 @@ current status.
 | [ADR-0020](0020-catch-up-mechanics.md)                     | Catch-up mechanics — recognition, not a scoring equalizer                             |
 | [ADR-0021](0021-caller-scoped-standings-rpc.md)            | Caller-scoped `SECURITY DEFINER` standings RPC for non-web clients                    |
 | [ADR-0022](0022-over-under-totals-market.md)               | Over/Under (totals) market — deferred; per-group season mode if built                 |
+| [ADR-0023](0023-all-in-signature-moment.md)                | All-In as a signature moment — pre-kickoff declaration carve-out and The Whale title  |
 
-_The numbering is sequential; the next ADR is 0023._
+_The numbering is sequential; the next ADR is 0024._
