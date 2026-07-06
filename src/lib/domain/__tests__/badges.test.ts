@@ -403,6 +403,134 @@ describe('The Choker', () => {
   });
 });
 
+// --- The Whale ---
+
+describe('The Whale', () => {
+  it('awards the player with the best All-In win rate', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice' }),
+        totals({ user_id: 'u2', display_name: 'Bob' })
+      ],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 3,
+          losses: 1,
+          decisions: 4
+        }),
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Bob',
+          weight: 'A',
+          wins: 1,
+          losses: 3,
+          decisions: 4
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'the-whale');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('respects WHALE_MIN_ALLINS — a 1-for-1 player is not crowned', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice' })],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 1,
+          losses: 0,
+          decisions: 1
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-whale');
+  });
+
+  it('breaks ties by higher All-In decision count, then alphabetically', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara' }),
+        totals({ user_id: 'u2', display_name: 'Alice' })
+      ],
+      weightAccuracy: [
+        // Both 100% win rate; Zara has more decisions → wins the Whale
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Zara',
+          weight: 'A',
+          wins: 4,
+          losses: 0,
+          decisions: 4
+        }),
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 3,
+          losses: 0,
+          decisions: 3
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'the-whale');
+    expect(badge?.holders[0].display_name).toBe('Zara');
+  });
+
+  it('is not awarded when nobody meets the minimum-sample guard', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals()],
+      weightAccuracy: [
+        weightEntry({ weight: 'A', wins: 2, losses: 0, decisions: 2 }),
+        weightEntry({ weight: 'L', wins: 10, losses: 0, decisions: 10 })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-whale');
+  });
+
+  it('lets The Whale (best) and The Choker (worst) co-hold in the same season', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice' }),
+        totals({ user_id: 'u2', display_name: 'Bob' })
+      ],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 4,
+          losses: 0,
+          decisions: 4
+        }),
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Bob',
+          weight: 'A',
+          wins: 0,
+          losses: 4,
+          decisions: 4
+        })
+      ]
+    };
+    const badges = computeBadges(inputs);
+    const whale = badges.find((b) => b.id === 'the-whale');
+    const choker = badges.find((b) => b.id === 'the-choker');
+    expect(whale?.holders[0].user_id).toBe('u1');
+    expect(choker?.holders[0].user_id).toBe('u2');
+  });
+});
+
 // --- The Ghost ---
 
 describe('The Ghost', () => {

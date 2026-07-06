@@ -213,6 +213,14 @@ const SAMPLE_FRACTION = 0.35;
 const BIG_GAME_WIN_THRESHOLD = 3;
 
 /**
+ * Minimum graded All-In decisions (wins + losses) for The Whale to be eligible.
+ * A small fixed guard, not the season-scaled `computeSampleGuard` — All-Ins are
+ * capped at ~17/season (one per week), so the 35%-of-average guard used for other
+ * accuracy titles would be far too strict for this stat.
+ */
+export const WHALE_MIN_ALLINS = 3;
+
+/**
  * Season-scaled minimum decisions for accuracy-based title eligibility.
  * Scales with average league activity; floor is MIN_SAMPLE_DECISIONS.
  */
@@ -311,6 +319,29 @@ function theChoker(weights: BadgeWeightEntry[]): BadgeHolder | null {
         if (curr.decisions === worst.decisions) return alphaFirst(curr, worst);
       }
       return worst;
+    })
+  );
+}
+
+/**
+ * The Whale: best All-In win rate above a minimum-sample guard (ADR-0023 Decision
+ * point 6). Positive mirror of {@link theChoker} — reduces to the *best* rate instead
+ * of the worst, and requires `guard` graded All-In decisions (`WHALE_MIN_ALLINS`) to
+ * suppress a 1-for-1 fluke, since The Choker has no such guard.
+ */
+function theWhale(weights: BadgeWeightEntry[], guard: number): BadgeHolder | null {
+  const allins = weights.filter((w) => w.weight === 'A' && w.wins + w.losses >= guard);
+  if (allins.length === 0) return null;
+  return holder(
+    allins.reduce((best, curr) => {
+      const currRate = curr.wins / (curr.wins + curr.losses);
+      const bestRate = best.wins / (best.wins + best.losses);
+      if (currRate > bestRate) return curr;
+      if (currRate === bestRate) {
+        if (curr.decisions > best.decisions) return curr;
+        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+      }
+      return best;
     })
   );
 }
@@ -751,6 +782,12 @@ const FLAVORS: Record<
     flavor: 'Went all in… and all in went wrong.',
     description: 'Worst win rate on All-In picks this season.'
   },
+  'the-whale': {
+    label: 'The Whale',
+    emoji: '🐳',
+    flavor: 'Goes big and cashes — the house pays this one.',
+    description: 'Best win rate on All-In picks this season (minimum number of All-Ins required).'
+  },
   'the-ghost': {
     label: 'The Ghost',
     emoji: '👻',
@@ -876,6 +913,7 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'the-grinder', kind: 'title' },
   { id: 'the-sharp', kind: 'title' },
   { id: 'the-choker', kind: 'title' },
+  { id: 'the-whale', kind: 'title' },
   { id: 'the-ghost', kind: 'title' },
   { id: 'the-nemesis', kind: 'title' },
   { id: 'the-homer', kind: 'title' },
@@ -940,6 +978,9 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
 
   const choker = theChoker(weightAccuracy);
   if (choker) badges.push(award('the-choker', 'title', [choker]));
+
+  const whale = theWhale(weightAccuracy, WHALE_MIN_ALLINS);
+  if (whale) badges.push(award('the-whale', 'title', [whale]));
 
   const ghost = theGhost(seasonTotals);
   if (ghost) badges.push(award('the-ghost', 'title', [ghost]));
