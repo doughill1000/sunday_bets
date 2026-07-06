@@ -82,6 +82,8 @@ function trend(overrides: Partial<BadgeTrendEntry> = {}): BadgeTrendEntry {
     week_wins: 3,
     week_losses: 0,
     week_missed: 0,
+    week_points: 10,
+    cumulative_rank_this_week: 1,
     ...overrides
   };
 }
@@ -926,7 +928,9 @@ describe('badgeInputsFromSeasonStats', () => {
         week_number: 1,
         week_wins: 3,
         week_losses: 0,
-        week_missed: 0
+        week_missed: 0,
+        week_points: 5,
+        cumulative_rank_this_week: 1
       }
     ]);
     expect(inputs.consensus).toEqual([
@@ -1767,5 +1771,508 @@ describe('Tier-C and Tier-A badges coexist', () => {
     expect(awarded).toContain('the-grinder');
     expect(awarded).toContain('lone-wolf');
     expect(awarded).toContain('hot-hand');
+  });
+});
+
+// --- The Comeback (#397, season-end) ---
+
+describe('The Comeback', () => {
+  it('awards the biggest climb from a low point to the final rank, season complete', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 5
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 1
+        }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, cumulative_rank_this_week: 2 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 3, cumulative_rank_this_week: 2 })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'the-comeback');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded mid-season (seasonComplete=false)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 5
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs, false))).not.toContain('the-comeback');
+  });
+
+  it('is not awarded when nobody climbed (final rank never beats the low point)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 3
+        }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, cumulative_rank_this_week: 2 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, cumulative_rank_this_week: 3 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 3, cumulative_rank_this_week: 4 })
+      ]
+    };
+    expect(ids(computeBadges(inputs, true))).not.toContain('the-comeback');
+  });
+
+  it('breaks ties alphabetically by display_name', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Zara',
+          week_number: 1,
+          cumulative_rank_this_week: 6
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Zara',
+          week_number: 2,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 5
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'the-comeback');
+    expect(badge?.holders[0].display_name).toBe('Alice');
+  });
+});
+
+// --- Week Winner (#397) ---
+
+describe('Week Winner', () => {
+  it('awards the player who led weekly scoring in the most weeks', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, week_points: 10 }),
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 2, week_points: 5 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, week_points: 15 }),
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 3, week_points: 30 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 3, week_points: 0 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('breaks a tie in weeks-led count alphabetically', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({ user_id: 'u1', display_name: 'Zara', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u2', display_name: 'Alice', week_number: 1, week_points: 10 }),
+        trend({ user_id: 'u1', display_name: 'Zara', week_number: 2, week_points: 5 }),
+        trend({ user_id: 'u2', display_name: 'Alice', week_number: 2, week_points: 25 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
+    expect(badge?.holders[0].display_name).toBe('Alice');
+  });
+
+  it('breaks a within-week points tie alphabetically before tallying', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 1, week_points: 20 })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
+    expect(badge?.holders[0].display_name).toBe('Alice');
+  });
+
+  it('is not awarded when there are no trend rows', () => {
+    expect(ids(computeBadges(EMPTY))).not.toContain('week-winner');
+  });
+});
+
+// --- Best of the Rest (#397, milestone) ---
+
+describe('Best of the Rest', () => {
+  it('awards a player who topped a week while in the bottom half of the standings', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Bob',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u3',
+          display_name: 'Carol',
+          week_number: 1,
+          week_points: 20,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u4',
+          display_name: 'Dave',
+          week_number: 1,
+          week_points: 0,
+          cumulative_rank_this_week: 4
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'best-of-the-rest');
+    expect(badge?.holders.map((h) => h.user_id)).toEqual(['u3']);
+  });
+
+  it('is not awarded when the week top scorer is in the top half', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          week_points: 20,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Bob',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u3',
+          display_name: 'Carol',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u4',
+          display_name: 'Dave',
+          week_number: 1,
+          week_points: 0,
+          cumulative_rank_this_week: 4
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('best-of-the-rest');
+  });
+
+  it('on a tie for the top score, only the bottom-half player qualifies', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u_top',
+          display_name: 'Top',
+          week_number: 1,
+          week_points: 15,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u_mid1',
+          display_name: 'Mid1',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u_mid2',
+          display_name: 'Mid2',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u_bottom',
+          display_name: 'Bottom',
+          week_number: 1,
+          week_points: 15,
+          cumulative_rank_this_week: 4
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'best-of-the-rest');
+    expect(badge?.holders.map((h) => h.user_id)).toEqual(['u_bottom']);
+  });
+
+  it('deduplicates a player who qualifies in more than one week', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          week_points: 20,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Bob',
+          week_number: 1,
+          week_points: 5,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          week_points: 25,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u2',
+          display_name: 'Bob',
+          week_number: 2,
+          week_points: 0,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    const badge = computeBadges(inputs).find((b) => b.id === 'best-of-the-rest');
+    expect(badge?.holders).toHaveLength(1);
+  });
+});
+
+// --- Cardiac (#397, season-end) ---
+
+describe('Cardiac', () => {
+  it('awards a player who first reaches sole 1st in the final week', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 4,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 5,
+          cumulative_rank_this_week: 1
+        }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 3, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 4, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 5, cumulative_rank_this_week: 2 })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'cardiac');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('also awards when sole possession was first taken the week before the finale', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 4,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 5,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    const badge = computeBadges(inputs, true).find((b) => b.id === 'cardiac');
+    expect(badge?.holders[0].user_id).toBe('u1');
+  });
+
+  it('is not awarded when the final week is tied at 1st (no sole possession)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 1
+        }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, cumulative_rank_this_week: 1 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, cumulative_rank_this_week: 1 })
+      ]
+    };
+    expect(ids(computeBadges(inputs, true))).not.toContain('cardiac');
+  });
+
+  it('is not awarded when the eventual leader was already leading earlier', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 1
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 4,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 5,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs, true))).not.toContain('cardiac');
+  });
+
+  it('is not awarded mid-season (seasonComplete=false)', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 1,
+          cumulative_rank_this_week: 3
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 2,
+          cumulative_rank_this_week: 2
+        }),
+        trend({
+          user_id: 'u1',
+          display_name: 'Alice',
+          week_number: 3,
+          cumulative_rank_this_week: 1
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs, false))).not.toContain('cardiac');
   });
 });
