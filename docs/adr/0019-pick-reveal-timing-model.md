@@ -70,11 +70,20 @@ model) that future features will build against.
      enforced at the view/RLS layer, not the client.
    - Scoped to members of the same group via `is_member(group_id)` (ADR-0002); a
      member of multiple groups sees a separate per-group roster.
-   - `security_invoker = on` so the caller's own RLS on `picks` applies — the view
-     adds no privilege the caller doesn't already have on the underlying rows it
-     counts.
+   - Implemented as a `SECURITY DEFINER` RPC that re-imposes the `is_member()` gate
+     and projects **counts only** — not a `security_invoker` view. A security-invoker
+     view cannot satisfy this carve-out: base-table `picks` RLS
+     (`sel_picks_owner_or_started`) hides a co-member's picks until each game starts,
+     so under the caller's own RLS every co-member's pre-kickoff count reads as zero —
+     the opposite of the board's purpose. The RPC bypasses base-table RLS to count,
+     then re-gates on group membership and exposes no pick-level column, so it adds no
+     ability to read any _pick_ the caller couldn't already read — only the aggregate
+     count. This is the same mechanism and safety argument as ADR-0023's
+     `all_in_declarations`, applied here to counts instead of `weight='A'` rows; the
+     `sel_picks_owner_or_started` guarantee for pick content stays structurally intact
+     (see #388).
    - Proven by pgTAP: non-member denied; member sees counts only; no pick rows, no
-     side/team/weight columns, regardless of kickoff status.
+     side/team/weight/game columns, regardless of kickoff status.
      This is the only reveal-adjacent exposure this ADR authorizes before Deadline/Open
      modes are built. It does not imply or authorize showing pick content, side, or game
      identity pre-kickoff.

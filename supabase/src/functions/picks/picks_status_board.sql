@@ -1,0 +1,81 @@
+-- file: supabase/functions/picks_status_board.sql
+--
+-- ADR-0019 Decision point 6 (counts-only status carve-out): the group-visible
+-- "who's picked" status board.
+--
+-- Returns, per ACTIVE member of one group for one week, how many games that member
+-- has locked a pick on versus how many games the week has (e.g. 9/13) plus a
+-- completion flag -- COUNTS ONLY. No game identity, side, team, or weight is exposed,
+-- so nothing about *what* anyone picked is derivable pre-kickoff. This is metadata
+-- about *whether* someone picked, which ADR-0019 explicitly carves out of the
+-- sealed-envelope reveal.
+--
+-- Why a SECURITY DEFINER function and not a security_invoker view: base-table picks
+-- RLS (sel_picks_owner_or_started) hides a co-member's picks until each game starts,
+-- so under the caller's own RLS every co-member's pre-kickoff count would read as
+-- zero -- the opposite of this board's purpose. This function instead bypasses
+-- base-table RLS to count, then re-imposes an is_member() membership gate and exposes
+-- no pick-level column. It grants no ability to read any *pick* the caller couldn't
+-- already read -- only the aggregate count. Same mechanism and safety argument as
+-- all_in_declarations (ADR-0023); the sel_picks_owner_or_started guarantee for pick
+-- content stays structurally intact.
+--
+-- is_member(p_group_id) keys off auth.uid() (unaffected by SECURITY DEFINER), so a
+-- non-member caller receives zero rows. games_available matches the picks page's own
+-- "{saved}/{games.length}" denominator: every game in the week (ui_games shows all).
+create or replace function public.picks_status_board(
+  p_group_id uuid,
+  p_week_id  integer
+)
+returns table (
+  group_id uuid,
+  user_id uuid,
+  display_name text,
+  avatar_key text,
+  picks_made integer,
+  games_available integer,
+  is_complete boolean
+)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  with slate as (
+    select count(*)::integer as games_available
+    from public.games g
+    where g.week_id = p_week_id
+  ),
+  member_counts as (
+    select p.user_id, count(*)::integer as picks_made
+    from public.picks p
+    join public.games g on g.id = p.game_id
+    where p.group_id = p_group_id
+      and g.week_id = p_week_id
+    group by p.user_id
+  )
+  select
+    p_group_id as group_id,
+    u.id as user_id,
+    u.display_name,
+    u.avatar_key,
+    coalesce(mc.picks_made, 0) as picks_made,
+    s.games_available,
+    (s.games_available > 0 and coalesce(mc.picks_made, 0) >= s.games_available) as is_complete
+  from public.group_memberships gm
+  join public.users u on u.id = gm.user_id
+  cross join slate s
+  left join member_counts mc on mc.user_id = gm.user_id
+  where gm.group_id = p_group_id
+    and gm.status = 'active'
+    and public.is_member(p_group_id);
+$$;
+
+comment on function public.picks_status_board(uuid, integer) is
+  'ADR-0019 counts-only status board: per active group member for a week, picks_made / games_available / is_complete (counts only, no side/team/weight/game). SECURITY DEFINER + is_member() gate; base-table picks RLS is untouched so no pick content is revealed pre-kickoff. See docs/adr/0019-pick-reveal-timing-model.md.';
+
+-- Closed-by-default (ADR-0011): the baseline revokes EXECUTE from PUBLIC; this
+-- read-only RPC self-grants in its own source file, per house convention
+-- (cf. all_in_declarations.sql, unlock_pick.sql, set_active_line.sql).
+revoke all on function public.picks_status_board(uuid, integer) from public, anon;
+grant execute on function public.picks_status_board(uuid, integer) to authenticated, service_role;

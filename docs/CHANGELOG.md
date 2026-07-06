@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **#388** Who's-picked status board — group-visible, **counts-only** pick status for
+  the active week: each active member's picks-made-vs-available count (e.g. 9/13) plus
+  a done/pending flag, never any pick content. A `SECURITY DEFINER` RPC re-imposes the
+  `is_member()` gate and projects counts only, so co-member counts show pre-kickoff
+  while base-table picks RLS keeps pick content sealed (same mechanism as ADR-0023's
+  all-in surface). function: `picks_status_board` · component: `PicksStatusBoard.svelte`
+  · route: `/picks` · ADR-0019
 - **PR #410** Skip unit/build/smoke for docs-only PRs — adds a `detect-changes` job
   (the `dorny/paths-filter` pattern already used by `ci-pgtap.yml` /
   `ci-migration-verify.yml`) to `ci-tests.yml` and `playwright.yml`; `unit`, `build`,
