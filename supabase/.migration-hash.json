@@ -746,5 +746,11 @@
     "hash": "58d314b69a1d5eb3fd56eae712d5058690ff100c303647108412af3d921d40fd",
     "migration": "20260706195657_odds_api_responses.sql",
     "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
+  },
+  "functions/picks/all_in_declarations.sql": {
+    "hash": "bd82f292001990588627ef37de5380b0590ac80d7a3ec959197ddad5236d6ebb",
+    "signature": "public.all_in_declarations(uuid, integer)",
+    "migration": "20260706204204_add_all_in_declarations.sql",
+    "migrationHash": "96446d09aea67a6d9a70b854864079e7efea957d0decff96bdd2495d1d0a60c0"
   }
 }

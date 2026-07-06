@@ -29,6 +29,7 @@ export type BadgeId =
   | 'the-grinder'
   | 'the-sharp'
   | 'the-choker'
+  | 'the-whale'
   | 'the-ghost'
   | 'the-nemesis'
   | 'the-homer'
