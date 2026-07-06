@@ -1762,6 +1762,23 @@ export type Database = {
         Returns: undefined;
       };
       advance_week_if_complete: { Args: never; Returns: Json };
+      all_in_declarations: {
+        Args: { p_group_id: string; p_week_id: number };
+        Returns: {
+          avatar_key: string;
+          commence_time: string;
+          display_name: string;
+          game_id: string;
+          group_id: string;
+          locked_at: string;
+          picked_side: Database['public']['Enums']['side_enum'];
+          picked_team_id: number;
+          picked_team_short: string;
+          user_id: string;
+          week_id: number;
+          weight: Database['public']['Enums']['weight_enum'];
+        }[];
+      };
       ats_margin_at_lock: {
         Args: {
           away_id: number;
