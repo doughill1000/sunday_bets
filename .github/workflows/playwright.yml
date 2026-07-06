@@ -18,7 +18,27 @@ permissions:
 # stack (~2× CI minutes); sharing a build artifact / sharding is a later option.
 
 jobs:
+  # Docs-only PRs (ADRs, README, CHANGELOG, etc.) don't need a browser-driven run
+  # against the app. `code` is true if ANY changed file falls outside docs/** and
+  # *.md, so new code directories are covered without needing to enumerate them here.
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!docs/**'
+              - '!**/*.md'
+
   smoke:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
@@ -107,7 +127,27 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
+  # Wrapper job so the required-status-check name ("smoke-result") still reports
+  # even when `smoke` is skipped — mirrors pgTap-result / verify-result /
+  # dry-run-result rather than relying on GitHub treating a skipped job as a
+  # passing required check.
+  smoke-result:
+    needs: smoke
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.smoke.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
   full:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code == 'true'
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
