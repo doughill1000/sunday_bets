@@ -46,6 +46,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-06
+
+- **PR #396** Release v2.9.0 — version bump for the v2.9 milestone: All-time (career)
+  group leaderboard (#376), broken signup/reset confirmation email links + check-email
+  UX (#367/#368), and the iOS Share glyph install-banner polish (#380/#385). No app
+  behavior change beyond what those PRs already shipped. file: `package.json`
+
 ## 2026-07-03
 
 - **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now
