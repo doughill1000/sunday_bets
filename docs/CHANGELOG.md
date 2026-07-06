@@ -46,6 +46,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-05
+
+- **PR #393** 2026 pre-season roadmap refresh — replaces `ROADMAP.md`'s stale release-direction table (still showed v1.9 as "Now") with the shipped v2.x history and the pre-season sequencing from the 2026-07-05 backlog review: v2.9 reveal ritual (#383/#359) → v2.10 All-In moment + season readiness → v2.11 Sunday live layer (#386/#388/#389) → v2.12 league history layer (#387/#361) → season-end shareable Wrapped (#348); reframes the product boundary per #383 (the app is the memory/scoreboard/referee that feeds the chat). Board changes landed alongside the PR: issues #386–#392 opened (#390 then closed and #391/#392 re-scoped to their remaining slivers once the PR #379 overlap surfaced), #230 closed as superseded by #383, milestone v2.8 closed, v2.12 created. files: `ROADMAP.md`
+
 ## 2026-07-03
 
 - **#380** Sharpen iOS install onboarding — the `install-ios` engagement banner now

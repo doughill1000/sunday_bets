@@ -55,9 +55,10 @@ Deadline/Open remain future modes, not 2026 builds.
 
 Elevate the All-In into a public, scarce, on-the-record declaration with the
 "Guarantee" badge (#360, ADR-gated). Alongside it, the pre-kickoff readiness patches:
-staging-clone release gating (#390), governance freshness and its CI gate (#391),
-single-owner RLS source (#392), raw Odds payload persistence for dispute resolution
-(#382), and Sentry cron missed-run monitors (#206).
+the changelog repair (#391), the set-based RLS-enabled pgTAP guard (#392), raw Odds
+payload persistence for dispute resolution (#382), and Sentry cron missed-run
+monitors (#206). The 2026-07-02 audit's bigger fixes — staging-clone release gating
+and the single-owner RLS collapse — already shipped in PR #379.
 
 ## Planned
 
