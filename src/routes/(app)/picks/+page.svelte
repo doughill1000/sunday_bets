@@ -15,6 +15,7 @@
   week={data.week}
   social={data.social}
   groupPicks={data.groupPicks}
+  allInDeclarations={data.allInDeclarations}
   userId={data.userId}
   currentUserDisplayName={data.currentUserDisplayName}
   isLastWeek={data.isLastWeek}

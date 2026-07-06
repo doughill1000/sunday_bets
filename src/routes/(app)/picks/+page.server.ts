@@ -6,6 +6,7 @@ import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
 import { getReactionsForGames } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
+import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
@@ -57,6 +58,7 @@ async function loadPicks(
       picks: {},
       social: {},
       groupPicks: [],
+      allInDeclarations: [],
       userId,
       currentUserDisplayName,
       isLastWeek: false,
@@ -64,10 +66,11 @@ async function loadPicks(
       membershipCount
     };
 
-  const [games, picks, groupPicks, gameplay, lastWeek] = await Promise.all([
+  const [games, picks, groupPicks, allInDeclarations, gameplay, lastWeek] = await Promise.all([
     getActiveWeekGames(),
     getMyPicks(event, week.id, groupId),
     getGroupPicks(event, week.id, groupId),
+    getAllInDeclarations(event, week.id, groupId),
     getGameplaySettings(),
     isLastWeekOfSeason(week.week_number, week.season_id)
   ]);
@@ -97,6 +100,7 @@ async function loadPicks(
     picks,
     social,
     groupPicks,
+    allInDeclarations,
     userId,
     currentUserDisplayName,
     isLastWeek: lastWeek,

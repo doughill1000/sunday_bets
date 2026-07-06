@@ -9,6 +9,7 @@
   import GameCard from './GameCard.svelte';
   import PicksSummaryBar from './PicksSummaryBar.svelte';
   import LockedPicksSection from './LockedPicksSection.svelte';
+  import AllInDeclarations from './AllInDeclarations.svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
   import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
@@ -21,6 +22,7 @@
     initialPicks?: Record<string, PickEntry>;
     social?: Record<string, SocialData>;
     groupPicks?: GroupPickEntry[];
+    allInDeclarations?: GroupPickEntry[];
     userId?: string | null;
     currentUserDisplayName?: string | null;
     isLastWeek?: boolean;
@@ -33,6 +35,7 @@
     initialPicks = {},
     social = {},
     groupPicks = [],
+    allInDeclarations = [],
     userId = null,
     currentUserDisplayName = null,
     isLastWeek = false,
@@ -119,6 +122,8 @@
   </Alert>
 {:else}
   <PicksSummaryBar {games} {now} />
+
+  <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
 
   {#if upcoming.length === 0}
     <Alert class="mt-4">
