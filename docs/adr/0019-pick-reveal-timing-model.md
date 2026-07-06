@@ -141,3 +141,8 @@ model) that future features will build against.
 - Deadline/Open mode implementation — blocked on resolving mode granularity and
   market fit (see Explicitly deferred, above); track as a separate future issue when
   prioritized.
+- ADR-0023 (#360, All-In signature moment) authorizes a **narrow extension** of this
+  reveal boundary: a locked `weight='A'` (All-In) pick is shown to co-members
+  pre-kickoff as a public declaration. That extension is scoped to All-In picks only;
+  the sealed guarantee for every other weight (L/M/H) — and the counts-only carve-out in
+  Decision point 6 — is unchanged.
