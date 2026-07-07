@@ -46,7 +46,13 @@ param(
   [switch] $NoInstall
 )
 
-$ErrorActionPreference = 'Stop'
+# Deliberately NOT 'Stop'. git/pnpm write progress to stderr; if a caller runs this script
+# under `2>&1` (e.g. to trim output), PowerShell 5.1 wraps that benign stderr as an
+# ErrorRecord that 'Stop' turns into a terminating error — aborting right after
+# `git worktree add`, before the env-copy and install steps run. We guard every native
+# call explicitly via $LASTEXITCODE + `throw` below (throw terminates regardless of this
+# preference), so real failures still stop the script whether or not the caller redirects.
+$ErrorActionPreference = 'Continue'
 
 # Repo root is the parent of this script's directory (<root>/scripts/..).
 $root = Split-Path $PSScriptRoot -Parent
@@ -69,7 +75,7 @@ $copied = 0
 Get-ChildItem -Path $root -Filter '.env*' -File -Force |
   Where-Object { $_.Name -ne '.env.example' } |
   ForEach-Object {
-    Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $Path $_.Name) -Force
+    Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $Path $_.Name) -Force -ErrorAction Stop
     Write-Host "    + $($_.Name)"
     $copied++
   }

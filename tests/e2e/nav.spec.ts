@@ -1,19 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-// Primary navigation after the #305 IA refactor: four first-class tabs
-// (Picks · Leaderboard · Stats · Group). The desktop inline nav and the mobile
-// bottom tab bar render the same four destinations; League Honors now lives on
-// /group and is gone from /stats.
+// Primary navigation: five first-class tabs (Picks · Leaderboard · Stats · Group ·
+// League). The desktop inline nav and the mobile bottom tab bar render the same five
+// destinations. (League — league-wide team ATS trends — was added by #406; League Honors
+// still lives on /group and is gone from /stats.)
 
 const TABS = [
   { href: '/picks', name: 'Picks' },
   { href: '/leaderboard', name: 'Leaderboard' },
   { href: '/stats', name: 'Stats' },
-  { href: '/group', name: 'Group' }
+  { href: '/group', name: 'Group' },
+  { href: '/league', name: 'League' }
 ] as const;
 
 test(
-  'desktop nav exposes all four tabs and each navigates',
+  'desktop nav exposes all five tabs and each navigates',
   { tag: '@smoke' },
   async ({ page }) => {
     await page.goto('/picks');
@@ -31,7 +32,7 @@ test(
   }
 );
 
-test('mobile bottom tab bar exposes all four tabs', async ({ page }) => {
+test('mobile bottom tab bar exposes all five tabs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/picks');
 

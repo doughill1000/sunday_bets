@@ -16,6 +16,16 @@ See `AGENTS.md` for the top-level index, conventions, and delivery workflow.
 | [ui.md](ui.md)             | Vendored shadcn-svelte restrictions, Svelte 5 runes, Tailwind, demo seed    |
 | [testing.md](testing.md)   | Four test layers, CI gate, lint-not-in-CI gotcha, mock fragility            |
 
+## Recipes
+
+Where packs own a single topic's _rules_, [recipes](recipes/README.md) are
+end-to-end, multi-pack _procedures_ — ordered checklists for a recurring kind of
+change that spans several packs. They follow the same link-not-copy rule below.
+
+- [recipes/materialized-read-surface.md](recipes/materialized-read-surface.md) — a
+  read-only surface backed by a matview refreshed on grading (DB → query → cache →
+  route → nav).
+
 ## The link-not-copy rule
 
 When a pack needs to reference a fact that lives elsewhere (README migration flow,

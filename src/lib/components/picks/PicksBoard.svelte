@@ -2,7 +2,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { providePicksStore } from '$lib/stores/picks';
   import { favoriteSide } from '$lib/domain/spread';
+  import { buildSituationalLookup } from '$lib/utils/leagueNugget';
   import type { PickGame } from '$lib/types/games';
+  import type { LeagueSituationalRecord } from '$lib/types/server/league';
   import type { PickEntry, GroupPickEntry, PickStatusBoardEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
@@ -30,6 +32,8 @@
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
     membershipCount?: number;
+    situational?: LeagueSituationalRecord[];
+    showTrends?: boolean;
   }
   let {
     week = null,
@@ -43,8 +47,13 @@
     currentUserDisplayName = null,
     isLastWeek = false,
     finalWeekUnlimitedAllin = true,
-    membershipCount = 1
+    membershipCount = 1,
+    situational = [],
+    showTrends = false
   }: Props = $props();
+
+  // Index the season's situational ATS rows once; each GameCard looks up its two quadrants.
+  const trendLookup = $derived(showTrends ? buildSituationalLookup(situational) : null);
 
   // Pre-stage only the spread favorite (no weight), so agreeing with the favorite
   // is a single tap (the weight) and the underdog is two. A staged team alone never
@@ -154,7 +163,14 @@
     <div class="picks-board mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
         <div id="game-{g.id}">
-          <GameCard game={g} {games} {initialized} {isLastWeek} {finalWeekUnlimitedAllin} />
+          <GameCard
+            game={g}
+            {games}
+            {initialized}
+            {isLastWeek}
+            {finalWeekUnlimitedAllin}
+            {trendLookup}
+          />
         </div>
       {/each}
     </div>

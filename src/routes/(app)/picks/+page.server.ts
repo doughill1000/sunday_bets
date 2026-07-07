@@ -8,6 +8,8 @@ import { getReactionsForGames } from '$lib/server/db/queries/getReactionsForGame
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
 import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
+import { getLeagueSituational } from '$lib/server/db/queries/league';
+import type { LeagueSituationalRecord } from '$lib/types/server/league';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
@@ -42,6 +44,10 @@ async function loadPicks(
 ) {
   const membershipCount = memberships.length;
 
+  // Per-user opt-out (default on) for the pick-card ATS trend nugget (issue #406 PR 2).
+  // Rides the cached users profile, so it's read straight off locals — no extra query.
+  const showTrends = event.locals.userProfile?.showTeamTrends ?? true;
+
   const displayNameResult = userId
     ? await event.locals.supabase
         .from('users')
@@ -65,19 +71,33 @@ async function loadPicks(
       currentUserDisplayName,
       isLastWeek: false,
       finalWeekUnlimitedAllin: true,
-      membershipCount
+      membershipCount,
+      situational: [] as LeagueSituationalRecord[],
+      showTrends
     };
 
-  const [games, picks, groupPicks, allInDeclarations, pickStatusBoard, gameplay, lastWeek] =
-    await Promise.all([
-      getActiveWeekGames(),
-      getMyPicks(event, week.id, groupId),
-      getGroupPicks(event, week.id, groupId),
-      getAllInDeclarations(event, week.id, groupId),
-      getPicksStatusBoard(event, week.id, groupId),
-      getGameplaySettings(),
-      isLastWeekOfSeason(week.week_number, week.season_id)
-    ]);
+  const [
+    games,
+    picks,
+    groupPicks,
+    allInDeclarations,
+    pickStatusBoard,
+    gameplay,
+    lastWeek,
+    situational
+  ] = await Promise.all([
+    getActiveWeekGames(),
+    getMyPicks(event, week.id, groupId),
+    getGroupPicks(event, week.id, groupId),
+    getAllInDeclarations(event, week.id, groupId),
+    getPicksStatusBoard(event, week.id, groupId),
+    getGameplaySettings(),
+    isLastWeekOfSeason(week.week_number, week.season_id),
+    // Season-scoped, group-independent; only fetched when the nugget is enabled.
+    showTrends
+      ? event.locals.getCurrentSeasonYear().then((year) => getLeagueSituational(year))
+      : Promise.resolve<LeagueSituationalRecord[]>([])
+  ]);
 
   // Load comments and reactions for started games only (RLS also enforces this gate).
   // Two batched queries (one per table) instead of a per-game N+1.
@@ -110,6 +130,8 @@ async function loadPicks(
     currentUserDisplayName,
     isLastWeek: lastWeek,
     finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin,
-    membershipCount
+    membershipCount,
+    situational,
+    showTrends
   };
 }

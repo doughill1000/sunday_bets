@@ -22,4 +22,6 @@
   isLastWeek={data.isLastWeek}
   finalWeekUnlimitedAllin={data.finalWeekUnlimitedAllin}
   membershipCount={data.membershipCount}
+  situational={data.situational}
+  showTrends={data.showTrends}
 />

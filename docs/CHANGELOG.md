@@ -48,6 +48,31 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#406** League ATS trends (PR 2 of 2) — the pick-card **ATS trend nugget**: each upcoming
+  game card shows one muted line per team with that team's record against the spread in this
+  game's exact situation (home/away × favorite/underdog, e.g. "6-2 ATS as home favorite
+  (n=8)"), omitted for pick'ems or below a small sample threshold. A per-user **Settings
+  toggle** ("Show team trends on picks", default on) hides it. Reads the shared
+  `league_ats_base` matview through a new `league_ats_situational` view — the tab and the
+  nugget never compute cover math two ways. view: `league_ats_situational` · column:
+  `users.show_team_trends` · files: `picks/GameCard.svelte` · `utils/leagueNugget.ts` ·
+  ADR-0013 · ADR-0002. Closes #406. Also folds in agent-DX follow-ups to PR #421: hardened
+  `new-worktree.ps1` (no longer aborts before env-copy/install under a caller's `2>&1`), a
+  single-pgTAP-file note in `testing.md`, and a `per-user-profile-preference` recipe.
+- **PR #421** Agent-DX doc & tooling fixes (issue-less chore) — documented three gaps
+  hit while building #406: worktrees can't prod-clone (`db:reset:local` / `cloneDb.ts`
+  need `SUPABASE_DB_URL_PROD`, absent from worktree `.env*`) and the migration
+  generator's emit order (alphabetical within folder; views before functions), and
+  added a `docs/agent-context/recipes/` subfolder for end-to-end procedures with a
+  materialized-read-surface recipe. files: `db-migration` skill · `database.md` ·
+  `cloneDb.ts` · `.env.example` · `recipes/`
+- **#406** League ATS trends (PR 1 of 2) — new top-level **League** tab (5th nav tab,
+  `/league`) showing league-wide, spreads-only NFL team performance against the spread:
+  favorite/underdog cover %, a sortable per-team ATS table with home/away + favorite/underdog
+  splits, and league home/away splits. Descriptive and group-independent (identical for
+  every user), served from a service-role matview refreshed on the existing grading run.
+  matview + views: `league_ats_base` · `league_ats_team` · `league_ats_fav_dog` ·
+  `league_ats_home_away` · route: `/league` · ADR-0013 · ADR-0002
 - **#416** AI badge-voice override — each **crowned** season badge now shows a
   personalized, AI-generated one-liner (naming the holder and the stat that earned it)
   overriding the static tagline; the award stays deterministic and any gateway
