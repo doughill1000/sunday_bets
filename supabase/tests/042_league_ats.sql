@@ -4,6 +4,7 @@
 --   public.league_ats_team       (plain view over base)
 --   public.league_ats_fav_dog    (plain view over base)
 --   public.league_ats_home_away  (plain view over base)
+--   public.league_ats_situational (plain view over base -- pick-card nugget, issue #406 PR 2)
 --
 -- Verifies:
 --   1. Structural: base is a matview with the unique index REFRESH ... CONCURRENTLY needs;
@@ -18,6 +19,9 @@
 --   6. Line selection: the closing line is preferred over a divergent active line, and a
 --      historical-style single active line (no closing flag) still qualifies (the 2022-24
 --      import path).
+--   7. league_ats_situational (PR 2): the crossed home/away x favorite/underdog quadrants
+--      read correctly (a home-favorite and an away-favorite quadrant), and a pick'em-only
+--      team has no quadrant row (is_favorite null is excluded).
 --
 -- League-wide + group-independent: this surface has no group_id / user_id, so unlike the
 -- stats matviews there are no players, picks, or settlements in the fixture -- only
@@ -26,7 +30,7 @@
 
 BEGIN;
 
-SELECT plan(30);
+SELECT plan(36);
 
 -- ── Structural checks ─────────────────────────────────────────────────────────
 
@@ -304,6 +308,46 @@ SELECT results_eq(
       WHERE tm.season_year = 2090 AND t.external_key = 'LAT_A4' $$,
   $$ VALUES (1, 1, 1, 1, 1) $$,
   '30. league_ats_team: away favorite A4 reads away-split + fav-split ATS win, SU win'
+);
+
+-- ── Situational quadrants (league_ats_situational, PR 2) ─────────────────────────
+
+SELECT has_view('public', 'league_ats_situational',
+  '31. league_ats_situational is a plain view');
+SELECT ok(has_table_privilege('service_role', 'public.league_ats_situational', 'select'),
+  '32. service_role can SELECT league_ats_situational');
+SELECT ok(NOT has_table_privilege('authenticated', 'public.league_ats_situational', 'select'),
+  '33. authenticated cannot SELECT league_ats_situational');
+
+-- H1 played g1 as a home favorite and covered → its (home, favorite) quadrant is 1-0-0.
+SELECT results_eq(
+  $$ SELECT s.games, s.ats_wins, s.ats_losses, s.ats_pushes
+       FROM public.league_ats_situational s
+       JOIN public.teams t ON t.id = s.team_id
+      WHERE s.season_year = 2090 AND t.external_key = 'LAT_H1'
+        AND s.is_home = true AND s.is_favorite = true $$,
+  $$ VALUES (1, 1, 0, 0) $$,
+  '34. situational: H1 home-favorite quadrant reads 1-0-0'
+);
+
+-- A4 covered as an away favorite → its (away, favorite) quadrant is a win.
+SELECT results_eq(
+  $$ SELECT s.games, s.ats_wins
+       FROM public.league_ats_situational s
+       JOIN public.teams t ON t.id = s.team_id
+      WHERE s.season_year = 2090 AND t.external_key = 'LAT_A4'
+        AND s.is_home = false AND s.is_favorite = true $$,
+  $$ VALUES (1, 1) $$,
+  '35. situational: A4 away-favorite quadrant reads a win'
+);
+
+-- H5 only played the pick'em g5 (is_favorite null), so it has no favorite/underdog quadrant.
+SELECT is(
+  (SELECT count(*)::int FROM public.league_ats_situational s
+     JOIN public.teams t ON t.id = s.team_id
+    WHERE s.season_year = 2090 AND t.external_key = 'LAT_H5'),
+  0,
+  '36. situational: a pick''em-only team (H5) has no quadrant row'
 );
 
 SELECT * FROM finish();

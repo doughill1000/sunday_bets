@@ -788,5 +788,15 @@
     "hash": "eb65f5dac47ce329ac9b115fea4441323f247f3d21b645f4ce7c0cdf8741c4a7",
     "migration": "20260707210905_league_ats_views.sql",
     "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+  },
+  "schemas/0228_show_team_trends.sql": {
+    "hash": "f4aec714defdbc6b23607f34b1e7fb9796726b067603f93dbfe38d7629e141b7",
+    "migration": "20260707214954_league_ats_situational_and_trends_pref.sql",
+    "migrationHash": "903fa257d825f668bbc8a4ec1b5ee8bea8083bfaec044621d559dba794fef2c7"
+  },
+  "views/league_ats_situational.sql": {
+    "hash": "66d546241c90d5a8d98db415292100f0ab8e2ed9fd87601f96f3cb87e50ac10a",
+    "migration": "20260707214954_league_ats_situational_and_trends_pref.sql",
+    "migrationHash": "903fa257d825f668bbc8a4ec1b5ee8bea8083bfaec044621d559dba794fef2c7"
   }
 }

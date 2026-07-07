@@ -53,6 +53,21 @@ export type LeagueHomeAway = {
   away: { games: number; ats: AtsRecord; su: AtsRecord };
 };
 
+/** One team's ATS record in a single situational quadrant (home/away x favorite/underdog)
+ *  for a season. Backs the pick-card nugget (issue #406 PR 2). Rows come from
+ *  league_ats_situational, which — like the /league views — derives from the shared
+ *  league_ats_base matview, so the tab and the nugget never compute cover math two ways. */
+export type LeagueSituationalRecord = {
+  teamId: number;
+  /** true = the team's home games; false = road games. */
+  isHome: boolean;
+  /** true = favored by the line; false = underdog. Pick'em games are excluded upstream. */
+  isFavorite: boolean;
+  /** Games this team played in this exact quadrant this season (the nugget's n=). */
+  games: number;
+  ats: AtsRecord;
+};
+
 /** The full /league payload for one season. `totalGames` is the number of qualifying
  *  scored games with a line (drives the "n games scored" caveat on thin/older seasons). */
 export type LeagueAts = {

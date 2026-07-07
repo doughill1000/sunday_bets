@@ -5,10 +5,12 @@
   import { kickoffPassed } from '$lib/domain/rules';
   import { formatKickoff } from '$lib/ui/format';
   import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
+  import { nuggetForSide } from '$lib/utils/leagueNugget';
   import TeamSelect from './TeamSelect.svelte';
   import WeightSelect from './WeightSelect.svelte';
   import LockControls from './LockControls.svelte';
   import type { PickGame } from '$lib/types/games';
+  import type { LeagueSituationalRecord } from '$lib/types/server/league';
 
   interface Props {
     game: PickGame;
@@ -16,13 +18,16 @@
     initialized?: boolean;
     isLastWeek?: boolean;
     finalWeekUnlimitedAllin?: boolean;
+    /** Season situational ATS lookup for the trend nugget; null when the user has it off. */
+    trendLookup?: Map<string, LeagueSituationalRecord> | null;
   }
   let {
     game,
     games = [],
     initialized = false,
     isLastWeek = false,
-    finalWeekUnlimitedAllin = true
+    finalWeekUnlimitedAllin = true,
+    trendLookup = null
   }: Props = $props();
   const picks = usePicksStore();
 
@@ -38,6 +43,12 @@
   const needsWeight = $derived(canChange && !!current?.team && !current?.weight);
   const lineText = $derived(spreadLine(game));
   const kickoffText = $derived(formatKickoff(game.kickoff));
+
+  // Situational ATS nuggets, away then home to match the "{away} @ {home}" title order.
+  // Each is null when trends are off, the game is a pick'em/no-line, or the quadrant is
+  // below the sample threshold — so nothing renders and the card keeps its height.
+  const awayNugget = $derived(trendLookup ? nuggetForSide(game, 'away', trendLookup) : null);
+  const homeNugget = $derived(trendLookup ? nuggetForSide(game, 'home', trendLookup) : null);
 </script>
 
 <Card class="relative rounded-2xl" data-testid="game-card" data-game-id={game.id}>
@@ -61,6 +72,20 @@
     <div class="min-w-0">
       <h2 class="truncate font-semibold">{game.away} @ {game.home}</h2>
       <p class="truncate text-xs text-muted-foreground">{lineText}</p>
+      {#if awayNugget || homeNugget}
+        <div class="mt-1 space-y-0.5" data-testid="ats-nugget">
+          {#if awayNugget}
+            <p class="truncate text-[11px] leading-tight text-muted-foreground">
+              {game.away}: {awayNugget.text} (n={awayNugget.games})
+            </p>
+          {/if}
+          {#if homeNugget}
+            <p class="truncate text-[11px] leading-tight text-muted-foreground">
+              {game.home}: {homeNugget.text} (n={homeNugget.games})
+            </p>
+          {/if}
+        </div>
+      {/if}
     </div>
     <div class="flex shrink-0 items-center gap-2">
       <time class="text-xs whitespace-nowrap text-muted-foreground" datetime={game.kickoff}>

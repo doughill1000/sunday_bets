@@ -89,6 +89,29 @@
       : { kind: 'error', text: 'Could not save avatar.' };
   }
 
+  // Pick-card ATS trend nugget preference (issue #406). bind:checked updates the state before
+  // onchange fires, so `showTeamTrends` already holds the new value here.
+  let showTeamTrends = $state(data.userProfile?.showTeamTrends ?? true);
+  let trendsMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  async function saveShowTeamTrends() {
+    trendsMsg = null;
+    const next = showTeamTrends;
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ show_team_trends: next })
+    });
+    if (!res.ok) {
+      showTeamTrends = !next; // revert the optimistic toggle
+      trendsMsg = { kind: 'error', text: 'Could not save preference.' };
+      return;
+    }
+    trendsMsg = { kind: 'success', text: 'Preference saved.' };
+    // Refresh the cached profile so /picks reflects the change on next navigation.
+    await invalidateAll();
+  }
+
   async function changePassword() {
     if (passwordBusy) return;
     passwordMsg = null;
@@ -427,6 +450,40 @@
             </div>
           {/if}
         </form>
+      {/if}
+    </CardContent>
+  </Card>
+
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Picks</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <label class="flex items-start gap-3">
+        <input
+          type="checkbox"
+          class="mt-1 size-4"
+          bind:checked={showTeamTrends}
+          onchange={saveShowTeamTrends}
+        />
+        <span>
+          <span class="font-medium">Show team trends on picks</span>
+          <p class="text-sm text-muted-foreground">
+            Adds a muted line per team on each pick card with that team's record against the spread
+            in this game's exact situation (home/away, favorite/underdog). Turn off for a cleaner
+            card.
+          </p>
+        </span>
+      </label>
+
+      {#if trendsMsg}
+        <div
+          class="rounded-xl border p-3 text-sm"
+          class:border-success={trendsMsg.kind === 'success'}
+          class:border-destructive={trendsMsg.kind === 'error'}
+        >
+          {trendsMsg.text}
+        </div>
       {/if}
     </CardContent>
   </Card>

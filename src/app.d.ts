@@ -15,6 +15,8 @@ declare global {
         displayName: string;
         avatarKey: string | null;
         guideSeenAt: string | null;
+        /** Per-user toggle for the pick-card ATS trend nugget (issue #406). Default true. */
+        showTeamTrends: boolean;
       } | null;
       groupId: string | null;
       /** All active group memberships for the authenticated user (empty for guests). */

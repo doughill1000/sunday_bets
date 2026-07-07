@@ -1185,6 +1185,7 @@ export type Database = {
           id: string;
           notification_prefs: Json;
           role: string;
+          show_team_trends: boolean;
         };
         Insert: {
           avatar_key?: string | null;
@@ -1195,6 +1196,7 @@ export type Database = {
           id: string;
           notification_prefs?: Json;
           role?: string;
+          show_team_trends?: boolean;
         };
         Update: {
           avatar_key?: string | null;
@@ -1205,6 +1207,7 @@ export type Database = {
           id?: string;
           notification_prefs?: Json;
           role?: string;
+          show_team_trends?: boolean;
         };
         Relationships: [];
       };
@@ -1394,6 +1397,19 @@ export type Database = {
           home_su_pushes: number | null;
           home_su_wins: number | null;
           season_year: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_situational: {
+        Row: {
+          ats_losses: number | null;
+          ats_pushes: number | null;
+          ats_wins: number | null;
+          games: number | null;
+          is_favorite: boolean | null;
+          is_home: boolean | null;
+          season_year: number | null;
+          team_id: number | null;
         };
         Relationships: [];
       };

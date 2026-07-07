@@ -5,6 +5,7 @@ import type {
   LeagueAts,
   LeagueFavDogSplit,
   LeagueHomeAway,
+  LeagueSituationalRecord,
   LeagueTeamAts
 } from '$lib/types/server/league';
 
@@ -135,4 +136,32 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
     favDogByWeek,
     homeAway
   };
+}
+
+/**
+ * Every team's situational ATS quadrants for one season, powering the pick-card nugget
+ * (issue #406 PR 2). Reads league_ats_situational, which derives from the same
+ * league_ats_base matview as the /league views above — no aggregation is duplicated. One
+ * row per (team, home/away, favorite/underdog); the picks page indexes these client-side and
+ * shows each game the single quadrant that matches it. Group-independent (service-role read,
+ * ADR-0013). Pick'em games have no favorite/underdog quadrant and are excluded upstream.
+ */
+export async function getLeagueSituational(seasonYear: number): Promise<LeagueSituationalRecord[]> {
+  const { data, error } = await supabaseService
+    .from('league_ats_situational')
+    .select('*')
+    .eq('season_year', seasonYear);
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    if (row.team_id == null || row.is_home == null || row.is_favorite == null) return [];
+    return [
+      {
+        teamId: row.team_id,
+        isHome: row.is_home,
+        isFavorite: row.is_favorite,
+        games: n(row.games),
+        ats: rec(row.ats_wins, row.ats_losses, row.ats_pushes)
+      }
+    ];
+  });
 }
