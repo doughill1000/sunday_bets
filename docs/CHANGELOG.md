@@ -56,7 +56,9 @@ Project `Done` column, and Releases remain the sources of truth — see
   `league_ats_base` matview through a new `league_ats_situational` view — the tab and the
   nugget never compute cover math two ways. view: `league_ats_situational` · column:
   `users.show_team_trends` · files: `picks/GameCard.svelte` · `utils/leagueNugget.ts` ·
-  ADR-0013 · ADR-0002. Closes #406.
+  ADR-0013 · ADR-0002. Closes #406. Also folds in agent-DX follow-ups to PR #421: hardened
+  `new-worktree.ps1` (no longer aborts before env-copy/install under a caller's `2>&1`), a
+  single-pgTAP-file note in `testing.md`, and a `per-user-profile-preference` recipe.
 - **PR #421** Agent-DX doc & tooling fixes (issue-less chore) — documented three gaps
   hit while building #406: worktrees can't prod-clone (`db:reset:local` / `cloneDb.ts`
   need `SUPABASE_DB_URL_PROD`, absent from worktree `.env*`) and the migration

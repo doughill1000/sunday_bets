@@ -16,6 +16,7 @@ the rules it points at. Keep steps terse; put the "why" in the linked pack/ADR.
 
 ## Recipes
 
-| Recipe                                                       | The slice it covers                                                                                                                                                         |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [materialized-read-surface.md](materialized-read-surface.md) | A read-only surface backed by aggregated/materialized data: base matview → refresh → migration/types → pgTAP → query/readModel → client cache → API route → page trio → nav |
+| Recipe                                                           | The slice it covers                                                                                                                                                         |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [materialized-read-surface.md](materialized-read-surface.md)     | A read-only surface backed by aggregated/materialized data: base matview → refresh → migration/types → pgTAP → query/readModel → client cache → API route → page trio → nav |
+| [per-user-profile-preference.md](per-user-profile-preference.md) | A per-user setting on `public.users` that rides the cached auth-context profile: column → hooks.server.ts → app.d.ts → /api/profile → Settings UI                           |
