@@ -48,6 +48,16 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **PR #431** Release v2.11.0 — version bump. Milestone: v2.11 (minor: #416 AI
+  badge-voice override, #406 League ATS trends; patch: #418 agent workflow
+  improvements, PR #423 Season Wrapped promo mobile layout fix). Production ships via
+  the separate manual `deploy-prod` dispatch, which tags `v2.11.0` (ADR-0010). ·
+  ADR-0015
+- **PR #423** Season Wrapped promo mobile layout fix (issue-less) — the promo banner's
+  `flex-wrap` row let the gift icon, text, and **View Wrapped** button compete for one
+  line on narrow screens, collapsing the title into a 2–3-word column. Now stacks
+  vertically below `sm:`, restoring the side-by-side layout at `sm:` and up; desktop
+  unchanged. Class-only change. file: `WrappedPromo.svelte`
 - **#406** League ATS trends (PR 2 of 2) — the pick-card **ATS trend nugget**: each upcoming
   game card shows one muted line per team with that team's record against the spread in this
   game's exact situation (home/away × favorite/underdog, e.g. "6-2 ATS as home favorite
