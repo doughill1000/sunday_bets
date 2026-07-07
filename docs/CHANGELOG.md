@@ -46,6 +46,16 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-07
+
+- **#416** AI badge-voice override — each **crowned** season badge now shows a
+  personalized, AI-generated one-liner (naming the holder and the stat that earned it)
+  overriding the static tagline; the award stays deterministic and any gateway
+  failure/over-budget path falls back to the exact static copy. Generated at season
+  finalization and a manual backfill cron, overlaid onto the badge read-model for
+  complete seasons only. Closes epic #283 (final wave). table: `ai_badge_flavors` ·
+  route: `api/cron/backfill-badge-flavors` · ADR-0008 · ADR-0002
+
 ## 2026-07-06
 
 - **PR #418** Agent workflow improvements — four new skills (`land-pr`, `ci-triage`,
