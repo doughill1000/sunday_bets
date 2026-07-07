@@ -33,9 +33,13 @@ begin
   refresh materialized view concurrently public.group_pick_consensus;
   refresh materialized view concurrently public.stats_accuracy_by_line_side;
   refresh materialized view concurrently public.stats_pick_streaks;
+  -- League-wide team ATS facts (#406). Group-independent and driven by games/game_lines
+  -- rather than pick_settlement, but the same grading run that settles picks is also when
+  -- games go final + closing lines are captured, so this is the correct invalidation point.
+  refresh materialized view concurrently public.league_ats_base;
 end;
 $$;
 
 comment on function public.refresh_leaderboard_stats() is
-  'Refreshes the 12 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317). '
+  'Refreshes the 13 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317/#406). '
   'Called after each grading run by src/lib/server/grading.ts.';

@@ -8,7 +8,7 @@
 /** Read screens whose query data is shareable and therefore allowed to be persisted to
  * IndexedDB. Commissioner/invite data is never keyed under these roots, so it is
  * structurally excluded from persistence (ADR-0017 boundary 3). */
-export const SHAREABLE_QUERY_ROOTS = ['stats', 'group', 'leaderboard'] as const;
+export const SHAREABLE_QUERY_ROOTS = ['stats', 'group', 'leaderboard', 'league'] as const;
 
 export const queryKeys = {
   stats: (groupId: string, seasonYear: number) => ['stats', groupId, seasonYear] as const,
@@ -19,7 +19,9 @@ export const queryKeys = {
     view: string,
     week: number | null,
     cursor: string | null
-  ) => ['leaderboard', groupId, seasonYear, view, week, cursor] as const
+  ) => ['leaderboard', groupId, seasonYear, view, week, cursor] as const,
+  // League ATS is group-independent, so it is keyed by season alone (issue #406).
+  league: (seasonYear: number) => ['league', seasonYear] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any

@@ -200,6 +200,13 @@ export type Database = {
             foreignKeyName: 'comments_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'comments_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -287,6 +294,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'games';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'game_lines_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
           },
           {
             foreignKeyName: 'game_lines_game_id_fkey';
@@ -593,6 +607,13 @@ export type Database = {
             foreignKeyName: 'notification_log_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'notification_log_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -689,6 +710,13 @@ export type Database = {
             foreignKeyName: 'pick_settlement_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -755,6 +783,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'games';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
           },
           {
             foreignKeyName: 'picks_game_id_fkey';
@@ -864,6 +899,13 @@ export type Database = {
             foreignKeyName: 'reactions_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'reactions_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -948,6 +990,13 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: 'games';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'results_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: true;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
           },
           {
             foreignKeyName: 'results_game_id_fkey';
@@ -1227,6 +1276,13 @@ export type Database = {
             foreignKeyName: 'pick_settlement_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -1297,6 +1353,78 @@ export type Database = {
           }
         ];
       };
+      league_ats_base: {
+        Row: {
+          ats_result: string | null;
+          game_id: string | null;
+          is_favorite: boolean | null;
+          is_home: boolean | null;
+          season_year: number | null;
+          su_result: string | null;
+          team_id: number | null;
+          week_number: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_fav_dog: {
+        Row: {
+          favorite_covers: number | null;
+          games: number | null;
+          pushes: number | null;
+          season_year: number | null;
+          underdog_covers: number | null;
+          week_number: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_home_away: {
+        Row: {
+          away_ats_covers: number | null;
+          away_ats_losses: number | null;
+          away_ats_pushes: number | null;
+          away_games: number | null;
+          away_su_losses: number | null;
+          away_su_pushes: number | null;
+          away_su_wins: number | null;
+          home_ats_covers: number | null;
+          home_ats_losses: number | null;
+          home_ats_pushes: number | null;
+          home_games: number | null;
+          home_su_losses: number | null;
+          home_su_pushes: number | null;
+          home_su_wins: number | null;
+          season_year: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_team: {
+        Row: {
+          ats_losses: number | null;
+          ats_pushes: number | null;
+          ats_wins: number | null;
+          away_ats_losses: number | null;
+          away_ats_pushes: number | null;
+          away_ats_wins: number | null;
+          dog_ats_losses: number | null;
+          dog_ats_pushes: number | null;
+          dog_ats_wins: number | null;
+          fav_ats_losses: number | null;
+          fav_ats_pushes: number | null;
+          fav_ats_wins: number | null;
+          games: number | null;
+          home_ats_losses: number | null;
+          home_ats_pushes: number | null;
+          home_ats_wins: number | null;
+          season_year: number | null;
+          su_losses: number | null;
+          su_pushes: number | null;
+          su_wins: number | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_short_name: string | null;
+        };
+        Relationships: [];
+      };
       league_completed_standings: {
         Row: {
           avatar_key: string | null;
@@ -1353,6 +1481,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'games';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
           },
           {
             foreignKeyName: 'picks_game_id_fkey';
@@ -1420,6 +1555,13 @@ export type Database = {
             foreignKeyName: 'picks_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -1476,6 +1618,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'games';
             referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
           },
           {
             foreignKeyName: 'picks_game_id_fkey';

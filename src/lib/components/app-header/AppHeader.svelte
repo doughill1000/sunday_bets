@@ -10,7 +10,8 @@
     { href: '/picks', label: 'Picks' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/stats', label: 'Stats' },
-    { href: '/group', label: 'Group' }
+    { href: '/group', label: 'Group' },
+    { href: '/league', label: 'League' }
   ];
 
   interface Membership {
