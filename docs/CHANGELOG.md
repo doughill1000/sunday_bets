@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **PR #421** Agent-DX doc & tooling fixes (issue-less chore) — documented three gaps
+  hit while building #406: worktrees can't prod-clone (`db:reset:local` / `cloneDb.ts`
+  need `SUPABASE_DB_URL_PROD`, absent from worktree `.env*`) and the migration
+  generator's emit order (alphabetical within folder; views before functions), and
+  added a `docs/agent-context/recipes/` subfolder for end-to-end procedures with a
+  materialized-read-surface recipe. files: `db-migration` skill · `database.md` ·
+  `cloneDb.ts` · `.env.example` · `recipes/`
 - **#406** League ATS trends (PR 1 of 2) — new top-level **League** tab (5th nav tab,
   `/league`) showing league-wide, spreads-only NFL team performance against the spread:
   favorite/underdog cover %, a sortable per-team ATS table with home/away + favorite/underdog
