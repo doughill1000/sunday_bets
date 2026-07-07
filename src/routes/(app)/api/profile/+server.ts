@@ -16,7 +16,11 @@ export const PUT: RequestHandler = async (event) => {
     return json({ ok: false, reason: 'Invalid request body' }, { status: 400 });
   }
 
-  const update: { avatar_key?: string | null; display_name?: string } = {};
+  const update: {
+    avatar_key?: string | null;
+    display_name?: string;
+    show_team_trends?: boolean;
+  } = {};
 
   if ('avatar_key' in raw) {
     const avatarKey = (raw as Record<string, unknown>).avatar_key as string | null;
@@ -30,6 +34,14 @@ export const PUT: RequestHandler = async (event) => {
     const result = validateDisplayName((raw as Record<string, unknown>).display_name);
     if (!result.ok) return json({ ok: false, reason: result.reason }, { status: 400 });
     update.display_name = result.value;
+  }
+
+  if ('show_team_trends' in raw) {
+    const value = (raw as Record<string, unknown>).show_team_trends;
+    if (typeof value !== 'boolean') {
+      return json({ ok: false, reason: 'Invalid show_team_trends' }, { status: 400 });
+    }
+    update.show_team_trends = value;
   }
 
   if (Object.keys(update).length === 0) {

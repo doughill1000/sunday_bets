@@ -40,6 +40,11 @@
 - **Required for every database PR** — if you added a table, policy, or function,
   add a pgTAP test for it.
 - Also requires Docker + local Supabase running.
+- **Run one file** while iterating: `npx supabase test db supabase/tests/NNN_name.sql` —
+  faster than the whole suite, and it sidesteps the suites whose count assertions fail
+  local-only on a prod-seeded DB (e.g. `005_cron`). Do **not** run a pgTAP file with raw
+  `psql -f`: pgTAP's functions aren't on the connection's search_path, so `plan()` errors
+  and the aborted transaction cascades — the `supabase test db` harness installs them.
 - **Also runs in CI** (`ci-pgtap.yml`), path-filtered to `supabase/**` — the
   `pgTap-result` gate job passes on either a real pass or a path-filtered skip, so a
   failure there is a genuine CI gate, not decoration.

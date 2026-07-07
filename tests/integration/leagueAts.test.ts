@@ -12,7 +12,11 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { createServiceClient } from './_auth';
 import { ensureTeams } from './fixtures/db';
-import { getLeagueAts, getLeagueSeasons } from '../../src/lib/server/db/queries/league';
+import {
+  getLeagueAts,
+  getLeagueSeasons,
+  getLeagueSituational
+} from '../../src/lib/server/db/queries/league';
 
 const admin = createServiceClient();
 
@@ -178,5 +182,17 @@ describe('league ATS read path (#406)', () => {
     expect(league.homeAway?.home.games).toBe(2);
     expect(league.homeAway?.home.ats).toEqual({ wins: 1, losses: 1, pushes: 0 });
     expect(league.homeAway?.away.ats).toEqual({ wins: 1, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueSituational returns crossed home/away × favorite/underdog quadrants', async () => {
+    const rows = await getLeagueSituational(SEASON_YEAR);
+    const quadrant = (id: number, isHome: boolean, isFavorite: boolean) =>
+      rows.find((r) => r.teamId === id && r.isHome === isHome && r.isFavorite === isFavorite);
+
+    // KC home favorite covered; DAL away favorite covered; BUF away dog + PHI home dog lost.
+    expect(quadrant(teamId.KC, true, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(quadrant(teamId.DAL, false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(quadrant(teamId.BUF, false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+    expect(quadrant(teamId.PHI, true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
   });
 });

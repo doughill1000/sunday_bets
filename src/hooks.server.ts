@@ -121,7 +121,7 @@ const injectSession: Handle = async ({ event, resolve }) => {
             traceDbQuery('auth-hook.users-profile', () =>
               supabaseService
                 .from('users')
-                .select('role, display_name, avatar_key, guide_seen_at')
+                .select('role, display_name, avatar_key, guide_seen_at, show_team_trends')
                 .eq('id', user.id)
                 .maybeSingle()
             ),
@@ -141,7 +141,8 @@ const injectSession: Handle = async ({ event, resolve }) => {
       event.locals.userProfile = {
         displayName: profileResult.data.display_name ?? '',
         avatarKey: profileResult.data.avatar_key ?? null,
-        guideSeenAt: profileResult.data.guide_seen_at ?? null
+        guideSeenAt: profileResult.data.guide_seen_at ?? null,
+        showTeamTrends: profileResult.data.show_team_trends ?? true
       };
     }
 
