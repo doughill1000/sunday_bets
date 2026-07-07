@@ -7,7 +7,8 @@ import type {
   StatsCachePayload,
   GroupCachePayload,
   LeaderboardCachePayload,
-  AllTimeLeaderboardPayload
+  AllTimeLeaderboardPayload,
+  LeagueCachePayload
 } from './types';
 
 type FetchFn = typeof fetch;
@@ -55,4 +56,14 @@ export async function fetchAllTimeLeaderboard(
   const res = await fetchFn(`/api/leaderboard/alltime?groupId=${encodeURIComponent(groupId)}`);
   if (!res.ok) throw new Error(`Failed to load all-time leaderboard (${res.status})`);
   return res.json() as Promise<AllTimeLeaderboardPayload>;
+}
+
+/** League-wide team ATS (issue #406). No groupId — the data is identical for everyone. */
+export async function fetchLeague(
+  fetchFn: FetchFn,
+  seasonYear: number
+): Promise<LeagueCachePayload> {
+  const res = await fetchFn(`/api/league?season=${seasonYear}`);
+  if (!res.ok) throw new Error(`Failed to load league trends (${res.status})`);
+  return res.json() as Promise<LeagueCachePayload>;
 }

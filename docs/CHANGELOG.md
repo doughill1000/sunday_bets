@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#406** League ATS trends (PR 1 of 2) — new top-level **League** tab (5th nav tab,
+  `/league`) showing league-wide, spreads-only NFL team performance against the spread:
+  favorite/underdog cover %, a sortable per-team ATS table with home/away + favorite/underdog
+  splits, and league home/away splits. Descriptive and group-independent (identical for
+  every user), served from a service-role matview refreshed on the existing grading run.
+  matview + views: `league_ats_base` · `league_ats_team` · `league_ats_fav_dog` ·
+  `league_ats_home_away` · route: `/league` · ADR-0013 · ADR-0002
 - **#416** AI badge-voice override — each **crowned** season badge now shows a
   personalized, AI-generated one-liner (naming the holder and the stat that earned it)
   overriding the static tagline; the award stays deterministic and any gateway

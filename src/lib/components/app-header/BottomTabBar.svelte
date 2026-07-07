@@ -4,6 +4,7 @@
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
   import Users from '@lucide/svelte/icons/users';
+  import TrendingUp from '@lucide/svelte/icons/trending-up';
 
   // Wrapped is a seasonal moment, not a year-round destination — it has no content until a
   // season finalises. Rather than burn a permanent tab on an empty-most-of-the-year page,
@@ -13,7 +14,8 @@
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
     { href: '/stats', label: 'Stats', Icon: BarChart2 },
-    { href: '/group', label: 'Group', Icon: Users }
+    { href: '/group', label: 'Group', Icon: Users },
+    { href: '/league', label: 'League', Icon: TrendingUp }
   ];
 </script>
 

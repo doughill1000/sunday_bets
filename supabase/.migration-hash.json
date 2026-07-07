@@ -620,10 +620,10 @@
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
-    "hash": "64411d7b49db3b0bd4a4dd98c77a3cc5801676b7d9974af971d48648543f5ff5",
+    "hash": "75fe58f6ec8dc98ece92c9c795f8efba8000a7d4a02b342a5a05a7dc36a9fd5f",
     "signature": "public.refresh_leaderboard_stats()",
-    "migration": "20260629181322_add_stats_pick_streaks.sql",
-    "migrationHash": "6f91768f010f3d591b20d4ca846842cccd01a32460c22ff2844111452199bb6a"
+    "migration": "20260707195155_league_ats_views.sql",
+    "migrationHash": "35cbfbd70d842422a34bb11547a2c2d09762ede4810262ea364312fd21e4517e"
   },
   "functions/auth/group_active_season_settled.sql": {
     "hash": "7ec5abf4bca6381ab64f9748ed2219f9da713030f89b972fd5b60bf939c76db5",
@@ -768,5 +768,25 @@
     "signature": "public.picks_status_board(uuid, integer)",
     "migration": "20260706220054_add_picks_status_board.sql",
     "migrationHash": "efd01416797b01f1fa469d2f4758fa5d0f7da17838703c7205c9ddbc6f3ff526"
+  },
+  "views/league_ats_base.sql": {
+    "hash": "0e2cd808cf5aeaecd5bc31996db88a230da7ea667f2c90862d34becfca3f46c2",
+    "migration": "20260707195155_league_ats_views.sql",
+    "migrationHash": "35cbfbd70d842422a34bb11547a2c2d09762ede4810262ea364312fd21e4517e"
+  },
+  "views/league_ats_fav_dog.sql": {
+    "hash": "d7a85ca3b40269376b48c34386b33626dc64d44b9d9566a6e44e9b91be1ed234",
+    "migration": "20260707195155_league_ats_views.sql",
+    "migrationHash": "35cbfbd70d842422a34bb11547a2c2d09762ede4810262ea364312fd21e4517e"
+  },
+  "views/league_ats_home_away.sql": {
+    "hash": "ac2c20a7920473e69425907aa35cee1fb8ce067d76e722b22d1c89cf7a062c23",
+    "migration": "20260707195155_league_ats_views.sql",
+    "migrationHash": "35cbfbd70d842422a34bb11547a2c2d09762ede4810262ea364312fd21e4517e"
+  },
+  "views/league_ats_team.sql": {
+    "hash": "eb65f5dac47ce329ac9b115fea4441323f247f3d21b645f4ce7c0cdf8741c4a7",
+    "migration": "20260707195155_league_ats_views.sql",
+    "migrationHash": "35cbfbd70d842422a34bb11547a2c2d09762ede4810262ea364312fd21e4517e"
   }
 }
