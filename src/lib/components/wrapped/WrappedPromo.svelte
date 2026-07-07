@@ -30,18 +30,24 @@
 {#if visible}
   <div
     data-testid="wrapped-promo"
-    class="relative flex flex-wrap items-center gap-4 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 pr-12 sm:p-5 sm:pr-14"
+    class="relative flex flex-col gap-4 overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 pr-12 sm:flex-row sm:items-center sm:p-5 sm:pr-14"
   >
-    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
-      <Gift class="size-5 text-primary" aria-hidden="true" />
+    <div class="flex min-w-0 flex-1 items-center gap-4">
+      <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15">
+        <Gift class="size-5 text-primary" aria-hidden="true" />
+      </div>
+      <div class="min-w-0">
+        <p class="font-semibold tracking-tight">Your {seasonYear} Season Wrapped is ready</p>
+        <p class="text-sm text-muted-foreground">
+          Your year in picks — rank, record, badges, and a recap of the season.
+        </p>
+      </div>
     </div>
-    <div class="min-w-0 flex-1">
-      <p class="font-semibold tracking-tight">Your {seasonYear} Season Wrapped is ready</p>
-      <p class="text-sm text-muted-foreground">
-        Your year in picks — rank, record, badges, and a recap of the season.
-      </p>
-    </div>
-    <Button href="/wrapped?season={seasonYear}" data-testid="wrapped-promo-cta" class="shrink-0">
+    <Button
+      href="/wrapped?season={seasonYear}"
+      data-testid="wrapped-promo-cta"
+      class="w-full shrink-0 sm:w-auto"
+    >
       View Wrapped
     </Button>
     <button
