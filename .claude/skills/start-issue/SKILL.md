@@ -1,12 +1,20 @@
 ---
 name: start-issue
-description: Start work on a Ready GitHub issue — read the issue and its ADRs, load the matching context packs, create an isolated worktree with new-worktree.ps1, and print the dev command. Use when beginning implementation of an assigned issue.
+description: Start work on a Ready GitHub issue end-to-end — read the issue and its ADRs, load the matching context packs, create an isolated worktree with new-worktree.ps1, implement the change, then hand off to finish-pr to test and open the PR. Use when beginning implementation of an assigned issue.
 ---
 
 # Start work on an issue
 
 One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.md`
 §"Claim and isolate work" and `AGENTS.md` §"Delivery workflow".
+
+This skill runs the full delivery loop in one pass: setup (below), then
+implementation, then the `finish-pr` skill. Don't stop after setup to wait for a
+separate invocation — continue straight into implementing the issue once the
+worktree is ready, and continue straight into `finish-pr` once implementation is
+locally verified. Still honor every confirmation gate along the way (GitHub writes
+per `CLAUDE.md` §"GitHub Access" — note `git push` and `gh pr create` are
+pre-authorized per that section and per `finish-pr` step 6).
 
 ## Steps
 
@@ -29,6 +37,12 @@ One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.
    ```powershell
    pnpm -C ..\sunday_bets-claude-NNN run dev -- --port 5174
    ```
+5. Implement the issue's acceptance criteria in the worktree, guided by the context
+   packs and ADR(s) from step 2. This is ordinary code work, not a scripted recipe —
+   use judgment on scope and approach, and stay inside the issue's stated acceptance
+   criteria (surface scope questions to Doug rather than expanding silently).
+6. Once implemented and locally verified, invoke the `finish-pr` skill to run the
+   test gate, add the changelog entry, and open the PR. Do not wait to be asked.
 
 ## Remember
 
@@ -45,4 +59,5 @@ One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.
 ## See also
 
 - `docs/WORKFLOW.md` §"Claim and isolate work"
-- Sibling skills: `issue-author` (creates the issue) and `finish-pr` (closes it out).
+- Sibling skills: `issue-author` (creates the issue, upstream of this one) and
+  `finish-pr` (the closing bookend this skill now invokes automatically).

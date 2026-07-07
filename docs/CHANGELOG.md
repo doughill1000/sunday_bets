@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **PR #432** `start-issue` skill now runs the full delivery loop (issue-less) —
+  previously stopped after worktree setup and printing the dev command; now
+  continues straight into implementation and hands off to `finish-pr` to test and
+  open the PR, instead of waiting for a separate invocation. file:
+  `.claude/skills/start-issue/SKILL.md`
 - **PR #431** Release v2.11.0 — version bump. Milestone: v2.11 (minor: #416 AI
   badge-voice override, #406 League ATS trends; patch: #418 agent workflow
   improvements, PR #423 Season Wrapped promo mobile layout fix). Production ships via
