@@ -10,16 +10,22 @@ const envFile = envFileArg ? envFileArg.replace('--env=', '') : process.env.ENV_
 
 dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
-const must = (k: string) => {
+const must = (k: string, hint?: string) => {
   const v = process.env[k];
   if (!v) {
-    console.error(`Missing ${k} in environment (.env)`);
+    console.error(`Missing ${k} in environment (.env)${hint ? `\n${hint}` : ''}`);
     process.exit(1);
   }
   return v;
 };
 
-const PROD = must('SUPABASE_DB_URL_PROD');
+const PROD = must(
+  'SUPABASE_DB_URL_PROD',
+  'Prod-clone (pnpm db:reset:local / db:clone:*) reads SUPABASE_DB_URL_PROD, which lives\n' +
+    'in no committed .env* and is NOT copied into git worktrees — run it from the main\n' +
+    'checkout (or a shell that exports it). To apply schema locally without prod data,\n' +
+    'use `pnpm db:push:local` instead.'
+);
 
 function cliVal(prefix: string) {
   return process.argv.find((a) => a.startsWith(prefix))?.split('=')[1];

@@ -46,6 +46,25 @@ Keep one table, view, or function as the primary subject of each source file.
 Auxiliary objects (triggers, supporting functions) that belong to it can live in
 the same file, but avoid grouping unrelated objects.
 
+## Generator emit order (name files so dependencies sort first)
+
+`pnpm db:migration` emits objects by folder in a fixed `SOURCE_ORDER` (schemas →
+indexes → views → functions → policies → triggers → grants → comments) and, **within
+each folder, alphabetically by filename** (`generate-migration.ts:33-42,62-64`). An
+object another depends on must emit first, so:
+
+- **Same folder:** a plain view that selects from a base matview in `views/` must sort
+  **after** it — name the files accordingly. #406 used `league_ats_base` (base matview)
+  with `league_ats_fav_dog` / `league_ats_home_away` / `league_ats_team` (dependents)
+  precisely so the base sorts first; the originally-proposed `league_game_ats` /
+  `league_team_ats` names would have emitted a dependent before the base and failed on
+  first apply.
+- **Cross folder:** views emit **before** functions, so a view must not call a function
+  your same change introduces — from empty the function doesn't exist yet, which the
+  ADR-0012 drift guard (`verify-src-reproduces-migrations.ts`) catches even though the
+  real migration chain works (the function pre-exists from an earlier migration). Inline
+  the logic, or land the function in a prior migration.
+
 ## Reviewing a database PR
 
 Database PRs typically produce diffs of 500–5000+ lines because two large generated
@@ -84,3 +103,9 @@ npx supabase test db             # pgTAP (requires Docker + local Supabase)
 pnpm test:integration            # integration tests against local Supabase
 pnpm db:types                    # regenerate supabase.ts after schema changes
 ```
+
+> **In a worktree, `pnpm db:reset:local` (prod-clone) can't run** — its clone step
+> (`cloneDb.ts`) needs `SUPABASE_DB_URL_PROD`, which is absent from worktree `.env*`.
+> Verify schema with `db:push:local` + a pgTAP fixture; run prod-data count-checks from
+> the main checkout. See the
+> [db-migration skill](../../.claude/skills/db-migration/SKILL.md).
