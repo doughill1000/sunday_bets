@@ -20,6 +20,12 @@ agent-facing rules in `docs/agent-context/database.md` and `AGENTS.md`
 4. Apply locally and regenerate types: `pnpm db:push:local`
    (runs `supabase db push --local` then `pnpm db:types` → rewrites
    `src/lib/types/supabase.ts`).
+   > **Worktrees can't prod-clone.** `pnpm db:reset:local` (and `db:clone:*`) call
+   > `supabase/scripts/cloneDb.ts`, which requires `SUPABASE_DB_URL_PROD` — a key
+   > that lives in **no** committed `.env*`, so `new-worktree.ps1`'s blind `.env*`
+   > copy never gives a worktree access to it. In a worktree, verify schema changes
+   > with `db:push:local` (schema apply, no prod data) plus a pgTAP fixture; run any
+   > prod-data count-check from the main checkout.
 5. **New `public` table?** It needs all three or the Data/REST API can't see it:
    - `enable row level security`
    - ≥1 RLS policy (name documents the intended access pattern)

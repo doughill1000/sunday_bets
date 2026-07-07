@@ -27,8 +27,12 @@ checkout into it (a fresh worktree has none and cannot reach Supabase / The Odds
 API without them). Use `scripts/new-worktree.ps1`, which creates the worktree,
 copies the env files, installs deps, and can launch dev on a non-default port. To
 run a worktree's dev server without switching repos:
-`pnpm -C ..\<worktree> run dev -- --port 5174`. See `AGENTS.md` ("Delivery
-workflow") and `docs/WORKFLOW.md` ("Claim and isolate work") for the full rule.
+`pnpm -C ..\<worktree> run dev -- --port 5174`. One caveat: `SUPABASE_DB_URL_PROD`
+is **not** among the copied env vars (it lives in no `.env*` file), so
+`pnpm db:reset:local` — which prod-clones via `cloneDb.ts` — is main-checkout-only.
+In a worktree, apply schema with `db:push:local` and verify via a pgTAP fixture. See
+`AGENTS.md` ("Delivery workflow") and `docs/WORKFLOW.md` ("Claim and isolate work")
+for the full rule.
 
 ## Commands
 

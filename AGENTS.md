@@ -183,6 +183,8 @@ link-not-copy rule.
   runes, Tailwind 4, demo seed
 - [testing.md](docs/agent-context/testing.md) — four test layers, CI gate, lint-not-in-CI
   gotcha, mock fragility
+- [recipes/](docs/agent-context/recipes/README.md) — end-to-end, multi-pack procedures
+  (ordered checklists), e.g. building a materialized read surface
 
 ## Default agent roles (a default, not a hard rule)
 
