@@ -4,6 +4,7 @@
 import { env } from '$env/dynamic/private';
 import type { RecapFacts, SpiceLevel, BadTakeKind } from '$lib/types/server/recap';
 import type { SeasonWrappedSubject } from '$lib/types/server/seasonWrapped';
+import type { BadgeFlavorSubject } from '$lib/types/server/badgeFlavor';
 import { renderSeasonFallback } from '$lib/server/recap/seasonFacts';
 
 const MODEL = 'openai/gpt-5.4';
@@ -492,5 +493,60 @@ function buildSeasonSystemPrompt(subject: SeasonWrappedSubject): string {
 export async function generateSeasonProse(subject: SeasonWrappedSubject): Promise<VoiceResult> {
   return callGateway(buildSeasonSystemPrompt(subject), buildSeasonInputPacket(subject), () =>
     renderSeasonFallback(subject)
+  );
+}
+
+// ── Badge flavor voice (#416, epic #283 Wave 3) ───────────────────────────────────────
+// One tagline (not a paragraph) per crowned badge, overriding the static FLAVORS slot. Same
+// gateway/cost path as above; the orchestrator accumulates spend against SEASON_MAX_COST_USD
+// (≤21 badges/season ≈ $0.13 at the measured ~$0.006/call — comfortably under the cap).
+
+/**
+ * Defense-in-depth sanitizer for one holder object entering the packet: keep only the string
+ * `name` (the display name, already opt-out neutralized) and finite numeric stat keys. Anything
+ * else — a stray user_id, email, object — is dropped before the call (ADR-0008 voice boundary).
+ */
+export function sanitizeBadgeHolder(holder: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { name: String(holder.name ?? '') };
+  for (const [key, value] of Object.entries(holder)) {
+    if (key === 'name') continue;
+    if (typeof value === 'number' && Number.isFinite(value)) out[key] = value;
+  }
+  return out;
+}
+
+/** Build the badge input packet the model receives: display names + numeric earning stats only. */
+export function buildBadgeFlavorInputPacket(subject: BadgeFlavorSubject): Record<string, unknown> {
+  return {
+    group: subject.group_name,
+    season: subject.season_year,
+    badge: subject.label,
+    kind: subject.kind,
+    criteria: subject.description,
+    holders: subject.holders.map((h) => sanitizeBadgeHolder({ name: h.display_name, ...h.stat }))
+  };
+}
+
+function buildBadgeFlavorSystemPrompt(subject: BadgeFlavorSubject): string {
+  const optOutNote = subject.any_opted_out
+    ? ' One or more winners appear as "a player" — they opted OUT of being named; refer to them neutrally and never roast them, whatever the tone above says.'
+    : '';
+  return [
+    PERSONA,
+    'Crown ONE season-long award for the group chat. Write a SINGLE punchy sentence (roughly 10-18 words) — a tagline that names the winner(s) and the exact stat they earned it with. It replaces a generic one-liner every league sees.',
+    'Reading the packet: badge is the award, criteria is how it is earned, holders are the winner(s) with their earning numbers (name + stats).',
+    spiceInstruction(subject.spice) + optOutNote,
+    'Cite the real number from the holder stats — the specific figure is what makes the crown land.',
+    'Use ONLY the facts in the packet: never invent stats, records, or outcomes.',
+    'Keep every jab about in-app betting performance — never about anyone personally, and no low blows.',
+    'Output ONLY the one-line flavor: no badge name prefix, no label, no emoji, no quotes, no sign-off.'
+  ].join(' ');
+}
+
+export async function generateBadgeFlavorProse(subject: BadgeFlavorSubject): Promise<VoiceResult> {
+  return callGateway(
+    buildBadgeFlavorSystemPrompt(subject),
+    buildBadgeFlavorInputPacket(subject),
+    () => subject.static_flavor
   );
 }

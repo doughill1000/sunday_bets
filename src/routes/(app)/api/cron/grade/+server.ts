@@ -4,6 +4,7 @@ import { gradeWeek } from '$lib/server/grading';
 import { sendResultsRecap, sendAIRecapPushes } from '$lib/server/notifications';
 import { sendAIRecaps } from '$lib/server/aiRecap';
 import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
+import { sendBadgeFlavors } from '$lib/server/badgeFlavor';
 import { requireCronSecret, withCronLog } from '$lib/server/cron';
 import { findRecentGradableWeeks } from '$lib/server/db/queries/findRecentGradableWeeks';
 
@@ -85,13 +86,31 @@ export const POST: RequestHandler = async (event) => {
       })
     );
 
+    // After Season Wrapped, voice the crowned badges at season's end (#416, ADR-0008). Same
+    // final-week/complete-season gate; idempotent per badge. Errors → Sentry only; never fail
+    // grading.
+    const badgeFlavors = await Promise.all(
+      weeks.map(async (w) => {
+        try {
+          return { weekId: w.id, ...(await sendBadgeFlavors(w.id)) };
+        } catch (e) {
+          Sentry.captureException(e);
+          return {
+            weekId: w.id,
+            error: e instanceof Error ? e.message : 'badge flavors failed'
+          };
+        }
+      })
+    );
+
     return {
       weekIds: weeks.map((w) => w.id),
       results,
       recaps,
       aiRecaps,
       aiRecapPushes,
-      seasonWrappeds
+      seasonWrappeds,
+      badgeFlavors
     };
   });
   return new Response(JSON.stringify(jobResult), {

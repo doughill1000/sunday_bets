@@ -19,3 +19,4 @@ alter table if exists public.comments  enable row level security;
 alter table if exists public.reactions enable row level security;
 alter table if exists public.ai_recaps enable row level security;
 alter table if exists public.season_wrapped enable row level security;
+alter table if exists public.ai_badge_flavors enable row level security;

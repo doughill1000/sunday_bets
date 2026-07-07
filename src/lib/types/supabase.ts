@@ -28,6 +28,56 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_badge_flavors: {
+        Row: {
+          badge_id: string;
+          completion_tokens: number | null;
+          created_at: string;
+          facts: Json;
+          flavor: string;
+          group_id: string;
+          id: string;
+          is_fallback: boolean;
+          model: string | null;
+          prompt_tokens: number | null;
+          season_year: number;
+        };
+        Insert: {
+          badge_id: string;
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts: Json;
+          flavor: string;
+          group_id: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          season_year: number;
+        };
+        Update: {
+          badge_id?: string;
+          completion_tokens?: number | null;
+          created_at?: string;
+          facts?: Json;
+          flavor?: string;
+          group_id?: string;
+          id?: string;
+          is_fallback?: boolean;
+          model?: string | null;
+          prompt_tokens?: number | null;
+          season_year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ai_badge_flavors_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       ai_recaps: {
         Row: {
           completion_tokens: number | null;

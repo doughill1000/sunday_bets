@@ -12,6 +12,7 @@ import { getLeagueHonors } from '$lib/server/db/queries/honors';
 import { getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
 import { getStatsForSeason } from '$lib/server/db/queries/stats';
 import { computeBadges, badgeInputsFromSeasonStats } from '$lib/domain/badges';
+import { getBadgeFlavorMap } from '$lib/server/db/queries/badgeFlavors';
 import type { GroupCachePayload } from '$lib/query/types';
 
 export type { GroupCachePayload };
@@ -37,10 +38,22 @@ export async function getGroupCachePayload(
   const isSeasonComplete = honors.trophyCase.some((h) => h.season_year === seasonYear);
 
   // computeBadges is pure and reuses the rows just fetched (no extra round-trips).
-  const badges = computeBadges(
+  let badges = computeBadges(
     badgeInputsFromSeasonStats(seasonStats, seasonTotals),
     isSeasonComplete
   );
+
+  // Crowned badges get their AI-voiced tagline (#416) overlaid onto the static FLAVORS slot.
+  // Complete seasons only — in-season badges keep the static copy (they churn weekly). One
+  // extra read, gated on completeness; an empty map (nothing generated yet) leaves badges as-is.
+  if (isSeasonComplete && badges.length > 0) {
+    const flavorMap = await getBadgeFlavorMap(groupId, seasonYear);
+    if (flavorMap.size > 0) {
+      badges = badges.map((b) =>
+        flavorMap.has(b.id) ? { ...b, flavor: flavorMap.get(b.id) as string } : b
+      );
+    }
+  }
 
   return {
     group: { id: group.id, name: group.name },
