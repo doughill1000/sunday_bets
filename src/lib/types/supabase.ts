@@ -1964,6 +1964,18 @@ export type Database = {
         Args: { p_expires_at?: string; p_group_id: string; p_max_uses?: number };
         Returns: string;
       };
+      picks_status_board: {
+        Args: { p_group_id: string; p_week_id: number };
+        Returns: {
+          avatar_key: string;
+          display_name: string;
+          games_available: number;
+          group_id: string;
+          is_complete: boolean;
+          picks_made: number;
+          user_id: string;
+        }[];
+      };
       preview_invite: { Args: { p_code: string }; Returns: Json };
       promote_member: {
         Args: { p_group_id: string; p_user_id: string };

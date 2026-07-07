@@ -3,13 +3,14 @@
   import { providePicksStore } from '$lib/stores/picks';
   import { favoriteSide } from '$lib/domain/spread';
   import type { PickGame } from '$lib/types/games';
-  import type { PickEntry, GroupPickEntry } from '$lib/types/picks';
+  import type { PickEntry, GroupPickEntry, PickStatusBoardEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import GameCard from './GameCard.svelte';
   import PicksSummaryBar from './PicksSummaryBar.svelte';
   import LockedPicksSection from './LockedPicksSection.svelte';
   import AllInDeclarations from './AllInDeclarations.svelte';
+  import PicksStatusBoard from './PicksStatusBoard.svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
   import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
@@ -23,6 +24,7 @@
     social?: Record<string, SocialData>;
     groupPicks?: GroupPickEntry[];
     allInDeclarations?: GroupPickEntry[];
+    pickStatusBoard?: PickStatusBoardEntry[];
     userId?: string | null;
     currentUserDisplayName?: string | null;
     isLastWeek?: boolean;
@@ -36,6 +38,7 @@
     social = {},
     groupPicks = [],
     allInDeclarations = [],
+    pickStatusBoard = [],
     userId = null,
     currentUserDisplayName = null,
     isLastWeek = false,
@@ -122,6 +125,8 @@
   </Alert>
 {:else}
   <PicksSummaryBar {games} {now} />
+
+  <PicksStatusBoard board={pickStatusBoard} myUserId={userId} />
 
   <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
 

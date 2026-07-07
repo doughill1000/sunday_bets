@@ -12,8 +12,8 @@ answers "is vX done?", this skill performs the release: compute the version, bum
 `docs/adr/0015-versioning-and-release-policy.md`; deploy gating: ADR-0010.
 
 **Every GitHub/deploy write in this skill is confirmed with Doug first** (per the
-user-level "confirm before any GitHub write" rule). `gh` is not on the Git Bash PATH —
-run it from PowerShell with the standard PATH refresh.
+user-level "confirm before any GitHub write" rule). Run `gh` from PowerShell, not Bash
+(see `AGENTS.md`).
 
 ## Steps
 
@@ -23,7 +23,6 @@ run it from PowerShell with the standard PATH refresh.
 2. **Compute the version (ADR-0015).** The base is the last shipped version; the level is
    the highest `semver:` label across the work in this release:
    ```powershell
-   $env:PATH = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
    git tag --sort=-v:refname | Select-Object -First 1          # base, e.g. v2.3.0
    gh issue list --repo doughill1000/sunday_bets --milestone "vX" --state all `
      --json number,labels | ConvertFrom-Json                   # read each issue's semver: label

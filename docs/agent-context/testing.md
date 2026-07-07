@@ -10,9 +10,10 @@
 - Framework: Vitest + jsdom.
 - Location: `__tests__/` directories next to the code they cover.
 - Scope: pure functions, domain rules (`src/lib/domain/`), isolated server utilities.
-- **This is the only _test_ layer CI runs on PRs to `master`** (integration, pgTAP,
-  and e2e run only against a local stack — but see "Lint and svelte-check in CI" below
-  for the lint/`check`/build jobs that also gate PRs).
+- **The only layer CI runs unconditionally on every PR to `master`** (`ci-tests.yml`'s
+  `unit` job). Integration and pgTAP also run in CI, but only when their paths change
+  (see their own sections below) — see "Lint and svelte-check in CI" below for the
+  lint/`check`/build jobs that also gate every PR.
 - Mock fragility: unit tests mock `fetch` without `headers` and stub `$env` with only
   the keys each spec needs. Server code that touches response headers or reads new env
   vars must be defensive or the specs break. See `recordUsage()` in
@@ -27,6 +28,9 @@
   Check with `npx supabase status` before running. If Docker is not running, start
   it — don't skip the tests.
 - Run after any change to `src/lib/server/db/` or `supabase/src/`.
+- **Also runs in CI** (`ci-integration.yml`), path-filtered to `supabase/**`, `src/**`,
+  `tests/integration/**` — a real red check on a PR touching those paths, not just a
+  local-only signal.
 
 ### 3. pgTAP — `npx supabase test db`
 
@@ -36,6 +40,9 @@
 - **Required for every database PR** — if you added a table, policy, or function,
   add a pgTAP test for it.
 - Also requires Docker + local Supabase running.
+- **Also runs in CI** (`ci-pgtap.yml`), path-filtered to `supabase/**` — the
+  `pgTap-result` gate job passes on either a real pass or a path-filtered skip, so a
+  failure there is a genuine CI gate, not decoration.
 
 ### 4. E2E — `pnpm test:e2e`
 

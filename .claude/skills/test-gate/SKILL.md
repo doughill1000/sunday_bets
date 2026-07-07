@@ -5,8 +5,11 @@ description: Pick and run the right local checks before opening a PR — lint + 
 
 # Pre-PR test gate
 
-CI on PRs to `master` runs **unit tests only** — **lint and check never run in CI**.
-Green CI does not mean lint-clean. Canonical: `docs/agent-context/testing.md` and
+**Lint, `check`, and unit all gate every PR to `master`** (`ci-tests.yml`); pgTAP and
+integration also run in CI, but only when their paths change (`ci-pgtap.yml`,
+`ci-integration.yml` — skip-tolerant, so a real failure there is a genuine gate, not
+decoration). Run this gate locally anyway — it's minutes faster than a CI round-trip,
+not a coverage gap CI leaves open. Canonical: `docs/agent-context/testing.md` and
 `AGENTS.md` §"Testing & CI".
 
 ## Always

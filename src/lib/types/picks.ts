@@ -42,3 +42,20 @@ export type GroupPickEntry = {
   weight: WeightCode | null;
   pickedTeamShort: string | null;
 };
+
+/**
+ * One active group member's who's-picked status for the active week (ADR-0019
+ * counts-only carve-out). COUNTS ONLY — never which games/sides were picked.
+ * Sourced from the security-definer `picks_status_board` RPC.
+ */
+export type PickStatusBoardEntry = {
+  userId: string;
+  displayName: string | null;
+  avatarKey: string | null;
+  /** Games this member has locked a pick on for the active week. */
+  picksMade: number;
+  /** Total games in the active week (the shared denominator, e.g. the 13 in 9/13). */
+  gamesAvailable: number;
+  /** True once the member has locked a pick on every available game. */
+  isComplete: boolean;
+};

@@ -48,6 +48,31 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **PR #418** Agent workflow improvements — four new skills (`land-pr`, `ci-triage`,
+  `season-ops`, `dependabot-sweep`) closing gaps in the delivery loop; the
+  non-interactive-shell PATH fix moved from a per-command workaround to
+  `.claude/settings.json`; and a PR-time changelog gate added to
+  `governance-freshness.yml` so a missing entry is caught before merge instead of via
+  a backfill PR. Also fixes a doc bug in `testing.md`/`test-gate` that mis-described
+  CI's test coverage.
+- **PR #417** Release v2.10.0 — version bump. Milestone: v2.10 (minor: #360 All-In
+  signature moment + The Whale badge, #388 who's-picked status board, #397 comeback &
+  weekly honors badges; patch: #382 raw Odds API payload persistence, #390 clone-to-staging
+  trigger fix, #391 changelog repair, #392 set-based RLS guard). Production ships via the
+  separate manual `deploy-prod` dispatch, which tags `v2.10.0` (ADR-0010). · ADR-0015
+- **#388** Who's-picked status board — group-visible, **counts-only** pick status for
+  the active week: each active member's picks-made-vs-available count (e.g. 9/13) plus
+  a done/pending flag, never any pick content. A `SECURITY DEFINER` RPC re-imposes the
+  `is_member()` gate and projects counts only, so co-member counts show pre-kickoff
+  while base-table picks RLS keeps pick content sealed (same mechanism as ADR-0023's
+  all-in surface). function: `picks_status_board` · component: `PicksStatusBoard.svelte`
+  · route: `/picks` · ADR-0019
+- **#382** Persist raw Odds API payloads — stores each Odds API response verbatim for
+  later dispute resolution / replay, alongside the parsed lines it already ingests. No
+  new ADR (audit-log precedent, ADR-0011). table: `odds_api_responses` ·
+  `oddsApiResponses.ts` · pgTAP `037`
+- **PR #412** Backfill the CHANGELOG entry for PR #410 (the docs-only skip-jobs CI
+  change). Docs-only.
 - **#392** RLS-enable guard — new set-based pgTAP assertion (one pass over
   `pg_class.relrowsecurity`) fails CI if any `public` base table ships without RLS
   enabled, closing the audit's P2 #9 gap so a forgotten enable line can't silently
