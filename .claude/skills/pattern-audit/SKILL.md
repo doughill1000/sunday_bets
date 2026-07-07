@@ -105,8 +105,8 @@ significant maintainability problem, fix soon · P2 worthwhile, schedule it · P
 - **Sonnet per lane**; escalate to Opus only for the Auth/RLS and Delivery-governance lanes.
 - **Approval gate.** If the report motivates filing issues, stop and hand off to
   `issue-author` (draft-before-write) — do not write to GitHub from this skill.
-- **`gh`/`pnpm` need the PATH refresh** and `gh` must run via PowerShell (see `AGENTS.md`)
-  if a lane shells out — most lanes are pure file reads and won't need it.
+- **`gh` must run via PowerShell** (see `AGENTS.md`), not Bash, if a lane shells out —
+  most lanes are pure file reads and won't need it.
 
 ## See also
 

@@ -229,3 +229,11 @@ for confirmation before proceeding.
   Clicks on reactive controls can land before hydration wires them up — wrap such
   clicks in an `await expect(async () => { ... }).toPass()` retry. Seeding must be
   idempotent.
+- ESPN's scoreboard endpoint **ignores a bare `season=` param** and returns the
+  _current_ season regardless — always pass `dates=<year>` when syncing a specific
+  season's schedule. Caused issue #272's bogus 2026-season bug (fixed PR #275).
+- Tests asserting an absolute row **count** over a shared/seeded table (e.g. pgTAP's
+  `cron_run_log` check, integration's grading fixtures) can fail **locally only**
+  against a prod-cloned/demo-seeded DB, which carries more baseline rows than CI's
+  clean fixture — verify the actual seeded count before assuming a regression; these
+  are green in CI.

@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-06
 
+- **PR #418** Agent workflow improvements — four new skills (`land-pr`, `ci-triage`,
+  `season-ops`, `dependabot-sweep`) closing gaps in the delivery loop; the
+  non-interactive-shell PATH fix moved from a per-command workaround to
+  `.claude/settings.json`; and a PR-time changelog gate added to
+  `governance-freshness.yml` so a missing entry is caught before merge instead of via
+  a backfill PR. Also fixes a doc bug in `testing.md`/`test-gate` that mis-described
+  CI's test coverage.
 - **PR #417** Release v2.10.0 — version bump. Milestone: v2.10 (minor: #360 All-In
   signature moment + The Whale badge, #388 who's-picked status board, #397 comeback &
   weekly honors badges; patch: #382 raw Odds API payload persistence, #390 clone-to-staging
