@@ -12,15 +12,22 @@
 -- default line_source used by grading's coalesce(cfg.line_source,'fanduel')) is preferred
 -- when a game has lines from more than one book, so the whole surface reads one book.
 --
--- Cover math reuses public.ats_margin_at_lock (the same formula grade_pick uses): margin
--- is home-relative (>0 home covered, <0 away covered, =0 push), so each perspective row
--- flips the sign. is_favorite is read off the sign of the closing spread (NULL for a
--- pick'em, spread_value = 0). Only is_scoring weeks (ADR-0016) with BOTH final scores and
--- a usable line are included; games missing a score or a line are dropped (the "~17%
--- missing scores" in older imports render as thinner samples, surfaced via the n= caveat
--- in the UI). ats_margin_at_lock predates this file in supabase/src and always exists in
--- the DB before this view is created (baseline migration), so the view resolves it even
--- though functions emit after views.
+-- Cover math: `margin` is home-relative (>0 home covered, <0 away covered, =0 push), so
+-- each perspective row flips the sign. is_favorite is read off the sign of the closing
+-- spread (NULL for a pick'em, spread_value = 0). Only is_scoring weeks (ADR-0016) with
+-- BOTH final scores and a usable line are included; games missing a score or a line are
+-- dropped (the "~17% missing scores" in older imports render as thinner samples, surfaced
+-- via the n= caveat in the UI).
+--
+-- The margin formula is INLINED here rather than calling public.ats_margin_at_lock, even
+-- though that function is the canonical definition (grade_pick uses it, ADR-0007). Reason:
+-- the ADR-0012 from-empty drift guard (verify-src-reproduces-migrations.ts) applies all of
+-- supabase/src/** in generator phase order -- views (this file) emit BEFORE functions, so
+-- referencing ats_margin_at_lock makes the view fail to create from empty ("function does
+-- not exist"). The real migration chain is unaffected (the function pre-exists from the
+-- baseline), but keeping the view self-contained keeps src/** applyable from empty. This is
+-- a deliberate, small duplication of the ATS formula: if ats_margin_at_lock/grade_pick ever
+-- changes (ADR-0007), update this expression to match.
 --
 -- Materialized (ADR-0013): refreshed by public.refresh_leaderboard_stats() at the end of a
 -- grading run; the unique index below lets that refresh run CONCURRENTLY. Matviews cannot
@@ -45,14 +52,15 @@ with scored as (
     (g.final_scores ->> 'away')::int as away_pts,
     cl.spread_team_id,
     cl.spread_value,
-    public.ats_margin_at_lock(
-      (g.final_scores ->> 'home')::int,
-      (g.final_scores ->> 'away')::int,
-      g.home_team_id,
-      g.away_team_id,
-      cl.spread_team_id,
-      cl.spread_value
-    ) as margin
+    -- Inlined ATS margin (mirrors public.ats_margin_at_lock / grade_pick, ADR-0007) -- see
+    -- the header note on why this is not a function call. Home-relative: apply the spread
+    -- against whichever side it favors.
+    ((g.final_scores ->> 'home')::int - (g.final_scores ->> 'away')::int)
+      + case
+          when cl.spread_team_id = g.home_team_id then -abs(cl.spread_value)
+          when cl.spread_team_id = g.away_team_id then abs(cl.spread_value)
+          else 0
+        end as margin
   from public.games g
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
