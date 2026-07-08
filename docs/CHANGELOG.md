@@ -60,6 +60,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
   adds a `SAT` (Saturday night) kickoff slot so late-season Saturday games are no longer counted
   as daytime. view: league_ats_primetime · files: league `/league` page + Trends cards. ADR-0013
+- **PR #448** Demo seed — in-season depth for the pick-card ATS nuggets (issue-less) — the
+  local demo seed's current (in-progress) season now carries a deep completed history before
+  its live week, so the `/picks` ATS trend nuggets and the `/league` situational cuts
+  (divisional, primetime) actually render in the offseason instead of falling below their
+  sample floors. Seed tooling only — no schema, migration, or runtime change. file:
+  `seed-demo/index.ts`.
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.
