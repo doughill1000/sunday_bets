@@ -584,9 +584,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "policies/50_policies_admin.sql": {
-    "hash": "dd53e6e3efcb082a316ec1e008408031294a615dd0a06129a83368dfd6e60dab",
-    "migration": "20260706195657_odds_api_responses.sql",
-    "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
+    "hash": "ddd4d8b22f32d00928e7499bad2a6fe8949ebb6e5381c27f0ec03d6b07307318",
+    "migration": "20260708170457_espn_api_responses.sql",
+    "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
   },
   "grants/admin_grants.sql": {
     "hash": "59cd97277566e8fe4096d5fde1c49c456aba2323e9f869a49874dd725a284b7c",
@@ -609,9 +609,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/player_grants.sql": {
-    "hash": "870ccc40f7f7a61a4e44e40b1ea11d3a97b3b700d29eb5db4d8452c414e83eb0",
-    "migration": "20260706195657_odds_api_responses.sql",
-    "migrationHash": "ad234a18ea9a2be7c41d5e153c6fb20ae7c24d65cfe20e0662b413f70119724f"
+    "hash": "ac0029ac3837de36db3781931aff595999cb2e7c056d12cc930027d878bd4777",
+    "migration": "20260708170457_espn_api_responses.sql",
+    "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
   },
   "functions/_private/capture_closing_line.sql": {
     "hash": "2ebf7db4f020f56cbab1fa206dd9660b75ca3330210b3bf8c3603aab99ad2707",
@@ -828,5 +828,10 @@
     "hash": "384cf2800d505142f94842582c76103820b4c63f049ff1f482b0973d18ca7b9c",
     "migration": "20260708001017_league_tab_v2_db_foundation.sql",
     "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "schemas/0200_13_espn_api_responses.sql": {
+    "hash": "e69a3a17887ea2f7e2f025962eeb7af9de05cb9a82d09b84714d01525e20ae98",
+    "migration": "20260708170457_espn_api_responses.sql",
+    "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
   }
 }

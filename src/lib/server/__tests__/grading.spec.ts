@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import * as Sentry from '@sentry/sveltekit';
 
-// Dynamic stubs that the module mock will expose
+// Dynamic stubs that the module mocks will expose
 let rpc: any;
 let from: any;
 let updates: Array<{ id: string; values: any }> = [];
-let fetchScoresImpl: any;
+let fetchScoresImpl: any; // Odds API /scores (fallback)
+let fetchEspnWeekImpl: any; // ESPN scoreboard (primary)
+let teamsImpl: any; // findTeamsByExternalKeys (external_key -> team id)
 
 // Mock supabase service BEFORE importing grading module
 vi.mock('$lib/supabase/service', () => ({
@@ -20,9 +23,19 @@ vi.mock('$lib/supabase/service', () => ({
   )
 }));
 
-// Mock odds fetcher
+// Mock Odds fallback fetcher
 vi.mock('$lib/server/odds', () => ({
   fetchNFLScores: (...args: any[]) => fetchScoresImpl(...args)
+}));
+
+// Mock the ESPN scoreboard client (primary score source, ADR-0025)
+vi.mock('$lib/server/schedule', () => ({
+  fetchEspnWeek: (...args: any[]) => fetchEspnWeekImpl(...args)
+}));
+
+// Mock the external_key -> team id lookup used for matchup-identity matching
+vi.mock('$lib/server/db/queries/findTeamsByExternalKeys', () => ({
+  findTeamsByExternalKeys: (...args: any[]) => teamsImpl(...args)
 }));
 
 // Silence Sentry so the non-fatal refresh-failure path doesn't emit real events.
@@ -31,11 +44,12 @@ vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 // AFTER mocks defined, import functions under test
 import { gradeGame, gradeWeek, gradeSeason } from '$lib/server/grading';
 
+// Two target games in the same week (2024, week 1) with distinct matchup identities.
+// Their ESPN abbreviations (external_key) map through teamsImpl to the team ids below.
 function buildMocks() {
   updates = [];
   rpc = vi.fn().mockResolvedValue({ data: null, error: null });
 
-  // Data sets manipulated per test
   const weeks = [{ id: 301 }, { id: 302 }];
   const gamesByWeek = [{ id: 'gW1' }, { id: 'gW2' }];
   const seasonGames = [{ id: 'gS1' }, { id: 'gS2' }];
@@ -46,7 +60,8 @@ function buildMocks() {
       home_team_id: 1,
       away_team_id: 2,
       home_team: { name: 'Home X', short_name: 'HX' },
-      away_team: { name: 'Away X', short_name: 'AX' }
+      away_team: { name: 'Away X', short_name: 'AX' },
+      week: { week_number: 1, season: { year: 2024 } }
     },
     {
       id: 'gS1',
@@ -54,7 +69,8 @@ function buildMocks() {
       home_team_id: 3,
       away_team_id: 4,
       home_team: { name: 'Home S1', short_name: 'HS1' },
-      away_team: { name: 'Away S1', short_name: 'AS1' }
+      away_team: { name: 'Away S1', short_name: 'AS1' },
+      week: { week_number: 1, season: { year: 2024 } }
     }
   ];
 
@@ -74,7 +90,8 @@ function buildMocks() {
         })
       }));
       builder.select = vi.fn().mockImplementation((sel: string) => {
-        // Lightweight heuristic: if multiline (full refreshScores select)
+        // Lightweight heuristic: if it embeds the team relationships, it's the full
+        // refreshScores select.
         if (/home_team:teams/.test(sel)) {
           return {
             in: vi.fn().mockResolvedValue({ data: fullGames, error: null })
@@ -94,9 +111,44 @@ function buildMocks() {
   return { weeks, gamesByWeek, seasonGames, fullGames };
 }
 
+// ESPN returns both matchups as completed finals, keyed by external_key.
+function espnFinalsForBothGames() {
+  return vi.fn().mockResolvedValue({
+    weekNumber: 1,
+    games: [
+      {
+        scheduleGameId: 'e1',
+        date: '',
+        homeTeamAbbr: 'KEYHX',
+        awayTeamAbbr: 'KEYAX',
+        homeScore: 21,
+        awayScore: 17,
+        status: 'final'
+      },
+      {
+        scheduleGameId: 'e2',
+        date: '',
+        homeTeamAbbr: 'KEYHS1',
+        awayTeamAbbr: 'KEYAS1',
+        homeScore: 30,
+        awayScore: 27,
+        status: 'final'
+      }
+    ]
+  });
+}
+
 beforeEach(() => {
   buildMocks();
-  fetchScoresImpl = vi.fn();
+  fetchScoresImpl = vi.fn().mockResolvedValue([]);
+  fetchEspnWeekImpl = espnFinalsForBothGames();
+  teamsImpl = vi.fn().mockResolvedValue([
+    { id: 1, external_key: 'KEYHX' },
+    { id: 2, external_key: 'KEYAX' },
+    { id: 3, external_key: 'KEYHS1' },
+    { id: 4, external_key: 'KEYAS1' }
+  ]);
+  (Sentry.captureException as unknown as Mock).mockClear();
 });
 
 describe('grading service', () => {
@@ -117,55 +169,140 @@ describe('grading service', () => {
   });
 
   it('gradeGame still returns ok when the matview refresh fails (non-fatal)', async () => {
-    // First rpc (grade_game) succeeds; the refresh rpc reports an error.
     rpc.mockResolvedValueOnce({ data: null, error: null }); // grade_game
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'refresh boom' } }); // refresh
     const res = await gradeGame('g1');
     expect(res).toEqual({ ok: true, game_id: 'g1' });
   });
 
-  it('gradeGame with refreshScores fetches scores and updates finals when completed', async () => {
-    fetchScoresImpl = vi.fn().mockResolvedValue([
-      {
-        id: 'ext-x',
-        completed: true,
-        scores: [
-          { name: 'Home X', score: 21 },
-          { name: 'Away X', score: 17 }
-        ],
-        commence_time: '2024-01-01T00:00:00Z'
-      }
-    ]);
+  it('gradeGame with refreshScores takes finals from ESPN by matchup identity, not Odds', async () => {
     const res = await gradeGame('gX', { refreshScores: true, daysFrom: 2 });
-    expect(fetchScoresImpl).toHaveBeenCalledWith(2);
-    // update for gX should occur
+
+    // ESPN scoreboard queried for the game's week coordinates (2024, week 1, regular season).
+    expect(fetchEspnWeekImpl).toHaveBeenCalledWith(2024, 1, 2, { retainRaw: true });
+    // Odds fallback NOT consulted — ESPN had a completed final.
+    expect(fetchScoresImpl).not.toHaveBeenCalled();
+    // Final attached from ESPN's explicit home/away, no name fuzzing.
     expect(updates.find((u) => u.id === 'gX')?.values).toEqual({
       final_scores: { home: 21, away: 17 }
     });
     expect(res.ok).toBe(true);
   });
 
-  it('gradeWeek without refresh only rpc', async () => {
-    const res = await gradeWeek(10);
-    expect(rpc).toHaveBeenCalledWith('grade_week', { p_week_id: 10 });
-    expect(fetchScoresImpl).not.toHaveBeenCalled();
-    expect(res).toEqual({ ok: true, week_id: 10 });
+  it('preseason weeks (negative week_number) query ESPN seasontype=1', async () => {
+    // Re-point the full select at a preseason target (week_number -2 => espnWeek 2, seasontype 1).
+    from = vi.fn().mockImplementation((table: string) => {
+      if (table === 'games') {
+        return {
+          update: vi.fn().mockImplementation((values: any) => ({
+            eq: vi.fn().mockImplementation(async (_c: string, id: string) => {
+              updates.push({ id, values });
+              return { data: null, error: null };
+            })
+          })),
+          select: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [
+                {
+                  id: 'gP',
+                  external_game_id: 'ext-p',
+                  home_team_id: 1,
+                  away_team_id: 2,
+                  home_team: { name: 'Home X', short_name: 'HX' },
+                  away_team: { name: 'Away X', short_name: 'AX' },
+                  week: { week_number: -2, season: { year: 2024 } }
+                }
+              ],
+              error: null
+            })
+          })
+        };
+      }
+      return {};
+    });
+    fetchEspnWeekImpl = vi.fn().mockResolvedValue({
+      weekNumber: 2,
+      games: [
+        {
+          scheduleGameId: 'ep',
+          date: '',
+          homeTeamAbbr: 'KEYHX',
+          awayTeamAbbr: 'KEYAX',
+          homeScore: 10,
+          awayScore: 7,
+          status: 'final'
+        }
+      ]
+    });
+
+    await gradeGame('gP', { refreshScores: true });
+    expect(fetchEspnWeekImpl).toHaveBeenCalledWith(2024, 2, 1, { retainRaw: true });
+    expect(updates.find((u) => u.id === 'gP')?.values.final_scores).toEqual({ home: 10, away: 7 });
   });
 
-  it('gradeWeek with refresh triggers score pull and updates', async () => {
+  it('falls back to Odds /scores for a game ESPN has not completed', async () => {
+    // ESPN returns nothing completed for the week.
+    fetchEspnWeekImpl = vi.fn().mockResolvedValue({ weekNumber: 1, games: [] });
     fetchScoresImpl = vi.fn().mockResolvedValue([
       {
         id: 'ext-x',
         completed: true,
         scores: [
-          { name: 'Home X', score: 24 },
-          { name: 'Away X', score: 14 }
+          { name: 'Home X', score: 14 },
+          { name: 'Away X', score: 10 }
         ],
         commence_time: '2024-01-01T00:00:00Z'
       }
     ]);
-    await gradeWeek(11, { refreshScores: true });
+
+    await gradeGame('gX', { refreshScores: true, daysFrom: 3 });
+
+    expect(fetchScoresImpl).toHaveBeenCalledWith(3);
+    expect(updates.find((u) => u.id === 'gX')?.values.final_scores).toEqual({ home: 14, away: 10 });
+  });
+
+  it('an ESPN fetch failure is a non-fatal miss: logs to Sentry and falls back to Odds', async () => {
+    fetchEspnWeekImpl = vi.fn().mockRejectedValue(new Error('ESPN down'));
+    fetchScoresImpl = vi.fn().mockResolvedValue([
+      {
+        id: 'ext-x',
+        completed: true,
+        scores: [
+          { name: 'Home X', score: 9 },
+          { name: 'Away X', score: 6 }
+        ],
+        commence_time: '2024-01-01T00:00:00Z'
+      }
+    ]);
+
+    await gradeGame('gX', { refreshScores: true });
+
+    expect(Sentry.captureException).toHaveBeenCalled();
     expect(fetchScoresImpl).toHaveBeenCalled();
+    expect(updates.find((u) => u.id === 'gX')?.values.final_scores).toEqual({ home: 9, away: 6 });
+  });
+
+  it('grades an arbitrarily old game from ESPN with no daysFrom window (backfill path)', async () => {
+    // daysFrom is a fallback-only concern; when ESPN has the final, no window applies.
+    await gradeSeason(2019, { refreshScores: true, daysFrom: 1 });
+    expect(fetchScoresImpl).not.toHaveBeenCalled();
+    expect(updates.find((u) => u.id === 'gS1')?.values.final_scores).toEqual({
+      home: 30,
+      away: 27
+    });
+  });
+
+  it('gradeWeek without refresh only rpc', async () => {
+    const res = await gradeWeek(10);
+    expect(rpc).toHaveBeenCalledWith('grade_week', { p_week_id: 10 });
+    expect(fetchEspnWeekImpl).not.toHaveBeenCalled();
+    expect(fetchScoresImpl).not.toHaveBeenCalled();
+    expect(res).toEqual({ ok: true, week_id: 10 });
+  });
+
+  it('gradeWeek with refresh triggers an ESPN score pull and updates', async () => {
+    await gradeWeek(11, { refreshScores: true });
+    expect(fetchEspnWeekImpl).toHaveBeenCalled();
     expect(updates.some((u) => u.values.final_scores)).toBe(true);
   });
 
@@ -181,24 +318,13 @@ describe('grading service', () => {
       return {};
     });
     await expect(gradeWeek(12, { refreshScores: true })).rejects.toThrow('games fetch failed');
-    expect(fetchScoresImpl).not.toHaveBeenCalled();
+    expect(fetchEspnWeekImpl).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it('gradeSeason with refresh pulls weeks, scores, and updates then rpc', async () => {
-    fetchScoresImpl = vi.fn().mockResolvedValue([
-      {
-        id: 'ext-s1',
-        completed: true,
-        scores: [
-          { name: 'Home S1', score: 30 },
-          { name: 'Away S1', score: 27 }
-        ],
-        commence_time: '2024-01-01T00:00:00Z'
-      }
-    ]);
+  it('gradeSeason with refresh pulls finals from ESPN then rpc', async () => {
     const res = await gradeSeason(2024, { refreshScores: true, daysFrom: 3 });
-    expect(fetchScoresImpl).toHaveBeenCalledWith(3);
+    expect(fetchScoresImpl).not.toHaveBeenCalled();
     expect(updates.find((u) => u.id === 'gS1')?.values.final_scores).toEqual({
       home: 30,
       away: 27
@@ -207,7 +333,8 @@ describe('grading service', () => {
     expect(res).toEqual({ ok: true, season_id: 2024 });
   });
 
-  it('does not update when no completed events', async () => {
+  it('does not update when neither ESPN nor Odds has a completed final', async () => {
+    fetchEspnWeekImpl = vi.fn().mockResolvedValue({ weekNumber: 1, games: [] });
     fetchScoresImpl = vi
       .fn()
       .mockResolvedValue([

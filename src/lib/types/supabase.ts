@@ -256,6 +256,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      espn_api_responses: {
+        Row: {
+          body: Json | null;
+          endpoint: string;
+          fetched_at: string;
+          http_status: number;
+          id: number;
+          request_params: Json;
+        };
+        Insert: {
+          body?: Json | null;
+          endpoint: string;
+          fetched_at?: string;
+          http_status: number;
+          id?: never;
+          request_params?: Json;
+        };
+        Update: {
+          body?: Json | null;
+          endpoint?: string;
+          fetched_at?: string;
+          http_status?: number;
+          id?: never;
+          request_params?: Json;
+        };
+        Relationships: [];
+      };
       game_lines: {
         Row: {
           fetched_at: string;

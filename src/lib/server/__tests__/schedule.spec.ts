@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { fetchEspnWeek, EspnFetchError, EspnParseError } from '../schedule';
+import { recordEspnApiResponse } from '../espnApiResponses';
+
+// Raw-payload retention is a best-effort side effect (issue #450); mock it so the
+// score tests don't reach Supabase and so we can assert the retention wiring.
+vi.mock('../espnApiResponses', () => ({ recordEspnApiResponse: vi.fn() }));
 
 const WEEK_1_RESPONSE = {
   week: { number: 1 },
@@ -237,6 +242,138 @@ describe('lib/server/schedule.ts', () => {
 
       const result = await fetchEspnWeek(2026, 1);
       expect(result.games).toHaveLength(0);
+    });
+  });
+
+  describe('fetchEspnWeek — final scores (ADR-0025)', () => {
+    const FINAL_GAME = {
+      week: { number: 6 },
+      events: [
+        {
+          id: '401671860',
+          date: '2026-10-12T17:00Z',
+          competitions: [
+            {
+              competitors: [
+                {
+                  homeAway: 'home',
+                  score: '27',
+                  team: { abbreviation: 'PHI', displayName: 'Philadelphia Eagles' }
+                },
+                {
+                  homeAway: 'away',
+                  score: '20',
+                  team: { abbreviation: 'KC', displayName: 'Kansas City Chiefs' }
+                }
+              ],
+              status: { type: { state: 'post', completed: true } }
+            }
+          ]
+        }
+      ]
+    };
+
+    it('parses competitor scores and maps them to the correct home/away', async () => {
+      mockFetch(FINAL_GAME);
+
+      const result = await fetchEspnWeek(2026, 6);
+
+      const [game] = result.games;
+      expect(game.status).toBe('final');
+      expect(game.homeTeamAbbr).toBe('PHI');
+      expect(game.homeScore).toBe(27);
+      expect(game.awayTeamAbbr).toBe('KC');
+      expect(game.awayScore).toBe(20);
+    });
+
+    it('accepts a numeric score as well as a string score', async () => {
+      mockFetch({
+        week: { number: 6 },
+        events: [
+          {
+            id: '401671861',
+            date: '2026-10-12T17:00Z',
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    score: 31,
+                    team: { abbreviation: 'BUF', displayName: 'Buffalo Bills' }
+                  },
+                  {
+                    homeAway: 'away',
+                    score: 13,
+                    team: { abbreviation: 'MIA', displayName: 'Miami Dolphins' }
+                  }
+                ],
+                status: { type: { state: 'post', completed: true } }
+              }
+            ]
+          }
+        ]
+      });
+
+      const result = await fetchEspnWeek(2026, 6);
+      expect(result.games[0].homeScore).toBe(31);
+      expect(result.games[0].awayScore).toBe(13);
+    });
+
+    it('yields null scores for a scheduled game that carries no score field', async () => {
+      mockFetch(WEEK_1_RESPONSE); // competitors have no `score`
+
+      const result = await fetchEspnWeek(2026, 1);
+      expect(result.games[0].homeScore).toBeNull();
+      expect(result.games[0].awayScore).toBeNull();
+    });
+
+    it('fails closed (EspnParseError) when the score field drifts to an unexpected shape', async () => {
+      mockFetch({
+        week: { number: 6 },
+        events: [
+          {
+            id: '401671862',
+            date: '2026-10-12T17:00Z',
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    score: { value: 27 }, // drift: object instead of string|number
+                    team: { abbreviation: 'PHI', displayName: 'Philadelphia Eagles' }
+                  },
+                  {
+                    homeAway: 'away',
+                    score: '20',
+                    team: { abbreviation: 'KC', displayName: 'Kansas City Chiefs' }
+                  }
+                ],
+                status: { type: { state: 'post', completed: true } }
+              }
+            ]
+          }
+        ]
+      });
+
+      await expect(fetchEspnWeek(2026, 6)).rejects.toThrow(EspnParseError);
+    });
+
+    it('retains the raw payload only when { retainRaw: true } is passed', async () => {
+      const recorder = recordEspnApiResponse as unknown as Mock;
+      recorder.mockClear();
+
+      mockFetch(FINAL_GAME);
+      await fetchEspnWeek(2026, 6); // schedule-sync style: no retention
+      expect(recorder).not.toHaveBeenCalled();
+
+      mockFetch(FINAL_GAME);
+      await fetchEspnWeek(2026, 6, 2, { retainRaw: true }); // grading style: retained
+      expect(recorder).toHaveBeenCalledTimes(1);
+      expect(recorder.mock.calls[0][0]).toMatchObject({
+        endpoint: 'scoreboard',
+        httpStatus: 200,
+        requestParams: { seasontype: '2', week: '6', dates: '2026' }
+      });
     });
   });
 });

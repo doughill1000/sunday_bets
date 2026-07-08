@@ -18,6 +18,10 @@ const EspnTeamSchema = z.object({
 
 const EspnCompetitorSchema = z.object({
   homeAway: z.enum(['home', 'away']),
+  // ESPN sends the score as a string ("24") on the scoreboard payload, absent on
+  // far-future games. Accept string|number and tolerate missing (nullish); a drift
+  // to any other shape fails the parse and is handled as a non-fatal miss (ADR-0025).
+  score: z.union([z.number(), z.string()]).nullish(),
   team: EspnTeamSchema
 });
 
@@ -53,6 +57,11 @@ export type EspnGame = {
   date: string;
   homeTeamAbbr: string;
   awayTeamAbbr: string;
+  // Final/live scores when ESPN carries them; null on scheduled games or a score
+  // field that could not be coerced to a number. Grading trusts these only on a
+  // status === 'final' game (ADR-0025).
+  homeScore: number | null;
+  awayScore: number | null;
   status: 'scheduled' | 'in_progress' | 'final' | 'postponed';
 };
 
@@ -76,6 +85,14 @@ function normalizeAbbr(abbr: string): string {
   return ESPN_ABBR_MAP[abbr] ?? abbr;
 }
 
+// Coerce ESPN's competitor score (a string like "24", a number, or absent) to a
+// number, or null when it is missing or non-numeric.
+function parseScore(raw: number | string | null | undefined): number | null {
+  if (raw == null || raw === '') return null;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 function mapStatus(state: string, completed: boolean): EspnGame['status'] {
   if (completed) return 'final';
   if (state === 'in') return 'in_progress';
@@ -86,35 +103,63 @@ function mapStatus(state: string, completed: boolean): EspnGame['status'] {
   return 'scheduled';
 }
 
+// Retain the raw ESPN scoreboard payload (issue #450, extends the #382 Odds-API
+// capture). Best-effort: retention must never break a schedule sync or a grade,
+// so all errors are swallowed — same posture as recordRawResponse in odds.ts.
+async function recordRawEspn(
+  requestParams: Record<string, string>,
+  httpStatus: number,
+  body: unknown
+): Promise<void> {
+  try {
+    const { recordEspnApiResponse } = await import('./espnApiResponses');
+    await recordEspnApiResponse({ endpoint: 'scoreboard', requestParams, httpStatus, body });
+  } catch {
+    // ignore
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Fetch one week's scoreboard from the ESPN public endpoint.
 // Throws EspnFetchError on network failure, EspnParseError on schema mismatch.
 // Both are non-fatal from the caller's perspective (logged to Sentry, no DB write).
+// Pass { retainRaw: true } from a grading caller to persist the raw payload for
+// score-dispute audit; schedule sync leaves it off so it stays out of retention.
 // ---------------------------------------------------------------------------
 export async function fetchEspnWeek(
   year: number,
   weekNumber: number,
   // ESPN seasontype: 2 = regular season (default), 1 = preseason (ADR-0016 non-scoring round).
-  seasonType: 1 | 2 = 2
+  seasonType: 1 | 2 = 2,
+  opts?: { retainRaw?: boolean }
 ): Promise<EspnWeekResult> {
   // The scoreboard endpoint keys the schedule off `dates` (the season year),
   // NOT `season` — it silently ignores `season` and returns the current season,
   // so asking for a non-current year would otherwise yield the wrong games.
-  const url = `${ESPN_SCOREBOARD}?${new URLSearchParams({
+  const requestParams = {
     seasontype: String(seasonType),
     week: String(weekNumber),
     dates: String(year)
-  })}`;
+  };
+  const url = `${ESPN_SCOREBOARD}?${new URLSearchParams(requestParams)}`;
 
   let raw: unknown;
+  let httpStatus = 0;
   try {
     const res = await fetch(url);
+    httpStatus = res.status;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     raw = await res.json();
   } catch (err) {
     throw new EspnFetchError(
       `ESPN fetch failed week ${weekNumber}/${year}: ${err instanceof Error ? err.message : String(err)}`
     );
+  }
+
+  // Persist the raw bytes before Zod validation so even a schema drift stays
+  // auditable to its source (ADR-0025 fail-closed retention).
+  if (opts?.retainRaw) {
+    await recordRawEspn(requestParams, httpStatus, raw);
   }
 
   const parsed = EspnScoreboardSchema.safeParse(raw);
@@ -151,6 +196,8 @@ export async function fetchEspnWeek(
       date: event.date,
       homeTeamAbbr: normalizeAbbr(home.team.abbreviation),
       awayTeamAbbr: normalizeAbbr(away.team.abbreviation),
+      homeScore: parseScore(home.score),
+      awayScore: parseScore(away.score),
       status
     });
   }

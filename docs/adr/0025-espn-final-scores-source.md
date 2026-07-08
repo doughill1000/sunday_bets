@@ -1,6 +1,6 @@
 # ADR-0025: ESPN scoreboard as the primary source of final scores
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-08
 - Issue: #450
 - Supersedes: None
