@@ -16,6 +16,9 @@
 -- league_ats_base cascade` also drops THIS view -- exactly like league_ats_team /
 -- league_ats_fav_dog / league_ats_home_away, this file must be re-touched in any migration that
 -- re-emits league_ats_base.sql so the generator bundles the recreate into the same migration.
+-- Re-touched unchanged for #425 (League tab v2): the definition below is identical to #406,
+-- but this file's hash must change so the generator recreates the view after league_ats_base's
+-- cascade drop (see the dependents note in league_ats_base.sql).
 create or replace view public.league_ats_situational as
 select
   b.season_year,

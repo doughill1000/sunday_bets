@@ -1117,6 +1117,8 @@ export type Database = {
       };
       teams: {
         Row: {
+          conference: string | null;
+          division: string | null;
           external_key: string | null;
           id: number;
           league: string;
@@ -1124,6 +1126,8 @@ export type Database = {
           short_name: string;
         };
         Insert: {
+          conference?: string | null;
+          division?: string | null;
           external_key?: string | null;
           id?: number;
           league?: string;
@@ -1131,6 +1135,8 @@ export type Database = {
           short_name: string;
         };
         Update: {
+          conference?: string | null;
+          division?: string | null;
           external_key?: string | null;
           id?: number;
           league?: string;
@@ -1359,13 +1365,28 @@ export type Database = {
       league_ats_base: {
         Row: {
           ats_result: string | null;
+          commence_time: string | null;
           game_id: string | null;
           is_favorite: boolean | null;
           is_home: boolean | null;
+          margin: number | null;
+          opponent_team_id: number | null;
           season_year: number | null;
+          spread_value: number | null;
           su_result: string | null;
           team_id: number | null;
           week_number: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_divisional: {
+        Row: {
+          favorite_covers: number | null;
+          games: number | null;
+          is_divisional: boolean | null;
+          pushes: number | null;
+          season_year: number | null;
+          underdog_covers: number | null;
         };
         Relationships: [];
       };
@@ -1400,6 +1421,29 @@ export type Database = {
         };
         Relationships: [];
       };
+      league_ats_primetime: {
+        Row: {
+          favorite_covers: number | null;
+          games: number | null;
+          pushes: number | null;
+          season_year: number | null;
+          slot: string | null;
+          underdog_covers: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_quadrants: {
+        Row: {
+          ats_losses: number | null;
+          ats_pushes: number | null;
+          ats_wins: number | null;
+          games: number | null;
+          is_favorite: boolean | null;
+          is_home: boolean | null;
+          season_year: number | null;
+        };
+        Relationships: [];
+      };
       league_ats_situational: {
         Row: {
           ats_losses: number | null;
@@ -1410,6 +1454,32 @@ export type Database = {
           is_home: boolean | null;
           season_year: number | null;
           team_id: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_spread_buckets: {
+        Row: {
+          bucket: string | null;
+          bucket_order: number | null;
+          favorite_covers: number | null;
+          games: number | null;
+          pushes: number | null;
+          season_year: number | null;
+          underdog_covers: number | null;
+        };
+        Relationships: [];
+      };
+      league_ats_streaks: {
+        Row: {
+          last4_losses: number | null;
+          last4_pushes: number | null;
+          last4_wins: number | null;
+          season_year: number | null;
+          streak_length: number | null;
+          streak_result: string | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_short_name: string | null;
         };
         Relationships: [];
       };

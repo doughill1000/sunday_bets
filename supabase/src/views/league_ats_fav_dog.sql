@@ -11,6 +11,9 @@
 -- pg_depend dependency, so `drop materialized view league_ats_base cascade` also drops this
 -- view -- re-touch this file in every migration that re-emits league_ats_base.sql (same
 -- rule as league_completed_standings).
+-- Re-touched unchanged for #425 (League tab v2): the definition below is identical to #406,
+-- but this file's hash must change so the generator recreates the view after league_ats_base's
+-- cascade drop (see the dependents note in league_ats_base.sql).
 create or replace view public.league_ats_fav_dog as
 select
   b.season_year,
