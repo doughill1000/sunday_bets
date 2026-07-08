@@ -3,19 +3,44 @@ import type { Tables } from '$lib/types/supabase';
 import type {
   AtsRecord,
   LeagueAts,
+  LeagueDivisionalSplit,
   LeagueFavDogSplit,
   LeagueHomeAway,
+  LeaguePrimetimeSlot,
+  LeagueQuadrant,
   LeagueSituationalRecord,
   LeagueSlate,
-  LeagueTeamAts
+  LeagueSpreadBucket,
+  LeagueTeamAts,
+  LeagueTeamGameLog,
+  LeagueTeamGameLogEntry,
+  LeagueTeamStreak,
+  PrimetimeSlot
 } from '$lib/types/server/league';
 import { buildSlateGames } from '$lib/utils/leagueSlate';
+import { PRIMETIME_SLOT_ORDER } from '$lib/utils/leagueAts';
 import { findActiveWeek } from './findActiveWeek';
 import { getGamesWithActiveLines } from './getGamesWithActiveLines';
 
 type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
 type HomeAwayRow = Tables<'league_ats_home_away'>;
+type StreakRow = Tables<'league_ats_streaks'>;
+type BaseRow = Tables<'league_ats_base'>;
+type SpreadBucketRow = Tables<'league_ats_spread_buckets'>;
+type QuadrantRow = Tables<'league_ats_quadrants'>;
+type PrimetimeRow = Tables<'league_ats_primetime'>;
+type DivisionalRow = Tables<'league_ats_divisional'>;
+
+// ats_result / su_result / streak_result are typed `string | null`; narrow the view's known
+// domain to the three literals the UI switches on (anything else — never emitted — is dropped).
+type AtsOutcome = 'win' | 'loss' | 'push';
+const asOutcome = (v: string | null): AtsOutcome | null =>
+  v === 'win' || v === 'loss' || v === 'push' ? v : null;
+
+const PRIMETIME_SLOTS = new Set<string>(PRIMETIME_SLOT_ORDER);
+const isPrimetimeSlot = (slot: string | null): slot is PrimetimeSlot =>
+  slot != null && PRIMETIME_SLOTS.has(slot);
 
 // Matview/view columns are all nullable in the generated types; a present row never has
 // null counts, so coalesce to 0 rather than dropping rows on a spurious null.
@@ -81,6 +106,114 @@ function toHomeAway(row: HomeAwayRow): LeagueHomeAway {
   };
 }
 
+function toStreak(row: StreakRow): LeagueTeamStreak | null {
+  if (row.team_id == null || row.team_name == null || row.team_short_name == null) return null;
+  const streakResult = asOutcome(row.streak_result);
+  if (streakResult == null) return null;
+  return {
+    teamId: row.team_id,
+    teamName: row.team_name,
+    teamShortName: row.team_short_name,
+    streakResult,
+    // A push resets the streak to 0 upstream, so coalesce guards only against a spurious null.
+    streakLength: n(row.streak_length),
+    last4: rec(row.last4_wins, row.last4_losses, row.last4_pushes)
+  };
+}
+
+function toSpreadBucket(row: SpreadBucketRow): LeagueSpreadBucket | null {
+  // bucket_order / bucket are non-null in practice (grouped keys); guard the nullable types.
+  if (row.bucket_order == null || row.bucket == null) return null;
+  return {
+    bucketOrder: row.bucket_order,
+    bucket: row.bucket,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
+function toQuadrant(row: QuadrantRow): LeagueQuadrant | null {
+  // The view filters is_favorite is not null and groups by both flags; guard the types.
+  if (row.is_home == null || row.is_favorite == null) return null;
+  return {
+    isHome: row.is_home,
+    isFavorite: row.is_favorite,
+    games: n(row.games),
+    ats: rec(row.ats_wins, row.ats_losses, row.ats_pushes)
+  };
+}
+
+function toPrimetimeSlot(row: PrimetimeRow): LeaguePrimetimeSlot | null {
+  // A row whose slot isn't one of the four known windows is skipped rather than mislabeled;
+  // the view only ever emits these four, so this is a type guard, not a real filter.
+  if (!isPrimetimeSlot(row.slot)) return null;
+  return {
+    slot: row.slot,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
+/** Sort primetime rows into the canonical TNF → SNF → MNF → day display order. */
+function sortPrimetime(slots: LeaguePrimetimeSlot[]): LeaguePrimetimeSlot[] {
+  const order = (slot: PrimetimeSlot) => PRIMETIME_SLOT_ORDER.indexOf(slot);
+  return slots.toSorted((a, b) => order(a.slot) - order(b.slot));
+}
+
+function toDivisionalSplit(row: DivisionalRow): LeagueDivisionalSplit | null {
+  // is_divisional is the grouping key; a null (unclassifiable) row shouldn't reach here
+  // because the view excludes games with no division, but guard the nullable type.
+  if (row.is_divisional == null) return null;
+  return {
+    isDivisional: row.is_divisional,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
+/**
+ * Favorite ATS cover rate by spread-size bucket for one season (issue #426, wave B). Reads
+ * league_ats_spread_buckets, a plain view over the shared league_ats_base matview — no cover
+ * math is duplicated. One row per bucket; ordered pick'em first, then ascending line size.
+ * Group-independent (service-role read, ADR-0013).
+ */
+export async function getLeagueSpreadBuckets(seasonYear: number): Promise<LeagueSpreadBucket[]> {
+  const { data, error } = await supabaseService
+    .from('league_ats_spread_buckets')
+    .select('*')
+    .eq('season_year', seasonYear)
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const bucket = toSpreadBucket(row);
+    return bucket ? [bucket] : [];
+  });
+}
+
+/**
+ * The four league-wide home/away × favorite/underdog cover rates for one season (issue #426,
+ * wave B). Reads league_ats_quadrants, a plain view over the same league_ats_base matview as
+ * the per-team league_ats_situational — no cover math is duplicated. Pick'em games are
+ * excluded upstream. Group-independent (service-role read, ADR-0013).
+ */
+export async function getLeagueQuadrants(seasonYear: number): Promise<LeagueQuadrant[]> {
+  const { data, error } = await supabaseService
+    .from('league_ats_quadrants')
+    .select('*')
+    .eq('season_year', seasonYear);
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const quadrant = toQuadrant(row);
+    return quadrant ? [quadrant] : [];
+  });
+}
+
 /**
  * The seasons that have any league ATS data, newest first. Read off league_ats_home_away
  * (exactly one row per season with qualifying games), so the /league season selector only
@@ -96,13 +229,25 @@ export async function getLeagueSeasons(): Promise<number[]> {
 }
 
 /**
- * League-wide team ATS for one season: the per-team table, the favorite/underdog module
- * (season aggregate + per-week breakdown), and the home/away module. All three read the
- * league_ats_* views, which derive from the single league_ats_base matview — no aggregation
- * is duplicated. Group-independent: identical for every user (ADR-0013 service-role read).
+ * League-wide team ATS for one season, assembled as the single cached /league payload
+ * (ADR-0017): the per-team table, the favorite/underdog module (season aggregate + per-week
+ * breakdown), the home/away module, the wave-B market cuts (spread-size buckets + league-wide
+ * quadrants, issue #426), and the primetime and divisional situational modules (#427). Every
+ * part reads the league_ats_* views, which derive from the single league_ats_base matview —
+ * no aggregation is duplicated. Group-independent: identical for every user (ADR-0013
+ * service-role read).
  */
 export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
-  const [teamResult, favDogResult, homeAwayResult] = await Promise.all([
+  const [
+    teamResult,
+    favDogResult,
+    homeAwayResult,
+    streakResult,
+    primetimeResult,
+    divisionalResult,
+    spreadBuckets,
+    quadrants
+  ] = await Promise.all([
     supabaseService
       .from('league_ats_team')
       .select('*')
@@ -117,12 +262,24 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
       .from('league_ats_home_away')
       .select('*')
       .eq('season_year', seasonYear)
-      .maybeSingle()
+      .maybeSingle(),
+    supabaseService
+      .from('league_ats_streaks')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .order('team_short_name'),
+    supabaseService.from('league_ats_primetime').select('*').eq('season_year', seasonYear),
+    supabaseService.from('league_ats_divisional').select('*').eq('season_year', seasonYear),
+    getLeagueSpreadBuckets(seasonYear),
+    getLeagueQuadrants(seasonYear)
   ]);
 
   if (teamResult.error) throw teamResult.error;
   if (favDogResult.error) throw favDogResult.error;
   if (homeAwayResult.error) throw homeAwayResult.error;
+  if (streakResult.error) throw streakResult.error;
+  if (primetimeResult.error) throw primetimeResult.error;
+  if (divisionalResult.error) throw divisionalResult.error;
 
   const teams = (teamResult.data ?? []).flatMap((row) => {
     const entry = toTeam(row);
@@ -130,6 +287,20 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
   });
   const favDogByWeek = (favDogResult.data ?? []).map(toFavDogWeek);
   const homeAway = homeAwayResult.data ? toHomeAway(homeAwayResult.data) : null;
+  const streaks = (streakResult.data ?? []).flatMap((row) => {
+    const entry = toStreak(row);
+    return entry ? [entry] : [];
+  });
+  const primetime = sortPrimetime(
+    (primetimeResult.data ?? []).flatMap((row) => {
+      const slot = toPrimetimeSlot(row);
+      return slot ? [slot] : [];
+    })
+  );
+  const divisional = (divisionalResult.data ?? []).flatMap((row) => {
+    const split = toDivisionalSplit(row);
+    return split ? [split] : [];
+  });
 
   return {
     seasonYear,
@@ -138,7 +309,12 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
     teams,
     favDogSeason: sumFavDog(favDogByWeek),
     favDogByWeek,
-    homeAway
+    homeAway,
+    streaks,
+    spreadBuckets,
+    quadrants,
+    primetime,
+    divisional
   };
 }
 
@@ -202,4 +378,59 @@ export async function getLeagueSlate(seasonYear: number): Promise<LeagueSlate> {
   if (slateGames.length === 0) return { seasonYear, weekNumber: null, games: [] };
 
   return { seasonYear, weekNumber: week.week_number, games: slateGames };
+}
+
+type BaseGameLogRow = Pick<
+  BaseRow,
+  'week_number' | 'opponent_team_id' | 'is_home' | 'spread_value' | 'margin' | 'ats_result'
+>;
+
+function toGameLogEntry(row: BaseGameLogRow): LeagueTeamGameLogEntry | null {
+  const atsResult = asOutcome(row.ats_result);
+  if (
+    row.week_number == null ||
+    row.opponent_team_id == null ||
+    row.is_home == null ||
+    row.spread_value == null ||
+    row.margin == null ||
+    atsResult == null
+  ) {
+    return null;
+  }
+  return {
+    weekNumber: row.week_number,
+    opponentTeamId: row.opponent_team_id,
+    isHome: row.is_home,
+    spreadValue: row.spread_value,
+    margin: row.margin,
+    atsResult
+  };
+}
+
+/**
+ * One team's full season ATS game log for the /league drill-down (issue #428). Reads the
+ * per-perspective league_ats_base matview directly — no new view or aggregation — filtered to
+ * this team and season and ordered by week (a team plays at most once per scoring week; game_id
+ * breaks the rare tie deterministically). Each row is already team-relative (spread_value < 0 =
+ * favored, margin > 0 = covered), so the UI renders it without re-deriving cover math.
+ * Group-independent (service-role read, ADR-0013). Opponent names are resolved client-side from
+ * the team list already loaded on /league, so no teams join is needed here.
+ */
+export async function getLeagueTeamGameLog(
+  seasonYear: number,
+  teamId: number
+): Promise<LeagueTeamGameLog> {
+  const { data, error } = await supabaseService
+    .from('league_ats_base')
+    .select('week_number, opponent_team_id, is_home, spread_value, margin, ats_result, game_id')
+    .eq('season_year', seasonYear)
+    .eq('team_id', teamId)
+    .order('week_number')
+    .order('game_id');
+  if (error) throw error;
+  const games = (data ?? []).flatMap((row) => {
+    const entry = toGameLogEntry(row);
+    return entry ? [entry] : [];
+  });
+  return { seasonYear, teamId, games };
 }

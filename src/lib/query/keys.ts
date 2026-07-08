@@ -25,7 +25,11 @@ export const queryKeys = {
   // The forward-looking slate (issue #429) is week- and line-sensitive, so it is a distinct
   // root — deliberately NOT in SHAREABLE_QUERY_ROOTS, so a cold PWA relaunch refetches the
   // current line instead of serving a superseded one from IndexedDB (ADR-0017).
-  leagueSlate: (seasonYear: number) => ['league-slate', seasonYear] as const
+  leagueSlate: (seasonYear: number) => ['league-slate', seasonYear] as const,
+  // Per-team drill-down game log, lazily fetched when a team expands (issue #428). Under the
+  // 'league' root so it shares the shareable/persistable class (public, group-independent).
+  leagueTeam: (teamId: number, seasonYear: number) =>
+    ['league', 'team', teamId, seasonYear] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any

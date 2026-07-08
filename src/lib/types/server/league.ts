@@ -68,6 +68,110 @@ export type LeagueSituationalRecord = {
   ats: AtsRecord;
 };
 
+/** A team's current ATS cover streak and recent (last-4) form for the /league Hot/Cold
+ *  module (issue #428). Rows come from league_ats_streaks (over league_ats_base). The push
+ *  convention is the view's: a push carries no cover momentum, so it neither extends nor
+ *  starts a run — `streakResult = 'push'` with `streakLength = 0` means the most-recent game
+ *  was a push and the team is on no active streak. */
+export type LeagueTeamStreak = {
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  /** Direction of the current run: 'win' = cover streak, 'loss' = non-cover streak, 'push'
+   *  = most-recent game was a push (no active streak, streakLength = 0). */
+  streakResult: 'win' | 'loss' | 'push';
+  /** Consecutive most-recent games sharing streakResult; 0 when streakResult is 'push'. */
+  streakLength: number;
+  /** ATS record over the four most-recent games (fewer early in a season). */
+  last4: AtsRecord;
+};
+
+/** One graded game in a team's season log for the drill-down (issue #428), from the team's
+ *  own perspective in league_ats_base. `spreadValue` and `margin` are team-relative
+ *  (negative spread = this team favored; margin > 0 = this team covered, = 0 push). */
+export type LeagueTeamGameLogEntry = {
+  weekNumber: number;
+  opponentTeamId: number;
+  /** true = this team hosted; false = it was on the road. */
+  isHome: boolean;
+  /** Team-relative closing/active spread: negative = favored, positive = underdog, 0 = pick'em. */
+  spreadValue: number;
+  /** Team-relative cover margin in points: > 0 covered by that many, = 0 push, < 0 did not. */
+  margin: number;
+  atsResult: 'win' | 'loss' | 'push';
+};
+
+/** A single team's season-long ATS game log (issue #428). Lazily fetched per team when the
+ *  drill-down opens; group- and user-independent like the rest of the /league surface. */
+export type LeagueTeamGameLog = {
+  teamId: number;
+  seasonYear: number;
+  games: LeagueTeamGameLogEntry[];
+};
+
+/** Favorite ATS cover counts for one spread-size bucket over a season (issue #426). Buckets
+ *  partition games by the absolute team-relative spread: pick'em (0), 1-3, 3.5-6.5, 7-9.5,
+ *  10+. `favoriteCovers` / `underdogCovers` are the favorite's ATS wins / losses (cover % is
+ *  derived from them in the UI, pushes excluded). The pick'em bucket has no favorite, so its
+ *  favoriteCovers/underdogCovers are 0 and only its `games` count is meaningful. */
+export type LeagueSpreadBucket = {
+  /** Sort order 0-4: 0=pick'em, 1=1-3, 2=3.5-6.5, 3=7-9.5, 4=10+. */
+  bucketOrder: number;
+  /** Display label: 'pickem' | '1-3' | '3.5-6.5' | '7-9.5' | '10+'. */
+  bucket: string;
+  /** Games in this bucket this season (the bucket's `n`). */
+  games: number;
+  /** Favorite ATS wins (favorite covered). Always 0 for the pick'em bucket. */
+  favoriteCovers: number;
+  /** Favorite ATS losses (underdog covered). Always 0 for the pick'em bucket. */
+  underdogCovers: number;
+  pushes: number;
+};
+
+/** One league-wide home/away × favorite/underdog quadrant for a season (issue #426): the
+ *  four cover rates (home favorite, home underdog, road favorite, road underdog) aggregated
+ *  across all teams. Grain is the team-perspective row, so each game contributes to two
+ *  quadrants (one per side); pick'em games are excluded upstream. Cover % is derived from
+ *  `ats` in the UI (pushes excluded), reusing the same helper as every other league module. */
+export type LeagueQuadrant = {
+  /** true = home-team games; false = road-team games. */
+  isHome: boolean;
+  /** true = the favored side; false = the underdog side. */
+  isFavorite: boolean;
+  /** Qualifying team-games in this quadrant this season (the quadrant's `n`). */
+  games: number;
+  ats: AtsRecord;
+};
+
+/** The kickoff slot a game is classified into by league_ats_primetime: the three night
+ *  windows plus `day` for everything else. The slot is derived from the New-York wall-clock
+ *  kickoff (DST-safe) in the view, not here. */
+export type PrimetimeSlot = 'TNF' | 'SNF' | 'MNF' | 'day';
+
+/** Favorite ATS cover counts for one kickoff slot in a season (league_ats_primetime, #425).
+ *  Grain mirrors LeagueFavDogSplit — one favorite-perspective row per game — so
+ *  favoriteCovers + underdogCovers + pushes = games and cover % excludes pushes. */
+export type LeaguePrimetimeSlot = {
+  slot: PrimetimeSlot;
+  /** Games with a favorite that kicked off in this slot (pick'em games excluded upstream). */
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
+/** Favorite ATS cover counts split by divisional vs non-divisional matchup for a season
+ *  (league_ats_divisional, #425). Same favorite-perspective grain as LeaguePrimetimeSlot;
+ *  games where either side has no division/conference are excluded upstream. */
+export type LeagueDivisionalSplit = {
+  /** true = both teams share conference + division; false = any other NFL matchup. */
+  isDivisional: boolean;
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
 /** The full /league payload for one season. `totalGames` is the number of qualifying
  *  scored games with a line (drives the "n games scored" caveat on thin/older seasons). */
 export type LeagueAts = {
@@ -77,6 +181,16 @@ export type LeagueAts = {
   favDogSeason: LeagueFavDogSplit;
   favDogByWeek: LeagueFavDogSplit[];
   homeAway: LeagueHomeAway | null;
+  /** Per-team current ATS streak + last-4 form for the Hot/Cold module (issue #428). */
+  streaks: LeagueTeamStreak[];
+  /** Favorite cover % by spread-size bucket (issue #426), pick'em first, then ascending. */
+  spreadBuckets: LeagueSpreadBucket[];
+  /** The four league-wide home/away × favorite/underdog cover rates (issue #426). */
+  quadrants: LeagueQuadrant[];
+  /** Favorite cover rate by kickoff slot (TNF/SNF/MNF/day), canonical order, #427. */
+  primetime: LeaguePrimetimeSlot[];
+  /** Favorite cover rate for divisional vs non-divisional matchups, #427. */
+  divisional: LeagueDivisionalSplit[];
 };
 
 /** One side of a slate matchup: the team's display label and the situational ATS nugget

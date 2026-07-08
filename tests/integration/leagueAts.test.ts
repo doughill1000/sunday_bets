@@ -15,7 +15,10 @@ import { ensureTeams } from './fixtures/db';
 import {
   getLeagueAts,
   getLeagueSeasons,
-  getLeagueSituational
+  getLeagueSituational,
+  getLeagueTeamGameLog,
+  getLeagueSpreadBuckets,
+  getLeagueQuadrants
 } from '../../src/lib/server/db/queries/league';
 
 const admin = createServiceClient();
@@ -108,6 +111,21 @@ beforeAll(async () => {
   if (!teams || teams.length < 4) throw new Error('leagueAts: need KC/BUF/PHI/DAL teams');
   for (const t of teams) teamId[t.short_name as string] = t.id as number;
 
+  // league_ats_divisional reads teams.division/conference (seeded in prod from external_key,
+  // #425). This suite owns its division fixture the same way it owns its games and lines, so
+  // the divisional split is asserted deterministically regardless of ambient team seed state.
+  // KC=AFC West, BUF=AFC East (non-divisional); PHI & DAL both NFC East (divisional).
+  const divisions: Record<string, { division: string; conference: string }> = {
+    KC: { division: 'West', conference: 'AFC' },
+    BUF: { division: 'East', conference: 'AFC' },
+    PHI: { division: 'East', conference: 'NFC' },
+    DAL: { division: 'East', conference: 'NFC' }
+  };
+  for (const [short, dc] of Object.entries(divisions)) {
+    const { error: dErr } = await admin.from('teams').update(dc).eq('id', teamId[short]);
+    if (dErr) throw new Error(`leagueAts: seed division ${short}: ${dErr.message}`);
+  }
+
   seasonId = await upsertSeason(SEASON_YEAR);
   weekId = await upsertWeek(seasonId, 1);
 
@@ -184,6 +202,41 @@ describe('league ATS read path (#406)', () => {
     expect(league.homeAway?.away.ats).toEqual({ wins: 1, losses: 1, pushes: 0 });
   });
 
+  test('getLeagueAts includes each team’s current ATS streak and last-4 form (#428)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+
+    // Every team has played exactly one game, so each is on a length-1 run in that direction.
+    const kc = league.streaks.find((s) => s.teamShortName === 'KC')!;
+    expect(kc.streakResult).toBe('win');
+    expect(kc.streakLength).toBe(1);
+    expect(kc.last4).toEqual({ wins: 1, losses: 0, pushes: 0 });
+
+    const buf = league.streaks.find((s) => s.teamShortName === 'BUF')!;
+    expect(buf.streakResult).toBe('loss');
+    expect(buf.streakLength).toBe(1);
+    expect(buf.last4).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueTeamGameLog returns the team-relative per-game log (#428)', async () => {
+    // KC (home) favored -7 and won 28-14 -> covered by 7 against the line.
+    const log = await getLeagueTeamGameLog(SEASON_YEAR, teamId.KC);
+    expect(log.games).toHaveLength(1);
+    const g = log.games[0];
+    expect(g.weekNumber).toBe(1);
+    expect(g.opponentTeamId).toBe(teamId.BUF);
+    expect(g.isHome).toBe(true);
+    expect(g.spreadValue).toBe(-7); // team-relative: negative = favored
+    expect(g.margin).toBe(7); // team-relative cover margin
+    expect(g.atsResult).toBe('win');
+
+    // BUF (away) was the +7 underdog and did not cover.
+    const buf = await getLeagueTeamGameLog(SEASON_YEAR, teamId.BUF);
+    expect(buf.games[0].isHome).toBe(false);
+    expect(buf.games[0].spreadValue).toBe(7);
+    expect(buf.games[0].margin).toBe(-7);
+    expect(buf.games[0].atsResult).toBe('loss');
+  });
+
   test('getLeagueSituational returns crossed home/away × favorite/underdog quadrants', async () => {
     const rows = await getLeagueSituational(SEASON_YEAR);
     const quadrant = (id: number, isHome: boolean, isFavorite: boolean) =>
@@ -194,5 +247,79 @@ describe('league ATS read path (#406)', () => {
     expect(quadrant(teamId.DAL, false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
     expect(quadrant(teamId.BUF, false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
     expect(quadrant(teamId.PHI, true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueSpreadBuckets buckets favorite covers by line size (#426)', async () => {
+    const buckets = await getLeagueSpreadBuckets(SEASON_YEAR);
+    const byOrder = (order: number) => buckets.find((b) => b.bucketOrder === order);
+
+    // g2 (DAL -3) lands in the 1-3 bucket; g1 (KC -7) in the 7-9.5 bucket. Both favorites covered.
+    expect(byOrder(1)).toMatchObject({
+      bucket: '1-3',
+      games: 1,
+      favoriteCovers: 1,
+      underdogCovers: 0,
+      pushes: 0
+    });
+    expect(byOrder(3)).toMatchObject({
+      bucket: '7-9.5',
+      games: 1,
+      favoriteCovers: 1,
+      underdogCovers: 0,
+      pushes: 0
+    });
+
+    // Rows arrive ordered pick'em-first, then ascending line size.
+    const orders = buckets.map((b) => b.bucketOrder);
+    expect(orders).toEqual([...orders].sort((a, b) => a - b));
+  });
+
+  test('getLeagueQuadrants aggregates the four league-wide cover rates (#426)', async () => {
+    const quadrants = await getLeagueQuadrants(SEASON_YEAR);
+    const cell = (isHome: boolean, isFavorite: boolean) =>
+      quadrants.find((q) => q.isHome === isHome && q.isFavorite === isFavorite);
+
+    // KC home favorite + DAL away favorite covered; PHI home dog + BUF away dog lost.
+    expect(cell(true, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(cell(false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(cell(true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+    expect(cell(false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueAts carries the wave-B market cuts in the single payload (#426)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+    // Both games have a favorite, so two buckets are populated and all four quadrants exist.
+    expect(league.spreadBuckets.map((b) => b.bucketOrder).sort()).toEqual([1, 3]);
+    expect(league.quadrants).toHaveLength(4);
+  });
+
+  test('getLeagueAts classifies both afternoon kickoffs into the day slot (#427)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+
+    // Both games kick at 18:00Z = 14:00 ET (EDT in September) → day, not a night window.
+    const day = league.primetime.find((s) => s.slot === 'day');
+    expect(day?.games).toBe(2);
+    // Both favorites (KC, DAL) covered.
+    expect(day?.favoriteCovers).toBe(2);
+    expect(day?.underdogCovers).toBe(0);
+    // No night slots for these two afternoon games.
+    expect(league.primetime.some((s) => s.slot !== 'day')).toBe(false);
+  });
+
+  test('getLeagueAts splits divisional vs non-divisional favorites (#427)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+    const div = league.divisional.find((d) => d.isDivisional);
+    const non = league.divisional.find((d) => !d.isDivisional);
+
+    // PHI vs DAL are both NFC East → divisional; DAL (favorite) covered.
+    expect(div?.games).toBe(1);
+    expect(div?.favoriteCovers).toBe(1);
+    expect(div?.underdogCovers).toBe(0);
+
+    // KC (AFC West) vs BUF (AFC East) → same conference, different division → non-divisional;
+    // KC (favorite) covered.
+    expect(non?.games).toBe(1);
+    expect(non?.favoriteCovers).toBe(1);
+    expect(non?.underdogCovers).toBe(0);
   });
 });

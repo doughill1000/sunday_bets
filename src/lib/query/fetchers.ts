@@ -9,7 +9,8 @@ import type {
   LeaderboardCachePayload,
   AllTimeLeaderboardPayload,
   LeagueCachePayload,
-  LeagueSlatePayload
+  LeagueSlatePayload,
+  LeagueTeamGameLogPayload
 } from './types';
 
 type FetchFn = typeof fetch;
@@ -78,4 +79,16 @@ export async function fetchLeagueSlate(
   const res = await fetchFn(`/api/league/slate?season=${seasonYear}`);
   if (!res.ok) throw new Error(`Failed to load league slate (${res.status})`);
   return res.json() as Promise<LeagueSlatePayload>;
+}
+
+/** One team's season ATS game log for the /league drill-down (issue #428). No groupId — the
+ *  data is identical for everyone. */
+export async function fetchLeagueTeamGameLog(
+  fetchFn: FetchFn,
+  teamId: number,
+  seasonYear: number
+): Promise<LeagueTeamGameLogPayload> {
+  const res = await fetchFn(`/api/league/team?teamId=${teamId}&season=${seasonYear}`);
+  if (!res.ok) throw new Error(`Failed to load team game log (${res.status})`);
+  return res.json() as Promise<LeagueTeamGameLogPayload>;
 }
