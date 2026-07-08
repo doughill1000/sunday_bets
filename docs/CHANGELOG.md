@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#426** League tab v2 market cuts (UI) — two new read modules on `/league`: favorite
+  cover % by spread-size bucket, and the four league-wide home/away × favorite/underdog cover
+  rates. Both read #425's views through the single season-cached league payload, reusing the
+  shared cover-% helper (no cover math duplicated); thin buckets show a sample caveat instead
+  of a noisy rate. No migration. components: `league/SpreadBuckets.svelte` ·
+  `league/Quadrants.svelte` · route: `/league` · views: `league_ats_spread_buckets` ·
+  `league_ats_quadrants` · ADR-0013 · ADR-0017
 - **#425** League tab v2 DB foundation — one consolidating migration for the League tab v2
   epic (#424) so the later UI waves read already-typed views and generate no migrations of
   their own. Widens the `league_ats_base` matview with team-relative spread/margin, kickoff

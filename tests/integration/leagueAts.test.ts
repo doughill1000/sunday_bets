@@ -15,7 +15,9 @@ import { ensureTeams } from './fixtures/db';
 import {
   getLeagueAts,
   getLeagueSeasons,
-  getLeagueSituational
+  getLeagueSituational,
+  getLeagueSpreadBuckets,
+  getLeagueQuadrants
 } from '../../src/lib/server/db/queries/league';
 
 const admin = createServiceClient();
@@ -194,5 +196,49 @@ describe('league ATS read path (#406)', () => {
     expect(quadrant(teamId.DAL, false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
     expect(quadrant(teamId.BUF, false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
     expect(quadrant(teamId.PHI, true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueSpreadBuckets buckets favorite covers by line size (#426)', async () => {
+    const buckets = await getLeagueSpreadBuckets(SEASON_YEAR);
+    const byOrder = (order: number) => buckets.find((b) => b.bucketOrder === order);
+
+    // g2 (DAL -3) lands in the 1-3 bucket; g1 (KC -7) in the 7-9.5 bucket. Both favorites covered.
+    expect(byOrder(1)).toMatchObject({
+      bucket: '1-3',
+      games: 1,
+      favoriteCovers: 1,
+      underdogCovers: 0,
+      pushes: 0
+    });
+    expect(byOrder(3)).toMatchObject({
+      bucket: '7-9.5',
+      games: 1,
+      favoriteCovers: 1,
+      underdogCovers: 0,
+      pushes: 0
+    });
+
+    // Rows arrive ordered pick'em-first, then ascending line size.
+    const orders = buckets.map((b) => b.bucketOrder);
+    expect(orders).toEqual([...orders].sort((a, b) => a - b));
+  });
+
+  test('getLeagueQuadrants aggregates the four league-wide cover rates (#426)', async () => {
+    const quadrants = await getLeagueQuadrants(SEASON_YEAR);
+    const cell = (isHome: boolean, isFavorite: boolean) =>
+      quadrants.find((q) => q.isHome === isHome && q.isFavorite === isFavorite);
+
+    // KC home favorite + DAL away favorite covered; PHI home dog + BUF away dog lost.
+    expect(cell(true, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(cell(false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
+    expect(cell(true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+    expect(cell(false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueAts carries the wave-B market cuts in the single payload (#426)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+    // Both games have a favorite, so two buckets are populated and all four quadrants exist.
+    expect(league.spreadBuckets.map((b) => b.bucketOrder).sort()).toEqual([1, 3]);
+    expect(league.quadrants).toHaveLength(4);
   });
 });

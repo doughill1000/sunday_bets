@@ -5,13 +5,17 @@ import type {
   LeagueAts,
   LeagueFavDogSplit,
   LeagueHomeAway,
+  LeagueQuadrant,
   LeagueSituationalRecord,
+  LeagueSpreadBucket,
   LeagueTeamAts
 } from '$lib/types/server/league';
 
 type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
 type HomeAwayRow = Tables<'league_ats_home_away'>;
+type SpreadBucketRow = Tables<'league_ats_spread_buckets'>;
+type QuadrantRow = Tables<'league_ats_quadrants'>;
 
 // Matview/view columns are all nullable in the generated types; a present row never has
 // null counts, so coalesce to 0 rather than dropping rows on a spurious null.
@@ -77,6 +81,67 @@ function toHomeAway(row: HomeAwayRow): LeagueHomeAway {
   };
 }
 
+function toSpreadBucket(row: SpreadBucketRow): LeagueSpreadBucket | null {
+  // bucket_order / bucket are non-null in practice (grouped keys); guard the nullable types.
+  if (row.bucket_order == null || row.bucket == null) return null;
+  return {
+    bucketOrder: row.bucket_order,
+    bucket: row.bucket,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
+function toQuadrant(row: QuadrantRow): LeagueQuadrant | null {
+  // The view filters is_favorite is not null and groups by both flags; guard the types.
+  if (row.is_home == null || row.is_favorite == null) return null;
+  return {
+    isHome: row.is_home,
+    isFavorite: row.is_favorite,
+    games: n(row.games),
+    ats: rec(row.ats_wins, row.ats_losses, row.ats_pushes)
+  };
+}
+
+/**
+ * Favorite ATS cover rate by spread-size bucket for one season (issue #426, wave B). Reads
+ * league_ats_spread_buckets, a plain view over the shared league_ats_base matview — no cover
+ * math is duplicated. One row per bucket; ordered pick'em first, then ascending line size.
+ * Group-independent (service-role read, ADR-0013).
+ */
+export async function getLeagueSpreadBuckets(seasonYear: number): Promise<LeagueSpreadBucket[]> {
+  const { data, error } = await supabaseService
+    .from('league_ats_spread_buckets')
+    .select('*')
+    .eq('season_year', seasonYear)
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const bucket = toSpreadBucket(row);
+    return bucket ? [bucket] : [];
+  });
+}
+
+/**
+ * The four league-wide home/away × favorite/underdog cover rates for one season (issue #426,
+ * wave B). Reads league_ats_quadrants, a plain view over the same league_ats_base matview as
+ * the per-team league_ats_situational — no cover math is duplicated. Pick'em games are
+ * excluded upstream. Group-independent (service-role read, ADR-0013).
+ */
+export async function getLeagueQuadrants(seasonYear: number): Promise<LeagueQuadrant[]> {
+  const { data, error } = await supabaseService
+    .from('league_ats_quadrants')
+    .select('*')
+    .eq('season_year', seasonYear);
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const quadrant = toQuadrant(row);
+    return quadrant ? [quadrant] : [];
+  });
+}
+
 /**
  * The seasons that have any league ATS data, newest first. Read off league_ats_home_away
  * (exactly one row per season with qualifying games), so the /league season selector only
@@ -92,13 +157,15 @@ export async function getLeagueSeasons(): Promise<number[]> {
 }
 
 /**
- * League-wide team ATS for one season: the per-team table, the favorite/underdog module
- * (season aggregate + per-week breakdown), and the home/away module. All three read the
- * league_ats_* views, which derive from the single league_ats_base matview — no aggregation
- * is duplicated. Group-independent: identical for every user (ADR-0013 service-role read).
+ * League-wide team ATS for one season, assembled as the single cached /league payload
+ * (ADR-0017): the per-team table, the favorite/underdog module (season aggregate + per-week
+ * breakdown), the home/away module, and the wave-B market cuts (spread-size buckets +
+ * league-wide quadrants, issue #426). Every part reads the league_ats_* views, which derive
+ * from the single league_ats_base matview — no aggregation is duplicated. Group-independent:
+ * identical for every user (ADR-0013 service-role read).
  */
 export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
-  const [teamResult, favDogResult, homeAwayResult] = await Promise.all([
+  const [teamResult, favDogResult, homeAwayResult, spreadBuckets, quadrants] = await Promise.all([
     supabaseService
       .from('league_ats_team')
       .select('*')
@@ -113,7 +180,9 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
       .from('league_ats_home_away')
       .select('*')
       .eq('season_year', seasonYear)
-      .maybeSingle()
+      .maybeSingle(),
+    getLeagueSpreadBuckets(seasonYear),
+    getLeagueQuadrants(seasonYear)
   ]);
 
   if (teamResult.error) throw teamResult.error;
@@ -134,7 +203,9 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
     teams,
     favDogSeason: sumFavDog(favDogByWeek),
     favDogByWeek,
-    homeAway
+    homeAway,
+    spreadBuckets,
+    quadrants
   };
 }
 

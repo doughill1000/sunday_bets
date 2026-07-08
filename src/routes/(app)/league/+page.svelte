@@ -7,6 +7,8 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
+  import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
+  import Quadrants from '$lib/components/league/Quadrants.svelte';
   import {
     Card,
     CardContent,
@@ -49,7 +51,9 @@
       pushes: 0
     },
     favDogByWeek: [],
-    homeAway: null
+    homeAway: null,
+    spreadBuckets: [],
+    quadrants: []
   };
 
   const league = $derived(leagueQuery.data ?? EMPTY);
@@ -260,6 +264,9 @@
       </CardContent>
     </Card>
 
+    <!-- ── Favorites by spread size (issue #426) ───────────────────────────────── -->
+    <SpreadBuckets buckets={league.spreadBuckets} />
+
     <!-- ── Per-team ATS table ──────────────────────────────────────────────────── -->
     <Card data-testid="league-team-table">
       <CardHeader>
@@ -338,5 +345,8 @@
         </CardContent>
       </Card>
     {/if}
+
+    <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
+    <Quadrants quadrants={league.quadrants} />
   {/if}
 </section>
