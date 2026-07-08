@@ -79,9 +79,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "schemas/0200_03_teams.sql": {
-    "hash": "e699614a83c05ba20fd0ed56030b5cdf7046e98e467462a5117d251fb9c28d8e",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "6e0e55bc5124c43bff40da75e0a6b30cca4bdd9253f05ccee664d2b9445cd17c",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "schemas/0200_04_games.sql": {
     "hash": "214b7148b89192a090bf57f19f1e4676487fdccad0c7160fa374cee9893713a8",
@@ -770,24 +770,24 @@
     "migrationHash": "efd01416797b01f1fa469d2f4758fa5d0f7da17838703c7205c9ddbc6f3ff526"
   },
   "views/league_ats_base.sql": {
-    "hash": "94db12d5b98a895dd514f4fee5ce683b837392bfdfe71c4eca8d316d7902da98",
-    "migration": "20260707210905_league_ats_views.sql",
-    "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+    "hash": "10ca4b09176f90c1e2551ff39e8218ea49a1983d89f9a2a4d460e12406439a63",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "views/league_ats_fav_dog.sql": {
-    "hash": "d7a85ca3b40269376b48c34386b33626dc64d44b9d9566a6e44e9b91be1ed234",
-    "migration": "20260707210905_league_ats_views.sql",
-    "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+    "hash": "2ce6d43eac3c37932ec69f8ba16395019934d5a54cdaa3fa410082d2c266b5ec",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "views/league_ats_home_away.sql": {
-    "hash": "ac2c20a7920473e69425907aa35cee1fb8ce067d76e722b22d1c89cf7a062c23",
-    "migration": "20260707210905_league_ats_views.sql",
-    "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+    "hash": "846fbeced8e342c0df8e24bd856005899703009b6255bc6bc8bf35c9824fbf21",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "views/league_ats_team.sql": {
-    "hash": "eb65f5dac47ce329ac9b115fea4441323f247f3d21b645f4ce7c0cdf8741c4a7",
-    "migration": "20260707210905_league_ats_views.sql",
-    "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+    "hash": "cf8364db476c58ef0c581d9af7d3a04a9cd8ebb511b42aa022637afe8dca5c10",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "schemas/0228_show_team_trends.sql": {
     "hash": "f4aec714defdbc6b23607f34b1e7fb9796726b067603f93dbfe38d7629e141b7",
@@ -795,8 +795,38 @@
     "migrationHash": "903fa257d825f668bbc8a4ec1b5ee8bea8083bfaec044621d559dba794fef2c7"
   },
   "views/league_ats_situational.sql": {
-    "hash": "66d546241c90d5a8d98db415292100f0ab8e2ed9fd87601f96f3cb87e50ac10a",
-    "migration": "20260707214954_league_ats_situational_and_trends_pref.sql",
-    "migrationHash": "903fa257d825f668bbc8a4ec1b5ee8bea8083bfaec044621d559dba794fef2c7"
+    "hash": "5732d547b611a60e107dc0116c2c2b4be6e7a50d395d4c312318aa84a68da4c0",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "schemas/0229_seed_team_divisions.sql": {
+    "hash": "70435e43ea1696269d46973467b5154fcedaa620f6544c4c801d448f3056f5ea",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "views/league_ats_divisional.sql": {
+    "hash": "6f12ac01925f3e363dc243492e0f9c0de53bfb5716860ad0a59dd6d90766dc8a",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "views/league_ats_primetime.sql": {
+    "hash": "46ea2393ed3f42cd4e762ff74034200ef7e932d6ed5c26c6bc47b2d4cbca4af4",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "views/league_ats_quadrants.sql": {
+    "hash": "3a6c747e16339547ec62062947b821a40fee280eebd988762228e3971a2fb4b1",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "views/league_ats_spread_buckets.sql": {
+    "hash": "f45abfcd1e6aa1054adc1c6a12ac07bdc97b8f7b7efa85176d8020bd66db663a",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+  },
+  "views/league_ats_streaks.sql": {
+    "hash": "384cf2800d505142f94842582c76103820b4c63f049ff1f482b0973d18ca7b9c",
+    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
+    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   }
 }

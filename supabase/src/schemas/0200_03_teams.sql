@@ -4,5 +4,15 @@ create table if not exists public.teams (
   league text not null default 'NFL',
   external_key text unique, -- e.g., 'PHI'
   name text not null,
-  short_name text not null
+  short_name text not null,
+  division text,   -- 'East' | 'North' | 'South' | 'West' (NFL only; null for other leagues)
+  conference text  -- 'AFC' | 'NFC'                        (NFL only; null for other leagues)
 );
+
+-- Additive for existing DBs (#425, League tab v2): the generator re-emits this whole file
+-- into the migration, and the idempotent table definition above no-ops on the already-present
+-- teams table, so the new columns must be added explicitly to reach prod. Values are seeded
+-- for the 32 NFL teams by 0229_seed_team_divisions.sql; a divisional matchup
+-- (league_ats_divisional) is defined as same conference AND same division.
+alter table public.teams add column if not exists division text;
+alter table public.teams add column if not exists conference text;
