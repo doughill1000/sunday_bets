@@ -69,8 +69,7 @@ current status.
 | [ADR-0022](0022-over-under-totals-market.md)                                | Over/Under (totals) market — deferred; per-group season mode if built                        |
 | [ADR-0023](0023-all-in-signature-moment.md)                                 | All-In as a signature moment — pre-kickoff declaration carve-out and The Whale title         |
 | [ADR-0024](0024-grading-integrity-membership-penalty-and-frozen-seasons.md) | Missed-pick penalty scoped to active league membership; imported seasons frozen from grading |
+| [ADR-0025](0025-espn-final-scores-source.md)                                | ESPN scoreboard as the primary source of final scores (Odds API `/scores` fallback)          |
 | [ADR-0026](0026-public-demo-season-snapshot.md)                             | Public shareable demo season served from a generated read-only snapshot                      |
 
-_The numbering is sequential; the next ADR is 0027. (0025 is reserved for the
-in-flight ESPN final-scores ADR on branch `claude/adr-0024-espn-final-scores`, which
-must renumber from its duplicate 0024 to 0025 before merging.)_
+_The numbering is sequential; the next ADR is 0027._
