@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#425** League tab v2 DB foundation — one consolidating migration for the League tab v2
+  epic (#424) so the later UI waves read already-typed views and generate no migrations of
+  their own. Widens the `league_ats_base` matview with team-relative spread/margin, kickoff
+  time and opponent; adds `teams.division`/`conference` (seeded for the 32 NFL teams); and
+  adds five service-role aggregate views — spread-size buckets, home/away × favorite/underdog
+  quadrants, primetime kickoff slots, divisional splits, and ATS streaks. No user-facing
+  change. matview: `league_ats_base` · views: `league_ats_spread_buckets` ·
+  `league_ats_quadrants` · `league_ats_primetime` · `league_ats_divisional` ·
+  `league_ats_streaks` · table: `teams` · ADR-0013 · ADR-0002
 - **PR #432** `start-issue` skill now runs the full delivery loop (issue-less) —
   previously stopped after worktree setup and printing the dev command; now
   continues straight into implementation and hands off to `finish-pr` to test and
