@@ -36,16 +36,16 @@ describe('GameCard', () => {
     expect(screen.getByText(/CIN -3.5 @ H/)).toBeInTheDocument(); // “@ H” because weight renders after @
   });
 
-  it('prompts for a weight when a team is staged with no weight', () => {
+  it('disables Lock in until a weight is chosen', () => {
     setPicks({ g1: { selected: { team: 'home' } } as any });
     render(GameCard, { props: { game, initialized: true } });
-    expect(screen.getByText(/Choose a weight to save/)).toBeInTheDocument();
+    expect(screen.getByTestId('lock-in')).toBeDisabled();
   });
 
-  it('does not prompt for a weight once one is chosen', () => {
+  it('enables Lock in once a team and weight are staged', () => {
     setPicks({ g1: { selected: { team: 'home', weight: 'M' } } as any });
     render(GameCard, { props: { game, initialized: true } });
-    expect(screen.queryByText(/Choose a weight to save/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('lock-in')).toBeEnabled();
   });
 
   it('shows “Kickoff passed” message when rules say started', async () => {

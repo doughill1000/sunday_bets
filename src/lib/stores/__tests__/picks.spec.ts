@@ -1,5 +1,5 @@
 // src/lib/stores/__tests__/picks.spec.ts
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   picks,
   setPicks,
@@ -7,8 +7,7 @@ import {
   setWeight,
   lockPick,
   clearPick,
-  stageFavorite,
-  SAVE_DEBOUNCE_MS
+  stageFavorite
 } from '$lib/stores/picks';
 import { get } from 'svelte/store';
 import * as api from '$lib/api/picks';
@@ -22,13 +21,7 @@ const mockApi = api as unknown as { lockPick: ReturnType<typeof vi.fn> };
 beforeEach(() => {
   setPicks({});
   vi.clearAllMocks();
-  vi.useFakeTimers();
   mockApi.lockPick.mockResolvedValue({ ok: true });
-});
-
-afterEach(() => {
-  vi.clearAllTimers();
-  vi.useRealTimers();
 });
 
 describe('staged selection', () => {
@@ -49,33 +42,13 @@ describe('staged selection', () => {
     expect(get(picks).g3.selected).toEqual({ team: 'home' });
     expect(get(picks).g3.selected?.weight).toBeUndefined();
   });
-});
 
-describe('debounced auto-save', () => {
-  it('does NOT save a half-selection (team only)', async () => {
-    selectTeam('g1', 'home');
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 50);
+  it('staging never persists on its own (no auto-save)', async () => {
+    setPicks({ g1: { selected: { team: 'home' } } });
+    setWeight('g1', 'M');
+    // A fully-staged pick still saves nothing until "Lock in" is tapped.
     expect(mockApi.lockPick).not.toHaveBeenCalled();
     expect(get(picks).g1.lockedPick).toBeUndefined();
-  });
-
-  it('saves once both team and weight are present', async () => {
-    setPicks({ g1: { selected: { team: 'home' } } });
-    setWeight('g1', 'M');
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 50);
-    expect(mockApi.lockPick).toHaveBeenCalledTimes(1);
-    expect(mockApi.lockPick).toHaveBeenCalledWith('g1', 'home', 'M');
-    expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' });
-  });
-
-  it('coalesces rapid L→M→H toggling into a single save with the final weight', async () => {
-    setPicks({ g1: { selected: { team: 'home' } } });
-    setWeight('g1', 'L');
-    setWeight('g1', 'M');
-    setWeight('g1', 'H');
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 50);
-    expect(mockApi.lockPick).toHaveBeenCalledTimes(1);
-    expect(mockApi.lockPick).toHaveBeenCalledWith('g1', 'home', 'H');
   });
 });
 
@@ -151,11 +124,9 @@ describe('lockPick save path', () => {
 });
 
 describe('clearPick / stageFavorite', () => {
-  it('clearPick removes the entry and cancels a pending save', async () => {
-    setPicks({ g1: { selected: { team: 'home' } } });
-    setWeight('g1', 'L'); // schedules a save
+  it('clearPick resets the entry', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'L' } } });
     clearPick('g1');
-    await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS + 50);
     expect(get(picks).g1).toEqual({});
     expect(mockApi.lockPick).not.toHaveBeenCalled();
   });

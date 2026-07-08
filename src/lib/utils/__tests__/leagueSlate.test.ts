@@ -49,11 +49,16 @@ describe('buildSlateGames', () => {
     const [g] = buildSlateGames([game({ id: 'g1' })], situational, NOW);
     expect(g.away).toEqual({
       label: 'Away',
-      nugget: { text: '2-2-1 ATS as away underdog', games: 5 }
+      nugget: {
+        text: '2-2-1 ATS as away underdog',
+        record: '2-2-1',
+        role: 'away underdog',
+        games: 5
+      }
     });
     expect(g.home).toEqual({
       label: 'Home',
-      nugget: { text: '6-2 ATS as home favorite', games: 8 }
+      nugget: { text: '6-2 ATS as home favorite', record: '6-2', role: 'home favorite', games: 8 }
     });
   });
 

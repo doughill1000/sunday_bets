@@ -39,6 +39,8 @@ describe('nuggetForSide', () => {
   it('formats the home-favorite quadrant', () => {
     expect(nuggetForSide(game(), 'home', lookup)).toEqual({
       text: '6-2 ATS as home favorite',
+      record: '6-2',
+      role: 'home favorite',
       games: 8
     });
   });
@@ -46,6 +48,8 @@ describe('nuggetForSide', () => {
   it('formats the away-underdog quadrant and shows pushes when present', () => {
     expect(nuggetForSide(game(), 'away', lookup)).toEqual({
       text: '2-2-1 ATS as away underdog',
+      record: '2-2-1',
+      role: 'away underdog',
       games: 5
     });
   });
@@ -68,6 +72,8 @@ describe('nuggetForSide', () => {
     // …but an explicit lower threshold lets it through.
     expect(nuggetForSide(g, 'home', lookup, 3)).toEqual({
       text: '2-1 ATS as home favorite',
+      record: '2-1',
+      role: 'home favorite',
       games: 3
     });
   });

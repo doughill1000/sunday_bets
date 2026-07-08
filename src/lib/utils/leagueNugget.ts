@@ -32,6 +32,10 @@ export function buildSituationalLookup(
 export type Nugget = {
   /** e.g. "6-2 ATS as home favorite" (record excludes pushes unless there are any). */
   text: string;
+  /** Win-loss(-push) record on its own, e.g. "6-2" (pushes shown only when present). */
+  record: string;
+  /** Situational role on its own, e.g. "home favorite". */
+  role: string;
   /** Sample size for this quadrant, rendered as "(n=…)". */
   games: number;
 };
@@ -64,5 +68,5 @@ export function nuggetForSide(
   const { wins, losses, pushes } = record.ats;
   const recordText = pushes > 0 ? `${wins}-${losses}-${pushes}` : `${wins}-${losses}`;
   const role = `${isHome ? 'home' : 'away'} ${isFavorite ? 'favorite' : 'underdog'}`;
-  return { text: `${recordText} ATS as ${role}`, games: record.games };
+  return { text: `${recordText} ATS as ${role}`, record: recordText, role, games: record.games };
 }
