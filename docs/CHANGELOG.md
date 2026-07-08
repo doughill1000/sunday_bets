@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#429** League tab — This Week slate — a forward-looking slate on `/league`: the current
+  season's upcoming scoring-week games, each side annotated with its situational ATS split
+  (the pick-card nugget data) and deep-linking to that game on `/picks`. Week- and
+  line-sensitive, so it reads a distinct, non-persisted cache that revalidates on load rather
+  than the season-cached graded modules; the offseason/bye shows an empty state. Reuses the
+  shipped `league_ats_situational` view + `ui_games` — no migration. route: `/api/league/slate`
+  · views: `league_ats_situational` · `ui_games` · files: `league/WeekSlate.svelte` ·
+  `utils/leagueSlate.ts` · `league/+page.svelte` · ADR-0013 · ADR-0017. Closes #429.
 - **#428** League tab Hot/Cold + team drill-down — adds a Hot/Cold module on `/league`
   listing each team's current ATS cover streak and last-4 form, and an expandable per-team
   drill-down showing that team's full season game log (opponent, line, cover margin, ATS

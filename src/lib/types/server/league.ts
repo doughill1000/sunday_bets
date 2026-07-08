@@ -192,3 +192,30 @@ export type LeagueAts = {
   /** Favorite cover rate for divisional vs non-divisional matchups, #427. */
   divisional: LeagueDivisionalSplit[];
 };
+
+/** One side of a slate matchup: the team's display label and the situational ATS nugget
+ *  that matches this game's current line — or `null` for a pick'em / no-line / thin-sample
+ *  side (the nugget module's documented omissions). `games` is the quadrant's sample (n=). */
+export type LeagueSlateSide = {
+  label: string;
+  nugget: { text: string; games: number } | null;
+};
+
+/** One upcoming game on the forward-looking slate (issue #429): the matchup, its kickoff,
+ *  and each side's matching situational split. `gameId` deep-links to `/picks#game-<id>`. */
+export type LeagueSlateGame = {
+  gameId: string;
+  kickoff: string;
+  away: LeagueSlateSide;
+  home: LeagueSlateSide;
+};
+
+/** The forward-looking slate for the upcoming scoring week (issue #429). Week- and
+ *  line-sensitive: reflects the current line at load and is NOT season-cached like the
+ *  graded modules (ADR-0017). `weekNumber` is null and `games` empty in the offseason, a
+ *  bye, or a non-scoring week — the empty state. */
+export type LeagueSlate = {
+  seasonYear: number;
+  weekNumber: number | null;
+  games: LeagueSlateGame[];
+};
