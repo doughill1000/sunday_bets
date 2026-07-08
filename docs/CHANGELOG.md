@@ -60,6 +60,18 @@ Project `Done` column, and Releases remain the sources of truth — see
   longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
   adds a `SAT` (Saturday night) kickoff slot so late-season Saturday games are no longer counted
   as daytime. view: league_ats_primetime · files: league `/league` page + Trends cards. ADR-0013
+- **PR #444** Backfill real 2022-2024 kickoff times (issue-less) — replaces the synthetic
+  2pm-ET kickoff times for the 2022-2024 seasons with real ESPN times so the `/league` primetime
+  split can classify TNF/SNF/MNF/SAT games. Applied to staging + prod. files: backfill script
+  under `supabase/scripts`.
+- **PR #442** "Last 5 seasons" scope toggle on /league Trends (issue-less) — adds a scope
+  toggle so the Trends ATS cuts can be viewed over the last five seasons instead of all-time.
+  files: league `/league` Trends cards.
+- **PR #441** Reorganize /league into slate hero + Teams/Trends sub-tabs (issue-less) —
+  restructures the `/league` page into a forward-looking slate hero with Teams and Trends
+  sub-tabs. files: league `/league` page.
+- **PR #440** Backfill changelog for PR #435 and PR #420 (issue-less, docs) — adds the
+  missing shipped-history entries for two earlier league PRs. file: docs/CHANGELOG.md.
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.
