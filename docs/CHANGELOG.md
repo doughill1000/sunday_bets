@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #445** Admin Grading tile UX — the `/admin` grading card now drives off human
+  pickers (a week dropdown with the active week preselected, a lazy game picker by
+  matchup, a season picker) instead of raw database ids, with a pull-latest-finals
+  toggle, a confirm step, and a settled-counts summary after each run. Adds an
+  admin-gated games-by-week lookup. route: `/api/admin/week-games` · files:
+  `admin/GradingCard.svelte` · `server/grading.ts` · `server/admin.ts`
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.
