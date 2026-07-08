@@ -1,7 +1,7 @@
 {
   "name": "web",
   "private": true,
-  "version": "2.11.0",
+  "version": "2.12.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -31,7 +31,7 @@
     "users:provision:local": "tsx supabase/scripts/provision-users.ts --env=.env.local --file=supabase/scripts/users.json",
     "users:provision:dev": "tsx supabase/scripts/provision-users.ts --env=.env.staging --file=supabase/scripts/users.json",
     "users:provision:prod": "tsx supabase/scripts/provision-users.ts --env=.env.production --file=supabase/scripts/users.json",
-    "dev": "vite dev --host --port 5173",
+    "dev": "vite dev --host",
     "lint": "prettier --check . && eslint .",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && git config core.hooksPath .githooks || true",

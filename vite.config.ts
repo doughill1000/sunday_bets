@@ -27,7 +27,10 @@ export default defineConfig(({ mode }) => ({
       strategies: 'generateSW',
       registerType: 'autoUpdate',
       devOptions: {
-        enabled: mode === 'development' // only enable in dev
+        // Off by default: generating the dev SW re-runs a Workbox precache scan on every
+        // boot, which is a big chunk of local dev startup time. Opt in with PWA_DEV=true
+        // when you actually need to test offline/install behavior locally.
+        enabled: mode === 'development' && process.env.PWA_DEV === 'true'
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],

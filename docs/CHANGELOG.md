@@ -54,6 +54,24 @@ Project `Done` column, and Releases remain the sources of truth — see
   "choose a weight" hint. Also elevates the pick-card line and kickoff time and shortens the ATS
   trend nugget wording. Client-only — the pick save/unlock RPCs are reused unchanged. files: picks
   board components + picks store.
+- **PR #461** Release v2.12.0 — version bump. Milestone: v2.12 (minor: #441 reorganize
+  /league into slate hero + Teams/Trends sub-tabs, #442 Last-5-seasons scope toggle on
+  /league Trends; patch: #447 grading integrity membership-scoped penalty + frozen
+  imported seasons, #443 league mobile-fit + Saturday primetime slot, #444 real
+  2022-2024 kickoff-times backfill, PR #449 dev boot speed, PR #448 demo-seed depth).
+  Production ships via the separate manual `deploy-prod` dispatch, which tags `v2.12.0`
+  (ADR-0010). · ADR-0015
+- **#447** Grading integrity — the missed-pick penalty now applies to every active league
+  member; the app admin was silently exempt through the global user role, which flipped the
+  2022 champion after the #430 re-grade. Also freezes imported pre-2025 seasons from grading so
+  no future re-grade can re-derive their sheet-sourced settlements. tables: seasons ·
+  fn: grade_games_by_ids · ADR-0024
+- **PR #449** Faster local dev boot + fix worktree port override (issue-less) — disables the
+  PWA plugin's dev-mode service-worker generation by default (it re-ran a full Workbox
+  precache scan on every `pnpm dev` boot; opt in with `PWA_DEV=true`), and fixes the
+  `pnpm run dev -- --port N` pattern documented across the repo, which pnpm 10 silently
+  broke by forwarding a literal `--` to Vite's CLI so the port override was ignored. file:
+  `vite.config.ts` · script: `scripts/new-worktree.ps1`
 - **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
@@ -72,6 +90,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   sub-tabs. files: league `/league` page.
 - **PR #440** Backfill changelog for PR #435 and PR #420 (issue-less, docs) — adds the
   missing shipped-history entries for two earlier league PRs. file: docs/CHANGELOG.md.
+- **PR #448** Demo seed — in-season depth for the pick-card ATS nuggets (issue-less) — the
+  local demo seed's current (in-progress) season now carries a deep completed history before
+  its live week, so the `/picks` ATS trend nuggets and the `/league` situational cuts
+  (divisional, primetime) actually render in the offseason instead of falling below their
+  sample floors. Seed tooling only — no schema, migration, or runtime change. file:
+  `seed-demo/index.ts`.
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.

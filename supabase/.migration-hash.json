@@ -69,9 +69,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "schemas/0200_01_seasons.sql": {
-    "hash": "18ba1f7253d5f615afb4140cc0ec89a35a9dc552fb8bc1631d2a2184aa9a7142",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "hash": "31b48b6fdcc5efcbc37484279699543fb3d9e36b42dc33d25bb641e4f7845aa9",
+    "migration": "20260708152057_grading_membership_penalty_and_frozen_seasons.sql",
+    "migrationHash": "f96e380da41826bee69ca3bceee77ebb8f3541c614dbaba5906531b82947dde1"
   },
   "schemas/0200_02_weeks.sql": {
     "hash": "95307ddd54413278a02feb3366586e19124c1073d893219d64ff524d6871e653",
@@ -372,10 +372,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/_private/grade_games_by_ids.sql": {
-    "hash": "011929297499764e7d8d7e2ee592ec39ed374876e9593afb33fa2e989ab2d738",
+    "hash": "24c80b9332016a080e57dd9ab9604562bb94063ed4f95031734432a351f454e7",
     "signature": "public._grade_games_by_ids(uuid[])",
-    "migration": "20260627001610_house_grading_preset.sql",
-    "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
+    "migration": "20260708152057_grading_membership_penalty_and_frozen_seasons.sql",
+    "migrationHash": "f96e380da41826bee69ca3bceee77ebb8f3541c614dbaba5906531b82947dde1"
   },
   "functions/_private/resolve_missed_penalty.sql": {
     "hash": "07b53c5384738da54de036156b15b57a5c2e9230875253059490414a3bb90a06",

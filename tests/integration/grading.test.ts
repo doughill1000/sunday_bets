@@ -25,7 +25,9 @@ describe('Grading Integration Flow', () => {
   beforeAll(async () => {
     await ensureCoreTestUsers(supabase, true);
     await ensureTeams(supabase);
-    const { weekId } = await ensureSeasonAndWeek(supabase, 2024, 1);
+    // A live (post-2025) scratch season: pre-2025 seasons are grading_locked
+    // (ADR-0024) and grade_game is a no-op on them.
+    const { weekId } = await ensureSeasonAndWeek(supabase, 2098, 1);
     await ensureSettings(supabase);
 
     await supabase.from('pick_settlement').delete().eq('game_id', 'test-grading-game-123');
