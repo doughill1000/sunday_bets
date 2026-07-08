@@ -1,15 +1,16 @@
 import { expect, test } from '@playwright/test';
 
-// Primary navigation: five first-class tabs (Picks · Leaderboard · Stats · Group ·
+// Primary navigation: five first-class tabs (Picks · Leaderboard · Group · Stats ·
 // League). The desktop inline nav and the mobile bottom tab bar render the same five
-// destinations. (League — league-wide team ATS trends — was added by #406; League Honors
-// still lives on /group and is gone from /stats.)
+// destinations. Order clusters the social tabs (Leaderboard, Group) ahead of the
+// analytics tabs (Stats, League). (League — league-wide team ATS trends — was added by
+// #406; League Honors still lives on /group and is gone from /stats.)
 
 const TABS = [
   { href: '/picks', name: 'Picks' },
   { href: '/leaderboard', name: 'Leaderboard' },
-  { href: '/stats', name: 'Stats' },
   { href: '/group', name: 'Group' },
+  { href: '/stats', name: 'Stats' },
   { href: '/league', name: 'League' }
 ] as const;
 
