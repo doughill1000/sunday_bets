@@ -9,7 +9,12 @@ import type { SeasonStats, AllTimeTotalsEntry } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
-import type { LeagueAts, LeagueSlate, LeagueTeamGameLog } from '$lib/types/server/league';
+import type {
+  LeagueAts,
+  LeagueSlate,
+  LeagueTeamGameLog,
+  LeagueTrends
+} from '$lib/types/server/league';
 
 /** Eager, season-scoped Stats payload cached under `['stats', groupId, season]`. */
 export type StatsCachePayload = SeasonStats & {
@@ -91,6 +96,14 @@ export type LeagueCachePayload = LeagueAts;
  * it always reflects the current line rather than a superseded one.
  */
 export type LeagueSlatePayload = LeagueSlate;
+
+/**
+ * The pooled "Last N seasons" market-cuts payload for the /league Trends scope toggle (epic
+ * #424). Group- and user-independent and season-independent (it spans the recent seasons), so
+ * it is cached under a single `['league', 'trends']` key and is freely shareable/persistable
+ * (ADR-0017). Fetched lazily — only when the user switches the Trends scope to multi-season.
+ */
+export type LeagueTrendsPayload = LeagueTrends;
 
 /**
  * One team's season ATS game log cached under `['league', 'team', teamId, season]` (issue

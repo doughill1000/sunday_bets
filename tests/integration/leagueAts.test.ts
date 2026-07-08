@@ -18,8 +18,10 @@ import {
   getLeagueSituational,
   getLeagueTeamGameLog,
   getLeagueSpreadBuckets,
-  getLeagueQuadrants
+  getLeagueQuadrants,
+  getLeagueTrends
 } from '../../src/lib/server/db/queries/league';
+import { deriveFavDogHeadline } from '../../src/lib/utils/leagueTrends';
 
 const admin = createServiceClient();
 
@@ -321,5 +323,42 @@ describe('league ATS read path (#406)', () => {
     expect(non?.games).toBe(1);
     expect(non?.favoriteCovers).toBe(1);
     expect(non?.underdogCovers).toBe(0);
+  });
+
+  test('getLeagueTrends pools the market cuts as the exact sum of its covered seasons (#424)', async () => {
+    const trends = await getLeagueTrends();
+
+    // Window: at most the 5 newest seasons with data, newest-first. 2077 is the max year in the
+    // DB (this suite owns it), so it is always inside the window regardless of ambient seeds.
+    expect(trends.seasonsCovered.length).toBeGreaterThan(0);
+    expect(trends.seasonsCovered.length).toBeLessThanOrEqual(5);
+    expect(trends.seasonsCovered).toEqual([...trends.seasonsCovered].sort((a, b) => b - a));
+    expect(trends.seasonsCovered).toContain(SEASON_YEAR);
+
+    // The pooled counts must equal the manual per-season sum over exactly those seasons — this
+    // is the "single source of truth for cover math" invariant: pooling only adds counts.
+    const perSeason = await Promise.all(
+      trends.seasonsCovered.map(async (year) => ({
+        quadrants: await getLeagueQuadrants(year),
+        spreadBuckets: await getLeagueSpreadBuckets(year)
+      }))
+    );
+
+    const expectedHomeFav = perSeason.reduce(
+      (sum, s) => sum + (s.quadrants.find((q) => q.isHome && q.isFavorite)?.ats.wins ?? 0),
+      0
+    );
+    const pooledHomeFav = trends.quadrants.find((q) => q.isHome && q.isFavorite)?.ats.wins ?? 0;
+    expect(pooledHomeFav).toBe(expectedHomeFav);
+
+    const expected1to3Games = perSeason.reduce(
+      (sum, s) => sum + (s.spreadBuckets.find((b) => b.bucketOrder === 1)?.games ?? 0),
+      0
+    );
+    const pooled1to3Games = trends.spreadBuckets.find((b) => b.bucketOrder === 1)?.games ?? 0;
+    expect(pooled1to3Games).toBe(expected1to3Games);
+
+    // The fav/dog headline is exactly the derivation off the pooled quadrants (no extra query).
+    expect(trends.favDog).toEqual(deriveFavDogHeadline(trends.quadrants));
   });
 });

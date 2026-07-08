@@ -29,7 +29,10 @@ export const queryKeys = {
   // Per-team drill-down game log, lazily fetched when a team expands (issue #428). Under the
   // 'league' root so it shares the shareable/persistable class (public, group-independent).
   leagueTeam: (teamId: number, seasonYear: number) =>
-    ['league', 'team', teamId, seasonYear] as const
+    ['league', 'team', teamId, seasonYear] as const,
+  // Pooled "Last N seasons" market-cut trends (epic #424). Season-independent — it spans the
+  // recent seasons — so it takes no season arg. Under the 'league' root (public, shareable).
+  leagueTrends: () => ['league', 'trends'] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any
