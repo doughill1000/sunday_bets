@@ -6,8 +6,12 @@ import type {
   LeagueFavDogSplit,
   LeagueHomeAway,
   LeagueSituationalRecord,
+  LeagueSlate,
   LeagueTeamAts
 } from '$lib/types/server/league';
+import { buildSlateGames } from '$lib/utils/leagueSlate';
+import { findActiveWeek } from './findActiveWeek';
+import { getGamesWithActiveLines } from './getGamesWithActiveLines';
 
 type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
@@ -164,4 +168,38 @@ export async function getLeagueSituational(seasonYear: number): Promise<LeagueSi
       }
     ];
   });
+}
+
+/**
+ * The forward-looking slate for the upcoming scoring week (issue #429): the currently-active
+ * week's not-yet-kicked-off games, each side annotated with the situational quadrant that
+ * matches its current line (reusing the pick-card nugget logic). Deep-links to `/picks` rely
+ * on these being the same pickable games the picks board renders, so we read the same active
+ * week + active lines the picks page does.
+ *
+ * Returns the empty slate (`weekNumber: null`, no games) in the offseason (no active week), a
+ * non-scoring week, or a bye / between-weeks gap where every game has already kicked off — the
+ * component's empty state. Unlike the graded /league modules this is week- and line-sensitive,
+ * so its cache is keyed and revalidated separately (ADR-0017); this function just composes it.
+ *
+ * `seasonYear` scopes the situational lookup and should be the current season (the season the
+ * upcoming week belongs to); the caller resolves it via `getCurrentSeasonYear()`.
+ */
+export async function getLeagueSlate(seasonYear: number): Promise<LeagueSlate> {
+  const week = await findActiveWeek();
+  // Offseason (no active week) or a non-scoring exhibition week → empty slate.
+  if (!week || week.is_scoring === false) {
+    return { seasonYear, weekNumber: null, games: [] };
+  }
+
+  const [games, situational] = await Promise.all([
+    getGamesWithActiveLines(week.id),
+    getLeagueSituational(seasonYear)
+  ]);
+
+  const slateGames = buildSlateGames(games, situational, Date.now());
+  // A bye / mid-week gap (every game already kicked off) collapses to the empty state.
+  if (slateGames.length === 0) return { seasonYear, weekNumber: null, games: [] };
+
+  return { seasonYear, weekNumber: week.week_number, games: slateGames };
 }

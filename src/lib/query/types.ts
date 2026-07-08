@@ -9,7 +9,7 @@ import type { SeasonStats, AllTimeTotalsEntry } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
-import type { LeagueAts } from '$lib/types/server/league';
+import type { LeagueAts, LeagueSlate } from '$lib/types/server/league';
 
 /** Eager, season-scoped Stats payload cached under `['stats', groupId, season]`. */
 export type StatsCachePayload = SeasonStats & {
@@ -83,3 +83,11 @@ export type AllTimeLeaderboardPayload = {
  * by season alone and is freely shareable/persistable (ADR-0017).
  */
 export type LeagueCachePayload = LeagueAts;
+
+/**
+ * The forward-looking League slate for the upcoming scoring week (issue #429). Week- and
+ * line-sensitive, so — unlike `LeagueCachePayload` — it is cached under a distinct,
+ * non-persisted `['league-slate', season]` root and revalidated on every load (ADR-0017), so
+ * it always reflects the current line rather than a superseded one.
+ */
+export type LeagueSlatePayload = LeagueSlate;

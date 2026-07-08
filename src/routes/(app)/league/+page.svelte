@@ -1,11 +1,12 @@
 <script lang="ts">
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
-  import { fetchLeague } from '$lib/query/fetchers';
+  import { fetchLeague, fetchLeagueSlate } from '$lib/query/fetchers';
   import type { LeagueCachePayload } from '$lib/query/types';
   import type { LeagueTeamAts, AtsRecord } from '$lib/types/server/league';
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
+  import WeekSlate from '$lib/components/league/WeekSlate.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import {
     Card,
@@ -35,6 +36,17 @@
     queryKey: queryKeys.league(pageData.seasonYear),
     queryFn: () => fetchLeague(fetch, pageData.seasonYear),
     initialData: pageData.initialLeague
+  }));
+
+  // The forward-looking slate (issue #429) is week- and line-sensitive, so it always tracks
+  // the *current* season's upcoming week (not the season the tables below show) and uses
+  // `staleTime: 0` — every load revalidates so it reflects the current line, never a
+  // superseded one. It's a distinct, non-persisted query root (ADR-0017).
+  const slateQuery = createQuery(() => ({
+    queryKey: queryKeys.leagueSlate(pageData.currentSeasonYear),
+    queryFn: () => fetchLeagueSlate(fetch, pageData.currentSeasonYear),
+    initialData: pageData.initialSlate,
+    staleTime: 0
   }));
 
   const EMPTY: LeagueCachePayload = {
@@ -174,6 +186,14 @@
       <SeasonPicker seasons={pageData.availableSeasons} selected={pageData.seasonYear} />
     </div>
   </div>
+
+  <!-- Forward-looking slate for the current season's upcoming week (issue #429). Its own
+       week-sensitive query, so it renders independently of the season-scoped modules below. -->
+  <WeekSlate
+    slate={slateQuery.data ?? null}
+    loading={slateQuery.isPending}
+    error={slateQuery.isError}
+  />
 
   {#if leagueQuery.isPending}
     {@render loadingState()}

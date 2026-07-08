@@ -21,7 +21,11 @@ export const queryKeys = {
     cursor: string | null
   ) => ['leaderboard', groupId, seasonYear, view, week, cursor] as const,
   // League ATS is group-independent, so it is keyed by season alone (issue #406).
-  league: (seasonYear: number) => ['league', seasonYear] as const
+  league: (seasonYear: number) => ['league', seasonYear] as const,
+  // The forward-looking slate (issue #429) is week- and line-sensitive, so it is a distinct
+  // root — deliberately NOT in SHAREABLE_QUERY_ROOTS, so a cold PWA relaunch refetches the
+  // current line instead of serving a superseded one from IndexedDB (ADR-0017).
+  leagueSlate: (seasonYear: number) => ['league-slate', seasonYear] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any

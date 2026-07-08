@@ -8,7 +8,8 @@ import type {
   GroupCachePayload,
   LeaderboardCachePayload,
   AllTimeLeaderboardPayload,
-  LeagueCachePayload
+  LeagueCachePayload,
+  LeagueSlatePayload
 } from './types';
 
 type FetchFn = typeof fetch;
@@ -66,4 +67,15 @@ export async function fetchLeague(
   const res = await fetchFn(`/api/league?season=${seasonYear}`);
   if (!res.ok) throw new Error(`Failed to load league trends (${res.status})`);
   return res.json() as Promise<LeagueCachePayload>;
+}
+
+/** The forward-looking slate for the upcoming scoring week (issue #429). Week-sensitive, so
+ *  its query revalidates on every load rather than serving the season cache. */
+export async function fetchLeagueSlate(
+  fetchFn: FetchFn,
+  seasonYear: number
+): Promise<LeagueSlatePayload> {
+  const res = await fetchFn(`/api/league/slate?season=${seasonYear}`);
+  if (!res.ok) throw new Error(`Failed to load league slate (${res.status})`);
+  return res.json() as Promise<LeagueSlatePayload>;
 }
