@@ -1,7 +1,7 @@
 {
   "name": "web",
   "private": true,
-  "version": "2.11.0",
+  "version": "2.12.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -11,6 +11,7 @@
     "db:backfill:dev": "cross-env DOTENV_CONFIG_PATH=.env.staging node -r dotenv/config --import tsx supabase/scripts/backfill-picks/index.ts \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
     "db:backfill:prod": "cross-env DOTENV_CONFIG_PATH=.env.production node -r dotenv/config --import tsx supabase/scripts/backfill-picks/index.ts \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
     "db:import-historical:generate": "tsx supabase/scripts/import-historical/generate.ts",
+    "db:backfill-game-times:generate": "tsx supabase/scripts/backfill-game-times/generate.ts",
     "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production",
     "db:refresh-matviews:prod": "node -r dotenv/config supabase/scripts/refresh-matviews.mjs dotenv_config_path=.env.production",
     "refresh-wrapped:prod": "cross-env DOTENV_CONFIG_PATH=.env.production node -r dotenv/config --import tsx supabase/scripts/refresh-wrapped/index.ts",
@@ -30,7 +31,7 @@
     "users:provision:local": "tsx supabase/scripts/provision-users.ts --env=.env.local --file=supabase/scripts/users.json",
     "users:provision:dev": "tsx supabase/scripts/provision-users.ts --env=.env.staging --file=supabase/scripts/users.json",
     "users:provision:prod": "tsx supabase/scripts/provision-users.ts --env=.env.production --file=supabase/scripts/users.json",
-    "dev": "vite dev --host --port 5173",
+    "dev": "vite dev --host",
     "lint": "prettier --check . && eslint .",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && git config core.hooksPath .githooks || true",

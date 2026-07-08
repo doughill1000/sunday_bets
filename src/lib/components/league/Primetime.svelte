@@ -48,7 +48,6 @@
             <TableHead>Slot</TableHead>
             <TableHead class="text-right">Fav cover</TableHead>
             <TableHead class="text-right">Record</TableHead>
-            <TableHead class="text-right">n</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -64,17 +63,10 @@
                 )}
               </TableCell>
               <TableCell class="text-right tabular-nums text-muted-foreground">
-                {slot.favoriteCovers}-{slot.underdogCovers}-{slot.pushes}
-              </TableCell>
-              <TableCell class="text-right tabular-nums">
-                {#if thin}
-                  <span
+                {slot.favoriteCovers}-{slot.underdogCovers}-{slot.pushes}{#if thin}<span
                     class="text-amber-600 dark:text-amber-500"
-                    title="Small sample — treat with caution">n={slot.games}*</span
-                  >
-                {:else}
-                  n={slot.games}
-                {/if}
+                    title="Small sample — treat with caution">*</span
+                  >{/if}
               </TableCell>
             </TableRow>
           {/each}

@@ -121,10 +121,13 @@ powershell -File scripts/new-worktree.ps1 -Branch claude/124-settings-page -Port
 ```
 
 Run a worktree's dev server **without switching repos** via pnpm's `-C` flag — use
-a non-5173 port so it coexists with the main checkout's dev server:
+a non-5173 port so it coexists with the main checkout's dev server. Don't put `--`
+before `--port`: pnpm 10 forwards it as a literal token, which makes Vite treat
+`--port` as a raw passthrough arg instead of a flag, so the override is silently
+ignored.
 
 ```powershell
-pnpm -C ..\sunday_bets-claude-124 run dev -- --port 5174
+pnpm -C ..\sunday_bets-claude-124 run dev --port 5174
 ```
 
 Never run both agents in the same worktree. The original checkout may contain other
