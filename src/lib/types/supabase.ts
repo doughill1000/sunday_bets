@@ -1069,16 +1069,19 @@ export type Database = {
       };
       seasons: {
         Row: {
+          grading_locked: boolean;
           id: number;
           league: string;
           year: number;
         };
         Insert: {
+          grading_locked?: boolean;
           id?: number;
           league?: string;
           year: number;
         };
         Update: {
+          grading_locked?: boolean;
           id?: number;
           league?: string;
           year?: number;

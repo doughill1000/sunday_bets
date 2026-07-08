@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **#447** Grading integrity — the missed-pick penalty now applies to every active league
+  member; the app admin was silently exempt through the global user role, which flipped the
+  2022 champion after the #430 re-grade. Also freezes imported pre-2025 seasons from grading so
+  no future re-grade can re-derive their sheet-sourced settlements. tables: seasons ·
+  fn: grade_games_by_ids · ADR-0024
 - **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
