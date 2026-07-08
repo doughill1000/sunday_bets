@@ -45,11 +45,12 @@ Generate the SQL (fetches 2022–2024 × 18 weeks from ESPN; safe to re-run):
 pnpm db:backfill-game-times:generate
 ```
 
-Run it (Git Bash, from repo root) — **staging first**, verify, then production:
+Apply it — **staging first**, verify, then production (loads `DATABASE_URL` via
+dotenv, mirrors `refresh-matviews.mjs`):
 
 ```sh
-DBURL=$(grep -E '^DATABASE_URL=' .env.staging | cut -d= -f2- | tr -d '"')
-psql "$DBURL" -v ON_ERROR_STOP=1 -f supabase/scripts/backfill-game-times/backfill_game_times.sql
+pnpm db:backfill-game-times:staging
+pnpm db:backfill-game-times:prod
 ```
 
 The file is one `BEGIN`/`COMMIT` transaction (idempotent `UPDATE`) followed by a
@@ -78,4 +79,7 @@ returns `TNF`/`SNF`/`MNF`/`day` rows.
 
 ## Status
 
-Generated. Not yet applied to staging or production.
+Applied and verified on **staging** (`eoncckeqqogezoftooix`) and **production**
+(`anzcshrpfpxajcgrwczv`) on 2026-07-08: `UPDATE 816`, both report notices `0`,
+matviews refreshed. `league_ats_primetime` now returns real TNF/SNF/MNF/day rows
+for all three seasons on both.
