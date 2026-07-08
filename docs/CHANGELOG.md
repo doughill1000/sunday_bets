@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #461** Release v2.12.0 — version bump. Milestone: v2.12 (minor: #441 reorganize
+  /league into slate hero + Teams/Trends sub-tabs, #442 Last-5-seasons scope toggle on
+  /league Trends; patch: #447 grading integrity membership-scoped penalty + frozen
+  imported seasons, #443 league mobile-fit + Saturday primetime slot, #444 real
+  2022-2024 kickoff-times backfill, PR #449 dev boot speed, PR #448 demo-seed depth).
+  Production ships via the separate manual `deploy-prod` dispatch, which tags `v2.12.0`
+  (ADR-0010). · ADR-0015
 - **#447** Grading integrity — the missed-pick penalty now applies to every active league
   member; the app admin was silently exempt through the global user role, which flipped the
   2022 champion after the #430 re-grade. Also freezes imported pre-2025 seasons from grading so
