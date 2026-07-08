@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **#447** Grading integrity — the missed-pick penalty now applies to every active league
+  member; the app admin was silently exempt through the global user role, which flipped the
+  2022 champion after the #430 re-grade. Also freezes imported pre-2025 seasons from grading so
+  no future re-grade can re-derive their sheet-sourced settlements. tables: seasons ·
+  fn: grade_games_by_ids · ADR-0024
 - **PR #449** Faster local dev boot + fix worktree port override (issue-less) — disables the
   PWA plugin's dev-mode service-worker generation by default (it re-ran a full Workbox
   precache scan on every `pnpm dev` boot; opt in with `PWA_DEV=true`), and fixes the
