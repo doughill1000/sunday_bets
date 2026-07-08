@@ -2119,6 +2119,12 @@ export type Database = {
         Returns: undefined;
       };
       create_group: { Args: { p_name: string }; Returns: string };
+      find_unsettled_weeks: {
+        Args: never;
+        Returns: {
+          id: number;
+        }[];
+      };
       game_has_started: { Args: { p_game_id: string }; Returns: boolean };
       grade_game: { Args: { p_game_id: string }; Returns: undefined };
       grade_pick: {

@@ -91,6 +91,7 @@ SELECT is_empty(
   $$ SELECT name
      FROM unnest(ARRAY[
        'grade_game', 'grade_week', 'grade_season', 'grade_pick',
+       'find_unsettled_weeks',
        'advance_week_if_complete', 'set_active_line', 'attach_line_to_matchup',
        'upsert_game_by_external_id', 'upsert_game_by_matchup', 'weight_points',
        'refresh_leaderboard_stats'
