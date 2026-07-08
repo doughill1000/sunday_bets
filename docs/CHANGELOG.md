@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#427** League tab — primetime & divisional modules — two new `/league` situational
+  modules: favorite ATS cover rate by kickoff slot (TNF/SNF/MNF vs daytime) and for
+  divisional vs non-divisional matchups. Reads the DST-safe views from #425 through the same
+  cached single payload; thin cells carry an `n=` small-sample caveat. views:
+  `league_ats_primetime` · `league_ats_divisional` · route: `/league` · ADR-0013 · ADR-0017
 - **#425** League tab v2 DB foundation — one consolidating migration for the League tab v2
   epic (#424) so the later UI waves read already-typed views and generate no migrations of
   their own. Widens the `league_ats_base` matview with team-relative spread/margin, kickoff

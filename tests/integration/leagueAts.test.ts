@@ -108,6 +108,21 @@ beforeAll(async () => {
   if (!teams || teams.length < 4) throw new Error('leagueAts: need KC/BUF/PHI/DAL teams');
   for (const t of teams) teamId[t.short_name as string] = t.id as number;
 
+  // league_ats_divisional reads teams.division/conference (seeded in prod from external_key,
+  // #425). This suite owns its division fixture the same way it owns its games and lines, so
+  // the divisional split is asserted deterministically regardless of ambient team seed state.
+  // KC=AFC West, BUF=AFC East (non-divisional); PHI & DAL both NFC East (divisional).
+  const divisions: Record<string, { division: string; conference: string }> = {
+    KC: { division: 'West', conference: 'AFC' },
+    BUF: { division: 'East', conference: 'AFC' },
+    PHI: { division: 'East', conference: 'NFC' },
+    DAL: { division: 'East', conference: 'NFC' }
+  };
+  for (const [short, dc] of Object.entries(divisions)) {
+    const { error: dErr } = await admin.from('teams').update(dc).eq('id', teamId[short]);
+    if (dErr) throw new Error(`leagueAts: seed division ${short}: ${dErr.message}`);
+  }
+
   seasonId = await upsertSeason(SEASON_YEAR);
   weekId = await upsertWeek(seasonId, 1);
 
@@ -194,5 +209,35 @@ describe('league ATS read path (#406)', () => {
     expect(quadrant(teamId.DAL, false, true)?.ats).toEqual({ wins: 1, losses: 0, pushes: 0 });
     expect(quadrant(teamId.BUF, false, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
     expect(quadrant(teamId.PHI, true, false)?.ats).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueAts classifies both afternoon kickoffs into the day slot (#427)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+
+    // Both games kick at 18:00Z = 14:00 ET (EDT in September) → day, not a night window.
+    const day = league.primetime.find((s) => s.slot === 'day');
+    expect(day?.games).toBe(2);
+    // Both favorites (KC, DAL) covered.
+    expect(day?.favoriteCovers).toBe(2);
+    expect(day?.underdogCovers).toBe(0);
+    // No night slots for these two afternoon games.
+    expect(league.primetime.some((s) => s.slot !== 'day')).toBe(false);
+  });
+
+  test('getLeagueAts splits divisional vs non-divisional favorites (#427)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+    const div = league.divisional.find((d) => d.isDivisional);
+    const non = league.divisional.find((d) => !d.isDivisional);
+
+    // PHI vs DAL are both NFC East → divisional; DAL (favorite) covered.
+    expect(div?.games).toBe(1);
+    expect(div?.favoriteCovers).toBe(1);
+    expect(div?.underdogCovers).toBe(0);
+
+    // KC (AFC West) vs BUF (AFC East) → same conference, different division → non-divisional;
+    // KC (favorite) covered.
+    expect(non?.games).toBe(1);
+    expect(non?.favoriteCovers).toBe(1);
+    expect(non?.underdogCovers).toBe(0);
   });
 });
