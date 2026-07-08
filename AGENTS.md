@@ -123,6 +123,15 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   explicit integration order exists.
 - Pull requests close their issue, link relevant ADRs, and list verification that
   actually ran. Confirm before every GitHub write.
+- **Shipping a marketing-worthy surface? Refresh the public demo snapshot.** The
+  unauthenticated `/demo` route serves a frozen, generated fixture
+  (`src/lib/server/demo/demo-snapshot.json`, #460 / ADR-0026). The CI drift-guard catches
+  _shape_ drift (a demo component referencing a field the fixture lacks); it cannot catch
+  _coverage_ drift — a new feature that works but that the frozen demo season doesn't happen
+  to show off. When you ship something the demo should showcase, run the `refresh-demo-snapshot`
+  skill (`pnpm demo:snapshot`) so the demo keeps selling the current product. The snapshot is
+  fully fictional and a build artifact — never derived from a real league, never written to
+  production tables.
 - **Record shipped work in `docs/CHANGELOG.md` as part of the PR** (a required
   `finish-pr` step): one terse, newest-first entry per merged PR — keyed by issue
   number, or by PR number (`PR #NNN`) when the PR closes no issue, so chores, skills,

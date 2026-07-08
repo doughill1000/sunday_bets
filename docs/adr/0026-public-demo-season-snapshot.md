@@ -1,6 +1,6 @@
 # ADR-0026: Public shareable demo season served from a generated read-only snapshot
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-08
 - Issue: #460
 - Supersedes: None
@@ -160,4 +160,7 @@ Product questions settled with the owner before writing:
 
 ## Amendment history
 
-None.
+- 2026-07-08 — Accepted alongside the #460 implementation: the `/demo` route group, the
+  `demo-snapshot.json` fixture + `pnpm demo:snapshot` generator (a cron-secret-guarded in-app
+  export endpoint that reuses the real read-model/Wrapped pipeline), the CI drift-guard test,
+  and the `refresh-demo-snapshot` skill + AGENTS.md refresh rule.
