@@ -7,6 +7,7 @@ import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
 import { sendBadgeFlavors } from '$lib/server/badgeFlavor';
 import { requireCronSecret, withCronLog } from '$lib/server/cron';
 import { findRecentGradableWeeks } from '$lib/server/db/queries/findRecentGradableWeeks';
+import { findUnsettledGradableWeeks } from '$lib/server/db/queries/findUnsettledGradableWeeks';
 
 export const POST: RequestHandler = async (event) => {
   const guard = requireCronSecret(event);
@@ -103,6 +104,37 @@ export const POST: RequestHandler = async (event) => {
       })
     );
 
+    // Reconcile sweep (#433): self-heal any OTHER week that has final scores but was
+    // never settled — a week missed during the cron's normal processing window, which
+    // findRecentGradableWeeks (active + most-recently-concluded only) never revisits.
+    // These weeks are graded to SETTLE their picks but deliberately skip the
+    // recap/AI/push/Wrapped fan-out above, which must stay scoped to genuinely-recent
+    // weeks. find_unsettled_weeks() already excludes frozen seasons and any week whose
+    // finals are all settled, so it is a no-op once healed; we additionally drop the
+    // recent weeks just graded above (now settled) to avoid re-grading them here.
+    // A sweep failure must not fail the primary grade.
+    let reconcile: unknown;
+    try {
+      const recentIds = new Set(weeks.map((w) => w.id));
+      const unsettled = (await findUnsettledGradableWeeks()).filter((w) => !recentIds.has(w.id));
+      reconcile = await Promise.all(
+        unsettled.map(async (w) => {
+          try {
+            return { weekId: w.id, ...(await gradeWeek(w.id)) };
+          } catch (e) {
+            Sentry.captureException(e);
+            return {
+              weekId: w.id,
+              error: e instanceof Error ? e.message : 'reconcile grade failed'
+            };
+          }
+        })
+      );
+    } catch (e) {
+      Sentry.captureException(e);
+      reconcile = { error: e instanceof Error ? e.message : 'reconcile sweep failed' };
+    }
+
     return {
       weekIds: weeks.map((w) => w.id),
       results,
@@ -110,7 +142,8 @@ export const POST: RequestHandler = async (event) => {
       aiRecaps,
       aiRecapPushes,
       seasonWrappeds,
-      badgeFlavors
+      badgeFlavors,
+      reconcile
     };
   });
   return new Response(JSON.stringify(jobResult), {

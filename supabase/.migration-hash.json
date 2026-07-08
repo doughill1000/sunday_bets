@@ -833,5 +833,11 @@
     "hash": "e69a3a17887ea2f7e2f025962eeb7af9de05cb9a82d09b84714d01525e20ae98",
     "migration": "20260708170457_espn_api_responses.sql",
     "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
+  },
+  "functions/grade/find_unsettled_weeks.sql": {
+    "hash": "8e3caf5f1e1f474de152b12930d9c516c24747b48a9cee50c81d37f0313bf0bd",
+    "signature": "public.find_unsettled_weeks()",
+    "migration": "20260708174903_find_unsettled_weeks_reconcile_sweep.sql",
+    "migrationHash": "b54e1d3b008ce3e45e97b46e9f861c410d063f97cf497c2c8a628a26f7943c83"
   }
 }

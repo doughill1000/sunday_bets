@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **#433** Grade-cron reconcile sweep — the grade cron now self-heals any week that has
+  final scores but was never settled (e.g. a week missed during its normal processing
+  window), settling those picks without the recap/AI/push/Wrapped fan-out that stays
+  scoped to recent weeks. Frozen (grading-locked) seasons and already-settled weeks are
+  left untouched. fn: find_unsettled_weeks · file: cron/grade/+server.ts · follow-up to #430
 - **#450** ESPN scoreboard as the primary source of final scores — grading now reads finals
   from the ESPN scoreboard, matched by matchup identity with ESPN's explicit home/away (no
   name fuzzing, no `daysFrom` window, so late grades/re-grades/backfills use one path), and
