@@ -15,7 +15,8 @@ import { ensureTeams } from './fixtures/db';
 import {
   getLeagueAts,
   getLeagueSeasons,
-  getLeagueSituational
+  getLeagueSituational,
+  getLeagueTeamGameLog
 } from '../../src/lib/server/db/queries/league';
 
 const admin = createServiceClient();
@@ -182,6 +183,41 @@ describe('league ATS read path (#406)', () => {
     expect(league.homeAway?.home.games).toBe(2);
     expect(league.homeAway?.home.ats).toEqual({ wins: 1, losses: 1, pushes: 0 });
     expect(league.homeAway?.away.ats).toEqual({ wins: 1, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueAts includes each team’s current ATS streak and last-4 form (#428)', async () => {
+    const league = await getLeagueAts(SEASON_YEAR);
+
+    // Every team has played exactly one game, so each is on a length-1 run in that direction.
+    const kc = league.streaks.find((s) => s.teamShortName === 'KC')!;
+    expect(kc.streakResult).toBe('win');
+    expect(kc.streakLength).toBe(1);
+    expect(kc.last4).toEqual({ wins: 1, losses: 0, pushes: 0 });
+
+    const buf = league.streaks.find((s) => s.teamShortName === 'BUF')!;
+    expect(buf.streakResult).toBe('loss');
+    expect(buf.streakLength).toBe(1);
+    expect(buf.last4).toEqual({ wins: 0, losses: 1, pushes: 0 });
+  });
+
+  test('getLeagueTeamGameLog returns the team-relative per-game log (#428)', async () => {
+    // KC (home) favored -7 and won 28-14 -> covered by 7 against the line.
+    const log = await getLeagueTeamGameLog(SEASON_YEAR, teamId.KC);
+    expect(log.games).toHaveLength(1);
+    const g = log.games[0];
+    expect(g.weekNumber).toBe(1);
+    expect(g.opponentTeamId).toBe(teamId.BUF);
+    expect(g.isHome).toBe(true);
+    expect(g.spreadValue).toBe(-7); // team-relative: negative = favored
+    expect(g.margin).toBe(7); // team-relative cover margin
+    expect(g.atsResult).toBe('win');
+
+    // BUF (away) was the +7 underdog and did not cover.
+    const buf = await getLeagueTeamGameLog(SEASON_YEAR, teamId.BUF);
+    expect(buf.games[0].isHome).toBe(false);
+    expect(buf.games[0].spreadValue).toBe(7);
+    expect(buf.games[0].margin).toBe(-7);
+    expect(buf.games[0].atsResult).toBe('loss');
   });
 
   test('getLeagueSituational returns crossed home/away × favorite/underdog quadrants', async () => {

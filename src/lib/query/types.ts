@@ -9,7 +9,7 @@ import type { SeasonStats, AllTimeTotalsEntry } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
-import type { LeagueAts } from '$lib/types/server/league';
+import type { LeagueAts, LeagueTeamGameLog } from '$lib/types/server/league';
 
 /** Eager, season-scoped Stats payload cached under `['stats', groupId, season]`. */
 export type StatsCachePayload = SeasonStats & {
@@ -83,3 +83,10 @@ export type AllTimeLeaderboardPayload = {
  * by season alone and is freely shareable/persistable (ADR-0017).
  */
 export type LeagueCachePayload = LeagueAts;
+
+/**
+ * One team's season ATS game log cached under `['league', 'team', teamId, season]` (issue
+ * #428). Lazily fetched when the /league drill-down opens; group- and user-independent like
+ * the rest of the league surface, so it is freely shareable/persistable (ADR-0017).
+ */
+export type LeagueTeamGameLogPayload = LeagueTeamGameLog;

@@ -7,6 +7,9 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
+  import HotCold from '$lib/components/league/HotCold.svelte';
+  import TeamGameLog from '$lib/components/league/TeamGameLog.svelte';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import {
     Card,
     CardContent,
@@ -49,10 +52,21 @@
       pushes: 0
     },
     favDogByWeek: [],
-    homeAway: null
+    homeAway: null,
+    streaks: []
   };
 
   const league = $derived(leagueQuery.data ?? EMPTY);
+
+  // Opponent short names for the drill-down game log: every opponent also appears as a team
+  // here (both perspectives of each game are in league_ats_base), so this map is complete.
+  const teamNamesById = $derived(new Map(league.teams.map((t) => [t.teamId, t.teamShortName])));
+
+  // Team drill-down: one expanded row at a time (accordion), fetched lazily on open (#428).
+  let expandedTeamId = $state<number | null>(null);
+  function toggleTeam(teamId: number) {
+    expandedTeamId = expandedTeamId === teamId ? null : teamId;
+  }
 
   // ── Favorite / underdog cover % (pushes excluded) ──────────────────────────────
   const favSeasonPct = $derived(
@@ -205,6 +219,9 @@
       — treat small samples with caution.
     </p>
 
+    <!-- ── Hot & cold streaks ──────────────────────────────────────────────────── -->
+    <HotCold streaks={league.streaks} />
+
     <!-- ── Favorites vs. underdogs ─────────────────────────────────────────────── -->
     <Card data-testid="league-fav-dog">
       <CardHeader>
@@ -285,9 +302,22 @@
           </TableHeader>
           <TableBody>
             {#each sortedTeams as team (team.teamId)}
+              {@const expanded = expandedTeamId === team.teamId}
               <TableRow>
                 <TableCell class="font-medium whitespace-nowrap" title={team.teamName}>
-                  {team.teamShortName}
+                  <button
+                    type="button"
+                    class="-mx-1 flex items-center gap-1 rounded px-1 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    aria-expanded={expanded}
+                    data-testid="league-team-toggle"
+                    onclick={() => toggleTeam(team.teamId)}
+                  >
+                    <ChevronRight
+                      class="size-3 shrink-0 transition-transform {expanded ? 'rotate-90' : ''}"
+                      aria-hidden="true"
+                    />
+                    {team.teamShortName}
+                  </button>
                 </TableCell>
                 <TableCell>{@render wlp(team.ats)}</TableCell>
                 <TableCell class="text-right">{formatAccuracy(coverPct(team.ats))}</TableCell>
@@ -298,6 +328,20 @@
                 <TableCell class="text-muted-foreground">{@render wlp(team.underdog)}</TableCell>
                 <TableCell class="text-right tabular-nums">{team.games}</TableCell>
               </TableRow>
+              {#if expanded}
+                <TableRow data-testid="league-team-drilldown">
+                  <TableCell colspan={9} class="bg-muted/30 p-4">
+                    <p class="mb-3 text-sm font-medium">
+                      {team.teamName} — {pageData.seasonYear} game log
+                    </p>
+                    <TeamGameLog
+                      teamId={team.teamId}
+                      seasonYear={pageData.seasonYear}
+                      {teamNamesById}
+                    />
+                  </TableCell>
+                </TableRow>
+              {/if}
             {/each}
           </TableBody>
         </Table>

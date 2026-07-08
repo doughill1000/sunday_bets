@@ -21,7 +21,11 @@ export const queryKeys = {
     cursor: string | null
   ) => ['leaderboard', groupId, seasonYear, view, week, cursor] as const,
   // League ATS is group-independent, so it is keyed by season alone (issue #406).
-  league: (seasonYear: number) => ['league', seasonYear] as const
+  league: (seasonYear: number) => ['league', seasonYear] as const,
+  // Per-team drill-down game log, lazily fetched when a team expands (issue #428). Under the
+  // 'league' root so it shares the shareable/persistable class (public, group-independent).
+  leagueTeam: (teamId: number, seasonYear: number) =>
+    ['league', 'team', teamId, seasonYear] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any

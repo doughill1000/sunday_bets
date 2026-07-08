@@ -68,6 +68,47 @@ export type LeagueSituationalRecord = {
   ats: AtsRecord;
 };
 
+/** A team's current ATS cover streak and recent (last-4) form for the /league Hot/Cold
+ *  module (issue #428). Rows come from league_ats_streaks (over league_ats_base). The push
+ *  convention is the view's: a push carries no cover momentum, so it neither extends nor
+ *  starts a run — `streakResult = 'push'` with `streakLength = 0` means the most-recent game
+ *  was a push and the team is on no active streak. */
+export type LeagueTeamStreak = {
+  teamId: number;
+  teamName: string;
+  teamShortName: string;
+  /** Direction of the current run: 'win' = cover streak, 'loss' = non-cover streak, 'push'
+   *  = most-recent game was a push (no active streak, streakLength = 0). */
+  streakResult: 'win' | 'loss' | 'push';
+  /** Consecutive most-recent games sharing streakResult; 0 when streakResult is 'push'. */
+  streakLength: number;
+  /** ATS record over the four most-recent games (fewer early in a season). */
+  last4: AtsRecord;
+};
+
+/** One graded game in a team's season log for the drill-down (issue #428), from the team's
+ *  own perspective in league_ats_base. `spreadValue` and `margin` are team-relative
+ *  (negative spread = this team favored; margin > 0 = this team covered, = 0 push). */
+export type LeagueTeamGameLogEntry = {
+  weekNumber: number;
+  opponentTeamId: number;
+  /** true = this team hosted; false = it was on the road. */
+  isHome: boolean;
+  /** Team-relative closing/active spread: negative = favored, positive = underdog, 0 = pick'em. */
+  spreadValue: number;
+  /** Team-relative cover margin in points: > 0 covered by that many, = 0 push, < 0 did not. */
+  margin: number;
+  atsResult: 'win' | 'loss' | 'push';
+};
+
+/** A single team's season-long ATS game log (issue #428). Lazily fetched per team when the
+ *  drill-down opens; group- and user-independent like the rest of the /league surface. */
+export type LeagueTeamGameLog = {
+  teamId: number;
+  seasonYear: number;
+  games: LeagueTeamGameLogEntry[];
+};
+
 /** The full /league payload for one season. `totalGames` is the number of qualifying
  *  scored games with a line (drives the "n games scored" caveat on thin/older seasons). */
 export type LeagueAts = {
@@ -77,4 +118,6 @@ export type LeagueAts = {
   favDogSeason: LeagueFavDogSplit;
   favDogByWeek: LeagueFavDogSplit[];
   homeAway: LeagueHomeAway | null;
+  /** Per-team current ATS streak + last-4 form for the Hot/Cold module (issue #428). */
+  streaks: LeagueTeamStreak[];
 };

@@ -6,12 +6,23 @@ import type {
   LeagueFavDogSplit,
   LeagueHomeAway,
   LeagueSituationalRecord,
-  LeagueTeamAts
+  LeagueTeamAts,
+  LeagueTeamGameLog,
+  LeagueTeamGameLogEntry,
+  LeagueTeamStreak
 } from '$lib/types/server/league';
 
 type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
 type HomeAwayRow = Tables<'league_ats_home_away'>;
+type StreakRow = Tables<'league_ats_streaks'>;
+type BaseRow = Tables<'league_ats_base'>;
+
+// ats_result / su_result / streak_result are typed `string | null`; narrow the view's known
+// domain to the three literals the UI switches on (anything else — never emitted — is dropped).
+type AtsOutcome = 'win' | 'loss' | 'push';
+const asOutcome = (v: string | null): AtsOutcome | null =>
+  v === 'win' || v === 'loss' || v === 'push' ? v : null;
 
 // Matview/view columns are all nullable in the generated types; a present row never has
 // null counts, so coalesce to 0 rather than dropping rows on a spurious null.
@@ -77,6 +88,21 @@ function toHomeAway(row: HomeAwayRow): LeagueHomeAway {
   };
 }
 
+function toStreak(row: StreakRow): LeagueTeamStreak | null {
+  if (row.team_id == null || row.team_name == null || row.team_short_name == null) return null;
+  const streakResult = asOutcome(row.streak_result);
+  if (streakResult == null) return null;
+  return {
+    teamId: row.team_id,
+    teamName: row.team_name,
+    teamShortName: row.team_short_name,
+    streakResult,
+    // A push resets the streak to 0 upstream, so coalesce guards only against a spurious null.
+    streakLength: n(row.streak_length),
+    last4: rec(row.last4_wins, row.last4_losses, row.last4_pushes)
+  };
+}
+
 /**
  * The seasons that have any league ATS data, newest first. Read off league_ats_home_away
  * (exactly one row per season with qualifying games), so the /league season selector only
@@ -98,7 +124,7 @@ export async function getLeagueSeasons(): Promise<number[]> {
  * is duplicated. Group-independent: identical for every user (ADR-0013 service-role read).
  */
 export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
-  const [teamResult, favDogResult, homeAwayResult] = await Promise.all([
+  const [teamResult, favDogResult, homeAwayResult, streakResult] = await Promise.all([
     supabaseService
       .from('league_ats_team')
       .select('*')
@@ -113,12 +139,18 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
       .from('league_ats_home_away')
       .select('*')
       .eq('season_year', seasonYear)
-      .maybeSingle()
+      .maybeSingle(),
+    supabaseService
+      .from('league_ats_streaks')
+      .select('*')
+      .eq('season_year', seasonYear)
+      .order('team_short_name')
   ]);
 
   if (teamResult.error) throw teamResult.error;
   if (favDogResult.error) throw favDogResult.error;
   if (homeAwayResult.error) throw homeAwayResult.error;
+  if (streakResult.error) throw streakResult.error;
 
   const teams = (teamResult.data ?? []).flatMap((row) => {
     const entry = toTeam(row);
@@ -126,6 +158,10 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
   });
   const favDogByWeek = (favDogResult.data ?? []).map(toFavDogWeek);
   const homeAway = homeAwayResult.data ? toHomeAway(homeAwayResult.data) : null;
+  const streaks = (streakResult.data ?? []).flatMap((row) => {
+    const entry = toStreak(row);
+    return entry ? [entry] : [];
+  });
 
   return {
     seasonYear,
@@ -134,7 +170,8 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
     teams,
     favDogSeason: sumFavDog(favDogByWeek),
     favDogByWeek,
-    homeAway
+    homeAway,
+    streaks
   };
 }
 
@@ -164,4 +201,59 @@ export async function getLeagueSituational(seasonYear: number): Promise<LeagueSi
       }
     ];
   });
+}
+
+type BaseGameLogRow = Pick<
+  BaseRow,
+  'week_number' | 'opponent_team_id' | 'is_home' | 'spread_value' | 'margin' | 'ats_result'
+>;
+
+function toGameLogEntry(row: BaseGameLogRow): LeagueTeamGameLogEntry | null {
+  const atsResult = asOutcome(row.ats_result);
+  if (
+    row.week_number == null ||
+    row.opponent_team_id == null ||
+    row.is_home == null ||
+    row.spread_value == null ||
+    row.margin == null ||
+    atsResult == null
+  ) {
+    return null;
+  }
+  return {
+    weekNumber: row.week_number,
+    opponentTeamId: row.opponent_team_id,
+    isHome: row.is_home,
+    spreadValue: row.spread_value,
+    margin: row.margin,
+    atsResult
+  };
+}
+
+/**
+ * One team's full season ATS game log for the /league drill-down (issue #428). Reads the
+ * per-perspective league_ats_base matview directly — no new view or aggregation — filtered to
+ * this team and season and ordered by week (a team plays at most once per scoring week; game_id
+ * breaks the rare tie deterministically). Each row is already team-relative (spread_value < 0 =
+ * favored, margin > 0 = covered), so the UI renders it without re-deriving cover math.
+ * Group-independent (service-role read, ADR-0013). Opponent names are resolved client-side from
+ * the team list already loaded on /league, so no teams join is needed here.
+ */
+export async function getLeagueTeamGameLog(
+  seasonYear: number,
+  teamId: number
+): Promise<LeagueTeamGameLog> {
+  const { data, error } = await supabaseService
+    .from('league_ats_base')
+    .select('week_number, opponent_team_id, is_home, spread_value, margin, ats_result, game_id')
+    .eq('season_year', seasonYear)
+    .eq('team_id', teamId)
+    .order('week_number')
+    .order('game_id');
+  if (error) throw error;
+  const games = (data ?? []).flatMap((row) => {
+    const entry = toGameLogEntry(row);
+    return entry ? [entry] : [];
+  });
+  return { seasonYear, teamId, games };
 }
