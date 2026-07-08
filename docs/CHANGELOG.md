@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
-- **PR #442** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
+- **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
   longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
