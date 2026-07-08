@@ -19,6 +19,14 @@
 -- dropped (the "~17% missing scores" in older imports render as thinner samples, surfaced
 -- via the n= caveat in the UI).
 --
+-- Widened for the League tab v2 epic (#425) with four reference columns the new aggregate
+-- views consume, all at the same (game, team-perspective) grain: spread_value and margin are
+-- restated TEAM-RELATIVE (negative spread_value = this team is favored; margin > 0 = this team
+-- covered, = 0 push), commence_time carries the kickoff for primetime-slot classification, and
+-- opponent_team_id names the other side for divisional matchups. The original home-relative
+-- margin still lives in the `scored` CTE below; the per-perspective sign flip happens in the
+-- final SELECT alongside ats_result, so the two conventions can never disagree.
+--
 -- The margin formula is INLINED here rather than calling public.ats_margin_at_lock, even
 -- though that function is the canonical definition (grade_pick uses it, ADR-0007). Reason:
 -- the ADR-0012 from-empty drift guard (verify-src-reproduces-migrations.ts) applies all of
@@ -33,11 +41,15 @@
 -- grading run; the unique index below lets that refresh run CONCURRENTLY. Matviews cannot
 -- carry RLS, so all reads are service-role-only (the server reads via the service key; the
 -- data is league-wide public context with no cross-group/-user dimension to isolate).
--- DROP ... CASCADE (not DROP VIEW): #406 made this a matview, and the three league_ats_*
--- aggregate views select from it (a hard pg_depend edge), so re-emitting this file drops
--- them too -- every migration that re-emits this file must also re-touch
--- league_ats_team.sql / league_ats_fav_dog.sql / league_ats_home_away.sql so the generator
--- bundles their recreates into the same migration (same rule as league_completed_standings).
+-- DROP ... CASCADE (not DROP VIEW): #406 made this a matview and the league_ats_* aggregate
+-- views select from it (a hard pg_depend edge), so re-emitting this file drops them too --
+-- every migration that re-emits this file must also re-touch each pre-existing dependent so
+-- the generator bundles its recreate into the same migration (same rule as
+-- league_completed_standings). Dependents as of #425: league_ats_team, league_ats_fav_dog,
+-- league_ats_home_away, league_ats_situational (the four recreated unchanged) plus the five
+-- #425 aggregates (league_ats_spread_buckets, _quadrants, _primetime, _divisional, _streaks).
+-- The five #425 views are new files, so the generator always emits them; the four pre-existing
+-- dependents only recreate when their own file hash changes -- which is why each is re-touched.
 drop materialized view if exists public.league_ats_base cascade;
 
 create materialized view public.league_ats_base as
@@ -46,6 +58,7 @@ with scored as (
     s.year as season_year,
     w.week_number,
     g.id as game_id,
+    g.commence_time,
     g.home_team_id,
     g.away_team_id,
     (g.final_scores ->> 'home')::int as home_pts,
@@ -82,7 +95,9 @@ select
   sc.season_year,
   sc.week_number,
   sc.game_id,
+  sc.commence_time,
   persp.team_id,
+  persp.opponent_team_id,
   persp.is_home,
   -- Favored per the closing spread: spread_value < 0 favors spread_team_id, so this team
   -- is favored when it IS the spread team on a negative line, or the OTHER team on a
@@ -93,6 +108,17 @@ select
     when persp.team_id = sc.spread_team_id then sc.spread_value < 0
     else sc.spread_value > 0
   end as is_favorite,
+  -- Team-relative spread (#425): sc.spread_value is stated on sc.spread_team_id, so flip it
+  -- for the other side. Negative = this team favored, positive = underdog, 0 = pick'em;
+  -- abs() is the line magnitude league_ats_spread_buckets groups by.
+  case
+    when persp.team_id = sc.spread_team_id then sc.spread_value
+    else -sc.spread_value
+  end as spread_value,
+  -- Team-relative cover margin (#425): sc.margin is home-relative, so the away perspective
+  -- flips the sign. > 0 this team covered by that many points, = 0 push, < 0 did not cover
+  -- (always agrees with ats_result below).
+  case when persp.is_home then sc.margin else -sc.margin end as margin,
   -- Did THIS team cover? margin is home-relative, so the away perspective flips the sign.
   case
     when sc.margin = 0 then 'push'
@@ -109,9 +135,9 @@ select
 from scored sc
 cross join lateral (
   values
-    (sc.home_team_id, true),
-    (sc.away_team_id, false)
-) as persp(team_id, is_home);
+    (sc.home_team_id, true, sc.away_team_id),
+    (sc.away_team_id, false, sc.home_team_id)
+) as persp(team_id, is_home, opponent_team_id);
 
 -- Unique natural key for REFRESH ... CONCURRENTLY; also serves the (season_year, team_id)
 -- read filters used by the /league aggregates and the per-game nugget lookup.
