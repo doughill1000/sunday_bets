@@ -11,6 +11,7 @@
     "db:backfill:dev": "cross-env DOTENV_CONFIG_PATH=.env.staging node -r dotenv/config --import tsx supabase/scripts/backfill-picks/index.ts \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
     "db:backfill:prod": "cross-env DOTENV_CONFIG_PATH=.env.production node -r dotenv/config --import tsx supabase/scripts/backfill-picks/index.ts \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
     "db:import-historical:generate": "tsx supabase/scripts/import-historical/generate.ts",
+    "db:backfill-game-times:generate": "tsx supabase/scripts/backfill-game-times/generate.ts",
     "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production",
     "db:refresh-matviews:prod": "node -r dotenv/config supabase/scripts/refresh-matviews.mjs dotenv_config_path=.env.production",
     "refresh-wrapped:prod": "cross-env DOTENV_CONFIG_PATH=.env.production node -r dotenv/config --import tsx supabase/scripts/refresh-wrapped/index.ts",
