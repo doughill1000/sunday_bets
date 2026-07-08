@@ -46,6 +46,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-08
+
+- **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
+  social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
+  order only, no behavior change. file: bottom tab navigation.
+
 ## 2026-07-07
 
 - **#429** League tab — This Week slate — a forward-looking slate on `/league`: the current
@@ -84,6 +90,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   change. matview: `league_ats_base` · views: `league_ats_spread_buckets` ·
   `league_ats_quadrants` · `league_ats_primetime` · `league_ats_divisional` ·
   `league_ats_streaks` · table: `teams` · ADR-0013 · ADR-0002
+- **PR #420** League-wide team ATS trends tab (#406, PR 1 of 2) — introduces the `/league`
+  tab as a 5th nav destination with the per-team ATS table plus favorites-vs-underdogs and
+  home/away modules, all reading a new materialized league ATS surface through a season-cached
+  client payload. Foundation the pick-card nugget (PR 2) and the v2 waves build on. route:
+  `/league`, `/api/league` · views: `league_ats_*` · matview: `league_ats_base` · ADR-0013 ·
+  ADR-0017
 - **PR #432** `start-issue` skill now runs the full delivery loop (issue-less) —
   previously stopped after worktree setup and printing the dev command; now
   continues straight into implementation and hands off to `finish-pr` to test and
