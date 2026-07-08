@@ -27,6 +27,70 @@ export async function refreshLeaderboardStats(): Promise<void> {
   }
 }
 
+/** Result summary shared by all three graders — powers the admin card's confirmation note. */
+export type GradeSummary = {
+  /** Games in the target set that actually had a final (i.e. were gradeable). */
+  gamesGraded: number;
+  /** Real member picks settled across all groups (excludes auto "missed" penalties). */
+  picksSettled: number;
+};
+
+/**
+ * Count what a grade run actually settled, so the UI can say "N games, M picks
+ * settled" instead of a bare "done". Derived from the same game-id set the grader
+ * processed: `gamesGraded` counts those with a final present (what grade_* grades),
+ * `picksSettled` counts pick_settlement rows tied to a real pick (pick_id not null).
+ */
+async function summarizeGrade(gameIds: string[]): Promise<GradeSummary> {
+  if (gameIds.length === 0) return { gamesGraded: 0, picksSettled: 0 };
+
+  // Non-fatal: the grade has already committed by the time we count. If the summary
+  // queries hiccup (e.g. a very long id list), fall back to zeros — the caller's UI
+  // shows a plain "Graded" note rather than surfacing a false error over a real grade.
+  try {
+    const [{ count: gamesGraded }, { count: picksSettled }] = await Promise.all([
+      supabaseService
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .in('id', gameIds)
+        .not('final_scores', 'is', null),
+      supabaseService
+        .from('pick_settlement')
+        .select('pick_id', { count: 'exact', head: true })
+        .in('game_id', gameIds)
+        .not('pick_id', 'is', null)
+    ]);
+
+    return { gamesGraded: gamesGraded ?? 0, picksSettled: picksSettled ?? 0 };
+  } catch {
+    return { gamesGraded: 0, picksSettled: 0 };
+  }
+}
+
+async function gameIdsForWeek(weekId: number): Promise<string[]> {
+  const { data, error } = await supabaseService.from('games').select('id').eq('week_id', weekId);
+  if (error) throw new Error(error.message);
+  return data?.map((g) => g.id) ?? [];
+}
+
+async function gameIdsForSeason(seasonId: number): Promise<string[]> {
+  // PostgREST can't do a subselect in .in(), so resolve the week ids first.
+  const { data: weeks, error: wErr } = await supabaseService
+    .from('weeks')
+    .select('id')
+    .eq('season_id', seasonId);
+  if (wErr) throw new Error(wErr.message);
+  const weekIds = weeks?.map((w) => w.id) ?? [];
+  if (weekIds.length === 0) return [];
+
+  const { data: games, error: gErr } = await supabaseService
+    .from('games')
+    .select('id')
+    .in('week_id', weekIds);
+  if (gErr) throw new Error(gErr.message);
+  return games?.map((g) => g.id) ?? [];
+}
+
 /** Grade a single game. Optionally refresh finals from Odds API first. */
 export async function gradeGame(
   gameId: string,
@@ -38,7 +102,8 @@ export async function gradeGame(
   const { error } = await supabaseService.rpc('grade_game', { p_game_id: gameId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
-  return { ok: true, game_id: gameId };
+  const summary = await summarizeGrade([gameId]);
+  return { ok: true, game_id: gameId, ...summary };
 }
 
 /** Grade a week. Optionally pull finals for the week before grading. */
@@ -46,18 +111,15 @@ export async function gradeWeek(
   weekId: number,
   opts?: { refreshScores?: boolean; daysFrom?: number }
 ) {
+  const gameIds = await gameIdsForWeek(weekId);
   if (opts?.refreshScores) {
-    const { data: games, error } = await supabaseService
-      .from('games')
-      .select('id')
-      .eq('week_id', weekId);
-    if (error) throw new Error(error.message);
-    await refreshScoresForGames(games?.map((g) => g.id) ?? [], opts?.daysFrom ?? 1);
+    await refreshScoresForGames(gameIds, opts?.daysFrom ?? 1);
   }
   const { error } = await supabaseService.rpc('grade_week', { p_week_id: weekId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
-  return { ok: true, week_id: weekId };
+  const summary = await summarizeGrade(gameIds);
+  return { ok: true, week_id: weekId, ...summary };
 }
 
 /** Grade a season. Optionally pull finals for all weeks in the season. */
@@ -65,24 +127,15 @@ export async function gradeSeason(
   seasonId: number,
   opts?: { refreshScores?: boolean; daysFrom?: number }
 ) {
+  const gameIds = await gameIdsForSeason(seasonId);
   if (opts?.refreshScores) {
-    const { data: games, error } = await supabaseService
-      .from('games')
-      .select('id')
-      .in(
-        'week_id',
-        // NOTE: PostgREST doesn't support subselect directly in .in(), so do two roundtrips.
-        (await supabaseService.from('weeks').select('id').eq('season_id', seasonId)).data?.map(
-          (w) => w.id
-        ) ?? []
-      );
-    if (error) throw new Error(error.message);
-    await refreshScoresForGames(games?.map((g) => g.id) ?? [], opts?.daysFrom ?? 1);
+    await refreshScoresForGames(gameIds, opts?.daysFrom ?? 3);
   }
   const { error } = await supabaseService.rpc('grade_season', { p_season_id: seasonId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
-  return { ok: true, season_id: seasonId };
+  const summary = await summarizeGrade(gameIds);
+  return { ok: true, season_id: seasonId, ...summary };
 }
 
 /**

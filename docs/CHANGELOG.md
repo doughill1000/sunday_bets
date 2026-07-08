@@ -56,6 +56,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   generated read-only snapshot so a stranger can see the finished experience without
   exposing the owner's real league and without demo rows ever entering production
   tables/standings. Decision doc only; no code or schema change. ADR-0026
+- **PR #445** Admin Grading tile UX — the `/admin` grading card now drives off human
+  pickers (a week dropdown with the active week preselected, a lazy game picker by
+  matchup, a season picker) instead of raw database ids, with a pull-latest-finals
+  toggle, a confirm step, and a settled-counts summary after each run. Adds an
+  admin-gated games-by-week lookup. route: `/api/admin/week-games` · files:
+  `admin/GradingCard.svelte` · `server/grading.ts` · `server/admin.ts`
 - **PR #446** Explicit "Lock in" on the picks board + pick-card polish (issue-less) — replaces
   auto-save-on-complete with a per-card **Lock in** button (a pick persists only once a team and
   weight are chosen and you tap it) plus an **Unlock** control on committed picks, dropping the
