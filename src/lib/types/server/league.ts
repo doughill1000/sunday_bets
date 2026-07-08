@@ -102,6 +102,35 @@ export type LeagueQuadrant = {
   ats: AtsRecord;
 };
 
+/** The kickoff slot a game is classified into by league_ats_primetime: the three night
+ *  windows plus `day` for everything else. The slot is derived from the New-York wall-clock
+ *  kickoff (DST-safe) in the view, not here. */
+export type PrimetimeSlot = 'TNF' | 'SNF' | 'MNF' | 'day';
+
+/** Favorite ATS cover counts for one kickoff slot in a season (league_ats_primetime, #425).
+ *  Grain mirrors LeagueFavDogSplit — one favorite-perspective row per game — so
+ *  favoriteCovers + underdogCovers + pushes = games and cover % excludes pushes. */
+export type LeaguePrimetimeSlot = {
+  slot: PrimetimeSlot;
+  /** Games with a favorite that kicked off in this slot (pick'em games excluded upstream). */
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
+/** Favorite ATS cover counts split by divisional vs non-divisional matchup for a season
+ *  (league_ats_divisional, #425). Same favorite-perspective grain as LeaguePrimetimeSlot;
+ *  games where either side has no division/conference are excluded upstream. */
+export type LeagueDivisionalSplit = {
+  /** true = both teams share conference + division; false = any other NFL matchup. */
+  isDivisional: boolean;
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
 /** The full /league payload for one season. `totalGames` is the number of qualifying
  *  scored games with a line (drives the "n games scored" caveat on thin/older seasons). */
 export type LeagueAts = {
@@ -115,4 +144,8 @@ export type LeagueAts = {
   spreadBuckets: LeagueSpreadBucket[];
   /** The four league-wide home/away × favorite/underdog cover rates (issue #426). */
   quadrants: LeagueQuadrant[];
+  /** Favorite cover rate by kickoff slot (TNF/SNF/MNF/day), canonical order, #427. */
+  primetime: LeaguePrimetimeSlot[];
+  /** Favorite cover rate for divisional vs non-divisional matchups, #427. */
+  divisional: LeagueDivisionalSplit[];
 };

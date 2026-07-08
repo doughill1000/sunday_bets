@@ -3,19 +3,29 @@ import type { Tables } from '$lib/types/supabase';
 import type {
   AtsRecord,
   LeagueAts,
+  LeagueDivisionalSplit,
   LeagueFavDogSplit,
   LeagueHomeAway,
+  LeaguePrimetimeSlot,
   LeagueQuadrant,
   LeagueSituationalRecord,
   LeagueSpreadBucket,
-  LeagueTeamAts
+  LeagueTeamAts,
+  PrimetimeSlot
 } from '$lib/types/server/league';
+import { PRIMETIME_SLOT_ORDER } from '$lib/utils/leagueAts';
 
 type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
 type HomeAwayRow = Tables<'league_ats_home_away'>;
 type SpreadBucketRow = Tables<'league_ats_spread_buckets'>;
 type QuadrantRow = Tables<'league_ats_quadrants'>;
+type PrimetimeRow = Tables<'league_ats_primetime'>;
+type DivisionalRow = Tables<'league_ats_divisional'>;
+
+const PRIMETIME_SLOTS = new Set<string>(PRIMETIME_SLOT_ORDER);
+const isPrimetimeSlot = (slot: string | null): slot is PrimetimeSlot =>
+  slot != null && PRIMETIME_SLOTS.has(slot);
 
 // Matview/view columns are all nullable in the generated types; a present row never has
 // null counts, so coalesce to 0 rather than dropping rows on a spurious null.
@@ -105,6 +115,38 @@ function toQuadrant(row: QuadrantRow): LeagueQuadrant | null {
   };
 }
 
+function toPrimetimeSlot(row: PrimetimeRow): LeaguePrimetimeSlot | null {
+  // A row whose slot isn't one of the four known windows is skipped rather than mislabeled;
+  // the view only ever emits these four, so this is a type guard, not a real filter.
+  if (!isPrimetimeSlot(row.slot)) return null;
+  return {
+    slot: row.slot,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
+/** Sort primetime rows into the canonical TNF → SNF → MNF → day display order. */
+function sortPrimetime(slots: LeaguePrimetimeSlot[]): LeaguePrimetimeSlot[] {
+  const order = (slot: PrimetimeSlot) => PRIMETIME_SLOT_ORDER.indexOf(slot);
+  return slots.toSorted((a, b) => order(a.slot) - order(b.slot));
+}
+
+function toDivisionalSplit(row: DivisionalRow): LeagueDivisionalSplit | null {
+  // is_divisional is the grouping key; a null (unclassifiable) row shouldn't reach here
+  // because the view excludes games with no division, but guard the nullable type.
+  if (row.is_divisional == null) return null;
+  return {
+    isDivisional: row.is_divisional,
+    games: n(row.games),
+    favoriteCovers: n(row.favorite_covers),
+    underdogCovers: n(row.underdog_covers),
+    pushes: n(row.pushes)
+  };
+}
+
 /**
  * Favorite ATS cover rate by spread-size bucket for one season (issue #426, wave B). Reads
  * league_ats_spread_buckets, a plain view over the shared league_ats_base matview — no cover
@@ -159,13 +201,22 @@ export async function getLeagueSeasons(): Promise<number[]> {
 /**
  * League-wide team ATS for one season, assembled as the single cached /league payload
  * (ADR-0017): the per-team table, the favorite/underdog module (season aggregate + per-week
- * breakdown), the home/away module, and the wave-B market cuts (spread-size buckets +
- * league-wide quadrants, issue #426). Every part reads the league_ats_* views, which derive
- * from the single league_ats_base matview — no aggregation is duplicated. Group-independent:
- * identical for every user (ADR-0013 service-role read).
+ * breakdown), the home/away module, the wave-B market cuts (spread-size buckets + league-wide
+ * quadrants, issue #426), and the primetime and divisional situational modules (#427). Every
+ * part reads the league_ats_* views, which derive from the single league_ats_base matview —
+ * no aggregation is duplicated. Group-independent: identical for every user (ADR-0013
+ * service-role read).
  */
 export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
-  const [teamResult, favDogResult, homeAwayResult, spreadBuckets, quadrants] = await Promise.all([
+  const [
+    teamResult,
+    favDogResult,
+    homeAwayResult,
+    primetimeResult,
+    divisionalResult,
+    spreadBuckets,
+    quadrants
+  ] = await Promise.all([
     supabaseService
       .from('league_ats_team')
       .select('*')
@@ -181,6 +232,8 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
       .select('*')
       .eq('season_year', seasonYear)
       .maybeSingle(),
+    supabaseService.from('league_ats_primetime').select('*').eq('season_year', seasonYear),
+    supabaseService.from('league_ats_divisional').select('*').eq('season_year', seasonYear),
     getLeagueSpreadBuckets(seasonYear),
     getLeagueQuadrants(seasonYear)
   ]);
@@ -188,6 +241,8 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
   if (teamResult.error) throw teamResult.error;
   if (favDogResult.error) throw favDogResult.error;
   if (homeAwayResult.error) throw homeAwayResult.error;
+  if (primetimeResult.error) throw primetimeResult.error;
+  if (divisionalResult.error) throw divisionalResult.error;
 
   const teams = (teamResult.data ?? []).flatMap((row) => {
     const entry = toTeam(row);
@@ -195,6 +250,16 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
   });
   const favDogByWeek = (favDogResult.data ?? []).map(toFavDogWeek);
   const homeAway = homeAwayResult.data ? toHomeAway(homeAwayResult.data) : null;
+  const primetime = sortPrimetime(
+    (primetimeResult.data ?? []).flatMap((row) => {
+      const slot = toPrimetimeSlot(row);
+      return slot ? [slot] : [];
+    })
+  );
+  const divisional = (divisionalResult.data ?? []).flatMap((row) => {
+    const split = toDivisionalSplit(row);
+    return split ? [split] : [];
+  });
 
   return {
     seasonYear,
@@ -205,7 +270,9 @@ export async function getLeagueAts(seasonYear: number): Promise<LeagueAts> {
     favDogByWeek,
     homeAway,
     spreadBuckets,
-    quadrants
+    quadrants,
+    primetime,
+    divisional
   };
 }
 

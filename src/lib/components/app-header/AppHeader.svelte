@@ -9,8 +9,8 @@
   const navLinks = [
     { href: '/picks', label: 'Picks' },
     { href: '/leaderboard', label: 'Leaderboard' },
-    { href: '/stats', label: 'Stats' },
     { href: '/group', label: 'Group' },
+    { href: '/stats', label: 'Stats' },
     { href: '/league', label: 'League' }
   ];
 

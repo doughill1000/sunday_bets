@@ -9,6 +9,8 @@
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
   import Quadrants from '$lib/components/league/Quadrants.svelte';
+  import Primetime from '$lib/components/league/Primetime.svelte';
+  import Divisional from '$lib/components/league/Divisional.svelte';
   import {
     Card,
     CardContent,
@@ -53,7 +55,9 @@
     favDogByWeek: [],
     homeAway: null,
     spreadBuckets: [],
-    quadrants: []
+    quadrants: [],
+    primetime: [],
+    divisional: []
   };
 
   const league = $derived(leagueQuery.data ?? EMPTY);
@@ -348,5 +352,11 @@
 
     <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
     <Quadrants quadrants={league.quadrants} />
+
+    <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
+    <Primetime slots={league.primetime} />
+
+    <!-- ── Divisional vs. non-divisional (issue #427) ──────────────────────────── -->
+    <Divisional splits={league.divisional} />
   {/if}
 </section>
