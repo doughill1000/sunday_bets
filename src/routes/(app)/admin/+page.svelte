@@ -42,7 +42,12 @@
 
   <ScheduleSyncCard onNote={handleNote} />
 
-  <GradingCard activeWeek={data.activeWeek} onNote={handleNote} />
+  <GradingCard
+    activeWeek={data.activeWeek}
+    weeks={data.weeks}
+    seasons={data.seasons}
+    onNote={handleNote}
+  />
 
   <TestNotificationCard onNote={handleNote} />
 
