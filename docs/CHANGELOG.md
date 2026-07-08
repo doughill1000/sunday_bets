@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #452** ADR-only — records ESPN scoreboard as the primary source of final scores
+  (the Odds API `/scores` window can't cover late grades, re-grades, or historical
+  backfills, and its team-name fuzzy match re-derives identity the schedule model
+  already owns). Decision doc only; no code or schema change. ADR-0025
+- **PR #462** ADR-only — records serving a public, unauthenticated demo season from a
+  generated read-only snapshot so a stranger can see the finished experience without
+  exposing the owner's real league and without demo rows ever entering production
+  tables/standings. Decision doc only; no code or schema change. ADR-0026
 - **PR #446** Explicit "Lock in" on the picks board + pick-card polish (issue-less) — replaces
   auto-save-on-complete with a per-card **Lock in** button (a pick persists only once a team and
   weight are chosen and you tap it) plus an **Unlock** control on committed picks, dropping the
