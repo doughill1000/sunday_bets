@@ -7,6 +7,8 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
+  import Primetime from '$lib/components/league/Primetime.svelte';
+  import Divisional from '$lib/components/league/Divisional.svelte';
   import {
     Card,
     CardContent,
@@ -49,7 +51,9 @@
       pushes: 0
     },
     favDogByWeek: [],
-    homeAway: null
+    homeAway: null,
+    primetime: [],
+    divisional: []
   };
 
   const league = $derived(leagueQuery.data ?? EMPTY);
@@ -338,5 +342,11 @@
         </CardContent>
       </Card>
     {/if}
+
+    <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
+    <Primetime slots={league.primetime} />
+
+    <!-- ── Divisional vs. non-divisional (issue #427) ──────────────────────────── -->
+    <Divisional splits={league.divisional} />
   {/if}
 </section>
