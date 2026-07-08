@@ -36,6 +36,7 @@ import {
 import { POST as gradeGameHandler } from '../../src/routes/(app)/api/admin/grade-game/+server';
 import { POST as gradeWeekHandler } from '../../src/routes/(app)/api/admin/grade-week/+server';
 import { POST as gradeSeasonHandler } from '../../src/routes/(app)/api/admin/grade-season/+server';
+import { GET as weekGamesHandler } from '../../src/routes/(app)/api/admin/week-games/+server';
 import { POST as syncOddsHandler } from '../../src/routes/(app)/api/admin/sync-odds/+server';
 import { POST as syncScheduleHandler } from '../../src/routes/(app)/api/admin/sync-schedule/+server';
 import { POST as addMemberHandler } from '../../src/routes/(app)/api/admin/add-member/+server';
@@ -215,6 +216,41 @@ describe('POST /api/admin/grade-season', () => {
 
   test('returns 400 when season_id is missing (admin path)', async () => {
     const res = await invoke(gradeSeasonHandler, ADMIN_USER_ID, true, {});
+    expect(res.status).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// week-games — GET (read-only picker source; still admin-gated)
+// ---------------------------------------------------------------------------
+
+describe('GET /api/admin/week-games', () => {
+  // This handler reads event.url (not a JSON body), so build a GET-shaped event.
+  function makeGetEvent(userId: string, isAdmin: boolean, weekId: number | string): unknown {
+    return {
+      locals: { user: { id: userId }, isAdmin },
+      url: new URL(`http://localhost/api/admin/week-games?week_id=${weekId}`)
+    };
+  }
+
+  test('returns 403 for non-admin', async () => {
+    const res = (await Promise.resolve(
+      weekGamesHandler(makeGetEvent(NON_ADMIN_USER_ID, false, seededWeekId) as any)
+    )) as Response;
+    expect(res.status).toBe(403);
+  });
+
+  test('does not return 403 for admin', async () => {
+    const res = (await Promise.resolve(
+      weekGamesHandler(makeGetEvent(ADMIN_USER_ID, true, seededWeekId) as any)
+    )) as Response;
+    expect(res.status).not.toBe(403);
+  });
+
+  test('returns 400 for an invalid week_id (admin path)', async () => {
+    const res = (await Promise.resolve(
+      weekGamesHandler(makeGetEvent(ADMIN_USER_ID, true, 'not-a-number') as any)
+    )) as Response;
     expect(res.status).toBe(400);
   });
 });

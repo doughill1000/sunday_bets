@@ -1,6 +1,6 @@
 # ADR-0024: Missed-pick penalty is a league-membership rule; imported seasons are frozen from grading
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-08
 - Issue: #447
 - Supersedes: None

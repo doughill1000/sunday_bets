@@ -109,13 +109,10 @@ async function finalScoresOf(gameId: string) {
 
 describe('ESPN finals as primary score source (issue #450, ADR-0025)', () => {
   beforeAll(async () => {
+    // ensureTeams seeds teams.external_key (= 'KC'/'BUF'), which the ESPN-finals path
+    // matches on via findTeamsByExternalKeys — no manual backfill needed here.
     await ensureTeams(supabase);
     await ensureSettings(supabase);
-
-    // ESPN abbreviations map through teams.external_key; ensureTeams doesn't set it, so
-    // do it here (idempotent — same value on re-runs) to make the matchup match resolve.
-    await supabase.from('teams').update({ external_key: 'KC' }).eq('name', 'Kansas City Chiefs');
-    await supabase.from('teams').update({ external_key: 'BUF' }).eq('name', 'Buffalo Bills');
 
     const { data: teams } = await supabase
       .from('teams')

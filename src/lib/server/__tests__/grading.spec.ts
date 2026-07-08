@@ -89,9 +89,16 @@ function buildMocks() {
           return { data: null, error: null };
         })
       }));
-      builder.select = vi.fn().mockImplementation((sel: string) => {
-        // Lightweight heuristic: if it embeds the team relationships, it's the full
-        // refreshScores select.
+      builder.select = vi.fn().mockImplementation((sel: string, opts?: any) => {
+        // summarizeGrade count query: .in(...).not(...) => { count }
+        if (opts?.count) {
+          return {
+            in: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ count: 2, error: null })
+            })
+          };
+        }
+        // Full refreshScores select embeds the team relationships.
         if (/home_team:teams/.test(sel)) {
           return {
             in: vi.fn().mockResolvedValue({ data: fullGames, error: null })
@@ -102,6 +109,14 @@ function buildMocks() {
           eq: vi.fn().mockResolvedValue({ data: gamesByWeek, error: null }),
           in: vi.fn().mockResolvedValue({ data: seasonGames, error: null })
         };
+      });
+      return builder;
+    }
+    if (table === 'pick_settlement') {
+      builder.select = vi.fn().mockReturnValue({
+        in: vi.fn().mockReturnValue({
+          not: vi.fn().mockResolvedValue({ count: 5, error: null })
+        })
       });
       return builder;
     }
@@ -155,7 +170,7 @@ describe('grading service', () => {
   it('gradeGame calls rpc and returns ok', async () => {
     const res = await gradeGame('g1');
     expect(rpc).toHaveBeenCalledWith('grade_game', { p_game_id: 'g1' });
-    expect(res).toEqual({ ok: true, game_id: 'g1' });
+    expect(res).toEqual({ ok: true, game_id: 'g1', gamesGraded: 2, picksSettled: 5 });
   });
 
   it('gradeGame throws on rpc error', async () => {
@@ -172,7 +187,13 @@ describe('grading service', () => {
     rpc.mockResolvedValueOnce({ data: null, error: null }); // grade_game
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'refresh boom' } }); // refresh
     const res = await gradeGame('g1');
-    expect(res).toEqual({ ok: true, game_id: 'g1' });
+    expect(res).toEqual({ ok: true, game_id: 'g1', gamesGraded: 2, picksSettled: 5 });
+  });
+
+  it('gradeGame reports the settlement summary counts', async () => {
+    const res = await gradeGame('g1');
+    expect(res.gamesGraded).toBe(2);
+    expect(res.picksSettled).toBe(5);
   });
 
   it('gradeGame with refreshScores takes finals from ESPN by matchup identity, not Odds', async () => {
@@ -297,7 +318,7 @@ describe('grading service', () => {
     expect(rpc).toHaveBeenCalledWith('grade_week', { p_week_id: 10 });
     expect(fetchEspnWeekImpl).not.toHaveBeenCalled();
     expect(fetchScoresImpl).not.toHaveBeenCalled();
-    expect(res).toEqual({ ok: true, week_id: 10 });
+    expect(res).toEqual({ ok: true, week_id: 10, gamesGraded: 2, picksSettled: 5 });
   });
 
   it('gradeWeek with refresh triggers an ESPN score pull and updates', async () => {
@@ -330,7 +351,7 @@ describe('grading service', () => {
       away: 27
     });
     expect(rpc).toHaveBeenCalledWith('grade_season', { p_season_id: 2024 });
-    expect(res).toEqual({ ok: true, season_id: 2024 });
+    expect(res).toEqual({ ok: true, season_id: 2024, gamesGraded: 2, picksSettled: 5 });
   });
 
   it('does not update when neither ESPN nor Odds has a completed final', async () => {
