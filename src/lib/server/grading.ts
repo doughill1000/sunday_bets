@@ -3,6 +3,8 @@ import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
 import { type OddsScore } from '$lib/types/oddsApi';
 import { fetchNFLScores } from '$lib/server/odds';
+import { fetchEspnWeek, type EspnGame } from '$lib/server/schedule';
+import { findTeamsByExternalKeys } from '$lib/server/db/queries/findTeamsByExternalKeys';
 
 /**
  * Refresh the materialized leaderboard/stats views after a grading run (issue #191).
@@ -91,7 +93,7 @@ async function gameIdsForSeason(seasonId: number): Promise<string[]> {
   return games?.map((g) => g.id) ?? [];
 }
 
-/** Grade a single game. Optionally refresh finals from Odds API first. */
+/** Grade a single game. Optionally refresh finals (ESPN-first, Odds fallback) first. */
 export async function gradeGame(
   gameId: string,
   opts?: { refreshScores?: boolean; daysFrom?: number }
@@ -138,14 +140,43 @@ export async function gradeSeason(
   return { ok: true, season_id: seasonId, ...summary };
 }
 
+// The score-refresh target row: the matchup identity (ADR-0003) plus the ESPN
+// scoreboard coordinates (season year + week_number) and the Odds-fallback keys.
+type TargetGame = {
+  id: string;
+  external_game_id: string | null;
+  home_team_id: number;
+  away_team_id: number;
+  home_team: { name: string; short_name: string } | null;
+  away_team: { name: string; short_name: string } | null;
+  week: { week_number: number; season: { year: number } | null } | null;
+};
+
+// Translate our stored week_number into the ESPN scoreboard's (week, seasontype).
+// Preseason weeks are stored negative (scheduleSync: weekNumber = -espnWeek, seasontype 1);
+// regular weeks keep their positive number under seasontype 2.
+function espnWeekCoords(weekNumber: number): { espnWeek: number; seasonType: 1 | 2 } {
+  return weekNumber < 0
+    ? { espnWeek: -weekNumber, seasonType: 1 }
+    : { espnWeek: weekNumber, seasonType: 2 };
+}
+
 /**
- * Pull scores (daysFrom) and persist finals into games.final_scores
- * for the specified game IDs only (by matching external_game_id).
+ * Persist finals into games.final_scores for the specified game IDs.
+ *
+ * ESPN scoreboard is the primary source (ADR-0025): finals are matched to games by the
+ * ADR-0003 matchup identity (week_id, home_team_id, away_team_id) with home/away taken
+ * from ESPN's explicit `homeAway`, so there is no name fuzzing and no `daysFrom` window
+ * — late grades, re-grades, and backfills all use the same path.
+ *
+ * The Odds API `/scores` path is retained as a per-game fallback (provider independence):
+ * a game ESPN has not marked complete, or an ESPN fetch/parse failure, falls back to Odds
+ * for that game only, never blocking the rest of the grade.
  */
 async function refreshScoresForGames(gameIds: string[], daysFrom: number) {
   if (gameIds.length === 0) return;
 
-  const { data: targetGames, error: gErr } = await supabaseService
+  const { data, error: gErr } = await supabaseService
     .from('games')
     .select(
       `
@@ -154,37 +185,94 @@ async function refreshScoresForGames(gameIds: string[], daysFrom: number) {
       home_team_id,
       away_team_id,
       home_team:teams!games_home_team_id_fkey(name, short_name),
-      away_team:teams!games_away_team_id_fkey(name, short_name)
+      away_team:teams!games_away_team_id_fkey(name, short_name),
+      week:weeks(week_number, season:seasons(year))
     `
     )
     .in('id', gameIds);
 
   if (gErr) throw new Error(gErr.message);
-  if (!targetGames?.length) return;
+  const targetGames = (data ?? []) as unknown as TargetGame[];
+  if (targetGames.length === 0) return;
 
-  // 2) Fetch recent scores from Odds API
-  const scores = await fetchNFLScores(daysFrom);
+  // ESPN abbreviations normalize to teams.external_key; map those to team ids so ESPN
+  // finals attach by matchup identity rather than by fuzzy team-name matching.
+  const teams = await findTeamsByExternalKeys();
+  const teamIdByKey = new Map(teams.map((t) => [t.external_key, t.id] as const));
 
-  // 3) Build map external_id -> score event
-  const byExternal = new Map(scores.map((s) => [s.id, s] as const));
+  const finals = new Map<string, { home: number; away: number }>();
+  const espnMisses: TargetGame[] = [];
 
-  // 4) For each game, if there's a completed event, persist finals
-  const updates = [];
+  // Group targets by ESPN scoreboard coordinates so each distinct week is fetched once.
+  const byWeek = new Map<string, TargetGame[]>();
   for (const g of targetGames) {
-    const ev = byExternal.get(g.external_game_id as string);
-    if (!ev || !_isCompleted(ev)) continue;
-
-    const { home, away } = _pickHomeAwayScores(ev, g.home_team?.name, g.away_team?.name);
-    if (home == null || away == null) continue;
-
-    updates.push(
-      supabaseService.from('games').update({ final_scores: { home, away } }).eq('id', g.id)
-    );
+    const year = g.week?.season?.year;
+    const weekNumber = g.week?.week_number;
+    if (year == null || weekNumber == null) {
+      // No schedule coordinates to query ESPN with — try the Odds fallback for it.
+      espnMisses.push(g);
+      continue;
+    }
+    const key = `${year}:${weekNumber}`;
+    const bucket = byWeek.get(key);
+    if (bucket) bucket.push(g);
+    else byWeek.set(key, [g]);
   }
 
-  // 5) Run updates sequentially to keep it simple (small count)
-  for (const q of updates) {
-    const { error } = await q;
+  for (const [key, group] of byWeek) {
+    const [yearStr, weekStr] = key.split(':');
+    const { espnWeek, seasonType } = espnWeekCoords(Number(weekStr));
+
+    let espnGames: EspnGame[];
+    try {
+      const res = await fetchEspnWeek(Number(yearStr), espnWeek, seasonType, { retainRaw: true });
+      espnGames = res.games;
+    } catch (err) {
+      // ESPN fetch/parse failure is a non-fatal miss (ADR-0025): log it and fall the
+      // whole week's games through to the Odds fallback rather than writing a bad final.
+      Sentry.captureException(err, { tags: { area: 'grading', step: 'espn_scores' } });
+      espnMisses.push(...group);
+      continue;
+    }
+
+    // Index ESPN finals by our matchup identity (home_team_id, away_team_id).
+    const espnByMatchup = new Map<string, EspnGame>();
+    for (const eg of espnGames) {
+      const homeId = teamIdByKey.get(eg.homeTeamAbbr);
+      const awayId = teamIdByKey.get(eg.awayTeamAbbr);
+      if (homeId == null || awayId == null) continue;
+      espnByMatchup.set(`${homeId}:${awayId}`, eg);
+    }
+
+    for (const g of group) {
+      const eg = espnByMatchup.get(`${g.home_team_id}:${g.away_team_id}`);
+      if (eg && eg.status === 'final' && eg.homeScore != null && eg.awayScore != null) {
+        finals.set(g.id, { home: eg.homeScore, away: eg.awayScore });
+      } else {
+        // No completed ESPN final for this game — fall back to Odds for it (per-game).
+        espnMisses.push(g);
+      }
+    }
+  }
+
+  // Fallback: The Odds API /scores for the games ESPN could not fill. Fetched once and
+  // applied per-game; a single missing final never blocks the rest of the grade.
+  if (espnMisses.length > 0) {
+    const scores = await fetchNFLScores(daysFrom);
+    const byExternal = new Map(scores.map((s) => [s.id, s] as const));
+    for (const g of espnMisses) {
+      const ev = byExternal.get(g.external_game_id as string);
+      if (!ev || !_isCompleted(ev)) continue;
+
+      const { home, away } = _pickHomeAwayScores(ev, g.home_team?.name, g.away_team?.name);
+      if (home == null || away == null) continue;
+      finals.set(g.id, { home, away });
+    }
+  }
+
+  // Persist finals sequentially (small counts).
+  for (const [gameId, final_scores] of finals) {
+    const { error } = await supabaseService.from('games').update({ final_scores }).eq('id', gameId);
     if (error) throw new Error(error.message);
   }
 }
@@ -201,6 +289,7 @@ function _isCompleted(ev: OddsScore) {
 /**
  * Match the two numbers in Odds API `scores` back to our home/away.
  * We try exact name match first; fall back to fuzzy matches on short_name.
+ * Only used on the Odds fallback path — ESPN-sourced finals key on matchup identity.
  */
 function _pickHomeAwayScores(ev: OddsScore, homeName?: string | null, awayName?: string | null) {
   const scores = ev.scores ?? [];

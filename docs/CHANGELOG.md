@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **#450** ESPN scoreboard as the primary source of final scores — grading now reads finals
+  from the ESPN scoreboard, matched by matchup identity with ESPN's explicit home/away (no
+  name fuzzing, no `daysFrom` window, so late grades/re-grades/backfills use one path), and
+  falls back per-game to The Odds API `/scores` for provider independence. Raw ESPN payloads
+  are retained for audit. table: espn_api_responses · files: schedule.ts, grading.ts · ADR-0025
 - **PR #452** ADR-only — records ESPN scoreboard as the primary source of final scores
   (the Odds API `/scores` window can't cover late grades, re-grades, or historical
   backfills, and its team-name fuzzy match re-derives identity the schedule model

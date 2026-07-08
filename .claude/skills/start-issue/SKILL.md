@@ -27,9 +27,12 @@ pre-authorized per that section and per `finish-pr` step 6).
 3. Create the isolated worktree from freshly-fetched trunk (branch name
    `claude/NNN-short-slug`):
    ```powershell
-   powershell -File scripts/new-worktree.ps1 -Branch claude/NNN-short-slug
+   & scripts/new-worktree.ps1 -Branch claude/NNN-short-slug
    ```
-   The script fetches `origin`, adds the worktree off `origin/master`, copies every
+   (Invoke with the call operator `&` — the agent's PowerShell tool is already a
+   PowerShell session, so a nested `powershell -File …` fails to resolve `powershell`
+   when the tool's PATH is stripped.) The script fetches `origin`, adds the worktree off
+   `origin/master`, copies every
    gitignored `.env*` (a fresh worktree has none and can't reach Supabase/Odds API),
    and installs deps. Add `-Port 5174 -Dev` to also launch dev.
 4. Run that worktree's dev server without leaving the current repo (non-5173 port so

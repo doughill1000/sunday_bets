@@ -36,3 +36,9 @@ create policy admin_sel_odds_api_responses
   on public.odds_api_responses for select
   to authenticated
   using (public.is_admin());
+
+drop policy if exists admin_sel_espn_api_responses on public.espn_api_responses;
+create policy admin_sel_espn_api_responses
+  on public.espn_api_responses for select
+  to authenticated
+  using (public.is_admin());

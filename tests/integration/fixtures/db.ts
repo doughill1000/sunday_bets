@@ -55,12 +55,16 @@ export async function ensurePublicUsers(supabase: SupabaseClient, elevateFirstTo
 }
 
 export async function ensureTeams(supabase: SupabaseClient) {
+  // external_key is the ESPN/Odds abbreviation the schedule-sync and ESPN-finals paths
+  // (ADR-0003/0025) match on via findTeamsByExternalKeys — seed it here (= short_name for
+  // these four) so those suites don't each have to backfill it. Idempotent: same value on
+  // a re-run and on a prod-cloned DB where it is already set.
   const { error } = await supabase.from('teams').upsert(
     [
-      { name: 'Kansas City Chiefs', short_name: 'KC' },
-      { name: 'Buffalo Bills', short_name: 'BUF' },
-      { name: 'Philadelphia Eagles', short_name: 'PHI' },
-      { name: 'Dallas Cowboys', short_name: 'DAL' }
+      { name: 'Kansas City Chiefs', short_name: 'KC', external_key: 'KC' },
+      { name: 'Buffalo Bills', short_name: 'BUF', external_key: 'BUF' },
+      { name: 'Philadelphia Eagles', short_name: 'PHI', external_key: 'PHI' },
+      { name: 'Dallas Cowboys', short_name: 'DAL', external_key: 'DAL' }
     ],
     { onConflict: 'name' }
   );
