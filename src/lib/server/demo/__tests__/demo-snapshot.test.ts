@@ -1,0 +1,121 @@
+// CI drift-guard for the public demo season (#460, ADR-0026, acceptance criterion 5).
+//
+// Renders every demo surface component against the COMMITTED snapshot fixture and fails if it
+// throws or references a field the snapshot doesn't carry. This is the enforcement that forces
+// a `pnpm demo:snapshot` regenerate whenever a demo-rendered component grows a new data
+// dependency the frozen fixture doesn't yet satisfy — the shape-drift half of ADR-0026's
+// staleness prevention (the AGENTS.md refresh rule covers coverage drift).
+import { render } from '@testing-library/svelte';
+import { describe, it, expect } from 'vitest';
+import { getDemoSnapshot } from '../snapshot';
+import DemoPicksBoard from '$lib/components/demo/DemoPicksBoard.svelte';
+import DemoStandingsTable from '$lib/components/demo/DemoStandingsTable.svelte';
+import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
+import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+import WrappedStory from '$lib/components/wrapped/WrappedStory.svelte';
+import RecapCard from '$lib/components/recap/RecapCard.svelte';
+
+const snapshot = getDemoSnapshot();
+
+describe('demo snapshot fixture', () => {
+  it('is a real generated snapshot, not the placeholder', () => {
+    expect(snapshot.meta.completedSeasonYear).toBeGreaterThan(2000);
+    expect(snapshot.meta.liveWeekNumber).toBeGreaterThan(0);
+    expect(snapshot.persona.userId).toBeTruthy();
+    expect(snapshot.persona.displayName).toBeTruthy();
+  });
+
+  it('carries the two temporal vantage points (frozen live week + completed season)', () => {
+    expect(snapshot.liveWeek.games.length).toBeGreaterThan(0);
+    expect(snapshot.leaderboard.totals.length).toBeGreaterThan(0);
+    // The completed season powers the payoff surfaces.
+    expect(snapshot.allTime.totals.length).toBeGreaterThan(0);
+    expect(snapshot.honors.honors.trophyCase.length).toBeGreaterThan(0);
+    expect(snapshot.recaps.length).toBeGreaterThan(0);
+    expect(snapshot.wrapped.player).not.toBeNull();
+    expect(snapshot.wrapped.league).not.toBeNull();
+  });
+
+  it('designates the persona as a real standings row (the "you" lens)', () => {
+    const personaRow = snapshot.leaderboard.totals.find(
+      (t) => t.user_id === snapshot.persona.userId
+    );
+    expect(personaRow, 'persona must appear in the featured season standings').toBeTruthy();
+  });
+
+  it('never presents Wrapped prose as the "AI unavailable" fallback', () => {
+    // The demo always shows finished commentary; provenance lives in meta.aiProse.
+    expect(snapshot.wrapped.player?.is_fallback).toBe(false);
+    expect(snapshot.wrapped.league?.is_fallback).toBe(false);
+  });
+});
+
+describe('demo surfaces render against the fixture', () => {
+  it('picks screen (the verb)', () => {
+    const { getByText } = render(DemoPicksBoard, {
+      props: { liveWeek: snapshot.liveWeek, personaName: snapshot.persona.displayName }
+    });
+    expect(getByText(`Week ${snapshot.liveWeek.weekNumber} picks`)).toBeInTheDocument();
+  });
+
+  it('season standings', () => {
+    const { getByTestId } = render(DemoStandingsTable, {
+      props: {
+        rows: snapshot.leaderboard.totals,
+        personaUserId: snapshot.persona.userId,
+        championUserId: snapshot.leaderboard.championUserId,
+        dropActive: snapshot.leaderboard.dropActive
+      }
+    });
+    expect(getByTestId('demo-standings-table')).toBeInTheDocument();
+  });
+
+  it('all-time standings (same table, career rows)', () => {
+    const { getByTestId } = render(DemoStandingsTable, {
+      props: {
+        rows: snapshot.allTime.totals,
+        personaUserId: snapshot.persona.userId,
+        dropActive: snapshot.allTime.dropActive
+      }
+    });
+    expect(getByTestId('demo-standings-table')).toBeInTheDocument();
+  });
+
+  it('league honors + awards', () => {
+    const { getByTestId } = render(LeagueHonors, {
+      props: {
+        honors: snapshot.honors.honors,
+        badges: snapshot.honors.badges,
+        members: snapshot.honors.members,
+        currentUserId: snapshot.persona.userId,
+        seasons: [snapshot.meta.completedSeasonYear],
+        selectedSeason: snapshot.meta.completedSeasonYear,
+        wrappedHref: '/demo/wrapped'
+      }
+    });
+    expect(getByTestId('league-honors')).toBeInTheDocument();
+  });
+
+  it('season wrapped — player and league', () => {
+    const player = render(WrappedStory, { props: { row: snapshot.wrapped.player! } });
+    expect(player.getByTestId('wrapped-story')).toBeInTheDocument();
+    player.unmount();
+    const league = render(WrappedStory, { props: { row: snapshot.wrapped.league! } });
+    expect(league.getByTestId('wrapped-story')).toBeInTheDocument();
+  });
+
+  it('weekly AI recaps', () => {
+    for (const recap of snapshot.recaps) {
+      const { getByText, unmount } = render(RecapCard, { props: { recap } });
+      expect(getByText(`Week ${recap.week_number} Recap`)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('persona banner', () => {
+    const { getByTestId } = render(DemoBanner, {
+      props: { personaName: snapshot.persona.displayName }
+    });
+    expect(getByTestId('demo-persona-banner')).toBeInTheDocument();
+  });
+});
