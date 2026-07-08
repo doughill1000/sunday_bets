@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #446** Explicit "Lock in" on the picks board + pick-card polish (issue-less) — replaces
+  auto-save-on-complete with a per-card **Lock in** button (a pick persists only once a team and
+  weight are chosen and you tap it) plus an **Unlock** control on committed picks, dropping the
+  "choose a weight" hint. Also elevates the pick-card line and kickoff time and shortens the ATS
+  trend nugget wording. Client-only — the pick save/unlock RPCs are reused unchanged. files: picks
+  board components + picks store.
 - **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
