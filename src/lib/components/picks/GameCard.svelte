@@ -39,8 +39,6 @@
 
   // Undefined when no weight is chosen yet, so no chip looks pre-selected.
   const weightValue = $derived(current?.weight);
-  // A staged team with no weight is the "action needed" cue.
-  const needsWeight = $derived(canChange && !!current?.team && !current?.weight);
   const lineText = $derived(spreadLine(game));
   const kickoffText = $derived(formatKickoff(game.kickoff));
 
@@ -68,27 +66,27 @@
     </Badge>
   {/if}
 
-  <CardHeader class="flex-row items-center justify-between pb-2">
+  <CardHeader class="flex-row items-start justify-between pb-2">
     <div class="min-w-0">
       <h2 class="truncate font-semibold">{game.away} @ {game.home}</h2>
-      <p class="truncate text-xs text-muted-foreground">{lineText}</p>
+      <p class="truncate text-sm font-semibold">{lineText}</p>
       {#if awayNugget || homeNugget}
-        <div class="mt-1 space-y-0.5" data-testid="ats-nugget">
+        <div class="mt-1.5 space-y-0.5" data-testid="ats-nugget">
           {#if awayNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground">
-              {game.away}: {awayNugget.text} (n={awayNugget.games})
+            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
+              {game.away}: {awayNugget.record} as {awayNugget.role}
             </p>
           {/if}
           {#if homeNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground">
-              {game.home}: {homeNugget.text} (n={homeNugget.games})
+            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
+              {game.home}: {homeNugget.record} as {homeNugget.role}
             </p>
           {/if}
         </div>
       {/if}
     </div>
     <div class="flex shrink-0 items-center gap-2">
-      <time class="text-xs whitespace-nowrap text-muted-foreground" datetime={game.kickoff}>
+      <time class="text-sm font-medium whitespace-nowrap" datetime={game.kickoff}>
         {kickoffText}
       </time>
     </div>
@@ -105,12 +103,6 @@
       {isLastWeek}
       {finalWeekUnlimitedAllin}
     />
-
-    {#if needsWeight}
-      <p class="text-xs text-muted-foreground" data-testid="needs-weight-hint">
-        Choose a weight to save.
-      </p>
-    {/if}
 
     <LockControls {game} {started} />
 

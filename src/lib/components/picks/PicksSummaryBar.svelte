@@ -56,7 +56,7 @@
       >
     {:else if allIn}
       <span class="text-warning" data-testid="all-in-summary"
-        >All-In: {allInTeam} · saves at kickoff</span
+        >All-In: {allInTeam} · not locked in yet</span
       >
     {:else if openCount > 0}
       <span class="text-warning" data-testid="all-in-summary">No All-In</span>

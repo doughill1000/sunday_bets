@@ -7,15 +7,16 @@ export type PickSelection = {
 };
 
 /**
- * A staged selection that may be partial. A pick is only "complete"/savable once
- * both `team` and `weight` are set (see the picks store auto-save path).
+ * A staged selection that may be partial. A pick is only "complete"/lockable once
+ * both `team` and `weight` are set, at which point the card's "Lock in" button
+ * enables (see the picks store `lockPick` path).
  */
 export type StagedSelection = {
   team?: TeamSide;
   weight?: WeightCode;
 };
 
-/** Transient, non-persisted auto-save status for one game's card. */
+/** Transient, non-persisted status of an in-flight "Lock in" for one game's card. */
 export type SaveState = 'saving' | 'saved' | 'error';
 
 /** Client-side state for one game's pick. */
@@ -26,9 +27,9 @@ export type PickEntry = {
   unlocksUsed?: number;
   lockedSpreadValue?: number;
   lockedSpreadTeamId?: number;
-  /** Transient: live status of the debounced auto-save (never persisted). */
+  /** Transient: live status of an in-flight "Lock in" (never persisted). */
   saveState?: SaveState;
-  /** Transient: human-readable reason shown alongside a failed save. */
+  /** Transient: human-readable reason shown alongside a failed lock-in. */
   saveError?: string;
 };
 

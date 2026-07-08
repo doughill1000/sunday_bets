@@ -182,8 +182,18 @@ describe('league slate read path (#429)', () => {
     expect(g.home.label).toBe('KC');
     expect(g.away.label).toBe('BUF');
     // KC covered all four as a home favorite; BUF lost all four as an away underdog.
-    expect(g.home.nugget).toEqual({ text: '4-0 ATS as home favorite', games: 4 });
-    expect(g.away.nugget).toEqual({ text: '0-4 ATS as away underdog', games: 4 });
+    expect(g.home.nugget).toEqual({
+      text: '4-0 ATS as home favorite',
+      record: '4-0',
+      role: 'home favorite',
+      games: 4
+    });
+    expect(g.away.nugget).toEqual({
+      text: '0-4 ATS as away underdog',
+      record: '0-4',
+      role: 'away underdog',
+      games: 4
+    });
   });
 
   test('a non-scoring active week collapses to the empty slate', async () => {
