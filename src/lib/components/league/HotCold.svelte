@@ -38,7 +38,7 @@
             <span class="font-medium" title={team.teamName}>{team.teamShortName}</span>
           </span>
           <span class="text-xs text-muted-foreground tabular-nums">
-            L4 {team.last4.wins}-{team.last4.losses}-{team.last4.pushes}
+            Last 4: {team.last4.wins}-{team.last4.losses}-{team.last4.pushes}
           </span>
         </li>
       {/each}

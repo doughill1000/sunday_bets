@@ -38,15 +38,16 @@ export function bucketCoverPct(
 }
 
 /**
- * Display order for the primetime module (issue #427): the three night windows first, then
- * daytime as the baseline they are read against. The view returns slots in group order, so
- * the query sorts by this before handing rows to the UI.
+ * Display order for the primetime module (issue #427): the night windows in kickoff-day order
+ * (Thu → Sat → Sun → Mon), then daytime as the baseline they are read against. The view returns
+ * slots in group order, so the query sorts by this before handing rows to the UI.
  */
-export const PRIMETIME_SLOT_ORDER: readonly PrimetimeSlot[] = ['TNF', 'SNF', 'MNF', 'day'];
+export const PRIMETIME_SLOT_ORDER: readonly PrimetimeSlot[] = ['TNF', 'SAT', 'SNF', 'MNF', 'day'];
 
 /** Human labels for each kickoff slot. */
 export const PRIMETIME_SLOT_LABEL: Record<PrimetimeSlot, string> = {
   TNF: 'Thursday night',
+  SAT: 'Saturday night',
   SNF: 'Sunday night',
   MNF: 'Monday night',
   day: 'Daytime'

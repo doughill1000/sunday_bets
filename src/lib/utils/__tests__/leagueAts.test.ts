@@ -80,8 +80,8 @@ describe('isThinSample (issue #427)', () => {
 });
 
 describe('primetime slot order + labels (issue #427)', () => {
-  it('orders the three night windows before daytime', () => {
-    expect(PRIMETIME_SLOT_ORDER).toEqual(['TNF', 'SNF', 'MNF', 'day']);
+  it('orders the night windows in kickoff-day order before daytime', () => {
+    expect(PRIMETIME_SLOT_ORDER).toEqual(['TNF', 'SAT', 'SNF', 'MNF', 'day']);
   });
 
   it('has a human label for every slot in the order (no gaps)', () => {
@@ -93,7 +93,7 @@ describe('primetime slot order + labels (issue #427)', () => {
   });
 
   it('every ordered slot is a valid PrimetimeSlot', () => {
-    const valid: PrimetimeSlot[] = ['TNF', 'SNF', 'MNF', 'day'];
+    const valid: PrimetimeSlot[] = ['TNF', 'SAT', 'SNF', 'MNF', 'day'];
     for (const slot of PRIMETIME_SLOT_ORDER) {
       expect(valid).toContain(slot);
     }

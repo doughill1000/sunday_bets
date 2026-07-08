@@ -49,15 +49,10 @@
               )}
             </dd>
             <p class="text-xs text-muted-foreground">
-              {split.favoriteCovers}-{split.underdogCovers}-{split.pushes} favorites ATS ·
-              {#if thin}
-                <span
+              {split.favoriteCovers}-{split.underdogCovers}-{split.pushes} favorites ATS{#if thin}<span
                   class="text-amber-600 dark:text-amber-500"
-                  title="Small sample — treat with caution">n={split.games}*</span
-                >
-              {:else}
-                n={split.games}
-              {/if}
+                  title="Small sample — treat with caution">*</span
+                >{/if}
             </p>
           </div>
         {/each}

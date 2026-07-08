@@ -21,8 +21,16 @@
   let {
     teamId,
     seasonYear,
+    expectedGames,
     teamNamesById
-  }: { teamId: number; seasonYear: number; teamNamesById: Map<number, string> } = $props();
+  }: {
+    teamId: number;
+    seasonYear: number;
+    // Known game count from the already-loaded team row: the loading skeleton renders this many
+    // rows so it occupies the same height as the eventual table, avoiding a layout jump on load.
+    expectedGames: number;
+    teamNamesById: Map<number, string>;
+  } = $props();
 
   const logQuery = createQuery(() => ({
     queryKey: queryKeys.leagueTeam(teamId, seasonYear),
@@ -38,7 +46,14 @@
 
 <div class="space-y-3">
   {#if logQuery.isPending}
-    <div class="h-32 w-full animate-pulse rounded-lg bg-muted" aria-hidden="true"></div>
+    <!-- One pulse bar per expected game (plus a header bar) so the skeleton stands as tall as the
+         loaded table — the content swaps in at the same height instead of jumping the page down. -->
+    <div class="space-y-2" aria-hidden="true">
+      <div class="h-6 w-full animate-pulse rounded bg-muted"></div>
+      {#each Array.from({ length: Math.max(expectedGames, 1) }, (_, i) => i) as i (i)}
+        <div class="h-8 w-full animate-pulse rounded bg-muted/60"></div>
+      {/each}
+    </div>
   {:else if logQuery.isError}
     <p class="text-sm text-muted-foreground">Couldn't load this team's game log. Try again.</p>
   {:else if games.length === 0}
@@ -51,7 +66,7 @@
             <TableHead>Wk</TableHead>
             <TableHead>Opponent</TableHead>
             <TableHead class="text-right">Line</TableHead>
-            <TableHead class="text-right">Cover margin</TableHead>
+            <TableHead class="text-right">Margin</TableHead>
             <TableHead class="text-right">ATS</TableHead>
           </TableRow>
         </TableHeader>

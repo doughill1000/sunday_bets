@@ -158,15 +158,14 @@
   });
 
   // ── Per-team table sorting ──────────────────────────────────────────────────────
-  type SortKey = 'team' | 'cover' | 'record' | 'su' | 'games';
+  type SortKey = 'team' | 'cover' | 'record' | 'su';
   type SortDirection = 'asc' | 'desc';
 
   const DEFAULT_SORT_DIRECTION: Record<SortKey, SortDirection> = {
     team: 'asc',
     cover: 'desc',
     record: 'desc',
-    su: 'desc',
-    games: 'desc'
+    su: 'desc'
   };
   let teamSort = $state<{ key: SortKey; direction: SortDirection }>({
     key: 'cover',
@@ -212,8 +211,6 @@
         return compareNumber(coverPct(a.su), coverPct(b.su), direction) || fallback;
       case 'record':
         return compareRecord(a.ats, b.ats, direction) || fallback;
-      case 'games':
-        return compareNumber(a.games, b.games, direction) || fallback;
     }
   }
 
@@ -222,6 +219,23 @@
 
 {#snippet wlp(rec: AtsRecord)}
   <span class="tabular-nums">{rec.wins}-{rec.losses}-{rec.pushes}</span>
+{/snippet}
+
+<!-- Situational ATS splits for a team's drill-down: home/away and favorite/underdog, moved out
+     of the always-visible table (which now scans on mobile without a horizontal scroll) into the
+     detail view. Sourced from the in-memory team row, so it paints with no fetch. -->
+{#snippet teamSplits(team: LeagueTeamAts)}
+  <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+    {#each [{ label: 'Home', rec: team.home }, { label: 'Away', rec: team.away }, { label: 'As fav', rec: team.favorite }, { label: 'As dog', rec: team.underdog }] as split (split.label)}
+      <div>
+        <dt class="text-xs font-medium text-muted-foreground">{split.label}</dt>
+        <dd class="text-sm">
+          {@render wlp(split.rec)}
+          <span class="text-xs text-muted-foreground">· {formatAccuracy(coverPct(split.rec))}</span>
+        </dd>
+      </div>
+    {/each}
+  </dl>
 {/snippet}
 
 {#snippet teamHead(label: string, key: SortKey, align: 'left' | 'right' = 'left')}
@@ -264,11 +278,6 @@
             {@render teamHead('ATS', 'record')}
             {@render teamHead('Cover %', 'cover', 'right')}
             {@render teamHead('SU', 'su')}
-            <TableHead>Home</TableHead>
-            <TableHead>Away</TableHead>
-            <TableHead>As fav</TableHead>
-            <TableHead>As dog</TableHead>
-            {@render teamHead('G', 'games', 'right')}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -293,21 +302,21 @@
               <TableCell>{@render wlp(team.ats)}</TableCell>
               <TableCell class="text-right">{formatAccuracy(coverPct(team.ats))}</TableCell>
               <TableCell>{@render wlp(team.su)}</TableCell>
-              <TableCell class="text-muted-foreground">{@render wlp(team.home)}</TableCell>
-              <TableCell class="text-muted-foreground">{@render wlp(team.away)}</TableCell>
-              <TableCell class="text-muted-foreground">{@render wlp(team.favorite)}</TableCell>
-              <TableCell class="text-muted-foreground">{@render wlp(team.underdog)}</TableCell>
-              <TableCell class="text-right tabular-nums">{team.games}</TableCell>
             </TableRow>
             {#if expanded}
               <TableRow data-testid="league-team-drilldown">
-                <TableCell colspan={9} class="bg-muted/30 p-4">
-                  <p class="mb-3 text-sm font-medium">
+                <TableCell colspan={4} class="bg-muted/30 p-4">
+                  <!-- Situational splits render instantly from the already-loaded team row (no
+                       fetch), so the drill-down shows content the moment it opens; only the game
+                       log below waits on the network. -->
+                  {@render teamSplits(team)}
+                  <p class="mt-4 mb-3 text-sm font-medium">
                     {team.teamName} — {pageData.seasonYear} game log
                   </p>
                   <TeamGameLog
                     teamId={team.teamId}
                     seasonYear={pageData.seasonYear}
+                    expectedGames={team.games}
                     {teamNamesById}
                   />
                 </TableCell>
