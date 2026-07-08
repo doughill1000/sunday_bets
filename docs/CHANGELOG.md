@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #449** Faster local dev boot + fix worktree port override (issue-less) — disables the
+  PWA plugin's dev-mode service-worker generation by default (it re-ran a full Workbox
+  precache scan on every `pnpm dev` boot; opt in with `PWA_DEV=true`), and fixes the
+  `pnpm run dev -- --port N` pattern documented across the repo, which pnpm 10 silently
+  broke by forwarding a literal `--` to Vite's CLI so the port override was ignored. file:
+  `vite.config.ts` · script: `scripts/new-worktree.ps1`
 - **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no

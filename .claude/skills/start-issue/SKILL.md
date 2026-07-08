@@ -35,7 +35,7 @@ pre-authorized per that section and per `finish-pr` step 6).
 4. Run that worktree's dev server without leaving the current repo (non-5173 port so
    it coexists with the main checkout):
    ```powershell
-   pnpm -C ..\sunday_bets-claude-NNN run dev -- --port 5174
+   pnpm -C ..\sunday_bets-claude-NNN run dev --port 5174
    ```
 5. Implement the issue's acceptance criteria in the worktree, guided by the context
    packs and ADR(s) from step 2. This is ordinary code work, not a scripted recipe —
