@@ -409,10 +409,12 @@ FROM (VALUES
 ) AS v(external_key, division, conference)
 WHERE t.external_key = v.external_key;
 
--- Season 2091: primetime slots. Five home-favorite (-7) games that all cover, one per slot,
--- plus a second Sunday-night game kicking off in January to prove DST-safe classification.
+-- Season 2091: primetime slots. Six home-favorite (-7) games that all cover, one per slot
+-- (incl. a Saturday-night game), plus a second Sunday-night game kicking off in January to
+-- prove DST-safe classification.
 INSERT INTO public.teams (external_key, name, short_name) VALUES
   ('PT_TNF_H', 'PT TNF H', 'PTH'), ('PT_TNF_A', 'PT TNF A', 'PTA'),
+  ('PT_SAT_H', 'PT SAT H', 'PQH'), ('PT_SAT_A', 'PT SAT A', 'PQA'),
   ('PT_SNF_H', 'PT SNF H', 'PSH'), ('PT_SNF_A', 'PT SNF A', 'PSA'),
   ('PT_MNF_H', 'PT MNF H', 'PMH'), ('PT_MNF_A', 'PT MNF A', 'PMA'),
   ('PT_DAY_H', 'PT DAY H', 'PDH'), ('PT_DAY_A', 'PT DAY A', 'PDA'),
@@ -439,6 +441,7 @@ INSERT INTO public.games (
 SELECT w.id, gk.ext, gk.ct::timestamptz, home.id, away.id, 'final', gk.fs::jsonb
 FROM (VALUES
   ('pt-tnf', 1,  '2091-09-14 00:15:00+00', 'PT_TNF_H', 'PT_TNF_A', '{"home":27,"away":10}'),
+  ('pt-sat', 1,  '2091-09-16 00:15:00+00', 'PT_SAT_H', 'PT_SAT_A', '{"home":27,"away":10}'),
   ('pt-snf', 1,  '2091-09-17 00:20:00+00', 'PT_SNF_H', 'PT_SNF_A', '{"home":27,"away":10}'),
   ('pt-mnf', 1,  '2091-09-18 00:15:00+00', 'PT_MNF_H', 'PT_MNF_A', '{"home":27,"away":10}'),
   ('pt-day', 1,  '2091-09-16 17:00:00+00', 'PT_DAY_H', 'PT_DAY_A', '{"home":27,"away":10}'),
@@ -456,7 +459,7 @@ INSERT INTO public.game_lines (
 )
 SELECT g.id, 'fanduel', g.home_team_id, -7, true, true, g.commence_time - interval '1 hour'
 FROM public.games g
-WHERE g.external_game_id IN ('pt-tnf', 'pt-snf', 'pt-mnf', 'pt-day', 'pt-jan');
+WHERE g.external_game_id IN ('pt-tnf', 'pt-sat', 'pt-snf', 'pt-mnf', 'pt-day', 'pt-jan');
 
 -- Season 2092: ATS streaks. Two teams play five scoring weeks (home every week); scores + lines
 -- are set so STRK_A runs win,win,win,loss,push (most-recent push -> streak resets to 0) and
@@ -590,10 +593,11 @@ SELECT results_eq(
       WHERE season_year = 2091
       ORDER BY slot COLLATE "C" $$,
   $$ VALUES ('MNF', 1, 1),
+            ('SAT', 1, 1),
             ('SNF', 2, 2),
             ('TNF', 1, 1),
             ('day', 1, 1) $$,
-  '64. primetime: TNF/SNF/MNF/day slots; SNF = 2 folds in the January (EST) game'
+  '64. primetime: TNF/SAT/SNF/MNF/day slots; SNF = 2 folds in the January (EST) game'
 );
 
 SELECT is(

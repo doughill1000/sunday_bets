@@ -143,10 +143,10 @@ export type LeagueQuadrant = {
   ats: AtsRecord;
 };
 
-/** The kickoff slot a game is classified into by league_ats_primetime: the three night
- *  windows plus `day` for everything else. The slot is derived from the New-York wall-clock
- *  kickoff (DST-safe) in the view, not here. */
-export type PrimetimeSlot = 'TNF' | 'SNF' | 'MNF' | 'day';
+/** The kickoff slot a game is classified into by league_ats_primetime: the four night
+ *  windows (Thu/Sat/Sun/Mon after 6pm ET) plus `day` for everything else. The slot is derived
+ *  from the New-York wall-clock kickoff (DST-safe) in the view, not here. */
+export type PrimetimeSlot = 'TNF' | 'SAT' | 'SNF' | 'MNF' | 'day';
 
 /** Favorite ATS cover counts for one kickoff slot in a season (league_ats_primetime, #425).
  *  Grain mirrors LeagueFavDogSplit — one favorite-perspective row per game — so

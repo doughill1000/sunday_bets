@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
+  Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
+  home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
+  longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
+  adds a `SAT` (Saturday night) kickoff slot so late-season Saturday games are no longer counted
+  as daytime. view: league_ats_primetime · files: league `/league` page + Trends cards. ADR-0013
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.

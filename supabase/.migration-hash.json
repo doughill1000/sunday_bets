@@ -810,9 +810,9 @@
     "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
   },
   "views/league_ats_primetime.sql": {
-    "hash": "46ea2393ed3f42cd4e762ff74034200ef7e932d6ed5c26c6bc47b2d4cbca4af4",
-    "migration": "20260708001017_league_tab_v2_db_foundation.sql",
-    "migrationHash": "2e34bce48ad5eed035ac0da7a602180238e678bb617f948a4abaf5870c24eeec"
+    "hash": "317aaa83ffcdd83ad9564a1536b7f0c94c7462ebf942606d9026a5a8cc760377",
+    "migration": "20260708135719_league_ats_primetime_saturday_slot.sql",
+    "migrationHash": "295a2fa38a759e37e987ab2073143dd9e32ff0faba8ea8b308392df8b52bb4b8"
   },
   "views/league_ats_quadrants.sql": {
     "hash": "3a6c747e16339547ec62062947b821a40fee280eebd988762228e3971a2fb4b1",
