@@ -57,6 +57,9 @@ Project `Done` column, and Releases remain the sources of truth — see
   Wrapped → recap pipeline; a CI drift-guard test + the `refresh-demo-snapshot` skill + an
   AGENTS.md rule keep it from rotting. routes: `/demo/**` · fixture: `lib/server/demo/` ·
   export: `api/cron/demo-snapshot` · ADR-0026
+- **PR #463** Governance-freshness repair on master — backfilled the ADR-0024 and #452/#462
+  CHANGELOG entries the freshness check was flagging, restoring a green `governance` gate.
+  docs-only
 - **PR #466** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
   "Lock in" button + pick-card polish; patch: #450 ESPN scoreboard as primary source
   of final scores, #445 admin grading tile UX driven by human pickers).
