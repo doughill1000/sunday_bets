@@ -89,7 +89,7 @@ if (-not $NoInstall) {
   if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
 }
 
-$devCmd = "pnpm -C `"$Path`" run dev -- --port $Port"
+$devCmd = "pnpm -C `"$Path`" run dev --port $Port"
 Write-Host ""
 Write-Host "Worktree ready: $Path" -ForegroundColor Green
 Write-Host "Run dev from anywhere (no need to cd into the worktree):" -ForegroundColor Green
@@ -98,5 +98,5 @@ Write-Host "    $devCmd" -ForegroundColor Green
 if ($Dev) {
   Write-Host ""
   Write-Host "==> $devCmd" -ForegroundColor Cyan
-  pnpm -C $Path run dev -- --port $Port
+  pnpm -C $Path run dev --port $Port
 }

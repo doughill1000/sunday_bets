@@ -112,9 +112,12 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   copies every `.env*` except `.env.example`, installs deps, and can launch dev),
   or copy them by hand. `.npmrc` is tracked, so it travels with the worktree.
 - **Run a worktree's dev server without leaving your current repo** with pnpm's
-  `-C`: `pnpm -C ..\sunday_bets-claude-124 run dev -- --port 5174`. Use a
-  non-5173 port so it coexists with the main checkout's dev server (the `dev`
-  script hardcodes 5173, and the trailing `--port` overrides it).
+  `-C`: `pnpm -C ..\sunday_bets-claude-124 run dev --port 5174`. Use a non-5173
+  port so it coexists with the main checkout's dev server. Do **not** put `--`
+  before `--port` — pnpm 10 forwards a literal `--` token to Vite's CLI parser,
+  which then treats everything after it as raw passthrough args instead of
+  flags, so the port is silently ignored and Vite falls back to auto-incrementing
+  from its default.
 - Parallel issues must identify likely files. Serialize Supabase migration-ledger,
   generated-type, shared auth/RLS, dependency-lockfile, and CI changes unless an
   explicit integration order exists.

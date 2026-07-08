@@ -53,12 +53,24 @@ Project `Done` column, and Releases remain the sources of truth — see
   2022 champion after the #430 re-grade. Also freezes imported pre-2025 seasons from grading so
   no future re-grade can re-derive their sheet-sourced settlements. tables: seasons ·
   fn: grade_games_by_ids · ADR-0024
+- **PR #449** Faster local dev boot + fix worktree port override (issue-less) — disables the
+  PWA plugin's dev-mode service-worker generation by default (it re-ran a full Workbox
+  precache scan on every `pnpm dev` boot; opt in with `PWA_DEV=true`), and fixes the
+  `pnpm run dev -- --port N` pattern documented across the repo, which pnpm 10 silently
+  broke by forwarding a literal `--` to Vite's CLI so the port override was ignored. file:
+  `vite.config.ts` · script: `scripts/new-worktree.ps1`
 - **PR #443** League tab mobile fit + Saturday-night primetime slot (issue-less) — trims the
   Teams ATS table to `Team/ATS/Cover%/SU` (drops the redundant games count and moves the
   home/away & fav/dog splits into the per-team drill-down, which now paints instantly and no
   longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
   adds a `SAT` (Saturday night) kickoff slot so late-season Saturday games are no longer counted
   as daytime. view: league_ats_primetime · files: league `/league` page + Trends cards. ADR-0013
+- **PR #448** Demo seed — in-season depth for the pick-card ATS nuggets (issue-less) — the
+  local demo seed's current (in-progress) season now carries a deep completed history before
+  its live week, so the `/picks` ATS trend nuggets and the `/league` situational cuts
+  (divisional, primetime) actually render in the offseason instead of falling below their
+  sample floors. Seed tooling only — no schema, migration, or runtime change. file:
+  `seed-demo/index.ts`.
 - **PR #435** Reorder bottom nav tabs (issue-less) — regroups the bottom tab bar so the
   social tabs cluster apart from the analytics tabs, matching how the sections are used. Nav
   order only, no behavior change. file: bottom tab navigation.

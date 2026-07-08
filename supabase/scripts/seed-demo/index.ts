@@ -5,8 +5,11 @@
 //   • 8 players, 2 groups ("Sunday Bets", "The Spread Heads") with overlapping membership.
 //   • 3 NFL seasons: the two prior years are FULLY COMPLETED (14 scoring weeks, all games
 //     final) so the league honors read-model lights up — reigning champion, trophy case,
-//     wooden spoon. The current year is IN PROGRESS (3 graded weeks + one active week)
-//     so the picks page still renders every open/locked/selected state.
+//     wooden spoon. The current year is IN PROGRESS (CUR_BULK_WEEKS deep bulk weeks + 3
+//     hand-authored recent weeks, all graded, then one active week) so the picks page still
+//     renders every open/locked/selected state AND the season carries enough per-team ATS
+//     volume for the /league tab and the live week's pick-card ATS nuggets (issue #406) to
+//     render — the nugget needs 4+ games in a home/away × fav/dog quadrant to show.
 //   • Per-player archetypes (the homer, the choker, the big-game hunter, the ghost, …) so
 //     the awards/badges engine has reliable holders to surface, and season "form" boosts
 //     so the trophy case shows different champions across years.
@@ -143,24 +146,141 @@ const GROUPS: Group[] = [
 ];
 
 // --- Teams (external_key is unique; getTeamsMap keys by short_name + external_key) -------
-const TEAMS: Array<{ external_key: string; name: string; short_name: string }> = [
-  { external_key: 'PHI', name: 'Philadelphia Eagles', short_name: 'PHI' },
-  { external_key: 'DAL', name: 'Dallas Cowboys', short_name: 'DAL' },
-  { external_key: 'KC', name: 'Kansas City Chiefs', short_name: 'KC' },
-  { external_key: 'BUF', name: 'Buffalo Bills', short_name: 'BUF' },
-  { external_key: 'SF', name: 'San Francisco 49ers', short_name: 'SF' },
-  { external_key: 'BAL', name: 'Baltimore Ravens', short_name: 'BAL' },
-  { external_key: 'CIN', name: 'Cincinnati Bengals', short_name: 'CIN' },
-  { external_key: 'MIA', name: 'Miami Dolphins', short_name: 'MIA' },
-  { external_key: 'DET', name: 'Detroit Lions', short_name: 'DET' },
-  { external_key: 'GB', name: 'Green Bay Packers', short_name: 'GB' },
-  { external_key: 'MIN', name: 'Minnesota Vikings', short_name: 'MIN' },
-  { external_key: 'SEA', name: 'Seattle Seahawks', short_name: 'SEA' },
-  { external_key: 'LAR', name: 'Los Angeles Rams', short_name: 'LAR' },
-  { external_key: 'NYJ', name: 'New York Jets', short_name: 'NYJ' },
-  { external_key: 'NE', name: 'New England Patriots', short_name: 'NE' },
-  { external_key: 'PIT', name: 'Pittsburgh Steelers', short_name: 'PIT' }
+// division/conference mirror supabase/src/schemas/0229_seed_team_divisions.sql so the
+// league_ats_divisional module renders: that migration seeds the columns keyed by
+// external_key, but it runs BEFORE this script inserts the rows, so it updates 0 rows and we
+// must set them here directly (otherwise every demo team is left null -> the divisional split
+// has no classifiable games).
+const TEAMS: Array<{
+  external_key: string;
+  name: string;
+  short_name: string;
+  division: string;
+  conference: string;
+}> = [
+  {
+    external_key: 'PHI',
+    name: 'Philadelphia Eagles',
+    short_name: 'PHI',
+    division: 'East',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'DAL',
+    name: 'Dallas Cowboys',
+    short_name: 'DAL',
+    division: 'East',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'KC',
+    name: 'Kansas City Chiefs',
+    short_name: 'KC',
+    division: 'West',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'BUF',
+    name: 'Buffalo Bills',
+    short_name: 'BUF',
+    division: 'East',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'SF',
+    name: 'San Francisco 49ers',
+    short_name: 'SF',
+    division: 'West',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'BAL',
+    name: 'Baltimore Ravens',
+    short_name: 'BAL',
+    division: 'North',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'CIN',
+    name: 'Cincinnati Bengals',
+    short_name: 'CIN',
+    division: 'North',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'MIA',
+    name: 'Miami Dolphins',
+    short_name: 'MIA',
+    division: 'East',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'DET',
+    name: 'Detroit Lions',
+    short_name: 'DET',
+    division: 'North',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'GB',
+    name: 'Green Bay Packers',
+    short_name: 'GB',
+    division: 'North',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'MIN',
+    name: 'Minnesota Vikings',
+    short_name: 'MIN',
+    division: 'North',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'SEA',
+    name: 'Seattle Seahawks',
+    short_name: 'SEA',
+    division: 'West',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'LAR',
+    name: 'Los Angeles Rams',
+    short_name: 'LAR',
+    division: 'West',
+    conference: 'NFC'
+  },
+  {
+    external_key: 'NYJ',
+    name: 'New York Jets',
+    short_name: 'NYJ',
+    division: 'East',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'NE',
+    name: 'New England Patriots',
+    short_name: 'NE',
+    division: 'East',
+    conference: 'AFC'
+  },
+  {
+    external_key: 'PIT',
+    name: 'Pittsburgh Steelers',
+    short_name: 'PIT',
+    division: 'North',
+    conference: 'AFC'
+  }
 ];
+
+// Two-tier strength split used ONLY by the current season's bulk history below. Pairing a
+// strong team against a weak one every week and favoring the strong side concentrates each
+// team into two situational quadrants (a strong team is only ever home-favorite / away-
+// favorite; a weak team only ever home-underdog / away-underdog), so across a dozen weeks a
+// team clears the pick-card nugget's MIN_NUGGET_SAMPLE (4) in the quadrants it actually
+// appears in. The live week's open games (BUF/MIA/BAL as favorites, PHI/CIN/SF as dogs) are
+// drawn from these tiers so their cards reliably show a nugget.
+const STRONG_TEAMS = ['BUF', 'MIA', 'BAL', 'KC', 'PIT', 'DET', 'SEA', 'DAL'];
+const WEAK_TEAMS = ['PHI', 'CIN', 'SF', 'GB', 'MIN', 'LAR', 'NYJ', 'NE'];
 
 type Fav = 'home' | 'away';
 type Side = 'home' | 'away';
@@ -174,6 +294,13 @@ const LINES = [1.5, 2.5, 3, 3.5, 4, 6, 6.5, 7, 9, 10];
 const COMPLETED_WEEKS = 14;
 const GAMES_PER_WEEK = 4;
 
+// How many fully-graded "bulk" weeks precede the hand-authored recent weeks in the CURRENT
+// (in-progress) season. All 8 STRONG_TEAMS play all 8 WEAK_TEAMS each week (8 games), so a
+// dozen weeks gives every team ~6 home and ~6 away appearances in its tier's role -- enough
+// current-season depth for the /league tab and, crucially, for the pick-card ATS nugget to
+// clear its 4-game quadrant floor on the live week's cards.
+const CUR_BULK_WEEKS = 12;
+
 // Tracks which (group, player, week) already spent its single All-In.
 const allInUsed = new Set<string>();
 
@@ -184,6 +311,25 @@ const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 const addHours = (d: Date, n: number) => new Date(d.getTime() + n * 3_600_000);
 const otherSide = (s: Side): Side => (s === 'home' ? 'away' : 'home');
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+
+// A kickoff time whose America/New_York slot feeds league_ats_primetime (#425, #443): game 0 →
+// TNF (Thu night), 1 → SAT (Sat night), 2 → SNF (Sun night), 3 → MNF (Mon night), the rest →
+// a Sunday-afternoon 'day' game. Built from a UTC weekday+hour rather than an ET wall-clock so
+// it is DST-robust: a 02:00-UTC kickoff on the day AFTER the target ET day converts to that ET
+// *evening* (hour >= 18, the view's night test) under both EDT and EST, while 18:00 UTC Sunday
+// is ~1-2pm ET (a day game). The minute is set from `i` so a week's kickoffs stay distinct.
+function slotKickoff(weekStart: Date, i: number): Date {
+  // i -> the UTC day-of-week whose 02:00 lands on the target ET night (Fri→Thu, Sun→Sat,
+  // Mon→Sun, Tue→Mon). Absent i (day games) land on Sunday afternoon UTC.
+  const NIGHT: Record<number, number> = { 0: 5, 1: 0, 2: 1, 3: 2 };
+  const isNight = i in NIGHT;
+  const targetDow = isNight ? NIGHT[i] : 0;
+  const utcHour = isNight ? 2 : 18;
+  const d = new Date(weekStart);
+  d.setUTCHours(utcHour, i, 0, 0);
+  d.setUTCDate(d.getUTCDate() + ((targetDow - d.getUTCDay() + 7) % 7));
+  return d;
+}
 
 // Deterministic PRNG (mulberry32) so re-runs produce identical data (idempotent upserts).
 function mulberry32(seed: number): () => number {
@@ -947,13 +1093,96 @@ async function run() {
   const curPickRows: PickRow[] = [];
   const curGradedGameIds: string[] = [];
 
-  // Weeks 1-3: hand-authored, fully graded. Group A uses the legacy deterministic pattern
-  // (preserves push/missed coverage); group B is layered via archetypes.
+  // Weeks 1..CUR_BULK_WEEKS: bulk-generated, fully graded depth so the CURRENT season carries
+  // enough per-team ATS volume for the /league tab AND the pick-card nugget (issue #406) to
+  // render on the live week -- the three hand-authored recent weeks alone are far too thin
+  // (a team needs 4 games in one home/away × fav/dog quadrant before its nugget shows). Every
+  // strong team plays a weak team each week and the strong side is favored, so games+lines+
+  // finals feed league_ats_base while archetype picks + grading keep the leaderboard honest.
+  // These weeks precede the recent hand-authored weeks in both week number and calendar date.
+  for (let bw = 1; bw <= CUR_BULK_WEEKS; bw++) {
+    const start = addDays(NOW, -23 - (CUR_BULK_WEEKS - bw + 1) * 7);
+    const end = addDays(start, 6);
+    const weekId = await ensureWeek(supabase, curSeasonId, bw, start, end);
+
+    for (let i = 0; i < STRONG_TEAMS.length; i++) {
+      const strongCode = STRONG_TEAMS[i];
+      const weakCode = WEAK_TEAMS[(i + bw) % WEAK_TEAMS.length];
+      // Alternate which tier is home so each team lands ~half its games home, ~half away.
+      const strongIsHome = (i + bw) % 2 === 0;
+      const homeCode = strongIsHome ? strongCode : weakCode;
+      const awayCode = strongIsHome ? weakCode : strongCode;
+      const favIsHome = strongIsHome; // the stronger side is always favored
+      const line = LINES[(bw * 2 + i) % LINES.length];
+      const { home, away, coveringSide } = makeFinal(favIsHome, line, false, curRng);
+      const homeId = teamId.get(homeCode)!;
+      const awayId = teamId.get(awayCode)!;
+      const favId = favIsHome ? homeId : awayId;
+      // Spread kickoffs across the primetime slots (TNF/SNF/MNF/day) so /league's primetime
+      // module has data; the exact time stays in this week's past window either way.
+      const commence = slotKickoff(start, i);
+
+      const gameId = await ensureGame(supabase, {
+        externalId: `demo-cur-bw${bw}-g${i}`,
+        weekId,
+        homeId,
+        awayId,
+        commence,
+        finalScores: { home, away }
+      });
+      const lineId = await ensureLine(supabase, gameId, favId, -Math.abs(line));
+      curGradedGameIds.push(gameId);
+
+      for (const group of GROUPS) {
+        for (const playerIdx of group.memberIdx) {
+          const allInKey = `${group.id}:${playerIdx}:curbw${bw}`;
+          const decided = decidePick({
+            playerIdx,
+            seasonIdx: 1,
+            gameIdx: i,
+            homeCode,
+            awayCode,
+            favIsHome,
+            coveringSide,
+            rng: curRng,
+            allInUsedThisWeek: allInUsed.has(allInKey),
+            forcePerfect: false
+          });
+          if (!decided) continue;
+          if (decided.usedAllIn) allInUsed.add(allInKey);
+          curPickRows.push({
+            group_id: group.id,
+            user_id: PLAYERS[playerIdx].id,
+            game_id: gameId,
+            picked_team_id: decided.side === 'home' ? homeId : awayId,
+            weight: decided.weight,
+            locked_at: iso(commence),
+            locked_line_id: lineId,
+            locked_spread_team_id: favId,
+            locked_spread_value: Math.abs(line),
+            locked_by: PLAYERS[playerIdx].id
+          });
+        }
+      }
+    }
+
+    for (const group of GROUPS) {
+      gradedWeeks[group.id].push({
+        seasonYear: currentYear,
+        weekNumber: bw,
+        weekId,
+        isFinalWeek: false
+      });
+    }
+  }
+
+  // Recent weeks (CUR_BULK_WEEKS+1 .. +3): hand-authored, fully graded. Group A uses the legacy
+  // deterministic pattern (preserves push/missed coverage); group B is layered via archetypes.
   const priorWeekIds: number[] = [];
   for (let wi = 0; wi < PRIOR_WEEKS.length; wi++) {
     const start = addDays(NOW, -23 + wi * 7);
     const end = addDays(NOW, -16 + wi * 7);
-    const weekId = await ensureWeek(supabase, curSeasonId, wi + 1, start, end);
+    const weekId = await ensureWeek(supabase, curSeasonId, CUR_BULK_WEEKS + wi + 1, start, end);
     priorWeekIds.push(weekId);
     const games = PRIOR_WEEKS[wi];
 
@@ -1031,8 +1260,9 @@ async function run() {
     }
   }
 
-  // The active week (week 4): mixed kickoffs to exercise every picks-page state for group A.
-  const activeWeekNumber = PRIOR_WEEKS.length + 1;
+  // The active week (the season's last, mixed kickoffs) exercises every picks-page state for
+  // group A; the live open games draw on the strong/weak tiers so their cards show ATS nuggets.
+  const activeWeekNumber = CUR_BULK_WEEKS + PRIOR_WEEKS.length + 1;
   const activeWeekId = await ensureWeek(
     supabase,
     curSeasonId,
@@ -1135,12 +1365,13 @@ async function run() {
   await bulkUpsertPicks(supabase, curPickRows);
   await gradeGames(supabase, curGradedGameIds);
 
-  // Current season's graded weeks (1-3) are recap-eligible for both groups.
+  // The current season's hand-authored recent weeks are recap-eligible for both groups (the
+  // bulk weeks above already pushed their own recap entries as they were generated).
   for (const group of GROUPS) {
     for (let wi = 0; wi < PRIOR_WEEKS.length; wi++) {
       gradedWeeks[group.id].push({
         seasonYear: currentYear,
-        weekNumber: wi + 1,
+        weekNumber: CUR_BULK_WEEKS + wi + 1,
         weekId: priorWeekIds[wi],
         isFinalWeek: false
       });
