@@ -10,7 +10,8 @@ import type {
   AllTimeLeaderboardPayload,
   LeagueCachePayload,
   LeagueSlatePayload,
-  LeagueTeamGameLogPayload
+  LeagueTeamGameLogPayload,
+  LeagueTrendsPayload
 } from './types';
 
 type FetchFn = typeof fetch;
@@ -79,6 +80,15 @@ export async function fetchLeagueSlate(
   const res = await fetchFn(`/api/league/slate?season=${seasonYear}`);
   if (!res.ok) throw new Error(`Failed to load league slate (${res.status})`);
   return res.json() as Promise<LeagueSlatePayload>;
+}
+
+/** Pooled "Last N seasons" market-cut trends (epic #424). No groupId and no season — the data
+ *  is identical for everyone and spans the recent seasons. Fetched lazily when the Trends scope
+ *  toggle switches to multi-season. */
+export async function fetchLeagueTrends(fetchFn: FetchFn): Promise<LeagueTrendsPayload> {
+  const res = await fetchFn('/api/league/trends');
+  if (!res.ok) throw new Error(`Failed to load league trends (${res.status})`);
+  return res.json() as Promise<LeagueTrendsPayload>;
 }
 
 /** One team's season ATS game log for the /league drill-down (issue #428). No groupId — the

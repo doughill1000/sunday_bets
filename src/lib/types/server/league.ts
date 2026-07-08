@@ -193,6 +193,30 @@ export type LeagueAts = {
   divisional: LeagueDivisionalSplit[];
 };
 
+/**
+ * The pooled "Last N seasons" market-cuts payload for the /league Trends scope toggle (epic
+ * #424). The same six league-wide cuts as `LeagueAts`, summed across the most-recent seasons
+ * with data — the market-structure biases that survive roster turnover (spread size, home
+ * field, favorite/underdog, primetime, divisional), which are too thin to read one season at
+ * a time. The per-team table and Hot/Cold streaks are deliberately absent: a franchise's
+ * 5-year record blends different rosters and regresses to ~50%, and a multi-season "streak"
+ * is meaningless. Counts are pooled in TypeScript (see leagueTrends.ts) off the same
+ * league_ats_* views, so no cover math is duplicated. `favDog` is derived from `quadrants`.
+ */
+export type LeagueTrends = {
+  /** The seasons actually pooled (the ≤5 most recent with data), newest first. */
+  seasonsCovered: number[];
+  /** Qualifying scored games across the pooled seasons (home-perspective count, one per game). */
+  totalGames: number;
+  /** Pooled favorite/underdog cover aggregate (`weekNumber` null), derived from `quadrants`. */
+  favDog: LeagueFavDogSplit;
+  spreadBuckets: LeagueSpreadBucket[];
+  homeAway: LeagueHomeAway | null;
+  quadrants: LeagueQuadrant[];
+  primetime: LeaguePrimetimeSlot[];
+  divisional: LeagueDivisionalSplit[];
+};
+
 /** One side of a slate matchup: the team's display label and the situational ATS nugget
  *  that matches this game's current line — or `null` for a pick'em / no-line / thin-sample
  *  side (the nugget module's documented omissions). `games` is the quadrant's sample (n=). */

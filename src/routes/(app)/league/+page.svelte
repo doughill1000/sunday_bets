@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
-  import { fetchLeague, fetchLeagueSlate } from '$lib/query/fetchers';
+  import { fetchLeague, fetchLeagueSlate, fetchLeagueTrends } from '$lib/query/fetchers';
   import type { LeagueCachePayload } from '$lib/query/types';
-  import type { LeagueTeamAts, AtsRecord } from '$lib/types/server/league';
+  import type { LeagueTeamAts, AtsRecord, LeagueFavDogSplit } from '$lib/types/server/league';
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import WeekSlate from '$lib/components/league/WeekSlate.svelte';
@@ -16,6 +16,7 @@
   import Primetime from '$lib/components/league/Primetime.svelte';
   import Divisional from '$lib/components/league/Divisional.svelte';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
+  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import {
     Card,
@@ -58,6 +59,22 @@
     staleTime: 0
   }));
 
+  // Trends-tab scope: 'season' (season-picker-scoped, default) or 'multi' (the market cuts
+  // pooled over the recent seasons, epic #424). The pooled payload is season-independent and
+  // off by default, so its query is lazy — `enabled` only flips true once the user switches to
+  // multi-season, and it caches under its own group-independent root thereafter (ADR-0017).
+  let trendsScope = $state<'season' | 'multi'>('season');
+  const trendsQuery = createQuery(() => ({
+    queryKey: queryKeys.leagueTrends(),
+    queryFn: () => fetchLeagueTrends(fetch),
+    enabled: trendsScope === 'multi'
+  }));
+
+  function onScopeChange(value: string | undefined) {
+    // Ignore a toggle-off (clicking the active item) — a scope must always be selected.
+    if (value === 'season' || value === 'multi') trendsScope = value;
+  }
+
   const EMPTY: LeagueCachePayload = {
     seasonYear: 0,
     totalGames: 0,
@@ -90,19 +107,55 @@
     expandedTeamId = expandedTeamId === teamId ? null : teamId;
   }
 
+  // ── Trends scope resolution ─────────────────────────────────────────────────────
+  // One markup block (the six situational cards) serves both scopes; this derives the source
+  // it reads from. In 'multi' the per-week fav/dog table is dropped (week 3 of 2022 ≠ week 3 of
+  // 2026) by feeding it an empty array; every other card takes pooled counts as-is.
+  const pooled = $derived(trendsQuery.data ?? null);
+  const activeTrends = $derived(
+    trendsScope === 'multi' && pooled
+      ? {
+          favDog: pooled.favDog,
+          favDogByWeek: [] as LeagueFavDogSplit[],
+          homeAway: pooled.homeAway,
+          spreadBuckets: pooled.spreadBuckets,
+          quadrants: pooled.quadrants,
+          primetime: pooled.primetime,
+          divisional: pooled.divisional
+        }
+      : {
+          favDog: league.favDogSeason,
+          favDogByWeek: league.favDogByWeek,
+          homeAway: league.homeAway,
+          spreadBuckets: league.spreadBuckets,
+          quadrants: league.quadrants,
+          primetime: league.primetime,
+          divisional: league.divisional
+        }
+  );
+
   // ── Favorite / underdog cover % (pushes excluded) ──────────────────────────────
-  const favSeasonPct = $derived(
+  const favPct = $derived(
     coverPct({
-      wins: league.favDogSeason.favoriteCovers,
-      losses: league.favDogSeason.underdogCovers
+      wins: activeTrends.favDog.favoriteCovers,
+      losses: activeTrends.favDog.underdogCovers
     })
   );
-  const dogSeasonPct = $derived(
+  const dogPct = $derived(
     coverPct({
-      wins: league.favDogSeason.underdogCovers,
-      losses: league.favDogSeason.favoriteCovers
+      wins: activeTrends.favDog.underdogCovers,
+      losses: activeTrends.favDog.favoriteCovers
     })
   );
+
+  // Human "2022–2024" (or "2024") range for the pooled caption, from the seasons actually pooled.
+  const pooledRangeLabel = $derived.by(() => {
+    const years = pooled?.seasonsCovered ?? [];
+    if (years.length === 0) return '';
+    const min = Math.min(...years);
+    const max = Math.max(...years);
+    return min === max ? `${min}` : `${min}–${max}`;
+  });
 
   // ── Per-team table sorting ──────────────────────────────────────────────────────
   type SortKey = 'team' | 'cover' | 'record' | 'su' | 'games';
@@ -267,10 +320,11 @@
   </Card>
 {/snippet}
 
-<!-- Trends tab: the six league-wide situational/market cuts, two-up on desktop (single
-     column on mobile so the wide fav/dog table keeps its width). Each guarded component
-     renders nothing when empty, so an absent cut collapses out of the grid cleanly. -->
-{#snippet trendsView()}
+<!-- The six league-wide situational/market cuts, two-up on desktop (single column on mobile so
+     the wide fav/dog table keeps its width). Reads `activeTrends`, so the same markup renders
+     either the picked season or the pooled multi-season window. Each guarded component renders
+     nothing when empty, so an absent cut collapses out of the grid cleanly. -->
+{#snippet trendsGrid()}
   <div class="grid items-start gap-6 lg:grid-cols-2">
     <!-- ── Favorites vs. underdogs ─────────────────────────────────────────────── -->
     <Card data-testid="league-fav-dog">
@@ -282,17 +336,17 @@
         <dl class="grid grid-cols-2 gap-4 sm:max-w-md">
           <div>
             <dt class="text-xs font-medium text-muted-foreground">Favorites cover</dt>
-            <dd class="text-3xl font-bold">{formatAccuracy(favSeasonPct)}</dd>
-            <p class="text-xs text-muted-foreground">{league.favDogSeason.favoriteCovers} covers</p>
+            <dd class="text-3xl font-bold">{formatAccuracy(favPct)}</dd>
+            <p class="text-xs text-muted-foreground">{activeTrends.favDog.favoriteCovers} covers</p>
           </div>
           <div>
             <dt class="text-xs font-medium text-muted-foreground">Underdogs cover</dt>
-            <dd class="text-3xl font-bold">{formatAccuracy(dogSeasonPct)}</dd>
-            <p class="text-xs text-muted-foreground">{league.favDogSeason.underdogCovers} covers</p>
+            <dd class="text-3xl font-bold">{formatAccuracy(dogPct)}</dd>
+            <p class="text-xs text-muted-foreground">{activeTrends.favDog.underdogCovers} covers</p>
           </div>
         </dl>
 
-        {#if league.favDogByWeek.length > 0}
+        {#if activeTrends.favDogByWeek.length > 0}
           <div class="overflow-x-auto">
             <Table class="text-xs sm:text-sm">
               <TableHeader>
@@ -304,7 +358,7 @@
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {#each league.favDogByWeek as wk (wk.weekNumber)}
+                {#each activeTrends.favDogByWeek as wk (wk.weekNumber)}
                   <TableRow>
                     <TableCell class="font-medium">Week {wk.weekNumber}</TableCell>
                     <TableCell class="text-right tabular-nums">{wk.games}</TableCell>
@@ -328,11 +382,11 @@
     </Card>
 
     <!-- ── Favorites by spread size (issue #426) ───────────────────────────────── -->
-    <SpreadBuckets buckets={league.spreadBuckets} />
+    <SpreadBuckets buckets={activeTrends.spreadBuckets} />
 
     <!-- ── Home vs. away ───────────────────────────────────────────────────────── -->
-    {#if league.homeAway}
-      {@const ha = league.homeAway}
+    {#if activeTrends.homeAway}
+      {@const ha = activeTrends.homeAway}
       <Card data-testid="league-home-away">
         <CardHeader>
           <CardTitle>Home vs. away</CardTitle>
@@ -366,14 +420,76 @@
     {/if}
 
     <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
-    <Quadrants quadrants={league.quadrants} />
+    <Quadrants quadrants={activeTrends.quadrants} />
 
     <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
-    <Primetime slots={league.primetime} />
+    <Primetime slots={activeTrends.primetime} />
 
     <!-- ── Divisional vs. non-divisional (issue #427) ──────────────────────────── -->
-    <Divisional splits={league.divisional} />
+    <Divisional splits={activeTrends.divisional} />
   </div>
+{/snippet}
+
+<!-- Trends tab: a scope toggle above the situational/market cuts. "This season" reads the
+     season-scoped payload; "Last 5 seasons" pools the market-structure biases (spread size,
+     home field, favorite/underdog, primetime, divisional) over the recent seasons, where they
+     have enough sample to read (epic #424). The pooled query is lazy — it only fetches on the
+     first switch to multi-season. -->
+{#snippet trendsView()}
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      value={trendsScope}
+      onValueChange={onScopeChange}
+      data-testid="league-trends-scope"
+      aria-label="Trends scope"
+    >
+      <ToggleGroupItem value="season" class="px-3 text-xs sm:text-sm">This season</ToggleGroupItem>
+      <ToggleGroupItem value="multi" class="px-3 text-xs sm:text-sm">Last 5 seasons</ToggleGroupItem
+      >
+    </ToggleGroup>
+
+    {#if trendsScope === 'multi' && pooled && pooled.totalGames > 0}
+      <p class="text-xs text-muted-foreground">
+        Pooled {pooledRangeLabel} ·
+        <span class="font-medium text-foreground">{pooled.totalGames}</span> games
+      </p>
+    {/if}
+  </div>
+
+  {#if trendsScope === 'multi' && trendsQuery.isPending}
+    <div class="grid items-start gap-6 lg:grid-cols-2" aria-hidden="true">
+      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
+      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
+    </div>
+  {:else if trendsScope === 'multi' && trendsQuery.isError}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>Couldn't load pooled trends</CardTitle>
+        <CardDescription>Switch back to this season, or refresh to try again.</CardDescription>
+      </CardHeader>
+    </Card>
+  {:else if trendsScope === 'multi' && pooled && pooled.totalGames === 0}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>No pooled trends yet</CardTitle>
+        <CardDescription
+          >Multi-season cuts appear once graded seasons are available.</CardDescription
+        >
+      </CardHeader>
+    </Card>
+  {:else}
+    {@render trendsGrid()}
+    {#if trendsScope === 'multi'}
+      <p class="text-xs text-muted-foreground">
+        Pooled across the {pooledRangeLabel} seasons to give thin situational cuts enough sample. Even
+        pooled, an efficient market keeps most rates within a few points of 50% — read these as descriptive,
+        not predictive. Older imported seasons (2022–24) carry a single line snapshot rather than a true
+        closing line, so a pooled rate mixes the two.
+      </p>
+    {/if}
+  {/if}
 {/snippet}
 
 <svelte:head>

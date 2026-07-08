@@ -15,10 +15,19 @@ import type {
   LeagueTeamGameLog,
   LeagueTeamGameLogEntry,
   LeagueTeamStreak,
+  LeagueTrends,
   PrimetimeSlot
 } from '$lib/types/server/league';
 import { buildSlateGames } from '$lib/utils/leagueSlate';
 import { PRIMETIME_SLOT_ORDER } from '$lib/utils/leagueAts';
+import {
+  deriveFavDogHeadline,
+  poolDivisional,
+  poolHomeAway,
+  poolPrimetime,
+  poolQuadrants,
+  poolSpreadBuckets
+} from '$lib/utils/leagueTrends';
 import { findActiveWeek } from './findActiveWeek';
 import { getGamesWithActiveLines } from './getGamesWithActiveLines';
 
@@ -226,6 +235,90 @@ export async function getLeagueSeasons(): Promise<number[]> {
     .order('season_year', { ascending: false });
   if (error) throw error;
   return (data ?? []).flatMap((r) => (r.season_year == null ? [] : [r.season_year]));
+}
+
+/** How many recent seasons the pooled /league "Last N seasons" trends window spans (epic #424). */
+export const TRENDS_SEASON_WINDOW = 5;
+
+/**
+ * Pooled market-cuts trends over the most-recent seasons for the /league Trends scope toggle
+ * (epic #424). Resolves the ≤5 newest seasons with data via getLeagueSeasons() (already
+ * newest-first), reads the per-season league_ats_* market-cut views for exactly those seasons
+ * (`.in('season_year', …)`, no `.eq`), and sums the already-computed counts in TypeScript
+ * (leagueTrends.ts) — no new view, no matview, and no duplicated cover math (league_ats_base
+ * stays the single source of truth). The favorite/underdog headline is derived from the pooled
+ * quadrants rather than a sixth query. Group-independent (service-role read, ADR-0013).
+ */
+export async function getLeagueTrends(): Promise<LeagueTrends> {
+  const seasonsCovered = (await getLeagueSeasons()).slice(0, TRENDS_SEASON_WINDOW);
+  if (seasonsCovered.length === 0) {
+    return {
+      seasonsCovered: [],
+      totalGames: 0,
+      favDog: { weekNumber: null, games: 0, favoriteCovers: 0, underdogCovers: 0, pushes: 0 },
+      spreadBuckets: [],
+      homeAway: null,
+      quadrants: [],
+      primetime: [],
+      divisional: []
+    };
+  }
+
+  const [spreadResult, quadrantResult, primetimeResult, divisionalResult, homeAwayResult] =
+    await Promise.all([
+      supabaseService
+        .from('league_ats_spread_buckets')
+        .select('*')
+        .in('season_year', seasonsCovered),
+      supabaseService.from('league_ats_quadrants').select('*').in('season_year', seasonsCovered),
+      supabaseService.from('league_ats_primetime').select('*').in('season_year', seasonsCovered),
+      supabaseService.from('league_ats_divisional').select('*').in('season_year', seasonsCovered),
+      supabaseService.from('league_ats_home_away').select('*').in('season_year', seasonsCovered)
+    ]);
+
+  if (spreadResult.error) throw spreadResult.error;
+  if (quadrantResult.error) throw quadrantResult.error;
+  if (primetimeResult.error) throw primetimeResult.error;
+  if (divisionalResult.error) throw divisionalResult.error;
+  if (homeAwayResult.error) throw homeAwayResult.error;
+
+  const spreadBuckets = poolSpreadBuckets(
+    (spreadResult.data ?? []).flatMap((row) => {
+      const bucket = toSpreadBucket(row);
+      return bucket ? [bucket] : [];
+    })
+  );
+  const quadrants = poolQuadrants(
+    (quadrantResult.data ?? []).flatMap((row) => {
+      const quadrant = toQuadrant(row);
+      return quadrant ? [quadrant] : [];
+    })
+  );
+  const primetime = poolPrimetime(
+    (primetimeResult.data ?? []).flatMap((row) => {
+      const slot = toPrimetimeSlot(row);
+      return slot ? [slot] : [];
+    })
+  );
+  const divisional = poolDivisional(
+    (divisionalResult.data ?? []).flatMap((row) => {
+      const split = toDivisionalSplit(row);
+      return split ? [split] : [];
+    })
+  );
+  const homeAway = poolHomeAway((homeAwayResult.data ?? []).map(toHomeAway));
+
+  return {
+    seasonsCovered,
+    // Qualifying scored games = the home-perspective count (one home row per game), pooled.
+    totalGames: homeAway?.home.games ?? 0,
+    favDog: deriveFavDogHeadline(quadrants),
+    spreadBuckets,
+    homeAway,
+    quadrants,
+    primetime,
+    divisional
+  };
 }
 
 /**
