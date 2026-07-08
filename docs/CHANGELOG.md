@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
-- **PR #TBD** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
+- **PR #466** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
   "Lock in" button + pick-card polish; patch: #450 ESPN scoreboard as primary source
   of final scores, #445 admin grading tile UX driven by human pickers).
 - **#433** Grade-cron reconcile sweep — the grade cron now self-heals any week that has
