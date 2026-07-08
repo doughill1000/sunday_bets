@@ -48,6 +48,9 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #TBD** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
+  "Lock in" button + pick-card polish; patch: #450 ESPN scoreboard as primary source
+  of final scores, #445 admin grading tile UX driven by human pickers).
 - **#433** Grade-cron reconcile sweep — the grade cron now self-heals any week that has
   final scores but was never settled (e.g. a week missed during its normal processing
   window), settling those picks without the recap/AI/push/Wrapped fan-out that stays
