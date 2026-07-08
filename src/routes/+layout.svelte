@@ -43,6 +43,11 @@
   // rather than a logged-out app section.
   const isAuthRoute = $derived(page.url.pathname.startsWith('/auth'));
 
+  // The public demo (#460) is unauthenticated and owns its own chrome (demo nav + sign-up
+  // CTAs via /demo/+layout.svelte), so the authenticated app shell — header + bottom tab bar,
+  // both linking to gated pages — is suppressed here, the same way the auth screens are.
+  const isDemoRoute = $derived(page.url.pathname.startsWith('/demo'));
+
   let isChampion = $state(false);
   $effect(() => {
     void data.championUserId?.then((champId) => {
@@ -132,6 +137,12 @@
       <!-- Bare auth screen: no header/tab bar, and the page is vertically centered so
            its brand lockup sits front and center like a native launch/login screen. -->
       <main class="container mx-auto flex flex-1 flex-col justify-center p-4">
+        {@render children()}
+      </main>
+    {:else if isDemoRoute}
+      <!-- Public demo: no authenticated app shell; the /demo layout renders its own nav
+           and sign-up CTAs around the frozen-snapshot pages. -->
+      <main class="flex-1">
         {@render children()}
       </main>
     {:else}
