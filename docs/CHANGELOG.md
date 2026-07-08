@@ -54,6 +54,12 @@ Project `Done` column, and Releases remain the sources of truth — see
   toggle, a confirm step, and a settled-counts summary after each run. Adds an
   admin-gated games-by-week lookup. route: `/api/admin/week-games` · files:
   `admin/GradingCard.svelte` · `server/grading.ts` · `server/admin.ts`
+- **PR #446** Explicit "Lock in" on the picks board + pick-card polish (issue-less) — replaces
+  auto-save-on-complete with a per-card **Lock in** button (a pick persists only once a team and
+  weight are chosen and you tap it) plus an **Unlock** control on committed picks, dropping the
+  "choose a weight" hint. Also elevates the pick-card line and kickoff time and shortens the ATS
+  trend nugget wording. Client-only — the pick save/unlock RPCs are reused unchanged. files: picks
+  board components + picks store.
 - **PR #461** Release v2.12.0 — version bump. Milestone: v2.12 (minor: #441 reorganize
   /league into slate hero + Teams/Trends sub-tabs, #442 Last-5-seasons scope toggle on
   /league Trends; patch: #447 grading integrity membership-scoped penalty + frozen
@@ -78,6 +84,18 @@ Project `Done` column, and Releases remain the sources of truth — see
   longer jumps on load), drops the redundant `n` column from the Primetime/Divisional cuts, and
   adds a `SAT` (Saturday night) kickoff slot so late-season Saturday games are no longer counted
   as daytime. view: league_ats_primetime · files: league `/league` page + Trends cards. ADR-0013
+- **PR #444** Backfill real 2022-2024 kickoff times (issue-less) — replaces the synthetic
+  2pm-ET kickoff times for the 2022-2024 seasons with real ESPN times so the `/league` primetime
+  split can classify TNF/SNF/MNF/SAT games. Applied to staging + prod. files: backfill script
+  under `supabase/scripts`.
+- **PR #442** "Last 5 seasons" scope toggle on /league Trends (issue-less) — adds a scope
+  toggle so the Trends ATS cuts can be viewed over the last five seasons instead of all-time.
+  files: league `/league` Trends cards.
+- **PR #441** Reorganize /league into slate hero + Teams/Trends sub-tabs (issue-less) —
+  restructures the `/league` page into a forward-looking slate hero with Teams and Trends
+  sub-tabs. files: league `/league` page.
+- **PR #440** Backfill changelog for PR #435 and PR #420 (issue-less, docs) — adds the
+  missing shipped-history entries for two earlier league PRs. file: docs/CHANGELOG.md.
 - **PR #448** Demo seed — in-season depth for the pick-card ATS nuggets (issue-less) — the
   local demo seed's current (in-progress) season now carries a deep completed history before
   its live week, so the `/picks` ATS trend nuggets and the `/league` situational cuts

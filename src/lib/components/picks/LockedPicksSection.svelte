@@ -109,11 +109,11 @@
               {:else}
                 <span class="text-xs text-primary">🔒 Locked</span>
                 <button
-                  class="rounded px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                  data-testid="edit-pick"
+                  class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted"
+                  data-testid="unlock-pick"
                   onclick={() => onEdit(g)}
                 >
-                  Edit
+                  🔓 Unlock
                 </button>
               {/if}
             </div>

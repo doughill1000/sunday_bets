@@ -11,11 +11,6 @@ const PICKS_STORE = Symbol('picks-store');
 
 export type PicksStore = Writable<Record<string, PickEntry>>;
 
-/** Trailing debounce window for auto-save. Coalesces rapid L→M→H toggles into one RPC. */
-export const SAVE_DEBOUNCE_MS = 700;
-
-// Module-level, keyed by gameId. Safe because gameIds are unique across a board.
-const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 // Per-game generation counter so a stale in-flight response can't clobber newer state.
 const saveSeq = new Map<string, number>();
 
@@ -36,55 +31,30 @@ export function setPicks(data: Record<string, PickEntry>) {
 
 /**
  * Stage a team. Sets only the team half of `selected`, preserving any existing
- * weight, then schedules an auto-save (a no-op until a weight is also present).
+ * weight. Staging never persists — the pick is saved only when the user taps
+ * "Lock in" (see `lockPick`).
  */
 export function selectTeam(gameId: string, team: TeamSide, store: PicksStore = picks) {
   store.update((s) => {
     const e = s[gameId] ?? {};
     return { ...s, [gameId]: { ...e, selected: { ...e.selected, team } } };
   });
-  scheduleSave(gameId, store);
 }
 
 /**
  * Stage a weight. Sets only the weight half of `selected`, preserving any existing
- * team, then schedules an auto-save.
+ * team. Staging never persists — the pick is saved only on an explicit "Lock in".
  */
 export function setWeight(gameId: string, weight: WeightCode, store: PicksStore = picks) {
   store.update((s) => {
     const e = s[gameId] ?? {};
     return { ...s, [gameId]: { ...e, selected: { ...e.selected, weight } } };
   });
-  scheduleSave(gameId, store);
 }
 
 /**
- * Schedule a trailing-debounced save for one game. Repeated calls within the
- * window reset the timer so rapid toggling fires a single RPC.
- */
-export function scheduleSave(gameId: string, store: PicksStore = picks) {
-  const existing = saveTimers.get(gameId);
-  if (existing) clearTimeout(existing);
-  const timer = setTimeout(() => {
-    saveTimers.delete(gameId);
-    void lockPick(gameId, store);
-  }, SAVE_DEBOUNCE_MS);
-  saveTimers.set(gameId, timer);
-}
-
-/** Cancel any pending debounced save for a game (used when clearing/replacing it). */
-function cancelSave(gameId: string) {
-  const existing = saveTimers.get(gameId);
-  if (existing) {
-    clearTimeout(existing);
-    saveTimers.delete(gameId);
-  }
-}
-
-/**
- * Save the game's staged pick to the server. Reads the latest selection at call
- * time, so a debounced fire always persists the final toggle value. Used both by
- * the auto-save scheduler and by the manual Retry action.
+ * Save (lock in) the game's staged pick to the server. Reads the latest selection
+ * at call time. Invoked by the card's "Lock in" button.
  *
  * - Does NOT optimistically set `lockedPick`: the card stays on the board showing
  *   `Saving…` until the server confirms, avoiding a collapse-then-reappear flicker
@@ -156,12 +126,11 @@ export async function lockPick(
 }
 
 /**
- * Remove a game's pick locally: cancels any pending save, invalidates any in-flight
- * save, and resets the entry. The caller is responsible for the server-side unlock
- * (the `unlock_pick` RPC) when a saved pick is being cleared.
+ * Remove a game's pick locally: invalidates any in-flight save and resets the
+ * entry. The caller is responsible for the server-side unlock (the `unlock_pick`
+ * RPC) when a saved pick is being cleared.
  */
 export function clearPick(gameId: string, store: PicksStore = picks) {
-  cancelSave(gameId);
   // Bump the sequence so a save already awaiting the server is treated as stale.
   saveSeq.set(gameId, (saveSeq.get(gameId) ?? 0) + 1);
   store.update((s) => ({ ...s, [gameId]: {} }));
@@ -173,7 +142,6 @@ export function clearPick(gameId: string, store: PicksStore = picks) {
  * `null` for `team` (pick'em / no-line games) to stage nothing.
  */
 export function stageFavorite(gameId: string, team: TeamSide | null, store: PicksStore = picks) {
-  cancelSave(gameId);
   saveSeq.set(gameId, (saveSeq.get(gameId) ?? 0) + 1);
   store.update((s) => ({ ...s, [gameId]: team ? { selected: { team } } : {} }));
 }

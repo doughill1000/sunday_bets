@@ -52,9 +52,9 @@ export function picksBoard(page: Page) {
       return api.card(index).getByTestId(`weight-item-${WEIGHT_CODE[name]}`);
     },
 
-    /** The "Choose a weight to save" action-needed hint. */
-    needsWeightHint(index = 0): Locator {
-      return api.card(index).getByTestId('needs-weight-hint');
+    /** The "Lock in" button that persists a fully-staged pick. */
+    lockIn(index = 0): Locator {
+      return api.card(index).getByTestId('lock-in');
     },
 
     /** The "Clear pick" control on a staged card. */
@@ -101,9 +101,9 @@ export function picksBoard(page: Page) {
       return page.getByTestId('committed-row').nth(index);
     },
 
-    /** The "Edit" control that returns a committed pick to the board. */
-    edit(index = 0): Locator {
-      return api.committedRow(index).getByTestId('edit-pick');
+    /** The "🔓 Unlock" control that returns a committed pick to the board. */
+    unlock(index = 0): Locator {
+      return api.committedRow(index).getByTestId('unlock-pick');
     },
 
     // --- assertions ---------------------------------------------------------
