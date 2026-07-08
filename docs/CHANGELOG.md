@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-07
 
+- **#428** League tab Hot/Cold + team drill-down — adds a Hot/Cold module on `/league`
+  listing each team's current ATS cover streak and last-4 form, and an expandable per-team
+  drill-down showing that team's full season game log (opponent, line, cover margin, ATS
+  result) fetched on open. Reads the `league_ats_streaks` view and the `league_ats_base`
+  matview from #425; no migration. views: `league_ats_streaks` · matview: `league_ats_base`
+  · route: `/league`, `/api/league/team` · ADR-0013 · ADR-0017
+
 - **#426** League tab v2 market cuts (UI) — two new read modules on `/league`: favorite
   cover % by spread-size bucket, and the four league-wide home/away × favorite/underdog cover
   rates. Both read #425's views through the single season-cached league payload, reusing the

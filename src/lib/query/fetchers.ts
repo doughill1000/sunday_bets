@@ -8,7 +8,8 @@ import type {
   GroupCachePayload,
   LeaderboardCachePayload,
   AllTimeLeaderboardPayload,
-  LeagueCachePayload
+  LeagueCachePayload,
+  LeagueTeamGameLogPayload
 } from './types';
 
 type FetchFn = typeof fetch;
@@ -66,4 +67,16 @@ export async function fetchLeague(
   const res = await fetchFn(`/api/league?season=${seasonYear}`);
   if (!res.ok) throw new Error(`Failed to load league trends (${res.status})`);
   return res.json() as Promise<LeagueCachePayload>;
+}
+
+/** One team's season ATS game log for the /league drill-down (issue #428). No groupId — the
+ *  data is identical for everyone. */
+export async function fetchLeagueTeamGameLog(
+  fetchFn: FetchFn,
+  teamId: number,
+  seasonYear: number
+): Promise<LeagueTeamGameLogPayload> {
+  const res = await fetchFn(`/api/league/team?teamId=${teamId}&season=${seasonYear}`);
+  if (!res.ok) throw new Error(`Failed to load team game log (${res.status})`);
+  return res.json() as Promise<LeagueTeamGameLogPayload>;
 }
