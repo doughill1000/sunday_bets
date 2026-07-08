@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
-- **PR #NNN** Release v2.12.0 — version bump. Milestone: v2.12 (minor: #441 reorganize
+- **PR #461** Release v2.12.0 — version bump. Milestone: v2.12 (minor: #441 reorganize
   /league into slate hero + Teams/Trends sub-tabs, #442 Last-5-seasons scope toggle on
   /league Trends; patch: #447 grading integrity membership-scoped penalty + frozen
   imported seasons, #443 league mobile-fit + Saturday primetime slot, #444 real
