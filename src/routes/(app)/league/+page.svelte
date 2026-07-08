@@ -7,6 +7,8 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
+  import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
+  import Quadrants from '$lib/components/league/Quadrants.svelte';
   import Primetime from '$lib/components/league/Primetime.svelte';
   import Divisional from '$lib/components/league/Divisional.svelte';
   import {
@@ -52,6 +54,8 @@
     },
     favDogByWeek: [],
     homeAway: null,
+    spreadBuckets: [],
+    quadrants: [],
     primetime: [],
     divisional: []
   };
@@ -264,6 +268,9 @@
       </CardContent>
     </Card>
 
+    <!-- ── Favorites by spread size (issue #426) ───────────────────────────────── -->
+    <SpreadBuckets buckets={league.spreadBuckets} />
+
     <!-- ── Per-team ATS table ──────────────────────────────────────────────────── -->
     <Card data-testid="league-team-table">
       <CardHeader>
@@ -342,6 +349,9 @@
         </CardContent>
       </Card>
     {/if}
+
+    <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
+    <Quadrants quadrants={league.quadrants} />
 
     <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
     <Primetime slots={league.primetime} />
