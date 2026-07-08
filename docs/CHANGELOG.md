@@ -55,6 +55,18 @@ Project `Done` column, and Releases remain the sources of truth — see
   matview from #425; no migration. views: `league_ats_streaks` · matview: `league_ats_base`
   · route: `/league`, `/api/league/team` · ADR-0013 · ADR-0017
 
+- **#426** League tab v2 market cuts (UI) — two new read modules on `/league`: favorite
+  cover % by spread-size bucket, and the four league-wide home/away × favorite/underdog cover
+  rates. Both read #425's views through the single season-cached league payload, reusing the
+  shared cover-% helper (no cover math duplicated); thin buckets show a sample caveat instead
+  of a noisy rate. No migration. components: `league/SpreadBuckets.svelte` ·
+  `league/Quadrants.svelte` · route: `/league` · views: `league_ats_spread_buckets` ·
+  `league_ats_quadrants` · ADR-0013 · ADR-0017
+- **#427** League tab — primetime & divisional modules — two new `/league` situational
+  modules: favorite ATS cover rate by kickoff slot (TNF/SNF/MNF vs daytime) and for
+  divisional vs non-divisional matchups. Reads the DST-safe views from #425 through the same
+  cached single payload; thin cells carry an `n=` small-sample caveat. views:
+  `league_ats_primetime` · `league_ats_divisional` · route: `/league` · ADR-0013 · ADR-0017
 - **#425** League tab v2 DB foundation — one consolidating migration for the League tab v2
   epic (#424) so the later UI waves read already-typed views and generate no migrations of
   their own. Widens the `league_ats_base` matview with team-relative spread/margin, kickoff

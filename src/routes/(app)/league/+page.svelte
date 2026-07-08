@@ -10,6 +10,10 @@
   import HotCold from '$lib/components/league/HotCold.svelte';
   import TeamGameLog from '$lib/components/league/TeamGameLog.svelte';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
+  import Quadrants from '$lib/components/league/Quadrants.svelte';
+  import Primetime from '$lib/components/league/Primetime.svelte';
+  import Divisional from '$lib/components/league/Divisional.svelte';
   import {
     Card,
     CardContent,
@@ -53,7 +57,11 @@
     },
     favDogByWeek: [],
     homeAway: null,
-    streaks: []
+    streaks: [],
+    spreadBuckets: [],
+    quadrants: [],
+    primetime: [],
+    divisional: []
   };
 
   const league = $derived(leagueQuery.data ?? EMPTY);
@@ -277,6 +285,9 @@
       </CardContent>
     </Card>
 
+    <!-- ── Favorites by spread size (issue #426) ───────────────────────────────── -->
+    <SpreadBuckets buckets={league.spreadBuckets} />
+
     <!-- ── Per-team ATS table ──────────────────────────────────────────────────── -->
     <Card data-testid="league-team-table">
       <CardHeader>
@@ -382,5 +393,14 @@
         </CardContent>
       </Card>
     {/if}
+
+    <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
+    <Quadrants quadrants={league.quadrants} />
+
+    <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
+    <Primetime slots={league.primetime} />
+
+    <!-- ── Divisional vs. non-divisional (issue #427) ──────────────────────────── -->
+    <Divisional splits={league.divisional} />
   {/if}
 </section>

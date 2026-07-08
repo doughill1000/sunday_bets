@@ -109,6 +109,69 @@ export type LeagueTeamGameLog = {
   games: LeagueTeamGameLogEntry[];
 };
 
+/** Favorite ATS cover counts for one spread-size bucket over a season (issue #426). Buckets
+ *  partition games by the absolute team-relative spread: pick'em (0), 1-3, 3.5-6.5, 7-9.5,
+ *  10+. `favoriteCovers` / `underdogCovers` are the favorite's ATS wins / losses (cover % is
+ *  derived from them in the UI, pushes excluded). The pick'em bucket has no favorite, so its
+ *  favoriteCovers/underdogCovers are 0 and only its `games` count is meaningful. */
+export type LeagueSpreadBucket = {
+  /** Sort order 0-4: 0=pick'em, 1=1-3, 2=3.5-6.5, 3=7-9.5, 4=10+. */
+  bucketOrder: number;
+  /** Display label: 'pickem' | '1-3' | '3.5-6.5' | '7-9.5' | '10+'. */
+  bucket: string;
+  /** Games in this bucket this season (the bucket's `n`). */
+  games: number;
+  /** Favorite ATS wins (favorite covered). Always 0 for the pick'em bucket. */
+  favoriteCovers: number;
+  /** Favorite ATS losses (underdog covered). Always 0 for the pick'em bucket. */
+  underdogCovers: number;
+  pushes: number;
+};
+
+/** One league-wide home/away × favorite/underdog quadrant for a season (issue #426): the
+ *  four cover rates (home favorite, home underdog, road favorite, road underdog) aggregated
+ *  across all teams. Grain is the team-perspective row, so each game contributes to two
+ *  quadrants (one per side); pick'em games are excluded upstream. Cover % is derived from
+ *  `ats` in the UI (pushes excluded), reusing the same helper as every other league module. */
+export type LeagueQuadrant = {
+  /** true = home-team games; false = road-team games. */
+  isHome: boolean;
+  /** true = the favored side; false = the underdog side. */
+  isFavorite: boolean;
+  /** Qualifying team-games in this quadrant this season (the quadrant's `n`). */
+  games: number;
+  ats: AtsRecord;
+};
+
+/** The kickoff slot a game is classified into by league_ats_primetime: the three night
+ *  windows plus `day` for everything else. The slot is derived from the New-York wall-clock
+ *  kickoff (DST-safe) in the view, not here. */
+export type PrimetimeSlot = 'TNF' | 'SNF' | 'MNF' | 'day';
+
+/** Favorite ATS cover counts for one kickoff slot in a season (league_ats_primetime, #425).
+ *  Grain mirrors LeagueFavDogSplit — one favorite-perspective row per game — so
+ *  favoriteCovers + underdogCovers + pushes = games and cover % excludes pushes. */
+export type LeaguePrimetimeSlot = {
+  slot: PrimetimeSlot;
+  /** Games with a favorite that kicked off in this slot (pick'em games excluded upstream). */
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
+/** Favorite ATS cover counts split by divisional vs non-divisional matchup for a season
+ *  (league_ats_divisional, #425). Same favorite-perspective grain as LeaguePrimetimeSlot;
+ *  games where either side has no division/conference are excluded upstream. */
+export type LeagueDivisionalSplit = {
+  /** true = both teams share conference + division; false = any other NFL matchup. */
+  isDivisional: boolean;
+  games: number;
+  favoriteCovers: number;
+  underdogCovers: number;
+  pushes: number;
+};
+
 /** The full /league payload for one season. `totalGames` is the number of qualifying
  *  scored games with a line (drives the "n games scored" caveat on thin/older seasons). */
 export type LeagueAts = {
@@ -120,4 +183,12 @@ export type LeagueAts = {
   homeAway: LeagueHomeAway | null;
   /** Per-team current ATS streak + last-4 form for the Hot/Cold module (issue #428). */
   streaks: LeagueTeamStreak[];
+  /** Favorite cover % by spread-size bucket (issue #426), pick'em first, then ascending. */
+  spreadBuckets: LeagueSpreadBucket[];
+  /** The four league-wide home/away × favorite/underdog cover rates (issue #426). */
+  quadrants: LeagueQuadrant[];
+  /** Favorite cover rate by kickoff slot (TNF/SNF/MNF/day), canonical order, #427. */
+  primetime: LeaguePrimetimeSlot[];
+  /** Favorite cover rate for divisional vs non-divisional matchups, #427. */
+  divisional: LeagueDivisionalSplit[];
 };

@@ -13,8 +13,8 @@
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
-    { href: '/stats', label: 'Stats', Icon: BarChart2 },
     { href: '/group', label: 'Group', Icon: Users },
+    { href: '/stats', label: 'Stats', Icon: BarChart2 },
     { href: '/league', label: 'League', Icon: TrendingUp }
   ];
 </script>
