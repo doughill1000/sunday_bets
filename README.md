@@ -60,7 +60,7 @@ leaderboard, and admin screens are all populated. Re-run just the data with
 | `admin@example.com` | Doug    | admin  |
 | `test2@example.com` | Hank    | player |
 | `test3@example.com` | Charlie | player |
-| `demo4@example.com` | Frank   | player |
+| `demo4@example.com` | Marcus  | player |
 | `demo5@example.com` | Beth    | player |
 | `demo6@example.com` | Mike    | player |
 

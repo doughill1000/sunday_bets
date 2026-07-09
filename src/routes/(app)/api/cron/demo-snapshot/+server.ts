@@ -8,9 +8,10 @@
 // the returned JSON to `src/lib/server/demo/demo-snapshot.json`.
 //
 // It reads a designated fictional group / completed season / persona from whatever DB the app
-// is connected to (locally: the `db:seed:demo` league). Nothing here writes to gameplay tables
-// except `generateSeasonWrapped`, which persists the demo group's own Wrapped rows (idempotent,
-// completeness-gated) — never real-user data.
+// is connected to (locally: the `db:seed:demo` league). The only writes are to the demo group's
+// OWN derived commentary rows — `generateSeasonWrapped` (Wrapped) and `regenerateDemoRecaps`
+// (weekly recaps), both idempotent force-refreshes through the real voice pipeline — never
+// real-user data.
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { requireCronSecret } from '$lib/server/cron';
 import { supabaseService } from '$lib/supabase/service';
@@ -22,7 +23,9 @@ import {
 import { getGroupCachePayload } from '$lib/server/readModels/groupCache';
 import { generateSeasonWrapped } from '$lib/server/seasonWrapped';
 import { getSeasonWrapped } from '$lib/server/db/queries/seasonWrapped';
-import { getRecentRecaps } from '$lib/server/db/queries/recaps';
+import { getRecentRecaps, upsertRecap, type RecapRow } from '$lib/server/db/queries/recaps';
+import { buildRecapFacts } from '$lib/server/recap/facts';
+import { generateRecapProse } from '$lib/server/recap/voice';
 import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
 import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
 import type { DemoSnapshot, DemoLiveGame, DemoGameStatus } from '$lib/types/demo';
@@ -35,6 +38,63 @@ import type { TeamSide, WeightCode } from '$lib/types/domain';
 function presentAsFinished(row: SeasonWrappedRow | null): SeasonWrappedRow | null {
   if (!row) return null;
   return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.4' };
+}
+
+/** Same "curated artifact, not an AI-unavailable note" presentation for the weekly recaps. */
+function presentRecapAsFinished(row: RecapRow): RecapRow {
+  return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.4' };
+}
+
+/**
+ * Regenerate the demo group's weekly recaps through the REAL LLM voice pipeline
+ * (buildRecapFacts → generateRecapProse), overwriting the deterministic seed rows so the demo
+ * shows the genuine Commissioner voice, not the flat seed template. Mirrors
+ * generateSeasonWrapped's force-refresh: run against a deploy with AI Gateway creds and the
+ * frozen recaps become real prose; run locally without creds and they fall back to deterministic
+ * copy (surfaced honestly via meta.aiProse). Writes only the demo group's own ai_recaps rows —
+ * never real-user data. Regenerates ascending so each week's badge-diff reads the freshly-written
+ * prior week.
+ */
+async function regenerateDemoRecaps(groupId: string, seasonYear: number): Promise<void> {
+  // The weeks that already carry a (seeded) recap are exactly the demo weeks to refresh.
+  const { data: existing } = await supabaseService
+    .from('ai_recaps')
+    .select('week_number')
+    .eq('group_id', groupId)
+    .eq('season_year', seasonYear);
+  const weekNumbers = [...new Set((existing ?? []).map((r) => r.week_number as number))];
+  if (weekNumbers.length === 0) return;
+
+  // Resolve those week numbers to week ids within the featured season.
+  const { data: season } = await supabaseService
+    .from('seasons')
+    .select('id')
+    .eq('year', seasonYear)
+    .maybeSingle();
+  if (!season) return;
+
+  const { data: weeks } = await supabaseService
+    .from('weeks')
+    .select('id, week_number')
+    .eq('season_id', season.id)
+    .in('week_number', weekNumbers)
+    .order('week_number', { ascending: true });
+
+  for (const w of weeks ?? []) {
+    const facts = await buildRecapFacts({ groupId, weekId: w.id as number });
+    const voice = await generateRecapProse(facts);
+    await upsertRecap({
+      groupId,
+      seasonYear,
+      weekNumber: w.week_number as number,
+      prose: voice.prose,
+      facts: facts as Parameters<typeof upsertRecap>[0]['facts'],
+      isFallback: voice.is_fallback,
+      model: voice.model,
+      promptTokens: voice.prompt_tokens,
+      completionTokens: voice.completion_tokens
+    });
+  }
 }
 
 // The designated demo group (matches the `db:seed:demo` league). The persona defaults to the
@@ -122,10 +182,14 @@ async function assembleDemoSnapshot(params: {
 
   const currentSeasonYear = await getCurrentSeasonYear();
 
-  // Regenerate the Wrapped through the real pipeline so the frozen prose is a genuine product
-  // artifact (real LLM when this runs where the gateway creds live; deterministic fallback
-  // otherwise). Idempotent + completeness-gated inside generateSeasonWrapped.
-  await generateSeasonWrapped(groupId, completedSeasonYear, { force: true });
+  // Regenerate BOTH the Wrapped and the weekly recaps through the real voice pipeline so the
+  // frozen prose is a genuine product artifact (real LLM when this runs where the gateway creds
+  // live; deterministic fallback otherwise). Both are force-refreshes that touch only the demo
+  // group's own derived rows.
+  await Promise.all([
+    generateSeasonWrapped(groupId, completedSeasonYear, { force: true }),
+    regenerateDemoRecaps(groupId, completedSeasonYear)
+  ]);
 
   // Standings drive the persona default: the featured season's champion (rank 1) is the
   // aspirational "you", unless an explicit persona was requested.
@@ -152,10 +216,12 @@ async function assembleDemoSnapshot(params: {
   ]);
 
   // Honest provenance from the *original* rows, captured before we present them as finished.
-  const aiProse =
-    wrapped.league?.is_fallback === false || wrapped.player?.is_fallback === false
-      ? 'live'
-      : 'fallback';
+  // 'live' only when everything the demo shows is real LLM prose — so `pnpm demo:snapshot` warns
+  // (and Doug re-runs against a creds-bearing deploy) if either the Wrapped or any recap fell back.
+  const wrappedLive =
+    wrapped.league?.is_fallback === false || wrapped.player?.is_fallback === false;
+  const recapsLive = recaps.length > 0 && recaps.every((r) => r.is_fallback === false);
+  const aiProse = wrappedLive && recapsLive ? 'live' : 'fallback';
 
   return {
     meta: {
@@ -180,7 +246,7 @@ async function assembleDemoSnapshot(params: {
       player: presentAsFinished(wrapped.player),
       league: presentAsFinished(wrapped.league)
     },
-    recaps
+    recaps: recaps.map(presentRecapAsFinished)
   };
 }
 
