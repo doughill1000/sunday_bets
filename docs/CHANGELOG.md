@@ -46,6 +46,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-09
+
+- **PR #474** Link to the public demo from the sign-in/sign-up screen (issue-less) —
+  `/auth` was the one page unauthenticated visitors already land on, but nothing
+  pointed at the `/demo` marketing snapshot (ADR-0026) from inside the app. file:
+  `src/routes/auth/+page.svelte`
+
 ## 2026-07-08
 
 - **PR #469** Tag Sentry environment from `VERCEL_ENV` instead of defaulting to
