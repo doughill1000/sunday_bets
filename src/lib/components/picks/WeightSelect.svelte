@@ -120,16 +120,17 @@
           value={code}
           data-testid={`weight-item-${code}`}
           disabled={code === 'A' && allInBlocked}
-          class="flex-1 rounded-md border bg-muted/40 px-3 py-[6px] leading-none transition
-                 hover:bg-muted/60
+          class="weight-btn flex-1 rounded-md px-2 py-[6px] leading-none transition
                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
-                 disabled:pointer-events-none disabled:opacity-70
-                 data-[state=on]:border-primary data-[state=on]:text-primary
-                 data-[state=on]:shadow-sm"
+                 disabled:pointer-events-none disabled:opacity-70"
         >
-          <div class="flex flex-col items-center">
-            <span class="text-sm font-semibold">{w.label}</span>
-            <span class="mt-[1px] text-[10px] opacity-80">{w.points}</span>
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-sm font-semibold leading-none">{w.label}</span>
+            <span
+              class="rounded-full bg-foreground/10 px-1.5 py-px text-[11px] font-semibold leading-none tabular-nums"
+            >
+              {w.points}
+            </span>
           </div>
         </ToggleGroupItem>
       {/each}

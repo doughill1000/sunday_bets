@@ -71,5 +71,6 @@ current status.
 | [ADR-0024](0024-grading-integrity-membership-penalty-and-frozen-seasons.md) | Missed-pick penalty scoped to active league membership; imported seasons frozen from grading |
 | [ADR-0025](0025-espn-final-scores-source.md)                                | ESPN scoreboard as the primary source of final scores (Odds API `/scores` fallback)          |
 | [ADR-0026](0026-public-demo-season-snapshot.md)                             | Public shareable demo season served from a generated read-only snapshot                      |
+| [ADR-0027](0027-rebrand-sunday-bets-to-hotshot.md)                          | Rebrand Sunday Bets → Hotshot (de-gamble the name; evolve charcoal + gold identity)          |
 
-_The numbering is sequential; the next ADR is 0027._
+_The numbering is sequential; the next ADR is 0028._

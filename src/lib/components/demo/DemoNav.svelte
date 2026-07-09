@@ -27,7 +27,7 @@
       class="flex items-center gap-2 font-bold tracking-tight"
       data-testid="demo-home"
     >
-      Sunday Bets
+      Hotshot
       <span
         class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary"
       >

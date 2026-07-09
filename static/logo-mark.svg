@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
+  <title id="title">Hotshot football spark logo</title>
+  <desc id="desc">Vectorized football logo with brass-gold double arcs, cream laces and yard marks, and an ember-tipped central spark.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1254" y2="1254" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#DBA73B"/>
+      <stop offset="0.45" stop-color="#F1BF2F"/>
+      <stop offset="1" stop-color="#DBA73B"/>
+    </linearGradient>
+    <linearGradient id="sparkEmber" x1="627" y1="450" x2="627" y2="585" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#E1842F"/>
+    </linearGradient>
+  </defs>
+  <g id="gold-shapes" fill="url(#gold)">
+    <path d="M 760 357 L 756 359 L 757 403 L 816 422 L 856 442 L 889 463 L 925 491 L 951 517 L 969 540 L 969 545 L 906 495 L 836 456 L 789 437 L 758 428 L 756 445 L 821 469 L 883 502 L 942 547 L 971 575 L 995 609 L 971 639 L 938 672 L 893 708 L 858 731 L 776 772 L 722 791 L 678 802 L 689 803 L 743 793 L 823 766 L 901 723 L 943 691 L 962 672 L 966 674 L 921 723 L 884 752 L 843 777 L 801 797 L 760 812 L 715 824 L 658 833 L 649 887 L 701 876 L 770 853 L 830 825 L 882 793 L 929 755 L 967 715 L 1003 664 L 1026 614 L 1027 602 L 1022 587 L 996 535 L 966 493 L 932 457 L 887 420 L 850 396 L 804 373 Z"/>
+    <path d="M 458 371 L 408 396 L 367 422 L 329 453 L 295 487 L 261 532 L 236 579 L 228 601 L 228 613 L 252 664 L 277 701 L 323 752 L 369 790 L 429 827 L 478 850 L 551 875 L 595 886 L 606 886 L 596 833 L 536 823 L 502 814 L 440 791 L 411 776 L 340 728 L 306 695 L 291 677 L 292 672 L 353 722 L 426 763 L 509 792 L 558 802 L 578 802 L 534 791 L 485 774 L 423 745 L 385 723 L 311 666 L 285 640 L 259 608 L 287 572 L 310 549 L 366 506 L 434 469 L 498 445 L 497 429 L 420 456 L 356 491 L 316 520 L 289 546 L 285 546 L 303 519 L 331 491 L 367 463 L 429 428 L 496 404 L 497 358 Z"/>
+    <path d="M 644 555 L 628 583 L 624 581 L 609 555 L 600 572 L 587 585 L 575 592 L 539 602 L 464 612 L 515 616 L 556 624 L 583 635 L 599 650 L 610 677 L 618 731 L 625 866 L 628 865 L 629 821 L 639 706 L 645 673 L 655 651 L 670 636 L 695 625 L 733 617 L 782 612 L 781 609 L 734 605 L 682 593 L 663 581 Z"/>
+  </g>
+  <g id="ember-tip" fill="url(#sparkEmber)">
+    <path d="M 626 467 L 621 506 L 610 554 L 625 581 L 629 581 L 644 553 L 637 527 L 630 489 L 628 467 Z"/>
+  </g>
+  <g id="cream-shapes" fill="#F6F1E7">
+    <path d="M 522 393 L 523 417 L 542 413 L 545 434 L 568 431 L 570 429 L 570 410 L 588 406 L 612 405 L 615 426 L 641 425 L 643 405 L 683 408 L 686 431 L 704 434 L 711 433 L 713 413 L 733 416 L 732 392 L 714 388 L 711 385 L 711 350 L 692 345 L 685 346 L 685 381 L 682 383 L 643 379 L 639 340 L 614 341 L 614 377 L 612 379 L 582 382 L 570 380 L 569 345 L 546 348 L 544 350 L 544 385 Z"/>
+    <path d="M 861 596 L 862 623 L 982 623 L 994 609 L 985 595 Z"/>
+    <path d="M 261 606 L 262 611 L 272 623 L 394 622 L 393 595 L 270 595 Z"/>
+  </g>
+</svg>

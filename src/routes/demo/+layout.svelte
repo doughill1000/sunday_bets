@@ -8,10 +8,10 @@
 </script>
 
 <svelte:head>
-  <title>Sunday Bets — Live Demo</title>
+  <title>Hotshot — Live Demo</title>
   <meta
     name="description"
-    content="See a full Sunday Bets season — picks, leaderboard, awards, and AI recaps — before you sign up."
+    content="See a full Hotshot season — picks, leaderboard, awards, and AI recaps — before you sign up."
   />
 </svelte:head>
 

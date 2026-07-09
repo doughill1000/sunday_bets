@@ -44,10 +44,11 @@
 }
 
 .dark {
-  /* Sunday Bets brand palette — derived from the app icon (charcoal #1d1d1d,
+  /* Hotshot brand palette — derived from the app icon (charcoal #1d1d1d,
      brass gold #dba73b, warm cream #f8efdf) so the header logo blends into the
      page and the gold matches the mark. Charcoal surfaces, brass-gold primary,
-     warm cream text, restrained status accents. */
+     warm cream text, restrained status accents. The --ember token is the mark's
+     spark-tip accent, reserved for future live/urgent moments. */
   --background: #1c1c1c;
   --foreground: #f4ecda;
   --card: #232324;
@@ -56,6 +57,7 @@
   --popover-foreground: #f4ecda;
   --primary: #dba73b;
   --primary-foreground: #1a1613;
+  --ember: #e1842f;
   --secondary: #2b2b2c;
   --secondary-foreground: #f4ecda;
   --muted: #272728;
@@ -98,6 +100,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-ember: var(--ember);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -136,16 +139,35 @@
   }
 }
 
-.picks-board .team-btn {
-  --c1: #64748b;
-  --c2: #94a3b8;
-  --fg: #000;
-  background: linear-gradient(135deg, var(--c1), var(--c2));
-  color: var(--fg);
-  border: 1px solid hsl(var(--border));
+/* Team + weight buttons are one "input tier": they share a calm charcoal raised surface with
+   a cream label (brand palette, not per-team colors — cleaner than the old muddy gradient).
+   Selection is one warm family in ascending intensity so nothing fights the Lock in CTA:
+   weight = light ember tint, team = ember/brown fill, Lock in = solid ember. The selected
+   team's glow is intentionally soft so the final commitment stays the strongest action. */
+.picks-board .team-btn,
+.picks-board .weight-btn {
+  background: linear-gradient(180deg, #313134, #262629);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+.picks-board .team-btn:hover:not(:disabled):not(.selected),
+.picks-board .weight-btn:hover:not(:disabled):not([data-state='on']) {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
 }
 .picks-board .team-btn.selected {
-  outline: 2px solid white;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--c1) 60%, white 40%) inset;
+  background: linear-gradient(180deg, #b0611f, #7f4118);
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklab, var(--foreground) 65%, transparent);
+  box-shadow: 0 4px 12px -8px color-mix(in oklab, var(--ember) 60%, transparent);
+}
+/* Selected weight: a subtle warm tint of the same family — filled, not outline-only, but
+   lighter than the team fill so the intensity ladder (weight < team < Lock in) reads clearly. */
+.picks-board .weight-btn[data-state='on'] {
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--ember) 22%, #313134),
+    color-mix(in oklab, var(--ember) 14%, #262629)
+  );
+  border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
+  color: var(--primary);
 }

@@ -283,7 +283,7 @@
 {/snippet}
 
 <svelte:head>
-  <title>Stats | Sunday Bets</title>
+  <title>Stats | Hotshot</title>
 </svelte:head>
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="stats-heading">

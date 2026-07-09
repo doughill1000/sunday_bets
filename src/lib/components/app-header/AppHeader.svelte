@@ -74,11 +74,11 @@
     <a
       href="/"
       class="pointer-events-auto flex min-w-0 items-center font-semibold tracking-wide"
-      aria-label="Sunday Bets home"
+      aria-label="Hotshot home"
     >
       <img
-        src="/logo-mark.png"
-        alt="Sunday Bets logo"
+        src="/logo-mark.svg"
+        alt="Hotshot logo"
         class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
       />
     </a>
