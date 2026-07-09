@@ -267,9 +267,6 @@
             </button>
           </p>
           <p class="text-center text-sm text-muted-foreground">
-            Having trouble? <a href="/auth/error" class="underline underline-offset-4">Auth help</a>
-          </p>
-          <p class="text-center text-sm text-muted-foreground">
             Just curious? <a href="/demo" class="underline underline-offset-4">Try the demo</a>
           </p>
         {:else if mode === 'signup'}

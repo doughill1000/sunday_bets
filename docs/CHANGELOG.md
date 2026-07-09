@@ -48,6 +48,9 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #475** Remove the "Auth help" link from sign-in (issue-less) — pointed at
+  `/auth/error`, a generic error-redirect landing page, not a help resource for
+  signed-out visitors. file: `src/routes/auth/+page.svelte`
 - **PR #474** Link to the public demo from the sign-in/sign-up screen (issue-less) —
   `/auth` was the one page unauthenticated visitors already land on, but nothing
   pointed at the `/demo` marketing snapshot (ADR-0026) from inside the app. file:
