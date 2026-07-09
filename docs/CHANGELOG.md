@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #467** Fix CLS from the PWA engagement banner (issue-less) — `EngagementBanner`
+  used to render in normal document flow above page content, so its late,
+  post-hydration appearance (gated on `computeStep()` awaiting
+  `navigator.serviceWorker.ready`) pushed the page down and scored as layout shift.
+  Now renders as a fixed, bottom-docked overlay instead, so its appearance never
+  displaces already-rendered content. file: `EngagementBanner.svelte`
 - **#460** Public shareable demo season — an unauthenticated `/demo` link renders one
   fully-fictional season from a committed, generated snapshot: a frozen "live" week picks
   screen (the verb) plus the completed-season leaderboard, awards/badges, Season Wrapped, and
