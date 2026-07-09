@@ -121,10 +121,11 @@
       </CardFooter>
     {:else}
       <CardHeader class="space-y-1">
-        <!-- Brand block: makes it unmistakable which app this is before you sign in. -->
-        <div class="mb-4 flex flex-col items-center gap-2 text-center">
-          <img src="/logo-mark.svg" alt="" class="h-16 w-16" />
-          <span class="text-2xl font-bold uppercase tracking-widest">Hotshot</span>
+        <!-- Brand block: makes it unmistakable which app this is before you sign in.
+             Uses the stacked lockup (mark + real HOTSHOT logotype) rather than the
+             app font, so the wordmark matches the brand sheet exactly. -->
+        <div class="mb-4 flex flex-col items-center gap-3 text-center">
+          <img src="/hotshot-lockup.png" alt="Hotshot" class="h-24 w-auto" />
           <p class="text-sm text-muted-foreground">Make the call. Out-pick your friends.</p>
         </div>
 
