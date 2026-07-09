@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>How to Play | Sunday Bets</title>
+  <title>How to Play | Hotshot</title>
 </svelte:head>
 
 <section class="mx-auto max-w-lg py-6">

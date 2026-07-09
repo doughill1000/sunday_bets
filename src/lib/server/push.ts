@@ -17,7 +17,7 @@ function ensureConfigured() {
     throw new Error('VAPID keys are not configured (PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY)');
   }
   webpush.setVapidDetails(
-    privateEnv.VAPID_SUBJECT || 'mailto:admin@sundaybets.app',
+    privateEnv.VAPID_SUBJECT || 'mailto:admin@hotshotcalls.com',
     vapidPublicKey,
     vapidPrivateKey
   );

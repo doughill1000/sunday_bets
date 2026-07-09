@@ -16,7 +16,7 @@ install prompt. It does not exercise `notif-denied` recovery or desktop flows.
 - A deployed build reachable over **HTTPS** (a Vercel preview or prod URL — service
   workers and web-push do not run over plain HTTP, and `localhost` tunnels are not
   reliable for the install path).
-- A **signed-in** Sunday Bets user on that build (the banner only renders for a
+- A **signed-in** Hotshot user on that build (the banner only renders for a
   logged-in `user`).
 - **VAPID keys** configured on the target environment and `/api/push/subscribe`
   reachable (already shipped with #92).
@@ -31,7 +31,7 @@ install prompt. It does not exercise `notif-denied` recovery or desktop flows.
 ### 1. See the iOS install banner
 
 1. Open the site in **Safari** and sign in.
-2. Confirm the engagement banner reads **"Add Sunday Bets to your Home Screen"** with
+2. Confirm the engagement banner reads **"Add Hotshot to your Home Screen"** with
    copy: _Tap **Share** □↑ → **Add to Home Screen** in Safari._
 3. **Confirm the Share glyph renders** immediately after the word "Share" and matches
    the icon in Safari's toolbar (a square with an up arrow). Toggle **Settings →
@@ -42,7 +42,7 @@ install prompt. It does not exercise `notif-denied` recovery or desktop flows.
 
 1. Tap Safari's **Share** button (the □↑ glyph the banner points at).
 2. Choose **Add to Home Screen**, then **Add**.
-3. Confirm the Sunday Bets icon appears on the Home Screen.
+3. Confirm the Hotshot icon appears on the Home Screen.
 
 ### 3. Launch standalone and reach the notification step
 
@@ -71,7 +71,7 @@ install prompt. It does not exercise `notif-denied` recovery or desktop flows.
 
 ### 6. Regression spot-check — Android install prompt
 
-1. On an Android device in Chrome, sign in and confirm the **"Install Sunday Bets"**
+1. On an Android device in Chrome, sign in and confirm the **"Install Hotshot"**
    banner still shows an **Install** button (the `beforeinstallprompt`-backed
    `install-prompt` step), and that installing still works. No change was made to this
    path; this is a smoke check only.

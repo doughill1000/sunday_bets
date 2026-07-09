@@ -62,3 +62,6 @@ build_migration.ps1
 supabase/scripts/users.json
 
 historical-spreadsheets/*
+
+# Brand/logo exploration scratch (AI-generated design iterations) — kept locally, not committed
+branding-ideas/

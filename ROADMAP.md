@@ -1,4 +1,4 @@
-# Sunday Bets Roadmap
+# Hotshot Roadmap
 
 This file communicates product direction and release order. It is deliberately
 not a task tracker.

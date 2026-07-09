@@ -49,7 +49,7 @@
               required
               maxlength={60}
               bind:value={name}
-              placeholder="Sunday Bets"
+              placeholder="Sunday Squad"
               autocomplete="off"
             />
           </div>

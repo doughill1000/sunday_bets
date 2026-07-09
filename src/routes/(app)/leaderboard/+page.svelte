@@ -92,7 +92,7 @@
 </script>
 
 <svelte:head>
-  <title>Leaderboard | Sunday Bets</title>
+  <title>Leaderboard | Hotshot</title>
 </svelte:head>
 
 {#snippet standingsLoading()}

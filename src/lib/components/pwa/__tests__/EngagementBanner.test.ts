@@ -31,7 +31,7 @@ describe('EngagementBanner — install-ios', () => {
     const { container } = render(EngagementBanner, { props: { user } });
 
     // onMount fires computeStep() asynchronously; wait for the copy to appear.
-    expect(await screen.findByText('Add Sunday Bets to your Home Screen')).toBeInTheDocument();
+    expect(await screen.findByText('Add Hotshot to your Home Screen')).toBeInTheDocument();
     expect(screen.getByText('Add to Home Screen')).toBeInTheDocument();
 
     // The Share glyph is an inline lucide SquareArrowUp <svg> wrapped with the word

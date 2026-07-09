@@ -30,8 +30,21 @@
 </script>
 
 <div class="mt-1 space-y-1.5">
+  {#if !started && hasPick}
+    <div class="flex justify-end">
+      <button
+        type="button"
+        class="rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        data-testid="clear-pick"
+        onclick={onClear}
+      >
+        Clear pick
+      </button>
+    </div>
+  {/if}
+
   <Button
-    class="h-10 w-full font-semibold"
+    class="h-10 w-full text-base font-semibold transition-shadow enabled:bg-ember enabled:shadow-lg enabled:shadow-ember/40 enabled:hover:shadow-ember/60"
     data-testid="lock-in"
     onclick={onLock}
     disabled={!canLock || saveState === 'saving'}
@@ -39,22 +52,9 @@
     {saveState === 'saving' ? 'Locking in…' : 'Lock in'}
   </Button>
 
-  <div class="flex min-h-[1.25rem] items-center justify-between gap-2 text-xs">
-    <div aria-live="polite" class="min-w-0">
-      {#if saveState === 'error'}
-        <span class="text-destructive">Couldn’t lock in — tap Lock in to retry.</span>
-      {/if}
-    </div>
-
-    {#if !started && hasPick}
-      <button
-        type="button"
-        class="shrink-0 rounded px-2 py-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-        data-testid="clear-pick"
-        onclick={onClear}
-      >
-        Clear pick
-      </button>
+  <div aria-live="polite" class="min-h-[1rem] text-xs">
+    {#if saveState === 'error'}
+      <span class="text-destructive">Couldn’t lock in — tap Lock in to retry.</span>
     {/if}
   </div>
 </div>

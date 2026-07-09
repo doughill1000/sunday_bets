@@ -49,7 +49,7 @@
   const homeNugget = $derived(trendLookup ? nuggetForSide(game, 'home', trendLookup) : null);
 </script>
 
-<Card class="relative rounded-2xl" data-testid="game-card" data-game-id={game.id}>
+<Card class="relative gap-3 rounded-2xl" data-testid="game-card" data-game-id={game.id}>
   {#if locked}
     <Badge
       variant="secondary"
@@ -66,30 +66,28 @@
     </Badge>
   {/if}
 
-  <CardHeader class="flex-row items-start justify-between pb-2">
-    <div class="min-w-0">
-      <h2 class="truncate font-semibold">{game.away} @ {game.home}</h2>
-      <p class="truncate text-sm font-semibold">{lineText}</p>
-      {#if awayNugget || homeNugget}
-        <div class="mt-1.5 space-y-0.5" data-testid="ats-nugget">
-          {#if awayNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
-              {game.away}: {awayNugget.record} as {awayNugget.role}
-            </p>
-          {/if}
-          {#if homeNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
-              {game.home}: {homeNugget.record} as {homeNugget.role}
-            </p>
-          {/if}
-        </div>
-      {/if}
-    </div>
-    <div class="flex shrink-0 items-center gap-2">
-      <time class="text-sm font-medium whitespace-nowrap" datetime={game.kickoff}>
+  <CardHeader class="grid-cols-[1fr_auto] items-start gap-x-3">
+    <div class="min-w-0 space-y-0.5">
+      <h2 class="truncate font-semibold text-foreground">{game.away} @ {game.home}</h2>
+      <p class="truncate text-sm font-medium text-foreground/70">{lineText}</p>
+      <time class="block text-xs font-medium text-foreground/60" datetime={game.kickoff}>
         {kickoffText}
       </time>
     </div>
+    {#if awayNugget || homeNugget}
+      <div class="col-start-2 max-w-[10rem] space-y-0.5 text-right" data-testid="ats-nugget">
+        {#if awayNugget}
+          <p class="text-[11px] leading-tight text-foreground/70">
+            {game.away}: {awayNugget.record} as {awayNugget.role}
+          </p>
+        {/if}
+        {#if homeNugget}
+          <p class="text-[11px] leading-tight text-foreground/70">
+            {game.home}: {homeNugget.record} as {homeNugget.role}
+          </p>
+        {/if}
+      </div>
+    {/if}
   </CardHeader>
 
   <CardContent class="space-y-3">

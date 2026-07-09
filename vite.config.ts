@@ -48,15 +48,15 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       manifest: {
-        name: 'Sunday Bets',
-        short_name: 'Sunday Bets',
-        description: 'Track and manage your Sunday football betting picks offline.',
+        name: 'Hotshot',
+        short_name: 'Hotshot',
+        description: "NFL pick'em against the spread with friends — track your picks offline.",
         start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait-primary',
-        background_color: '#080a0c',
-        theme_color: '#080a0c',
+        background_color: '#1c1c1c',
+        theme_color: '#1c1c1c',
         icons: [
           { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
