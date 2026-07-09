@@ -16,9 +16,25 @@
     size?: 'default' | 'sm' | 'lg';
     class?: string;
   } = $props();
+
+  // Filled CTA carries the same brass-gold → ember spark as the app's Lock-in button, so the
+  // demo's one verb (convert) glows with the brand accent. Always-on: this renders as an <a>
+  // (no enabled: state) and a marketing CTA should always look live — including on mobile,
+  // where the glow is a base shadow, not a hover effect.
+  const emberClass = $derived(
+    variant === 'default'
+      ? 'bg-ember text-primary-foreground shadow-lg shadow-ember/30 transition-shadow hover:shadow-ember/50'
+      : ''
+  );
 </script>
 
-<Button href="/auth" {variant} {size} class={className} data-testid="demo-signup-cta">
+<Button
+  href="/auth"
+  {variant}
+  {size}
+  class={`${emberClass} ${className}`.trim()}
+  data-testid="demo-signup-cta"
+>
   {label}
   <ArrowRight class="size-4" />
 </Button>

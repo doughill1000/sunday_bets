@@ -51,9 +51,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 - **#231** Rebrand Sunday Bets → Hotshot — de-gamble the identity (the stake is bragging
   rights, not cash) and swap the product name across the UI/copy surface (title, header,
   auth, install/push copy, Commissioner persona) plus the PWA manifest and human-facing
-  docs. Regenerates the app icon set from the new charcoal + gold football/spark mark and
-  fixes manifest color drift. "Hotshot" is the name; `hotshotcalls.com` is domain-only.
-  files: `vite.config.ts` · `app.html` · `app.css` · `AppHeader.svelte` · ADR-0027
+  docs. Regenerates the app icon set from the new charcoal + gold football/spark mark (the
+  in-app mark now ships as a transparent SVG) and fixes manifest color drift, and reworks
+  the pick card onto the brand palette — charcoal team buttons with an ember/brown selected
+  state, a clean ember Lock-in CTA, clearer weight chips, and a tidied header hierarchy —
+  activating the dormant ember spark accent (also on the demo sign-up CTA). "Hotshot" is the
+  name; `hotshotcalls.com` is domain-only.
+  files: `vite.config.ts` · `app.html` · `app.css` · `AppHeader.svelte` · `TeamSelect.svelte` ·
+  `WeightSelect.svelte` · `LockControls.svelte` · `GameCard.svelte` · `DemoSignupCta.svelte` ·
+  ADR-0027
 - **PR #469** Tag Sentry environment from `VERCEL_ENV` instead of defaulting to
   production (issue-less) — server-side `Sentry.init()` never set `environment`, so
   Sentry's default fallback mislabeled every local `pnpm dev` error as `production`,

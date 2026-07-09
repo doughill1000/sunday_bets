@@ -66,29 +66,32 @@
     </Badge>
   {/if}
 
-  <CardHeader class="flex-row items-start justify-between pb-2">
+  <CardHeader class="flex-row items-start justify-between gap-3 pb-2">
     <div class="min-w-0">
       <h2 class="truncate font-semibold">{game.away} @ {game.home}</h2>
-      <p class="truncate text-sm font-semibold">{lineText}</p>
+      <p class="truncate text-sm font-medium text-muted-foreground">{lineText}</p>
+    </div>
+    <div class="flex flex-col items-end gap-1 pl-2 text-right">
+      <time
+        class="text-xs font-medium whitespace-nowrap text-muted-foreground"
+        datetime={game.kickoff}
+      >
+        {kickoffText}
+      </time>
       {#if awayNugget || homeNugget}
-        <div class="mt-1.5 space-y-0.5" data-testid="ats-nugget">
+        <div class="max-w-[10rem] space-y-0.5" data-testid="ats-nugget">
           {#if awayNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
+            <p class="text-[11px] leading-tight text-foreground/70">
               {game.away}: {awayNugget.record} as {awayNugget.role}
             </p>
           {/if}
           {#if homeNugget}
-            <p class="truncate text-[11px] leading-tight text-muted-foreground/70">
+            <p class="text-[11px] leading-tight text-foreground/70">
               {game.home}: {homeNugget.record} as {homeNugget.role}
             </p>
           {/if}
         </div>
       {/if}
-    </div>
-    <div class="flex shrink-0 items-center gap-2">
-      <time class="text-sm font-medium whitespace-nowrap" datetime={game.kickoff}>
-        {kickoffText}
-      </time>
     </div>
   </CardHeader>
 

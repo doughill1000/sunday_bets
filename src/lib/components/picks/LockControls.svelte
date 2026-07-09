@@ -31,7 +31,7 @@
 
 <div class="mt-1 space-y-1.5">
   <Button
-    class="h-10 w-full font-semibold"
+    class="h-10 w-full text-base font-semibold transition-shadow enabled:bg-ember enabled:shadow-lg enabled:shadow-ember/40 enabled:hover:shadow-ember/60"
     data-testid="lock-in"
     onclick={onLock}
     disabled={!canLock || saveState === 'saving'}
@@ -49,7 +49,7 @@
     {#if !started && hasPick}
       <button
         type="button"
-        class="shrink-0 rounded px-2 py-0.5 text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        class="shrink-0 rounded-md border border-border/70 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-muted/40 hover:text-foreground"
         data-testid="clear-pick"
         onclick={onClear}
       >

@@ -100,6 +100,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-ember: var(--ember);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -138,16 +139,22 @@
   }
 }
 
+/* Team buttons use the brand palette, not per-team colors: a calm charcoal raised surface
+   with a cream label reads cleaner than the old muddy team gradient. The selected side gets
+   an ember/brown fill with one cream border and a soft ember glow (no white focus-ring
+   outline) — deliberately gentler than the Lock in CTA so the final commitment stays the
+   strongest action on the card. */
 .picks-board .team-btn {
-  --c1: #64748b;
-  --c2: #94a3b8;
-  --fg: #000;
-  background: linear-gradient(135deg, var(--c1), var(--c2));
-  color: var(--fg);
-  border: 1px solid hsl(var(--border));
+  background: linear-gradient(180deg, #313134, #262629);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+.picks-board .team-btn:hover:not(:disabled):not(.selected) {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
 }
 .picks-board .team-btn.selected {
-  outline: 2px solid white;
-  outline-offset: 2px;
-  box-shadow: 0 0 0 2px color-mix(in oklab, var(--c1) 60%, white 40%) inset;
+  background: linear-gradient(180deg, #b0611f, #7f4118);
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklab, var(--foreground) 65%, transparent);
+  box-shadow: 0 6px 18px -8px var(--ember);
 }

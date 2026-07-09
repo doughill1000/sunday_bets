@@ -77,7 +77,7 @@
       aria-label="Hotshot home"
     >
       <img
-        src="/logo-mark.png"
+        src="/logo-mark.svg"
         alt="Hotshot logo"
         class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
       />
