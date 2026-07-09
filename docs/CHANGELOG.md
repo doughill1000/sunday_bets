@@ -53,10 +53,11 @@ Project `Done` column, and Releases remain the sources of truth — see
   auth, install/push copy, Commissioner persona) plus the PWA manifest and human-facing
   docs. Regenerates the app icon set from the new charcoal + gold football/spark mark (the
   in-app mark now ships as a transparent SVG) and fixes manifest color drift, and reworks
-  the pick card onto the brand palette — charcoal team buttons with an ember/brown selected
-  state, a clean ember Lock-in CTA, clearer weight chips, and a tidied header hierarchy —
-  activating the dormant ember spark accent (also on the demo sign-up CTA). "Hotshot" is the
-  name; `hotshotcalls.com` is domain-only.
+  the pick card onto the brand palette — team and weight share one charcoal input tier whose
+  selected states climb an ember ladder (weight tint → team fill → Lock-in CTA), with a
+  higher-contrast, tighter header and the Clear-pick reset moved off the CTA — activating the
+  dormant ember spark accent (also on the demo sign-up CTA). "Hotshot" is the name;
+  `hotshotcalls.com` is domain-only.
   files: `vite.config.ts` · `app.html` · `app.css` · `AppHeader.svelte` · `TeamSelect.svelte` ·
   `WeightSelect.svelte` · `LockControls.svelte` · `GameCard.svelte` · `DemoSignupCta.svelte` ·
   ADR-0027
