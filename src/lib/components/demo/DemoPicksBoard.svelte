@@ -14,10 +14,10 @@
   let { liveWeek, personaName }: { liveWeek: DemoLiveWeek; personaName: string } = $props();
 
   const WEIGHT_LABEL: Record<WeightCode, string> = {
-    L: 'Low · 1',
-    M: 'Medium · 3',
-    H: 'High · 5',
-    A: 'All-In · 10'
+    L: 'Low',
+    M: 'Medium',
+    H: 'High',
+    A: 'All-In'
   };
 
   const open = $derived(liveWeek.games.filter((g) => g.status === 'open'));
