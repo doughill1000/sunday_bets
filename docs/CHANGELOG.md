@@ -54,6 +54,11 @@ Project `Done` column, and Releases remain the sources of truth — see
   docs. Regenerates the app icon set from the new charcoal + gold football/spark mark and
   fixes manifest color drift. "Hotshot" is the name; `hotshotcalls.com` is domain-only.
   files: `vite.config.ts` · `app.html` · `app.css` · `AppHeader.svelte` · ADR-0027
+- **PR #469** Tag Sentry environment from `VERCEL_ENV` instead of defaulting to
+  production (issue-less) — server-side `Sentry.init()` never set `environment`, so
+  Sentry's default fallback mislabeled every local `pnpm dev` error as `production`,
+  which had been masking a dev-only ENOENT (SvelteKit's `write_types` sync racing a
+  file-watcher event) as a false prod incident. file: `instrumentation.server.ts`
 - **PR #467** Fix CLS from the PWA engagement banner (issue-less) — `EngagementBanner`
   used to render in normal document flow above page content, so its late,
   post-hydration appearance (gated on `computeStep()` awaiting
