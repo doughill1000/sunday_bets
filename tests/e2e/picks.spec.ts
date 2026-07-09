@@ -72,8 +72,7 @@ test('picking the underdog then a weight then Lock in saves the pick', async ({ 
 
   await board.expectSaved(1, 1);
 
-  // The committed row reflects the underdog pick.
-  await board.committedSummary().click();
+  // The committed section is open by default, so the row is visible immediately.
   await expect(board.committedRow()).toContainText('BUF @ KC');
   await expect(board.committedRow()).toContainText('BUF +3.5');
 });
@@ -121,7 +120,7 @@ test('Unlock returns a locked-in pick to the board', async ({ page }) => {
   await board.lockIn().click();
   await board.expectSaved(1, 1);
 
-  await board.committedSummary().click();
+  // The committed section is open by default, so the unlock control is visible immediately.
   await board.unlock().click();
 
   // Card is back on the board and the counter resets.

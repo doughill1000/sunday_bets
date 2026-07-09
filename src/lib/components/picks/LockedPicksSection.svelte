@@ -36,6 +36,16 @@
 
   const hasMissed = $derived(games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick));
 
+  // Default open (most people want to glance at their locked picks right after
+  // making them). `open` only tracks user/missed-pick intent from here on — the
+  // ticking `now` prop must never re-assert it, or the section snaps shut on
+  // every 1s tick while someone is trying to expand it.
+  let sectionOpen = $state(true);
+
+  $effect(() => {
+    if (hasMissed) sectionOpen = true;
+  });
+
   function picksForGame(gameId: string) {
     return groupPicks.filter((p) => p.gameId === gameId);
   }
@@ -59,7 +69,7 @@
 </script>
 
 {#if games.length > 0}
-  <details open={hasMissed} class="group mt-4" data-testid="committed-section">
+  <details bind:open={sectionOpen} class="group mt-4" data-testid="committed-section">
     <summary
       data-testid="committed-summary"
       class="flex cursor-pointer select-none list-none items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
