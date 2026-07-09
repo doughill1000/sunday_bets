@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { fly, scale } from 'svelte/transition';
+  import { backOut } from 'svelte/easing';
+  import { prefersReducedMotion } from 'svelte/motion';
+  import { lockMotionMs } from '$lib/ui/motion';
   import { usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { signedSpreadForTeam } from '$lib/domain/spread';
@@ -35,6 +39,13 @@
   }
 
   const hasMissed = $derived(games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick));
+
+  // Enter/exit duration for the committed row as a pick lands here on lock (or
+  // leaves on unlock). Matches the exit on the upcoming card in PicksBoard;
+  // `prefersReducedMotion` collapses it to 0 (instant). The keyed `{#each}` (by
+  // `g.id`) keeps the 1s `now` ticker from restarting a row's in-flight
+  // transition. See `$lib/ui/motion` and issue #478.
+  const motionMs = $derived(lockMotionMs(prefersReducedMotion.current));
 
   // Default open (most people want to glance at their locked picks right after
   // making them). `open` only tracks user/missed-pick intent from here on — the
@@ -95,7 +106,12 @@
         {@const entry = $picks[g.id]}
         {@const started = kickoffMs(g) <= now}
         {@const lp = entry?.lockedPick}
-        <div class="px-3 py-2 text-sm" data-testid="committed-row" data-game-id={g.id}>
+        <div
+          class="px-3 py-2 text-sm"
+          data-testid="committed-row"
+          data-game-id={g.id}
+          transition:fly={{ duration: motionMs, y: -6 }}
+        >
           <div class="flex items-center justify-between gap-3">
             <div class="min-w-0 flex-1">
               <p class="truncate font-medium" data-testid="committed-matchup">
@@ -117,7 +133,12 @@
               {#if started}
                 <span class="text-xs text-muted-foreground">⏱ Kicked off</span>
               {:else}
-                <span class="text-xs text-primary">🔒 Locked</span>
+                <span
+                  class="text-xs text-primary"
+                  in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}
+                >
+                  🔒 Locked
+                </span>
                 <button
                   class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted"
                   data-testid="unlock-pick"
