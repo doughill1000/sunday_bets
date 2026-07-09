@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **#476** Palette audit — move the remaining off-brand surfaces (leaderboard weekly
+  cards, League honors, avatar crown, How-to-play scoring, `/league` small-sample
+  markers) onto the Hotshot brand tokens, delete the now-dead team-color helpers, and
+  add a lint guard that blocks raw Tailwind color scales in `.svelte`. Follow-up to #231.
+  files: `WeeklyPickCard.svelte` · `LeagueHonors.svelte` · `scripts/check-brand-colors.ts`
 - **PR #479** Demo mobile nav parity (issue-less) — the `/demo` route's top nav crammed
   all four sections into one horizontally-scrolling row, so mobile users had to slide to
   reach later tabs. Now mirrors the authenticated app: desktop keeps the inline top nav,

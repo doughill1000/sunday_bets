@@ -113,7 +113,7 @@
         <!-- Trophy case: every completed season's champion, newest first -->
         <div class="space-y-2" data-testid="trophy-case">
           <p class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Trophy class="size-3.5 text-yellow-500" aria-hidden="true" />
+            <Trophy class="size-3.5 text-primary" aria-hidden="true" />
             Trophy case
           </p>
           <ul class="flex flex-wrap gap-2">
@@ -170,7 +170,7 @@
               {#if badges.length > 0}
                 {#if isSeasonComplete}
                   <span
-                    class="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-700 dark:text-yellow-400"
+                    class="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                     data-testid="awards-crowned"
                   >
                     Crowned

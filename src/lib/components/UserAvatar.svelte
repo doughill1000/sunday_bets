@@ -43,7 +43,7 @@
   </Avatar>
   {#if champion}
     <Crown
-      class="absolute {crownClass[size]} rotate-12 fill-yellow-400 text-yellow-500 drop-shadow-sm"
+      class="absolute {crownClass[size]} rotate-12 fill-primary text-primary drop-shadow-sm"
       aria-label="Reigning champion"
     />
   {/if}

@@ -54,15 +54,15 @@
   type Outcome = WeeklyPickRow['outcome'];
 
   function teamRowClass(outcome: Outcome) {
-    if (outcome === 'win') return 'bg-green-50 dark:bg-green-950/30';
-    if (outcome === 'loss') return 'bg-red-50 dark:bg-red-950/30';
+    if (outcome === 'win') return 'bg-success/10';
+    if (outcome === 'loss') return 'bg-destructive/10';
     return '';
   }
 
   function teamLabelClass(outcome: Outcome) {
-    if (outcome === 'win') return 'text-green-700 dark:text-green-400';
-    if (outcome === 'loss') return 'text-red-700 dark:text-red-400';
-    if (outcome === 'push') return 'text-yellow-600 dark:text-yellow-400';
+    if (outcome === 'win') return 'text-success';
+    if (outcome === 'loss') return 'text-destructive';
+    if (outcome === 'push') return 'text-warning';
     return '';
   }
 </script>

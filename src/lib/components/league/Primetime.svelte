@@ -64,7 +64,7 @@
               </TableCell>
               <TableCell class="text-right tabular-nums text-muted-foreground">
                 {slot.favoriteCovers}-{slot.underdogCovers}-{slot.pushes}{#if thin}<span
-                    class="text-amber-600 dark:text-amber-500"
+                    class="text-warning"
                     title="Small sample — treat with caution">*</span
                   >{/if}
               </TableCell>
@@ -75,8 +75,8 @@
 
       {#if hasThin}
         <p class="mt-3 text-xs text-muted-foreground">
-          <span class="text-amber-600 dark:text-amber-500">*</span> Small sample — cover % from
-          fewer than {LEAGUE_THIN_SAMPLE} games is noisy; treat with caution.
+          <span class="text-warning">*</span> Small sample — cover % from fewer than {LEAGUE_THIN_SAMPLE}
+          games is noisy; treat with caution.
         </p>
       {/if}
     </CardContent>
