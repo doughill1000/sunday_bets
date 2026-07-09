@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **#478** Subtle pick-lock micro-interaction — locking a pick no longer hard-cuts:
+  the card animates out of the upcoming grid while the survivors reflow, and the
+  committed row settles into place, with a symmetric reverse on unlock. Kept quick and
+  deliberately quieter than the All-In signature moment, and a no-op under
+  `prefers-reduced-motion`. files: `PicksBoard.svelte` · `LockedPicksSection.svelte` ·
+  `ui/motion.ts` · ADR-0023
 - **PR #482** Trim the `/demo` sign-up CTAs to one (issue-less) — the read-only demo
   stacked sign-up buttons (sticky nav CTA + persona-banner CTA on every page, plus one
   per open-game card and a bottom CTA on the picks screen). Keep only the sticky nav

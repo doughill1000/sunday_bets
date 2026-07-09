@@ -127,3 +127,27 @@ test('Unlock returns a locked-in pick to the board', async ({ page }) => {
   await expect(board.card()).toBeVisible();
   await board.expectSaved(0, 1);
 });
+
+test('with prefers-reduced-motion the lock still settles to the committed state', async ({
+  page
+}) => {
+  // The lock/unlock micro-interaction (#478) collapses to a 0ms (no-motion)
+  // transition under reduced-motion. The end-state must be identical to the
+  // animated path: the card leaves the grid and the committed row is present.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+
+  const board = picksBoard(page);
+  await board.goto();
+
+  await board.weight('High').click();
+  await board.lockIn().click();
+
+  await board.expectSaved(1, 1);
+  await expect(board.card()).not.toBeVisible();
+  await expect(board.committedRow()).toContainText('BUF @ KC');
+
+  // Symmetric reverse still works with no motion.
+  await board.unlock().click();
+  await expect(board.card()).toBeVisible();
+  await board.expectSaved(0, 1);
+});
