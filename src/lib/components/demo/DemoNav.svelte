@@ -35,7 +35,9 @@
       </span>
     </a>
 
-    <nav class="flex flex-1 items-center gap-1 overflow-x-auto" aria-label="Demo sections">
+    <!-- Desktop inline nav — on mobile the fixed DemoBottomTabBar takes over, matching the
+         authenticated app so there's no horizontally-scrolling row to slide through. -->
+    <nav class="hidden flex-1 items-center gap-1 sm:flex" aria-label="Demo sections">
       {#each links as link (link.href)}
         <a
           href={link.href}
@@ -53,6 +55,6 @@
       {/each}
     </nav>
 
-    <DemoSignupCta label="Start your league" size="sm" class="hidden sm:inline-flex" />
+    <DemoSignupCta label="Start your league" size="sm" class="ml-auto inline-flex" />
   </div>
 </header>

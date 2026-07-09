@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { LayoutData } from './$types';
   import DemoNav from '$lib/components/demo/DemoNav.svelte';
+  import DemoBottomTabBar from '$lib/components/demo/DemoBottomTabBar.svelte';
   import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
 
   let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
@@ -16,7 +17,9 @@
 
 <DemoNav />
 
-<div class="container mx-auto space-y-6 p-4 pb-16">
+<div class="container mx-auto space-y-6 p-4 pb-24 sm:pb-16">
   <DemoBanner personaName={data.persona.displayName} />
   {@render children()}
 </div>
+
+<DemoBottomTabBar />
