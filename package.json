@@ -33,7 +33,7 @@
     "users:provision:dev": "tsx supabase/scripts/provision-users.ts --env=.env.staging --file=supabase/scripts/users.json",
     "users:provision:prod": "tsx supabase/scripts/provision-users.ts --env=.env.production --file=supabase/scripts/users.json",
     "dev": "vite dev --host",
-    "lint": "prettier --check . && eslint .",
+    "lint": "prettier --check . && eslint . && tsx scripts/check-brand-colors.ts",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo '' && git config core.hooksPath .githooks || true",
     "format": "prettier --write .",

@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **#476** Palette audit — move the remaining off-brand surfaces (leaderboard weekly
+  cards, League honors, avatar crown, How-to-play scoring, `/league` small-sample
+  markers) onto the Hotshot brand tokens, delete the now-dead team-color helpers, and
+  add a lint guard that blocks raw Tailwind color scales in `.svelte`. Follow-up to #231.
+  files: `WeeklyPickCard.svelte` · `LeagueHonors.svelte` · `scripts/check-brand-colors.ts`
 - **PR #475** Remove the "Auth help" link from sign-in (issue-less) — pointed at
   `/auth/error`, a generic error-redirect landing page, not a help resource for
   signed-out visitors. file: `src/routes/auth/+page.svelte`

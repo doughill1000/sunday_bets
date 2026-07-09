@@ -50,14 +50,14 @@
             <td class="py-1.5 pr-3">Eagles</td>
             <td class="py-1.5 pr-3">High</td>
             <td class="py-1.5 pr-3">Win</td>
-            <td class="py-1.5 text-right text-green-600 dark:text-green-400">+5</td>
+            <td class="py-1.5 text-right text-success">+5</td>
           </tr>
           <tr class="border-b">
             <td class="py-1.5 pr-3">Cowboys +3</td>
             <td class="py-1.5 pr-3">Cowboys</td>
             <td class="py-1.5 pr-3">Low</td>
             <td class="py-1.5 pr-3">Loss</td>
-            <td class="py-1.5 text-right text-red-600 dark:text-red-400">-1</td>
+            <td class="py-1.5 text-right text-destructive">-1</td>
           </tr>
           <tr class="border-b">
             <td class="py-1.5 pr-3">Chiefs -3</td>
@@ -71,13 +71,13 @@
             <td class="py-1.5 pr-3">Bills</td>
             <td class="py-1.5 pr-3">All-In</td>
             <td class="py-1.5 pr-3">Win</td>
-            <td class="py-1.5 text-right text-green-600 dark:text-green-400">+10</td>
+            <td class="py-1.5 text-right text-success">+10</td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
             <td colspan="4" class="pt-2 text-right font-medium">Week total</td>
-            <td class="pt-2 text-right font-semibold text-green-600 dark:text-green-400">+14</td>
+            <td class="pt-2 text-right font-semibold text-success">+14</td>
           </tr>
         </tfoot>
       </table>
