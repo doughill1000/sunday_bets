@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { PageData } from './$types';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
-  import DemoSignupCta from '$lib/components/demo/DemoSignupCta.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
 
   let { data }: { data: PageData } = $props();
@@ -25,9 +24,4 @@
       {/each}
     </div>
   {/if}
-
-  <div class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed px-4 py-4 text-sm">
-    <span class="flex-1 text-muted-foreground">Get recaps like these for your own league.</span>
-    <DemoSignupCta label="Sign up free" />
-  </div>
 </div>
