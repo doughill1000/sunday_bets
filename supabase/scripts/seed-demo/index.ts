@@ -65,7 +65,7 @@ const PLAYERS: Player[] = [
   },
   {
     email: 'demo4@example.com',
-    display: 'Frank',
+    display: 'Marcus',
     role: 'player',
     id: '00000000-0000-0000-0000-000000000004'
   },
@@ -109,7 +109,7 @@ const ARCHETYPES: Archetype[] = [
   { skill: 0.7, allInRate: 0.2, skipRate: 0.03 }, // Doug  — balanced, perennial contender
   { skill: 0.52, allInRate: 0.12, skipRate: 0.02, allInForce: 'win' }, // Hank — Big Game Hunter
   { skill: 0.56, allInRate: 0.15, skipRate: 0.05 }, // Charlie — streaky / contrarian-ish
-  { skill: 0.58, allInRate: 0.15, skipRate: 0.32 }, // Frank — The Ghost (skips a lot)
+  { skill: 0.58, allInRate: 0.15, skipRate: 0.32 }, // Marcus — The Ghost (skips a lot)
   { skill: 0.7, allInRate: 0.2, skipRate: 0.03, homerTeam: 'PHI' }, // Beth — The Homer (PHI)
   { skill: 0.5, allInRate: 0.3, skipRate: 0.05, allInForce: 'lose' }, // Mike — The Choker
   { skill: 0.64, allInRate: 0.2, skipRate: 0.04 }, // Nate
@@ -118,7 +118,7 @@ const ARCHETYPES: Archetype[] = [
 
 // --- Groups ------------------------------------------------------------------
 // Group A is the stable v1.7 tenancy group (seeded by migration 0213). Group B is created
-// here. Doug (idx 0) is in both so the signed-in admin can switch between them.
+// here. Doug (idx 0, admin) is in both so the signed-in admin can switch between them.
 const GROUP_A_ID = '00000000-0000-4000-8000-000000000017';
 const GROUP_B_ID = '00000000-0000-4000-8000-000000000018';
 interface Group {
@@ -132,7 +132,9 @@ const GROUPS: Group[] = [
   {
     id: GROUP_A_ID,
     name: 'Sunday Bets',
-    spice: 'medium',
+    // Spicy on purpose: this is the featured group behind the public /demo snapshot (#460),
+    // and full villain-mode Commissioner prose is the marketing hook. Keep it spicy.
+    spice: 'spicy',
     memberIdx: [0, 1, 2, 3, 4, 5],
     commissionerIdx: 0
   },

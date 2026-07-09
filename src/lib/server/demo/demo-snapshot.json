@@ -1,12 +1,12 @@
 {
   "meta": {
-    "generatedAt": "2026-07-08T22:50:30.547Z",
+    "generatedAt": "2026-07-09T22:46:48.816Z",
     "groupId": "00000000-0000-4000-8000-000000000017",
     "groupName": "Sunday Bets",
     "completedSeasonYear": 2024,
     "liveSeasonYear": 2026,
     "liveWeekNumber": 16,
-    "aiProse": "fallback"
+    "aiProse": "live"
   },
   "persona": {
     "userId": "00000000-0000-0000-0000-000000000005",
@@ -17,8 +17,8 @@
     "weekNumber": 16,
     "games": [
       {
-        "id": "83979a11-40a6-48cb-a751-5d3d2ef60244",
-        "kickoff": "2026-07-07T20:44:43.943+00:00",
+        "id": "5c73cb46-fa44-4a38-9d57-9b50d761b85b",
+        "kickoff": "2026-07-08T20:45:20.735+00:00",
         "homeTeamId": 16,
         "awayTeamId": 14,
         "home": "PIT",
@@ -37,8 +37,8 @@
         }
       },
       {
-        "id": "2342a312-f84f-414b-bd8c-442bdcdf6e1a",
-        "kickoff": "2026-07-08T19:44:43.943+00:00",
+        "id": "1e05a52d-f1cf-4fa8-a121-742f76899cbc",
+        "kickoff": "2026-07-09T19:45:20.735+00:00",
         "homeTeamId": 3,
         "awayTeamId": 2,
         "home": "KC",
@@ -53,8 +53,8 @@
         }
       },
       {
-        "id": "473b2df4-6898-48e3-a643-7890a5fac2bf",
-        "kickoff": "2026-07-09T20:44:43.943+00:00",
+        "id": "deb52b86-cc1e-428f-b95b-82acbfb2cf63",
+        "kickoff": "2026-07-10T20:45:20.735+00:00",
         "homeTeamId": 4,
         "awayTeamId": 1,
         "home": "BUF",
@@ -70,8 +70,8 @@
         "finalScores": null
       },
       {
-        "id": "74ab4381-c2a8-4f9b-8daa-ce171fc7f15c",
-        "kickoff": "2026-07-10T22:44:43.943+00:00",
+        "id": "f9cbcdeb-536f-4ab6-bb52-3e757e2c3a16",
+        "kickoff": "2026-07-11T22:45:20.735+00:00",
         "homeTeamId": 7,
         "awayTeamId": 6,
         "home": "CIN",
@@ -83,8 +83,8 @@
         "finalScores": null
       },
       {
-        "id": "8ebd50f5-663f-4301-9dfc-6f6539ccd5ea",
-        "kickoff": "2026-07-12T22:44:43.943+00:00",
+        "id": "6de47da9-76cf-4d13-997b-743347bb7eb9",
+        "kickoff": "2026-07-13T22:45:20.735+00:00",
         "homeTeamId": 8,
         "awayTeamId": 5,
         "home": "MIA",
@@ -158,7 +158,7 @@
       },
       {
         "user_id": "00000000-0000-0000-0000-000000000004",
-        "display_name": "Frank",
+        "display_name": "Marcus",
         "season_year": 2024,
         "total_points": -32,
         "decisions": 56,
@@ -241,7 +241,7 @@
       },
       {
         "user_id": "00000000-0000-0000-0000-000000000004",
-        "display_name": "Frank",
+        "display_name": "Marcus",
         "total_points": 7,
         "decisions": 225,
         "wins": 84,
@@ -370,7 +370,7 @@
         "holders": [
           {
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank"
+            "display_name": "Marcus"
           }
         ]
       },
@@ -482,7 +482,7 @@
         "holders": [
           {
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank"
+            "display_name": "Marcus"
           }
         ]
       },
@@ -625,42 +625,42 @@
       {
         "userId": "00000000-0000-0000-0000-000000000001",
         "role": "commissioner",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
         "displayName": "Doug",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000002",
         "role": "member",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
         "displayName": "Hank",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000003",
         "role": "member",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
         "displayName": "Charlie",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000004",
         "role": "member",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
-        "displayName": "Frank",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
+        "displayName": "Marcus",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000005",
         "role": "member",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
         "displayName": "Beth",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000006",
         "role": "member",
-        "joinedAt": "2026-07-08T18:42:07.029036+00:00",
+        "joinedAt": "2026-07-09T22:39:12.864542+00:00",
         "displayName": "Mike",
         "avatarKey": null
       }
@@ -668,12 +668,12 @@
   },
   "wrapped": {
     "player": {
-      "id": "973e31a1-b831-4d5d-8464-7d4c2c4ce7f4",
+      "id": "ee5fffc0-46db-4f1b-9ef8-cf5f2b0b6037",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "scope": "player",
       "subject_user_id": "00000000-0000-0000-0000-000000000005",
-      "prose": "Your 2024 season with Sunday Bets: you finished #1 with 105 points (36-17-2). Your best week was Week 5 (18 points). All-In record: 8-1-1. Badges earned: The Homer, Big Game Hunter, Perfect Week, The Comeback, Week Winner.",
+      "prose": "You didn’t just win Sunday Bets — you sat on the throne all damn year and finished the job at 105 points with a 36-17-2 record. The crown really got welded on when you ripped off an 8-game heater and damn near robbed the All-In pot too, going 8-1-1 like the rest of these clowns were donating. Week 5’s 18-point explosion was the haymaker, and even your ugly patch only bottomed out at -6 in Week 2 before you stormed all the way back to No. 1. “The Homer,” “Big Game Hunter,” “Perfect Week” — hell, you collected badges like trophies while everyone else got cooked. 👑",
       "facts": {
         "rank": 1,
         "allin": {
@@ -739,17 +739,17 @@
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": null,
-      "completion_tokens": null,
-      "created_at": "2026-07-08T22:50:30.283873+00:00"
+      "prompt_tokens": 588,
+      "completion_tokens": 152,
+      "created_at": "2026-07-09T22:46:01.855579+00:00"
     },
     "league": {
-      "id": "e314ee47-b0fc-4ad5-99ab-abb988b1cb0b",
+      "id": "10b0d2a3-0dd2-489f-9e28-68bfea222b13",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "scope": "league",
       "subject_user_id": null,
-      "prose": "Sunday Bets's 2024 season is in the books. Beth took the crown with 105 points. Mike brought up the rear. 6 players competed this season.",
+      "prose": "What a finish: Beth took the crown at 105 points, and she had to earn every damn bit of it — only 6 points clear of Hank’s 99 after a season with 3 lead changes. Hank went full sicko mode with a 13-win heater and stacked enough badges to look like a decorated war criminal, but all that grinding still left him staring up at first while Beth owned the top spot for 10 weeks and closed the deal. Doug’s season deserves a slow clap for the collapse: started at #1, finished 4th at 74, the biggest faceplant in the league. And then there’s Mike, dead last at -144 with The Choker, The Fool, The Lemming, and Chalk Eater on his résumé — brother, that’s not a season, that’s a crime scene. 🔥",
       "facts": {
         "lead": {
           "changes": 3,
@@ -791,7 +791,7 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
           },
           {
@@ -826,7 +826,7 @@
           {
             "emoji": "👻",
             "label": "The Ghost",
-            "holders": ["Frank"]
+            "holders": ["Marcus"]
           },
           {
             "emoji": "⚔️",
@@ -846,7 +846,7 @@
           {
             "emoji": "🐑",
             "label": "The Sheep",
-            "holders": ["Frank"]
+            "holders": ["Marcus"]
           },
           {
             "emoji": "🔮",
@@ -913,21 +913,68 @@
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": null,
-      "completion_tokens": null,
-      "created_at": "2026-07-08T22:50:30.240982+00:00"
+      "prompt_tokens": 1036,
+      "completion_tokens": 176,
+      "created_at": "2026-07-09T22:45:58.362307+00:00"
     }
   },
   "recaps": [
     {
-      "id": "f2db2cc2-a353-46ee-a84e-ce7bf0a492dc",
+      "id": "0aa8a101-79bc-4dd4-bbb0-16ee04d8c3bf",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 14,
-      "prose": "Week 14 wrapped up in Sunday Bets. Charlie paced the group with 8 points. Frank went All-In and cashed it. Mike's All-In didn't land. Charlie bucked the room — only 33.33% were on that side — and was right. Mike had a week to forget. That wraps the regular season — Beth takes the crown with 105 points. Final standings are set.",
+      "prose": "And that’s the regular season curtain call: Beth slams the door on the league at 105 points, holding Hank off by 6, and a 3-win heater was just enough to keep the crown on her head. Charlie came in like a wrecking ball with the week’s best 8 points, nailed a 33.33% contrarian hit, and leapfrogged Doug for 3rd, 75-74 — Doug tried to get cute fading the crowd and got cooked for it. Meanwhile Mike detonated the basement with a brutal -19 week and a busted All-In, finishing at an almost artistic -144, while Marcus at least hit his All-In even with a heavy loss elsewhere. Beth gets to puff her chest, Charlie gets to talk his shit, and the rest of you can stare at the standings and deal with it.",
       "facts": {
-        "spice": "medium",
+        "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
+        "bad_takes": [
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          },
+          {
+            "kind": "heavy_loss",
+            "user_id": "00000000-0000-0000-0000-000000000004",
+            "display_name": "Marcus"
+          }
+        ],
+        "rivalries": [
+          {
+            "games": 108,
+            "a_wins": 51,
+            "b_wins": 54,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000003",
+              "display_name": "Charlie"
+            }
+          },
+          {
+            "games": 109,
+            "a_wins": 49,
+            "b_wins": 57,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000005",
+              "display_name": "Beth"
+            }
+          }
+        ],
         "standings": [
           {
             "rank": 1,
@@ -956,19 +1003,58 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
+          },
+          {
+            "rank": 6,
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike",
+            "total_points": -144
           }
         ],
         "allin_hero": {
           "user_id": "00000000-0000-0000-0000-000000000004",
-          "display_name": "Frank"
+          "display_name": "Marcus"
         },
         "allin_zero": {
           "user_id": "00000000-0000-0000-0000-000000000006",
           "display_name": "Mike"
         },
         "group_name": "Sunday Bets",
+        "hot_streak": {
+          "streak": 3,
+          "user_id": "00000000-0000-0000-0000-000000000005",
+          "display_name": "Beth"
+        },
+        "title_race": {
+          "leader": {
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          "margin": 6,
+          "runner_up": {
+            "user_id": "00000000-0000-0000-0000-000000000002",
+            "display_name": "Hank"
+          }
+        },
+        "lead_change": null,
+        "rank_movers": {
+          "riser": {
+            "delta": 1,
+            "to_rank": 3,
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "from_rank": 4,
+            "display_name": "Charlie"
+          },
+          "faller": {
+            "delta": -1,
+            "to_rank": 4,
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "from_rank": 3,
+            "display_name": "Doug"
+          }
+        },
         "season_year": 2024,
         "week_leader": {
           "points": 8,
@@ -989,23 +1075,106 @@
           "display_name": "Charlie",
           "consensus_pct": 33.33
         },
+        "_badge_snapshot": {
+          "sheep": ["00000000-0000-0000-0000-000000000004"],
+          "oracle": ["00000000-0000-0000-0000-000000000003"],
+          "hot-hand": ["00000000-0000-0000-0000-000000000005"],
+          "the-fool": ["00000000-0000-0000-0000-000000000006"],
+          "dog-lover": ["00000000-0000-0000-0000-000000000001"],
+          "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
+          "the-ghost": ["00000000-0000-0000-0000-000000000004"],
+          "the-homer": ["00000000-0000-0000-0000-000000000005"],
+          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
+          "the-whale": ["00000000-0000-0000-0000-000000000002"],
+          "the-choker": ["00000000-0000-0000-0000-000000000006"],
+          "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
+          "the-grinder": ["00000000-0000-0000-0000-000000000002"],
+          "the-lemming": ["00000000-0000-0000-0000-000000000006"],
+          "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
+          "week-winner": ["00000000-0000-0000-0000-000000000005"],
+          "perfect-week": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ],
+          "big-game-hunter": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "best-of-the-rest": [
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ]
+        },
         "opted_out_user_ids": []
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 540,
-      "completion_tokens": 300,
-      "created_at": "2026-07-08T18:42:21.783071+00:00"
+      "prompt_tokens": 1102,
+      "completion_tokens": 178,
+      "created_at": "2026-07-09T22:39:27.86083+00:00"
     },
     {
-      "id": "9393a0dc-59f2-4c91-9b08-9034260f7523",
+      "id": "32507783-0f65-483c-8d71-7f8e3b265a17",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 13,
-      "prose": "Week 13 wrapped up in Sunday Bets. Charlie paced the group with 19 points. Charlie ran the table — a flawless, perfect week. Charlie went All-In and cashed it. Mike's All-In didn't land. Mike had a week to forget. Beth sits atop the standings for now.",
+      "prose": "Charlie kicked the door in this week: a flawless card, 19 points, and the All-In hit — that’s how you remind the room you’re still breathing. Meanwhile Mike put up a disgusting -23 and detonated his All-In, somehow digging his season grave even deeper at -144; at this point the board ought to charge him rent for living in last place. Beth still sits on the throne at 105 with a 3-win streak, but that cute little backfired fade kept the title race at just 4 points over Hank, so the crown isn’t safe yet 😈. And Doug? Slid from #2 to #3 and got jumped by a guy who just had the only perfect week — damn, that’s cold.",
       "facts": {
-        "spice": "medium",
+        "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
+        "bad_takes": [
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000004",
+            "display_name": "Marcus"
+          },
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          }
+        ],
+        "rivalries": [
+          {
+            "games": 108,
+            "a_wins": 51,
+            "b_wins": 54,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000003",
+              "display_name": "Charlie"
+            }
+          },
+          {
+            "games": 109,
+            "a_wins": 49,
+            "b_wins": 57,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000005",
+              "display_name": "Beth"
+            }
+          }
+        ],
         "standings": [
           {
             "rank": 1,
@@ -1034,8 +1203,14 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
+          },
+          {
+            "rank": 6,
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike",
+            "total_points": -144
           }
         ],
         "allin_hero": {
@@ -1047,6 +1222,33 @@
           "display_name": "Mike"
         },
         "group_name": "Sunday Bets",
+        "hot_streak": {
+          "streak": 3,
+          "user_id": "00000000-0000-0000-0000-000000000005",
+          "display_name": "Beth"
+        },
+        "title_race": {
+          "leader": {
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          "margin": 4,
+          "runner_up": {
+            "user_id": "00000000-0000-0000-0000-000000000002",
+            "display_name": "Hank"
+          }
+        },
+        "lead_change": null,
+        "rank_movers": {
+          "riser": null,
+          "faller": {
+            "delta": -1,
+            "to_rank": 3,
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "from_rank": 2,
+            "display_name": "Doug"
+          }
+        },
         "season_year": 2024,
         "week_leader": {
           "points": 19,
@@ -1068,23 +1270,106 @@
           }
         ],
         "contrarian_hit": null,
+        "_badge_snapshot": {
+          "sheep": ["00000000-0000-0000-0000-000000000004"],
+          "oracle": ["00000000-0000-0000-0000-000000000003"],
+          "hot-hand": ["00000000-0000-0000-0000-000000000005"],
+          "the-fool": ["00000000-0000-0000-0000-000000000006"],
+          "dog-lover": ["00000000-0000-0000-0000-000000000001"],
+          "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
+          "the-ghost": ["00000000-0000-0000-0000-000000000004"],
+          "the-homer": ["00000000-0000-0000-0000-000000000005"],
+          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
+          "the-whale": ["00000000-0000-0000-0000-000000000002"],
+          "the-choker": ["00000000-0000-0000-0000-000000000006"],
+          "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
+          "the-grinder": ["00000000-0000-0000-0000-000000000002"],
+          "the-lemming": ["00000000-0000-0000-0000-000000000006"],
+          "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
+          "week-winner": ["00000000-0000-0000-0000-000000000005"],
+          "perfect-week": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ],
+          "big-game-hunter": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "best-of-the-rest": [
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ]
+        },
         "opted_out_user_ids": []
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 540,
-      "completion_tokens": 300,
-      "created_at": "2026-07-08T18:42:21.704896+00:00"
+      "prompt_tokens": 1072,
+      "completion_tokens": 157,
+      "created_at": "2026-07-09T22:39:27.768589+00:00"
     },
     {
-      "id": "1422c5d8-c5ec-498b-905f-2f0913b3e80d",
+      "id": "52eafbd5-777f-4d73-8f17-bfe8bd011f02",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 12,
-      "prose": "Week 12 wrapped up in Sunday Bets. Hank paced the group with 19 points. Hank ran the table — a flawless, perfect week. Hank went All-In and cashed it. Charlie's All-In didn't land. Hank bucked the room — only 33.33% were on that side — and was right. Mike had a week to forget. Beth sits atop the standings for now.",
+      "prose": "Hank kicked the damn door in this week: a perfect card, 19 points, nailed the All-In, and even cashed the 33.33% contrarian shot like the rest of you were reading the board upside down. That heater bumped him from 3rd to 2nd at 99, and now Beth’s still clinging to the throne at 105 with a cute little 3-win streak and only a 10-point cushion left 😈. Meanwhile Charlie managed the rare double feature — busted All-In and got jumped in the standings — while Mike faceplanted to -17 on the week and keeps deepening the crater at -144 total. Doug fading the crowd just to lose and sit 4th at 74? That’s not strategy, that’s performance art.",
       "facts": {
-        "spice": "medium",
+        "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
+        "bad_takes": [
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "display_name": "Charlie"
+          },
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        ],
+        "rivalries": [
+          {
+            "games": 108,
+            "a_wins": 51,
+            "b_wins": 54,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000003",
+              "display_name": "Charlie"
+            }
+          },
+          {
+            "games": 109,
+            "a_wins": 49,
+            "b_wins": 57,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000005",
+              "display_name": "Beth"
+            }
+          }
+        ],
         "standings": [
           {
             "rank": 1,
@@ -1113,8 +1398,14 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
+          },
+          {
+            "rank": 6,
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike",
+            "total_points": -144
           }
         ],
         "allin_hero": {
@@ -1126,6 +1417,33 @@
           "display_name": "Charlie"
         },
         "group_name": "Sunday Bets",
+        "hot_streak": {
+          "streak": 3,
+          "user_id": "00000000-0000-0000-0000-000000000005",
+          "display_name": "Beth"
+        },
+        "title_race": {
+          "leader": {
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          "margin": 10,
+          "runner_up": {
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        },
+        "lead_change": null,
+        "rank_movers": {
+          "riser": {
+            "delta": 1,
+            "to_rank": 2,
+            "user_id": "00000000-0000-0000-0000-000000000002",
+            "from_rank": 3,
+            "display_name": "Hank"
+          },
+          "faller": null
+        },
         "season_year": 2024,
         "week_leader": {
           "points": 19,
@@ -1151,23 +1469,106 @@
           "display_name": "Hank",
           "consensus_pct": 33.33
         },
+        "_badge_snapshot": {
+          "sheep": ["00000000-0000-0000-0000-000000000004"],
+          "oracle": ["00000000-0000-0000-0000-000000000003"],
+          "hot-hand": ["00000000-0000-0000-0000-000000000005"],
+          "the-fool": ["00000000-0000-0000-0000-000000000006"],
+          "dog-lover": ["00000000-0000-0000-0000-000000000001"],
+          "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
+          "the-ghost": ["00000000-0000-0000-0000-000000000004"],
+          "the-homer": ["00000000-0000-0000-0000-000000000005"],
+          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
+          "the-whale": ["00000000-0000-0000-0000-000000000002"],
+          "the-choker": ["00000000-0000-0000-0000-000000000006"],
+          "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
+          "the-grinder": ["00000000-0000-0000-0000-000000000002"],
+          "the-lemming": ["00000000-0000-0000-0000-000000000006"],
+          "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
+          "week-winner": ["00000000-0000-0000-0000-000000000005"],
+          "perfect-week": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ],
+          "big-game-hunter": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "best-of-the-rest": [
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ]
+        },
         "opted_out_user_ids": []
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 540,
-      "completion_tokens": 300,
-      "created_at": "2026-07-08T18:42:21.626566+00:00"
+      "prompt_tokens": 1085,
+      "completion_tokens": 166,
+      "created_at": "2026-07-09T22:39:27.676893+00:00"
     },
     {
-      "id": "b50d17d2-8e4a-4e4f-85fd-9bec96357540",
+      "id": "ae061cb2-be22-4122-bcee-265ea54c5c79",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 11,
-      "prose": "Week 11 wrapped up in Sunday Bets. Mike paced the group with 14 points. Hank and Mike ran the table — a flawless, perfect week. Beth went All-In and cashed it. Charlie had a week to forget. Beth sits atop the standings for now.",
+      "prose": "Mike finally crawled out of the basement and dropped a 14-point week with a perfect card, and Hank matched the flawless act while using it to hop Charlie in the standings — 4th to 3rd for Hank, 3rd to 4th for Charlie. Meanwhile Charlie was out there posting a gorgeous -2, backfiring on the fade and getting cooked as the week’s laggard; in the Hank-Charlie blood feud, that 54-51 all-time edge for Charlie suddenly looks a hell of a lot less comfy. And at the top, Beth keeps strutting: All-In cash, a 3-win heater, and still sitting on 105 with a 3-point cushion in the title race — not bad for someone whose crowd fade still blew up in her face. 😈",
       "facts": {
-        "spice": "medium",
+        "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
+        "bad_takes": [
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "display_name": "Charlie"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        ],
+        "rivalries": [
+          {
+            "games": 108,
+            "a_wins": 51,
+            "b_wins": 54,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000003",
+              "display_name": "Charlie"
+            }
+          },
+          {
+            "games": 109,
+            "a_wins": 49,
+            "b_wins": 57,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000005",
+              "display_name": "Beth"
+            }
+          }
+        ],
         "standings": [
           {
             "rank": 1,
@@ -1196,8 +1597,14 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
+          },
+          {
+            "rank": 6,
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike",
+            "total_points": -144
           }
         ],
         "allin_hero": {
@@ -1206,6 +1613,39 @@
         },
         "allin_zero": null,
         "group_name": "Sunday Bets",
+        "hot_streak": {
+          "streak": 3,
+          "user_id": "00000000-0000-0000-0000-000000000005",
+          "display_name": "Beth"
+        },
+        "title_race": {
+          "leader": {
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          "margin": 3,
+          "runner_up": {
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        },
+        "lead_change": null,
+        "rank_movers": {
+          "riser": {
+            "delta": 1,
+            "to_rank": 3,
+            "user_id": "00000000-0000-0000-0000-000000000002",
+            "from_rank": 4,
+            "display_name": "Hank"
+          },
+          "faller": {
+            "delta": -1,
+            "to_rank": 4,
+            "user_id": "00000000-0000-0000-0000-000000000003",
+            "from_rank": 3,
+            "display_name": "Charlie"
+          }
+        },
         "season_year": 2024,
         "week_leader": {
           "points": 14,
@@ -1231,23 +1671,106 @@
           }
         ],
         "contrarian_hit": null,
+        "_badge_snapshot": {
+          "sheep": ["00000000-0000-0000-0000-000000000004"],
+          "oracle": ["00000000-0000-0000-0000-000000000003"],
+          "hot-hand": ["00000000-0000-0000-0000-000000000005"],
+          "the-fool": ["00000000-0000-0000-0000-000000000006"],
+          "dog-lover": ["00000000-0000-0000-0000-000000000001"],
+          "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
+          "the-ghost": ["00000000-0000-0000-0000-000000000004"],
+          "the-homer": ["00000000-0000-0000-0000-000000000005"],
+          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
+          "the-whale": ["00000000-0000-0000-0000-000000000002"],
+          "the-choker": ["00000000-0000-0000-0000-000000000006"],
+          "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
+          "the-grinder": ["00000000-0000-0000-0000-000000000002"],
+          "the-lemming": ["00000000-0000-0000-0000-000000000006"],
+          "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
+          "week-winner": ["00000000-0000-0000-0000-000000000005"],
+          "perfect-week": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ],
+          "big-game-hunter": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "best-of-the-rest": [
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ]
+        },
         "opted_out_user_ids": []
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 540,
-      "completion_tokens": 300,
-      "created_at": "2026-07-08T18:42:21.549848+00:00"
+      "prompt_tokens": 1095,
+      "completion_tokens": 169,
+      "created_at": "2026-07-09T22:39:27.584492+00:00"
     },
     {
-      "id": "2958ad03-27a1-44f6-9cc4-af80181d2cbd",
+      "id": "91349467-0a8e-4488-978d-a72f604a5935",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 10,
-      "prose": "Week 10 wrapped up in Sunday Bets. Hank paced the group with 9 points. Frank's All-In didn't land. Doug bucked the room — only 40% were on that side — and was right. Frank had a week to forget. Beth sits atop the standings for now.",
+      "prose": "Hank took the week with 9 points, and honestly, somebody had to while Marcus was out back setting his bankroll on fire — dead last at -11 with a busted All-In, a truly disgusting combo. Beth didn’t need the weekly crown to keep her boot on this league’s neck: 3 straight wins and still sitting on top at 105, with Hank chasing at 99 and the title race a tidy 7-point gap. Doug at least had the guts to cash a 40% contrarian hit, but that backfired fade still leaves him looking like a guy trying to outsmart the room and getting clipped anyway. And Mike? Another lost All-In while sitting at -144 on the season — that’s not a slump, that’s a public service announcement.",
       "facts": {
-        "spice": "medium",
+        "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
+        "bad_takes": [
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000004",
+            "display_name": "Marcus"
+          },
+          {
+            "kind": "lost_allin",
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike"
+          },
+          {
+            "kind": "backfired_fade",
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        ],
+        "rivalries": [
+          {
+            "games": 108,
+            "a_wins": 51,
+            "b_wins": 54,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000003",
+              "display_name": "Charlie"
+            }
+          },
+          {
+            "games": 109,
+            "a_wins": 49,
+            "b_wins": 57,
+            "pushes": 3,
+            "player_a": {
+              "user_id": "00000000-0000-0000-0000-000000000002",
+              "display_name": "Hank"
+            },
+            "player_b": {
+              "user_id": "00000000-0000-0000-0000-000000000005",
+              "display_name": "Beth"
+            }
+          }
+        ],
         "standings": [
           {
             "rank": 1,
@@ -1276,16 +1799,43 @@
           {
             "rank": 5,
             "user_id": "00000000-0000-0000-0000-000000000004",
-            "display_name": "Frank",
+            "display_name": "Marcus",
             "total_points": -32
+          },
+          {
+            "rank": 6,
+            "user_id": "00000000-0000-0000-0000-000000000006",
+            "display_name": "Mike",
+            "total_points": -144
           }
         ],
         "allin_hero": null,
         "allin_zero": {
           "user_id": "00000000-0000-0000-0000-000000000004",
-          "display_name": "Frank"
+          "display_name": "Marcus"
         },
         "group_name": "Sunday Bets",
+        "hot_streak": {
+          "streak": 3,
+          "user_id": "00000000-0000-0000-0000-000000000005",
+          "display_name": "Beth"
+        },
+        "title_race": {
+          "leader": {
+            "user_id": "00000000-0000-0000-0000-000000000005",
+            "display_name": "Beth"
+          },
+          "margin": 7,
+          "runner_up": {
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "display_name": "Doug"
+          }
+        },
+        "lead_change": null,
+        "rank_movers": {
+          "riser": null,
+          "faller": null
+        },
         "season_year": 2024,
         "week_leader": {
           "points": 9,
@@ -1296,7 +1846,7 @@
         "week_laggard": {
           "points": -11,
           "user_id": "00000000-0000-0000-0000-000000000004",
-          "display_name": "Frank"
+          "display_name": "Marcus"
         },
         "badge_changes": [],
         "is_final_week": false,
@@ -1306,13 +1856,49 @@
           "display_name": "Doug",
           "consensus_pct": 40
         },
+        "_badge_snapshot": {
+          "sheep": ["00000000-0000-0000-0000-000000000004"],
+          "oracle": ["00000000-0000-0000-0000-000000000003"],
+          "hot-hand": ["00000000-0000-0000-0000-000000000005"],
+          "the-fool": ["00000000-0000-0000-0000-000000000006"],
+          "dog-lover": ["00000000-0000-0000-0000-000000000001"],
+          "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
+          "the-ghost": ["00000000-0000-0000-0000-000000000004"],
+          "the-homer": ["00000000-0000-0000-0000-000000000005"],
+          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
+          "the-whale": ["00000000-0000-0000-0000-000000000002"],
+          "the-choker": ["00000000-0000-0000-0000-000000000006"],
+          "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
+          "the-grinder": ["00000000-0000-0000-0000-000000000002"],
+          "the-lemming": ["00000000-0000-0000-0000-000000000006"],
+          "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
+          "week-winner": ["00000000-0000-0000-0000-000000000005"],
+          "perfect-week": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ],
+          "big-game-hunter": [
+            "00000000-0000-0000-0000-000000000005",
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000002"
+          ],
+          "best-of-the-rest": [
+            "00000000-0000-0000-0000-000000000003",
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000006"
+          ]
+        },
         "opted_out_user_ids": []
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 540,
-      "completion_tokens": 300,
-      "created_at": "2026-07-08T18:42:21.48919+00:00"
+      "prompt_tokens": 1010,
+      "completion_tokens": 163,
+      "created_at": "2026-07-09T22:39:27.490954+00:00"
     }
   ]
 }
