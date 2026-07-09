@@ -8,10 +8,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'Sunday Bets', body: event.data ? event.data.text() : '' };
+    data = { title: 'Hotshot', body: event.data ? event.data.text() : '' };
   }
 
-  const title = data.title || 'Sunday Bets';
+  const title = data.title || 'Hotshot';
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',

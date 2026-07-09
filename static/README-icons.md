@@ -1,4 +1,4 @@
-# Sunday Bets PWA icon assets
+# Hotshot PWA icon assets
 
 Suggested placement for a SvelteKit app:
 

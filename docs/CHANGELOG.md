@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **#231** Rebrand Sunday Bets → Hotshot — de-gamble the identity (the stake is bragging
+  rights, not cash) and swap the product name across the UI/copy surface (title, header,
+  auth, install/push copy, Commissioner persona) plus the PWA manifest and human-facing
+  docs. Regenerates the app icon set from the new charcoal + gold football/spark mark and
+  fixes manifest color drift. "Hotshot" is the name; `hotshotcalls.com` is domain-only.
+  files: `vite.config.ts` · `app.html` · `app.css` · `AppHeader.svelte` · ADR-0027
 - **PR #467** Fix CLS from the PWA engagement banner (issue-less) — `EngagementBanner`
   used to render in normal document flow above page content, so its late,
   post-hydration appearance (gated on `computeStep()` awaiting

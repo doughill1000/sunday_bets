@@ -11,7 +11,7 @@ export const POST: RequestHandler = async (event) => {
   const user = event.locals.user!;
   try {
     const result = await sendToUser(user.id, {
-      title: 'Sunday Bets test',
+      title: 'Hotshot test',
       body: 'Push notifications are working. 🏈',
       url: '/settings',
       tag: 'test'

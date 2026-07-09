@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-  <title>Season Wrapped | Sunday Bets</title>
+  <title>Season Wrapped | Hotshot</title>
 </svelte:head>
 
 <WrappedFlash row={data.player ?? data.league} />

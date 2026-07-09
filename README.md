@@ -1,4 +1,4 @@
-# Sunday Bets
+# Hotshot
 
 A private NFL pick'em app for friends. Each week everyone picks winners against
 the spread, weights each pick (Low = 1, Medium = 3, High = 5, or one All-In = 10
@@ -160,7 +160,7 @@ enough to validate changes locally; real builds happen on Vercel.
 
 ## Roadmap and project tracking
 
-The [Sunday Bets GitHub Project](https://github.com/users/doughill1000/projects/1)
+The [Hotshot GitHub Project](https://github.com/users/doughill1000/projects/1)
 is the working backlog for planned features, architecture work, and parked cleanup.
 Project items use the `Status` field to track delivery and the `Agent` field to show
 who owns the next action.

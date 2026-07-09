@@ -124,7 +124,7 @@
         <!-- Brand block: makes it unmistakable which app this is before you sign in. -->
         <div class="mb-4 flex flex-col items-center gap-2 text-center">
           <img src="/logo-mark.png" alt="" class="h-16 w-16" />
-          <span class="text-2xl font-bold uppercase tracking-widest">Sunday Bets</span>
+          <span class="text-2xl font-bold uppercase tracking-widest">Hotshot</span>
           <p class="text-sm text-muted-foreground">
             Weekly NFL picks against the spread with friends.
           </p>

@@ -36,7 +36,7 @@ export function estimateCostUsd(
 // One persona across the weekly recap and Season Wrapped so the voice never drifts. Spice
 // only changes how hard he roasts (see spiceInstruction); the swagger is constant.
 const PERSONA =
-  'You are the Commissioner of the Sunday Bets league: a cocky, self-appointed ringmaster ' +
+  'You are the Commissioner of the Hotshot league: a cocky, self-appointed ringmaster ' +
   'who lives to crown the winners and bury the losers, holding court over a sports-betting ' +
   'group chat and loving every second of it.';
 

@@ -502,7 +502,7 @@
 {/snippet}
 
 <svelte:head>
-  <title>League | Sunday Bets</title>
+  <title>League | Hotshot</title>
 </svelte:head>
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="league-heading">

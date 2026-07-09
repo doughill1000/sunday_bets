@@ -560,7 +560,7 @@
     <CardContent class="space-y-5 p-0 pt-2">
       {#if !supported}
         <div class="rounded-xl border border-warning p-3 text-sm">
-          This browser doesn't support push notifications. On iPhone, add Sunday Bets to your Home
+          This browser doesn't support push notifications. On iPhone, add Hotshot to your Home
           Screen (Share → Add to Home Screen) and use iOS 16.4 or later.
         </div>
       {:else if permission === 'denied'}

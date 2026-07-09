@@ -86,7 +86,7 @@
         {#if step === 'install-ios'}
           <Smartphone class="mt-0.5 size-5 shrink-0 text-primary" />
           <div class="flex-1">
-            <p class="text-sm font-medium">Add Sunday Bets to your Home Screen</p>
+            <p class="text-sm font-medium">Add Hotshot to your Home Screen</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
               Tap <strong class="whitespace-nowrap"
                 >Share <SquareArrowUp
@@ -107,7 +107,7 @@
         {:else if step === 'install-prompt'}
           <Download class="mt-0.5 size-5 shrink-0 text-primary" />
           <div class="flex-1">
-            <p class="text-sm font-medium">Install Sunday Bets</p>
+            <p class="text-sm font-medium">Install Hotshot</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
               Get the full app experience — faster loads and push notifications.
             </p>
@@ -125,7 +125,7 @@
         {:else if step === 'install-fallback'}
           <Download class="mt-0.5 size-5 shrink-0 text-primary" />
           <div class="flex-1">
-            <p class="text-sm font-medium">Install Sunday Bets</p>
+            <p class="text-sm font-medium">Install Hotshot</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
               Open your browser menu and choose <strong>Install app</strong> or
               <strong>Add to Home Screen</strong>.
