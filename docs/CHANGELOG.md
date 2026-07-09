@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
-- **PR #TBD** Demo mobile nav parity (issue-less) — the `/demo` route's top nav crammed
+- **PR #479** Demo mobile nav parity (issue-less) — the `/demo` route's top nav crammed
   all four sections into one horizontally-scrolling row, so mobile users had to slide to
   reach later tabs. Now mirrors the authenticated app: desktop keeps the inline top nav,
   mobile gets a fixed bottom tab bar. files: `DemoBottomTabBar.svelte` · `DemoNav.svelte`
