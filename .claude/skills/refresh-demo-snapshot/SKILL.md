@@ -23,16 +23,22 @@ demo is structurally isolated (there are no demo rows in production tables).
 
 ## Steps
 
-1. **Seed the fictional league** into local Supabase (Docker must be up):
+1. **Seed the fictional league** into local Supabase (Docker Desktop must be running — if a
+   `pnpm db:*` command fails with `ECONNREFUSED 127.0.0.1:54322` the stack is down, so
+   `supabase start` first):
 
    ```sh
    pnpm db:reset:demo      # reset migrations + seed the demo league (deterministic)
+   # or, on an already-seeded DB: pnpm db:seed:demo   (idempotent, no migration reset)
    ```
 
    This builds the curated multi-season league the snapshot draws from. The featured
    completed season, persona (its champion), and frozen live week are all derived from this
    seed — so this is where you curate the narrative (rivalry, comeback, a signature All-In)
-   if you want to sharpen it. Keep seed edits additive; `db:reset:demo` also backs local dev.
+   if you want to sharpen it. The **roast tone** is the featured group's `spice` in
+   `supabase/scripts/seed-demo/index.ts` ("Sunday Bets" is seeded `spicy` — full villain-mode
+   Commissioner is the marketing hook); change it there if the voice needs more/less edge.
+   Keep seed edits additive; `db:reset:demo` also backs local dev.
 
 2. **Start the app** so the export endpoint can run inside the SvelteKit runtime (it reuses
    the real read-model / Wrapped-generation layer, which can't be imported by a bare script):
@@ -50,17 +56,28 @@ demo is structurally isolated (there are no demo rows in production tables).
    The persona defaults to the featured season's champion; override the featured identity with
    `DEMO_SNAPSHOT_GROUP` / `DEMO_SNAPSHOT_PERSONA` / `DEMO_SNAPSHOT_SEASON` env vars if needed.
 
-4. **Real LLM prose (optional but preferred for launch).** The AI Gateway creds only exist in
-   the Vercel runtime (ADR-0008), so a **local** run bakes the _deterministic_ Wrapped/recap
-   prose (the script prints `AI prose: fallback`, and the demo still presents it as finished
-   copy — provenance is recorded in `meta.aiProse`). For genuine LLM prose, run the same
-   command against a deploy that has the gateway creds:
+4. **Real LLM prose (do this for anything that ships).** The voice layer only makes a real
+   gateway call when `AI_GATEWAY_URL` + `AI_GATEWAY_TOKEN` are set (ADR-0008); without them it
+   serves deterministic fallback copy and the script prints `AI prose: fallback` (the demo still
+   presents it as finished copy — provenance lives in `meta.aiProse`). The repeatable way to get
+   genuine prose is to run **locally with the creds in `.env.local`** — no deploy needed:
 
    ```sh
-   DEMO_SNAPSHOT_BASE_URL=https://<preview-or-prod-host> pnpm demo:snapshot
+   # .env.local (gitignored). URL is the public gateway host; token is the per-project secret
+   # from the Vercel project env (dashboard → Settings → Environment Variables, or `vercel env pull`).
+   AI_GATEWAY_URL=https://ai-gateway.vercel.sh
+   AI_GATEWAY_TOKEN=<vercel-ai-gateway-key>
    ```
 
-   (still needs `CRON_SECRET` for that host in `.env`.)
+   With those set, the normal local loop (steps 2–3) bakes real `openai/gpt-5.4` prose and the
+   script prints `AI prose: live`. Verify with the probe if a run unexpectedly falls back: a
+   `POST {AI_GATEWAY_URL}/v1/chat/completions` with `Authorization: Bearer <token>` and
+   `max_tokens >= 16` should return HTTP 200.
+
+   > **Don't** point `DEMO_SNAPSHOT_BASE_URL` at a stock Vercel deploy to borrow its creds: a
+   > normal deploy connects to **prod, which has no demo rows** (ADR-0026 isolation), so the
+   > endpoint can't find the demo league there. Local-creds is the supported path. (A deploy only
+   > works if its own DB carries the demo seed — not the case for prod or previews.)
 
 5. **Eyeball the result.** Load the four demo surfaces logged out and read them as a stranger:
 
