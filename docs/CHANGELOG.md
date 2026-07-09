@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-08
 
+- **PR #467** Fix CLS from the PWA engagement banner (issue-less) — `EngagementBanner`
+  used to render in normal document flow above page content, so its late,
+  post-hydration appearance (gated on `computeStep()` awaiting
+  `navigator.serviceWorker.ready`) pushed the page down and scored as layout shift.
+  Now renders as a fixed, bottom-docked overlay instead, so its appearance never
+  displaces already-rendered content. file: `EngagementBanner.svelte`
 - **PR #466** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
   "Lock in" button + pick-card polish; patch: #450 ESPN scoreboard as primary source
   of final scores, #445 admin grading tile UX driven by human pickers).

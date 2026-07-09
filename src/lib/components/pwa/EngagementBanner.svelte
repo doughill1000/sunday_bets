@@ -73,10 +73,14 @@
 {#if user && step !== 'none'}
   <!-- Fixed overlay, not in-flow: an in-flow banner shifts page content down whenever it
        appears post-hydration (computeStep() resolves after onMount, often visibly late
-       since it awaits navigator.serviceWorker.ready). Floating it below the sticky header
-       instead means its appearance never moves anything else on the page — CLS only scores
-       already-rendered elements changing position, not a new element being inserted. -->
-  <div class="container fixed inset-x-0 top-16 z-30 mx-auto px-4">
+       since it awaits navigator.serviceWorker.ready). Floating it means its appearance
+       never moves anything else on the page — CLS only scores already-rendered elements
+       changing position, not a new element being inserted. Docked to the bottom (not top):
+       most pages put their primary heading/tabs immediately below the sticky header, so a
+       top overlay would sit on top of and intercept clicks meant for that page content.
+       bottom-20/sm:bottom-4 mirrors the clearance <main> already reserves (pb-20 sm:pb-4)
+       for the mobile BottomTabBar. -->
+  <div class="container fixed inset-x-0 bottom-20 z-30 mx-auto px-4 sm:bottom-4">
     <Card class="border-primary/20 bg-primary/5 shadow-lg">
       <CardContent class="flex items-start gap-3 p-4">
         {#if step === 'install-ios'}
