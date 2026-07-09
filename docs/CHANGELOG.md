@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #482** Trim the `/demo` sign-up CTAs to one (issue-less) — the read-only demo
+  stacked sign-up buttons (sticky nav CTA + persona-banner CTA on every page, plus one
+  per open-game card and a bottom CTA on the picks screen). Keep only the sticky nav
+  CTA; the banner is now context-only and the picks/recap CTAs are gone, so the demo
+  reads as a tour rather than a sales pitch. files: `DemoBanner.svelte` ·
+  `DemoPicksBoard.svelte` · `demo/recap/+page.svelte` · ADR-0026
 - **#476** Palette audit — move the remaining off-brand surfaces (leaderboard weekly
   cards, League honors, avatar crown, How-to-play scoring, `/league` small-sample
   markers) onto the Hotshot brand tokens, delete the now-dead team-color helpers, and
