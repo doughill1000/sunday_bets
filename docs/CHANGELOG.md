@@ -54,6 +54,18 @@ Project `Done` column, and Releases remain the sources of truth — see
   `navigator.serviceWorker.ready`) pushed the page down and scored as layout shift.
   Now renders as a fixed, bottom-docked overlay instead, so its appearance never
   displaces already-rendered content. file: `EngagementBanner.svelte`
+- **#460** Public shareable demo season — an unauthenticated `/demo` link renders one
+  fully-fictional season from a committed, generated snapshot: a frozen "live" week picks
+  screen (the verb) plus the completed-season leaderboard, awards/badges, Season Wrapped, and
+  frozen AI recaps, all read-only with sign-up CTAs, viewed as a "you" persona. No live DB
+  reads or LLM calls at serve time; isolation from real gameplay is structural (no demo rows in
+  prod). `pnpm demo:snapshot` re-derives the fixture through the real grading → awards →
+  Wrapped → recap pipeline; a CI drift-guard test + the `refresh-demo-snapshot` skill + an
+  AGENTS.md rule keep it from rotting. routes: `/demo/**` · fixture: `lib/server/demo/` ·
+  export: `api/cron/demo-snapshot` · ADR-0026
+- **PR #463** Governance-freshness repair on master — backfilled the ADR-0024 and #452/#462
+  CHANGELOG entries the freshness check was flagging, restoring a green `governance` gate.
+  docs-only
 - **PR #466** Release v2.13.0 — version bump. Milestone: v2.13 (minor: #446 explicit
   "Lock in" button + pick-card polish; patch: #450 ESPN scoreboard as primary source
   of final scores, #445 admin grading tile UX driven by human pickers).

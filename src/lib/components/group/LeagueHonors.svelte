@@ -20,7 +20,8 @@
     members = [],
     currentUserId = null,
     seasons = [],
-    selectedSeason = null
+    selectedSeason = null,
+    wrappedHref = '/wrapped'
   }: {
     honors: LeagueHonors;
     badges?: BadgeAward[];
@@ -29,6 +30,8 @@
     currentUserId?: string | null;
     seasons?: number[];
     selectedSeason?: number | null;
+    /** Where the "See the full Season Wrapped" link points; overridden by the public demo. */
+    wrappedHref?: string;
   } = $props();
 
   const reigning = $derived(honors.reigningChampion);
@@ -225,7 +228,7 @@
            and on the Leaderboard CTA rather than in a permanent nav tab. -->
       {#if reigning}
         <a
-          href="/wrapped"
+          href={wrappedHref}
           data-testid="wrapped-honors-link"
           class="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary/10"
         >
