@@ -1,8 +1,7 @@
 <script lang="ts">
   // Persistent "you're inhabiting a persona, this is a demo" banner (#460, ADR-0026). Explains
-  // the "you" lens (personalized surfaces render from this player's frozen payload) and carries
-  // the convert CTA so it's always one tap away, on every demo page.
-  import DemoSignupCta from './DemoSignupCta.svelte';
+  // the "you" lens (personalized surfaces render from this player's frozen payload). Conversion
+  // lives in the single sticky nav CTA, not here — the demo keeps exactly one sign-up button.
   import Eye from '@lucide/svelte/icons/eye';
 
   let { personaName }: { personaName: string } = $props();
@@ -19,5 +18,4 @@
       Everything is read-only — make it real with your own league.
     </span>
   </p>
-  <DemoSignupCta label="Sign up free" size="sm" />
 </div>

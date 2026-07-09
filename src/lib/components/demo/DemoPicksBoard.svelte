@@ -2,12 +2,12 @@
   // Read-only frozen live-week picks screen for the demo (#460, ADR-0026). Shows the product's
   // verb — picking a team against the spread — from the persona's perspective, without the
   // interactive picks store the real PicksBoard/GameCard depend on. Committed picks render
-  // locked; open games show a disabled pick affordance that converts to a sign-up CTA.
+  // locked; open games show a disabled pick affordance. Conversion lives in the single sticky
+  // nav CTA — the demo keeps exactly one sign-up button.
   import { Card, CardContent, CardHeader } from '$lib/components/ui/card';
   import { Badge } from '$lib/components/ui/badge';
   import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
   import { formatKickoff } from '$lib/ui/format';
-  import DemoSignupCta from './DemoSignupCta.svelte';
   import type { DemoLiveWeek, DemoLiveGame } from '$lib/types/demo';
   import type { WeightCode } from '$lib/types/domain';
 
@@ -83,7 +83,6 @@
                   </div>
                 {/each}
               </div>
-              <DemoSignupCta label="Sign up to make your pick" size="sm" class="w-full" />
             </CardContent>
           </Card>
         {/each}
@@ -151,11 +150,4 @@
       </div>
     </div>
   {/if}
-
-  <div class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed px-4 py-4 text-sm">
-    <span class="flex-1 text-muted-foreground">
-      Make your own picks, go All-In once a week, and see where you land.
-    </span>
-    <DemoSignupCta label="Start playing" />
-  </div>
 </section>
