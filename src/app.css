@@ -85,6 +85,20 @@
   --sidebar-accent-foreground: #f4ecda;
   --sidebar-border: #343436;
   --sidebar-ring: #dba73b;
+
+  /* Picks-card selection system: cream = information, charcoal = inactive choice,
+     brass = selected modifier/accent, ember = primary commitment. Each tier reads
+     as strictly louder than the last so Lock in always wins the eye. */
+  --selected-team-bg: linear-gradient(180deg, #a85a20, #7a3718);
+  --selected-team-border: #dba73b;
+  --selected-weight-bg: rgba(219, 167, 59, 0.1);
+  --selected-weight-border: #dba73b;
+  --selected-weight-text: #dba73b;
+  --lock-bg: #e1842f;
+  --lock-text: #161616;
+  --lock-disabled-bg: rgba(246, 241, 231, 0.08);
+  --lock-disabled-text: rgba(246, 241, 231, 0.35);
+  --lock-disabled-border: rgba(246, 241, 231, 0.08);
 }
 
 @theme inline {
@@ -141,9 +155,10 @@
 
 /* Team + weight buttons are one "input tier": they share a calm charcoal raised surface with
    a cream label (brand palette, not per-team colors — cleaner than the old muddy gradient).
-   Selection is one warm family in ascending intensity so nothing fights the Lock in CTA:
-   weight = light ember tint, team = ember/brown fill, Lock in = solid ember. The selected
-   team's glow is intentionally soft so the final commitment stays the strongest action. */
+   Selection follows a strict system so nothing fights the Lock in CTA: cream = information,
+   charcoal = inactive choice, brass = selected modifier/accent (weight), ember = primary
+   commitment (team fill leans dark/brown so it reads as "selected" without competing with
+   Lock in; Lock in itself is the loudest, brightest element on the card). */
 .picks-board .team-btn,
 .picks-board .weight-btn {
   background: linear-gradient(180deg, #313134, #262629);
@@ -155,19 +170,36 @@
   border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
 }
 .picks-board .team-btn.selected {
-  background: linear-gradient(180deg, #b0611f, #7f4118);
+  background: var(--selected-team-bg);
   color: var(--foreground);
-  border: 1px solid color-mix(in oklab, var(--foreground) 65%, transparent);
-  box-shadow: 0 4px 12px -8px color-mix(in oklab, var(--ember) 60%, transparent);
+  border: 1px solid var(--selected-team-border);
+  box-shadow: 0 4px 12px -8px color-mix(in oklab, var(--ember) 45%, transparent);
 }
-/* Selected weight: a subtle warm tint of the same family — filled, not outline-only, but
-   lighter than the team fill so the intensity ladder (weight < team < Lock in) reads clearly. */
+/* Selected weight: brass outline + a subtle brass tint, not another orange block — this is
+   the "selected modifier/accent" tier, restrained relative to the team fill and Lock in. */
 .picks-board .weight-btn[data-state='on'] {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--ember) 22%, #313134),
-    color-mix(in oklab, var(--ember) 14%, #262629)
-  );
-  border-color: color-mix(in oklab, var(--primary) 55%, var(--border));
-  color: var(--primary);
+  background: var(--selected-weight-bg);
+  border-color: var(--selected-weight-border);
+  color: var(--selected-weight-text);
+}
+
+/* Lock in: the primary-commitment action, always the brightest/loudest element on the card. */
+.picks-board .lock-btn {
+  background: var(--lock-bg);
+  color: var(--lock-text);
+}
+/* Disabled = the pick isn't ready yet (no team and/or no weight). Deliberately flat/muted
+   (cream at low opacity) rather than a dimmed brass, so it never reads as "kind of active". */
+.picks-board .lock-btn:disabled {
+  background: var(--lock-disabled-bg);
+  color: var(--lock-disabled-text);
+  border: 1px solid var(--lock-disabled-border);
+}
+/* A save in flight is also disabled (to block double-submit) but is NOT "unavailable" — it's
+   the commit happening. Keep it ember (only the label changes to "Locking in…") so the flat
+   inert style stays reserved for an incomplete pick. Higher specificity than :disabled above. */
+.picks-board .lock-btn.saving:disabled {
+  background: var(--lock-bg);
+  color: var(--lock-text);
+  border-color: transparent;
 }
