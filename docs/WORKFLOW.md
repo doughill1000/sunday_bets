@@ -215,8 +215,8 @@ to `master` never ships. A release is a **single deliberate manual dispatch**. R
   version is read at dispatch to tag the Release (skipped if the tag exists).
 - **Off-cycle cut:** the same dispatch ships current `master`; it tags whatever version
   `package.json` currently holds (skipped if that tag already exists).
-- **Previews:** opening / readying / reopening a PR deploys one preview; comment
-  `/preview` for an updated preview mid-PR.
+- **Previews:** purely on demand — comment `/preview` on a PR to deploy one. Nothing
+  deploys automatically on open, ready, reopen, or push.
 
 At release time, close the milestone and refine the auto-generated `v<version>` GitHub
 Release notes. Update the roadmap only when the direction or ordering changed, not to
