@@ -28,6 +28,12 @@
   {#if teams.length === 0}
     <p class="text-xs text-muted-foreground">{emptyLabel}</p>
   {:else}
+    <div
+      class="flex items-center justify-between gap-2 text-xs font-semibold text-muted-foreground"
+    >
+      <span>Team</span>
+      <span>Last 4</span>
+    </div>
     <ul class="space-y-1.5">
       {#each teams as team (team.teamId)}
         <li class="flex items-center justify-between gap-2 text-sm">
@@ -38,7 +44,8 @@
             <span class="font-medium" title={team.teamName}>{team.teamShortName}</span>
           </span>
           <span class="text-xs text-muted-foreground tabular-nums">
-            Last 4: {team.last4.wins}-{team.last4.losses}-{team.last4.pushes}
+            <span class="sr-only">Last 4: </span>{team.last4.wins}-{team.last4.losses}-{team.last4
+              .pushes}
           </span>
         </li>
       {/each}
