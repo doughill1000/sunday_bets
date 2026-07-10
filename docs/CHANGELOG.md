@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #NNN** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
+  longer fire only at release. New `cron-backup.yml` dumps prod to OneDrive weekly (flip
+  to daily at season start) and prunes dumps > 90 days; Supabase Free has no managed
+  backups, so these are the only backup. The pre-release snapshot and the scheduled job
+  now share a composite action so they dump identically; the local `db:backup:prod`
+  script's stale env-var comment is corrected. files:
+  `.github/actions/backup-supabase-db/action.yml` · `cron-backup.yml` · `deploy-prod.yml`
+  · `supabase/scripts/backup-db.mjs` · ADR-0010
 - **PR #506** Backfill CHANGELOG entry for PR #505 (issue-less, docs) — #505 shipped the
   mobile design-review fixes but merged before its `finish-pr` changelog step landed. From
   a 390px walk-through of every screen: the Leaderboard's Total column no longer scrolls

@@ -1,0 +1,90 @@
+# .github/actions/backup-supabase-db/action.yml
+# Dump the Supabase Postgres database (custom format, compressed) and upload the dump
+# to an rclone remote (OneDrive). Optionally prune old dumps for retention.
+#
+# Extracted from deploy-prod.yml's pre-release backup step so the scheduled backup
+# (cron-backup.yml) and the pre-release snapshot run identical dump/upload logic (see
+# ADR-0010). Composite actions cannot read repository secrets directly, so the caller
+# passes the DB URL and rclone config in as inputs.
+name: Backup Supabase DB
+description: >-
+  pg_dump the Supabase database and upload the dump to an rclone remote, with optional
+  retention pruning.
+
+inputs:
+  db-url:
+    description: Postgres connection string to dump (pass a secret).
+    required: true
+  rclone-config-b64:
+    description: Base64-encoded rclone.conf granting access to the remote (pass a secret).
+    required: true
+  remote:
+    description: rclone remote name.
+    required: false
+    default: onedrive
+  dir:
+    description: Destination directory on the remote.
+    required: false
+    default: supabase-backups
+  pg-version:
+    description: PostgreSQL major version for the pg_dump client.
+    required: false
+    default: '17'
+  label:
+    description: Optional label embedded in the dump filename (e.g. release, scheduled).
+    required: false
+    default: ''
+  prune-min-age:
+    description: >-
+      When set (e.g. '90d'), delete dumps in the destination older than this age after a
+      successful upload. Empty disables pruning.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Install pg_dump ${{ inputs.pg-version }} and rclone
+      shell: bash
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y wget ca-certificates gnupg
+        echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+          | sudo tee /etc/apt/sources.list.d/pgdg.list
+        wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+          | gpg --dearmor | sudo tee /usr/share/keyrings/pgdg.gpg >/dev/null
+        sudo apt-get update -q
+        sudo apt-get install -y postgresql-client-${{ inputs.pg-version }}
+        curl -fsSL https://rclone.org/install.sh | sudo bash
+
+    - name: Dump database and upload to ${{ inputs.remote }}:${{ inputs.dir }}
+      shell: bash
+      env:
+        DB_URL: ${{ inputs.db-url }}
+        RCLONE_CONFIG_B64: ${{ inputs.rclone-config-b64 }}
+        REMOTE: ${{ inputs.remote }}
+        DIR: ${{ inputs.dir }}
+        PG_VERSION: ${{ inputs.pg-version }}
+        LABEL: ${{ inputs.label }}
+        PRUNE_MIN_AGE: ${{ inputs.prune-min-age }}
+      run: |
+        set -euo pipefail
+
+        mkdir -p ~/.config/rclone
+        echo "$RCLONE_CONFIG_B64" | base64 -d > ~/.config/rclone/rclone.conf
+
+        TS=$(date -u +'%Y%m%dT%H%M%SZ')
+        SHORT_SHA=${GITHUB_SHA::7}
+        if [ -n "$LABEL" ]; then SUFFIX="_${LABEL}"; else SUFFIX=""; fi
+        FILE="supabase_${TS}${SUFFIX}_${SHORT_SHA}.dump"
+
+        "/usr/lib/postgresql/${PG_VERSION}/bin/pg_dump" --dbname="$DB_URL" \
+          --format=custom --no-owner --no-privileges --compress=9 --file="$FILE"
+
+        rclone copy "$FILE" "${REMOTE}:${DIR}/"
+        echo "Uploaded ${FILE} ($(du -h "$FILE" | cut -f1)) to ${REMOTE}:${DIR}/"
+
+        if [ -n "$PRUNE_MIN_AGE" ]; then
+          echo "Pruning dumps older than ${PRUNE_MIN_AGE} from ${REMOTE}:${DIR}/"
+          rclone delete --min-age "$PRUNE_MIN_AGE" "${REMOTE}:${DIR}/"
+        fi
