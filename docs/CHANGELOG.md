@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
-- **PR #NNN** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
+- **PR #507** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
   longer fire only at release. New `cron-backup.yml` dumps prod to OneDrive weekly (flip
   to daily at season start) and prunes dumps > 90 days; Supabase Free has no managed
   backups, so these are the only backup. The pre-release snapshot and the scheduled job
