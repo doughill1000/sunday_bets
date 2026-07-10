@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #510** Add ADR-0028 for the in-app feedback tool (issue-less, docs) — records the
+  design decision for the #500 in-app feedback/bug-reporting tool ahead of implementation.
+  docs: `adr/0028-in-app-feedback-tool.md`
+
 - **PR #509** v3.0.0 release — Hotshot Calls rebrand relaunch (name, logo, theme,
   de-gamble reposition), the public shareable demo season snapshot, and the pick-lock
   micro-interaction. issues: #231 · #460 · #478 · ADR-0024
@@ -86,6 +90,41 @@ Project `Done` column, and Releases remain the sources of truth — see
   and Season Wrapped prompt allowed "one or two emojis" with no steer on which one, so
   the model converged on 😈 almost every time. Cap it at one, name a small beat-matched
   palette, and let quiet weeks skip it entirely. file: `recap/voice.ts`
+
+- **PR #504** Stop offseason `sync-odds` cron paging Sentry (issue-less) — the daily odds
+  sync threw on `syncOddsForActiveWeek`'s expected no-op early-returns ("No active week",
+  "monthly call cap reached"), turning every quiet offseason run into a 500 + Sentry alert.
+  It now returns the structured result without throwing, mirroring the pregame cron. file:
+  `api/cron/sync-odds/+server.ts`
+- **PR #499** Label client Sentry events by `VERCEL_ENV` (issue-less) — the browser
+  `Sentry.init` never set `environment`, so all client errors (local dev, preview, LAN
+  worktrees) defaulted to `production` and swamped prod with mislabeled noise. Bake
+  `VERCEL_ENV` into the browser build via a Vite `define`, mirroring the server. files:
+  `hooks.client.ts` · `vite.config.ts`
+- **PR #498** Backfill CHANGELOG entry for PR #495 (issue-less, docs) — duplicate of the
+  #497 backfill; kept per the changelog's keep-both convention.
+- **PR #497** Backfill CHANGELOG entry for PR #495 (issue-less, docs) — logs the System32
+  PATH fix that merged before its `finish-pr` changelog step landed.
+- **PR #496** Repair pick-lock silent hang, stop 500 leaks, add error page (issue-less) —
+  from a repo-wide error-handling audit: `lockPick`/`unlockPick` now resolve
+  `{ok:false, reason}` instead of letting `apiCall`'s throw-on-non-2xx (incl. expected
+  409s) stick the button on "Locking in…" forever; the picks/comments/reactions 500s now
+  `captureException` and return a generic body instead of leaking the raw Postgres message;
+  and a new branded, always-dark `+error.svelte` replaces SvelteKit's bare fallback. files:
+  `api/picks.ts` · `api/{picks,comments,reactions}/[gameId]/+server.ts` · `+error.svelte` ·
+  docs: `audits/2026-07-09-error-handling-audit.md`
+- **PR #494** Make preview deploys purely on-demand (issue-less, ci) — drop the automatic
+  preview deploy on PR open/ready/reopen; `deploy-preview.yml` now fires only on a
+  `/preview` comment from an authorized author. Production gating is unaffected. files:
+  `.github/workflows/deploy-preview.yml` · ADR-0010
+- **PR #493** Live-update the "Who's picked" board (issue-less) — the counts-only picks
+  status board was a static server prop, so lock/unlock never recomputed it; the current
+  user's own row now derives live from the picks store. `picks_status_board` also counts
+  only still-open games (a kicked-off game drops from both numerator and denominator), and
+  the board collapses to a one-line header that expands on tap. view: `picks_status_board`
+  · `PicksBoard.svelte` · ADR-0019
+- **PR #492** Backfill missing CHANGELOG entries (#477–#491) (issue-less, docs) — logs the
+  batch of design/demo PRs that merged before their changelog step landed.
 
 ## 2026-07-09
 
