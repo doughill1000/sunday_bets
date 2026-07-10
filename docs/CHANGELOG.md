@@ -46,8 +46,97 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-10
+
+- **PR #509** v3.0.0 release — Hotshot Calls rebrand relaunch (name, logo, theme,
+  de-gamble reposition), the public shareable demo season snapshot, and the pick-lock
+  micro-interaction. issues: #231 · #460 · #478 · ADR-0024
+
+- **PR #508** /league team drill-down overflow fix (issue-less) — the expandable team
+  list is now a disclosure list instead of a `<table>`, so an open team's game log
+  scrolls inside its own panel rather than stretching the whole table off-screen (the
+  right-hand Cover&nbsp;%/SU columns no longer clip when a row opens). Situational splits
+  render as 2×2 stat tiles (cover&nbsp;% headline, W-L-P caption) instead of the old
+  inline mash. route: `league/+page.svelte`
+- **PR #507** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
+  longer fire only at release. New `cron-backup.yml` dumps prod to OneDrive weekly (flip
+  to daily at season start) and prunes dumps > 90 days; Supabase Free has no managed
+  backups, so these are the only backup. The pre-release snapshot and the scheduled job
+  now share a composite action so they dump identically; the local `db:backup:prod`
+  script's stale env-var comment is corrected. files:
+  `.github/actions/backup-supabase-db/action.yml` · `cron-backup.yml` · `deploy-prod.yml`
+  · `supabase/scripts/backup-db.mjs` · ADR-0010
+- **PR #506** Backfill CHANGELOG entry for PR #505 (issue-less, docs) — #505 shipped the
+  mobile design-review fixes but merged before its `finish-pr` changelog step landed. From
+  a 390px walk-through of every screen: the Leaderboard's Total column no longer scrolls
+  off-screen (on mobile W-L-P collapse into a compact record cell and Miss is dropped so
+  Total stays visible), the disabled Lock in reads as present-but-inactive instead of
+  vanishing, admin card headers stack instead of cramping, and muted text / bottom-tab
+  labels gain contrast headroom. files: `leaderboard/+page.svelte` ·
+  `DemoStandingsTable.svelte` · `app.css` · `admin/*Card.svelte` · `BottomTabBar.svelte`
+
+- **#206** Free cron missed-run watchdog + Sentry free-tier tuning — a token-guarded
+  health endpoint reports whether each scheduled cron ran on time (schedule-aware,
+  from `cron_run_log`) and whether odds sync is halted at cap, so a free external
+  uptime monitor catches missed runs, stale data, and site-down with no paid Sentry
+  Cron Monitors. Also lowers Sentry trace/replay/log sampling to stay in the free
+  tier. route: `api/health` · `cronHealth.ts` · docs: `observability/health-watchdog.md`
+
+- **PR #501** Recap voice emoji variety (issue-less) — the Commissioner's weekly-recap
+  and Season Wrapped prompt allowed "one or two emojis" with no steer on which one, so
+  the model converged on 😈 almost every time. Cap it at one, name a small beat-matched
+  palette, and let quiet weeks skip it entirely. file: `recap/voice.ts`
+
 ## 2026-07-09
 
+- **PR #495** Include System32 in the Claude Code PATH override (issue-less) — the repo's
+  `.claude/settings.json` PATH prepend omitted `System32`, so some Windows shell built-ins
+  didn't resolve for the agent tools; add it. files: `.claude/settings.json`
+- **PR #491** Scope the `/league` season picker to the Teams tab (issue-less) — the
+  page-level dropdown implied it governed both tabs (the WeekSlate hero ignored it) and
+  its empty state blanked the whole page, hiding Trends. Move the picker and its
+  season-scoped gating into the Teams tab; pin the Trends "This season" scope to the
+  most-recent-season-with-data, independent of the picker. files: `league/+page.svelte`
+  · `league/+page.server.ts`
+- **PR #490** Pick-card color hierarchy (issue-less) — the selected team and the Lock in
+  button both lived in the ember family, so the commit CTA competed with the choice above
+  it. Give each element a fixed tier: charcoal for inactive, dark ember for the selected
+  team, brass for the selected weight, and the brightest ember reserved for Lock in, so the
+  commit button is always the loudest thing on the card; the disabled Lock in is now flat
+  and inert rather than a muddy dimmed-brass. files: `app.css` · `LockControls.svelte`
+- **PR #489** "Last 4" column header in Hot & Cold (issue-less) — the recent-form
+  streak column in the League Hot & Cold table had no header, leaving the run of W/L
+  marks unlabelled. Give it a "Last 4" header. files: `league/HotCold.svelte`
+- **PR #488** SVG chevrons for the weekly leaderboard nav (issue-less) — the week
+  back/forward arrows were text glyphs that rendered inconsistently across platforms;
+  swap them for inline SVG chevrons. files: `leaderboard/WeeklyPicksBreakdown.svelte`
+- **PR #487** Regenerate demo recaps through the real LLM (issue-less) — the frozen
+  `/demo` weekly recaps now come from the real recap pipeline at full spice instead of
+  placeholder prose, and the regeneration path is repeatable. files:
+  `server/demo/demo-snapshot.json` · `supabase/scripts/demo-snapshot/` · ADR-0026
+- **PR #486** Enlarge the header logo mark (issue-less) — the Hotshot mark in the app
+  header was too small to read clearly; size it up. files: `app-header/AppHeader.svelte`
+- **PR #485** Drop redundant points from the demo pick-weight badge (issue-less) — the
+  demo picks board rendered the weight label and its point value twice; remove the
+  duplicate. files: `demo/DemoPicksBoard.svelte`
+- **PR #481** Hotshot lockup on sign-in, mark in demo nav (issue-less) — use the Hotshot
+  lockup on the sign-in/sign-up screen and add the mark to the demo nav. files:
+  `auth/+page.svelte` · `demo/DemoNav.svelte` · `static/hotshot-lockup.png`
+- **PR #477** Stop the committed-picks section snapping shut on the 1s tick (issue-less)
+  — the live clock tick collapsed the committed-picks section each second; keep it open
+  as the clock updates. files: `picks/LockedPicksSection.svelte`
+- **#478** Subtle pick-lock micro-interaction — locking a pick no longer hard-cuts:
+  the card animates out of the upcoming grid while the survivors reflow, and the
+  committed row settles into place, with a symmetric reverse on unlock. Kept quick and
+  deliberately quieter than the All-In signature moment, and a no-op under
+  `prefers-reduced-motion`. files: `PicksBoard.svelte` · `LockedPicksSection.svelte` ·
+  `ui/motion.ts` · ADR-0023
+- **PR #482** Trim the `/demo` sign-up CTAs to one (issue-less) — the read-only demo
+  stacked sign-up buttons (sticky nav CTA + persona-banner CTA on every page, plus one
+  per open-game card and a bottom CTA on the picks screen). Keep only the sticky nav
+  CTA; the banner is now context-only and the picks/recap CTAs are gone, so the demo
+  reads as a tour rather than a sales pitch. files: `DemoBanner.svelte` ·
+  `DemoPicksBoard.svelte` · `demo/recap/+page.svelte` · ADR-0026
 - **#476** Palette audit — move the remaining off-brand surfaces (leaderboard weekly
   cards, League honors, avatar crown, How-to-play scoring, `/league` small-sample
   markers) onto the Hotshot brand tokens, delete the now-dead team-color helpers, and

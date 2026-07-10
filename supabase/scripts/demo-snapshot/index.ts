@@ -11,7 +11,9 @@
 //   2. Start the app:                   pnpm dev  (or point DEMO_SNAPSHOT_BASE_URL at a deploy)
 //   3. Regenerate the fixture:          pnpm demo:snapshot
 //
-// Env (.env.local): CRON_SECRET (guards the endpoint), PUBLIC_SUPABASE_URL (unused here).
+// Env (.env.local): CRON_SECRET (guards the endpoint), PUBLIC_SUPABASE_URL (unused here). For
+// real LLM prose (meta.aiProse: "live"), the app runtime this hits also needs AI_GATEWAY_URL +
+// AI_GATEWAY_TOKEN (ADR-0008) — set them in .env.local and run a plain local `pnpm dev`.
 // Optional: DEMO_SNAPSHOT_BASE_URL (default http://localhost:5173), DEMO_SNAPSHOT_GROUP,
 // DEMO_SNAPSHOT_PERSONA, DEMO_SNAPSHOT_SEASON to override the featured identity.
 import 'dotenv/config';
@@ -57,8 +59,9 @@ async function main(): Promise<void> {
   console.log(`   AI prose: ${snapshot.meta?.aiProse}`);
   if (snapshot.meta?.aiProse === 'fallback') {
     console.log(
-      '   ⚠  Prose is the deterministic fallback (no AI Gateway creds in this runtime). Re-run\n' +
-        '      against a deploy with gateway creds (DEMO_SNAPSHOT_BASE_URL) for real LLM prose.'
+      '   ⚠  Prose is the deterministic fallback (no AI Gateway creds in this runtime).\n' +
+        '      Set AI_GATEWAY_URL + AI_GATEWAY_TOKEN in .env.local and re-run for real LLM prose\n' +
+        '      (see the refresh-demo-snapshot skill).'
     );
   }
 }

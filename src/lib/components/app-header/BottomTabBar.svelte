@@ -29,7 +29,7 @@
     {@const active = pendingPath.startsWith(href)}
     <a
       {href}
-      class="flex flex-1 flex-col items-center gap-1 px-2 py-3.5 text-[10px] font-medium transition-colors
+      class="flex flex-1 flex-col items-center gap-1 px-2 py-3.5 text-[11px] font-medium transition-colors
         {active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
       aria-current={active ? 'page' : undefined}
     >

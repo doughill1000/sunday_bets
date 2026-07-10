@@ -76,11 +76,12 @@
       class="pointer-events-auto flex min-w-0 items-center font-semibold tracking-wide"
       aria-label="Hotshot home"
     >
-      <img
-        src="/logo-mark.svg"
-        alt="Hotshot logo"
-        class="mr-2 h-10 w-10 shrink-0 md:h-12 md:w-12"
-      />
+      <!-- The mark's SVG carries generous transparent padding (the football fills
+           only ~44% of the viewBox height), so it reads small at box size. We size
+           the box larger than the h-14 header row: the visible ink grows while the
+           transparent margins overflow the header invisibly, keeping the mark
+           optically centered without pushing the surrounding chrome. -->
+      <img src="/logo-mark.svg" alt="Hotshot logo" class="h-16 w-16 shrink-0 md:h-20 md:w-20" />
     </a>
   </div>
 

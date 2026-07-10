@@ -1,5 +1,9 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { flip } from 'svelte/animate';
+  import { scale } from 'svelte/transition';
+  import { prefersReducedMotion } from 'svelte/motion';
+  import { lockMotionMs } from '$lib/ui/motion';
   import { providePicksStore } from '$lib/stores/picks';
   import { favoriteSide } from '$lib/domain/spread';
   import { buildSituationalLookup } from '$lib/utils/leagueNugget';
@@ -105,6 +109,32 @@
   const committed = $derived(
     games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
   );
+
+  // Live-derive the current user's "Who's picked" row from the local picks store so
+  // locking/unlocking updates the board immediately — the server-fetched
+  // `pickStatusBoard` is otherwise a static snapshot. Counts only games still open
+  // (kickoff in the future): remaining picks, not missed or already-started games,
+  // matching the picks_status_board RPC's own denominator. Co-members' rows stay as
+  // the server snapshot (their live picks aren't visible client-side by design).
+  const liveStatusBoard = $derived.by(() => {
+    if (!userId) return pickStatusBoard;
+    const remaining = games.filter((g) => kickoffMs(g) > now);
+    const total = remaining.length;
+    const mine = remaining.filter((g) => !!$picks[g.id]?.lockedPick).length;
+    return pickStatusBoard.map((row) =>
+      row.userId === userId
+        ? { ...row, picksMade: mine, gamesAvailable: total, isComplete: mine >= total }
+        : row
+    );
+  });
+
+  // Routine lock/unlock micro-interaction (#478). A card leaving `upcoming` on
+  // lock plays a quick shrink-fade while the survivors flip to fill the gap; the
+  // reverse plays on unlock. `prefersReducedMotion` collapses the duration to 0
+  // so the transition is effectively instant. The keyed `{#each}` (by `g.id`)
+  // means the 1s `now` ticker can't restart an in-flight transition — only real
+  // membership changes move a card.
+  const motionMs = $derived(lockMotionMs(prefersReducedMotion.current));
 </script>
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
@@ -135,7 +165,7 @@
 {:else}
   <PicksSummaryBar {games} {now} />
 
-  <PicksStatusBoard board={pickStatusBoard} myUserId={userId} />
+  <PicksStatusBoard board={liveStatusBoard} myUserId={userId} />
 
   <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
 
@@ -162,7 +192,11 @@
     {/if}
     <div class="picks-board mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {#each upcoming as g (g.id)}
-        <div id="game-{g.id}">
+        <div
+          id="game-{g.id}"
+          animate:flip={{ duration: motionMs }}
+          transition:scale={{ duration: motionMs, start: 0.96, opacity: 0 }}
+        >
           <GameCard
             game={g}
             {games}

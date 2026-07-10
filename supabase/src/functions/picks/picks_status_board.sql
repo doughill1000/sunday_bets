@@ -21,8 +21,15 @@
 -- content stays structurally intact.
 --
 -- is_member(p_group_id) keys off auth.uid() (unaffected by SECURITY DEFINER), so a
--- non-member caller receives zero rows. games_available matches the picks page's own
--- "{saved}/{games.length}" denominator: every game in the week (ui_games shows all).
+-- non-member caller receives zero rows.
+--
+-- REMAINING-ONLY denominator: games_available counts only games still open to pick
+-- (now() < commence_time), and picks_made counts each member's locks on those same
+-- still-open games. A game that has kicked off drops out of both sides whether it was
+-- picked or missed, so the board reads as "of the games still open, how many you've
+-- locked" — it never leaves a member stuck at 12/13 for a game they missed. Once every
+-- game has started the slate is 0/0 and everyone is trivially complete (nothing left to
+-- wait on).
 create or replace function public.picks_status_board(
   p_group_id uuid,
   p_week_id  integer
@@ -45,6 +52,7 @@ as $$
     select count(*)::integer as games_available
     from public.games g
     where g.week_id = p_week_id
+      and now() < g.commence_time
   ),
   member_counts as (
     select p.user_id, count(*)::integer as picks_made
@@ -52,6 +60,7 @@ as $$
     join public.games g on g.id = p.game_id
     where p.group_id = p_group_id
       and g.week_id = p_week_id
+      and now() < g.commence_time
     group by p.user_id
   )
   select
@@ -61,7 +70,7 @@ as $$
     u.avatar_key,
     coalesce(mc.picks_made, 0) as picks_made,
     s.games_available,
-    (s.games_available > 0 and coalesce(mc.picks_made, 0) >= s.games_available) as is_complete
+    (coalesce(mc.picks_made, 0) >= s.games_available) as is_complete
   from public.group_memberships gm
   join public.users u on u.id = gm.user_id
   cross join slate s
@@ -72,7 +81,7 @@ as $$
 $$;
 
 comment on function public.picks_status_board(uuid, integer) is
-  'ADR-0019 counts-only status board: per active group member for a week, picks_made / games_available / is_complete (counts only, no side/team/weight/game). SECURITY DEFINER + is_member() gate; base-table picks RLS is untouched so no pick content is revealed pre-kickoff. See docs/adr/0019-pick-reveal-timing-model.md.';
+  'ADR-0019 counts-only status board: per active group member for a week, picks_made / games_available / is_complete over games STILL OPEN to pick (now() < commence_time) — remaining picks, not missed or already-started games. Counts only, no side/team/weight/game. SECURITY DEFINER + is_member() gate; base-table picks RLS is untouched so no pick content is revealed pre-kickoff. See docs/adr/0019-pick-reveal-timing-model.md.';
 
 -- Closed-by-default (ADR-0011): the baseline revokes EXECUTE from PUBLIC; this
 -- read-only RPC self-grants in its own source file, per house convention

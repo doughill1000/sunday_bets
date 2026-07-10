@@ -48,6 +48,11 @@ describe('demo snapshot fixture', () => {
     expect(snapshot.wrapped.player?.is_fallback).toBe(false);
     expect(snapshot.wrapped.league?.is_fallback).toBe(false);
   });
+
+  it('never presents weekly recap prose as the "AI unavailable" fallback', () => {
+    // Same as Wrapped: curated artifact, never the deterministic-fallback note.
+    for (const recap of snapshot.recaps) expect(recap.is_fallback).toBe(false);
+  });
 });
 
 describe('demo surfaces render against the fixture', () => {

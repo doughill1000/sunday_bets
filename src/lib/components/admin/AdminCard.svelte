@@ -13,7 +13,7 @@
 
 <!-- Uses shadcn-svelte Card primitives -->
 <Card class="p-6">
-  <CardHeader class="mb-4 flex items-center justify-between">
+  <CardHeader class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
     <CardTitle class="text-xl font-bold">{title}</CardTitle>
     {#if subtitle}
       <CardDescription class="text-sm text-muted-foreground">{subtitle}</CardDescription>

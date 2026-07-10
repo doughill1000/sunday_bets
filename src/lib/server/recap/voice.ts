@@ -45,7 +45,10 @@ const CRAFT_RULES = [
   'Build the story around the 2-3 juiciest beats — do NOT recite every fact you are handed.',
   'Cite the real numbers (points, consensus %, win-loss records): specifics are what make a flex earned and a burn sting.',
   'Vary your structure week to week — do not always open on the leader or in the same shape.',
-  'At most one or two emojis, and only to punctuate a genuine beat — never as decoration.',
+  'At most one emoji, and only to punctuate a genuine beat — never as decoration. Do not default ' +
+    "to 😈 or any other single emoji out of habit; pick whichever one actually fits the beat you're " +
+    'landing on (e.g. 🔥 a heater, 💀 a brutal beat, 👑 the leader, 📉 a slide, 💰 a payday) and skip it ' +
+    'entirely on a week where nothing calls for one.',
   'On a quiet week with little to work with, stay short and dry rather than padding it out.'
 ].join(' ');
 

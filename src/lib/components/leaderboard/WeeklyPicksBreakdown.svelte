@@ -1,5 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { Button } from '$lib/components/ui/button';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import {
@@ -53,7 +55,15 @@
 <div class="space-y-4" data-testid="weekly-breakdown">
   <!-- Week navigator -->
   <div class="flex items-center justify-between gap-2">
-    <Button variant="outline" size="sm" onclick={prev} disabled={!hasPrev}>◀</Button>
+    <Button
+      variant="outline"
+      size="sm"
+      onclick={prev}
+      disabled={!hasPrev}
+      aria-label="Previous week"
+    >
+      <ChevronLeft class="size-4" aria-hidden="true" />
+    </Button>
     <DropdownMenu>
       <DropdownMenuTrigger>
         {#snippet child({ props })}
@@ -104,7 +114,9 @@
         {/each}
       </DropdownMenuContent>
     </DropdownMenu>
-    <Button variant="outline" size="sm" onclick={next} disabled={!hasNext}>▶</Button>
+    <Button variant="outline" size="sm" onclick={next} disabled={!hasNext} aria-label="Next week">
+      <ChevronRight class="size-4" aria-hidden="true" />
+    </Button>
   </div>
 
   {#if selectedWeek && !selectedWeek.isScoring}

@@ -60,7 +60,7 @@ leaderboard, and admin screens are all populated. Re-run just the data with
 | `admin@example.com` | Doug    | admin  |
 | `test2@example.com` | Hank    | player |
 | `test3@example.com` | Charlie | player |
-| `demo4@example.com` | Frank   | player |
+| `demo4@example.com` | Marcus  | player |
 | `demo5@example.com` | Beth    | player |
 | `demo6@example.com` | Mike    | player |
 
@@ -127,16 +127,20 @@ happens on short-lived branches that PR into `master`; there is no `develop` bra
     pending migrations → build & deploy → tag the `v<version>` GitHub Release (read
     from `package.json` at dispatch time). **A plain merge to `master` never ships** —
     someone must run the workflow to release (see ADR-0010's amendment).
-  - **Previews** (`deploy-preview.yml`) deploy **once per PR** (opened / ready /
-    reopened, drafts skipped) **plus on demand** via a `/preview` PR comment from an
-    authorized author. Previews use Vercel's Preview env (backed by the **staging**
-    Supabase project) and the URL is posted back as a PR comment. There is no longer a
-    preview on every push.
+  - **Previews** (`deploy-preview.yml`) deploy **purely on demand**, via a `/preview`
+    PR comment from an authorized author — nothing fires automatically on PR open,
+    ready, reopen, or push. Previews use Vercel's Preview env (backed by the
+    **staging** Supabase project) and the URL is posted back as a PR comment.
 - **Database:** migrations apply to prod only as part of the manual `deploy-prod.yml`
   release (after a `pg_dump` backup to OneDrive, before the app deploy — see
   `.github/workflows/deploy-prod.yml` and ADR-0010). A merge to `master` never touches
   prod's schema by itself. PRs still get a source-integrity check plus a
   `supabase db push --dry-run` against prod via `migrate-dry-run.yml`.
+- **Backups:** Supabase's Free tier has **no managed backups**, so a scheduled workflow
+  (`cron-backup.yml`) dumps prod off-platform to OneDrive (rclone) weekly — flip to daily
+  at season start — pruning dumps older than 90 days. The pre-release snapshot above and
+  this scheduled job share the `.github/actions/backup-supabase-db` composite action
+  (ADR-0010). Locally, `pnpm db:backup:prod` runs the same dump on demand.
 - **Staging DB:** `.github/workflows/clone-to-staging.yml` pushes migrations and
   clones prod's data into staging automatically once `deploy-prod.yml` completes
   successfully, so staging never runs ahead of (or behind) the released prod schema.

@@ -11,7 +11,13 @@ export default defineConfig(({ mode }) => ({
     // VERCEL_GIT_COMMIT_SHA at build; locally we fall back to the build timestamp.
     __BUILD_ID__: JSON.stringify(
       process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GITHUB_SHA ?? String(Date.now())
-    )
+    ),
+    // Sentry environment for the browser build. The client init can't read
+    // process.env at runtime, so bake VERCEL_ENV in here at build time — mirroring
+    // instrumentation.server.ts. Without this the client's Sentry.init falls back to
+    // Sentry's default ('production'), so local-dev/preview browser errors were being
+    // mislabeled 'production'. Vercel sets VERCEL_ENV on deploys; unset locally.
+    __SENTRY_ENV__: JSON.stringify(process.env.VERCEL_ENV ?? 'development')
   },
   plugins: [
     sentrySvelteKit({
