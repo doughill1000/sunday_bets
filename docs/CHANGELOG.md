@@ -48,12 +48,39 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #491** Scope the `/league` season picker to the Teams tab (issue-less) — the
+  page-level dropdown implied it governed both tabs (the WeekSlate hero ignored it) and
+  its empty state blanked the whole page, hiding Trends. Move the picker and its
+  season-scoped gating into the Teams tab; pin the Trends "This season" scope to the
+  most-recent-season-with-data, independent of the picker. files: `league/+page.svelte`
+  · `league/+page.server.ts`
 - **PR #490** Pick-card color hierarchy (issue-less) — the selected team and the Lock in
   button both lived in the ember family, so the commit CTA competed with the choice above
   it. Give each element a fixed tier: charcoal for inactive, dark ember for the selected
   team, brass for the selected weight, and the brightest ember reserved for Lock in, so the
   commit button is always the loudest thing on the card; the disabled Lock in is now flat
   and inert rather than a muddy dimmed-brass. files: `app.css` · `LockControls.svelte`
+- **PR #489** "Last 4" column header in Hot & Cold (issue-less) — the recent-form
+  streak column in the League Hot & Cold table had no header, leaving the run of W/L
+  marks unlabelled. Give it a "Last 4" header. files: `league/HotCold.svelte`
+- **PR #488** SVG chevrons for the weekly leaderboard nav (issue-less) — the week
+  back/forward arrows were text glyphs that rendered inconsistently across platforms;
+  swap them for inline SVG chevrons. files: `leaderboard/WeeklyPicksBreakdown.svelte`
+- **PR #487** Regenerate demo recaps through the real LLM (issue-less) — the frozen
+  `/demo` weekly recaps now come from the real recap pipeline at full spice instead of
+  placeholder prose, and the regeneration path is repeatable. files:
+  `server/demo/demo-snapshot.json` · `supabase/scripts/demo-snapshot/` · ADR-0026
+- **PR #486** Enlarge the header logo mark (issue-less) — the Hotshot mark in the app
+  header was too small to read clearly; size it up. files: `app-header/AppHeader.svelte`
+- **PR #485** Drop redundant points from the demo pick-weight badge (issue-less) — the
+  demo picks board rendered the weight label and its point value twice; remove the
+  duplicate. files: `demo/DemoPicksBoard.svelte`
+- **PR #481** Hotshot lockup on sign-in, mark in demo nav (issue-less) — use the Hotshot
+  lockup on the sign-in/sign-up screen and add the mark to the demo nav. files:
+  `auth/+page.svelte` · `demo/DemoNav.svelte` · `static/hotshot-lockup.png`
+- **PR #477** Stop the committed-picks section snapping shut on the 1s tick (issue-less)
+  — the live clock tick collapsed the committed-picks section each second; keep it open
+  as the clock updates. files: `picks/LockedPicksSection.svelte`
 - **#478** Subtle pick-lock micro-interaction — locking a pick no longer hard-cuts:
   the card animates out of the upcoming grid while the survivors reflow, and the
   committed row settles into place, with a symmetric reverse on unlock. Kept quick and
