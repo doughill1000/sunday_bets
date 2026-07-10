@@ -54,7 +54,7 @@ jobs:
           sudo apt-get install -y postgresql-client-${{ env.PG_VERSION }}
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: ${{ env.SUPABASE_CLI_VERSION }}
 
