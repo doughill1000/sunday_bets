@@ -46,6 +46,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-10
+
+- **PR #501** Recap voice emoji variety (issue-less) — the Commissioner's weekly-recap
+  and Season Wrapped prompt allowed "one or two emojis" with no steer on which one, so
+  the model converged on 😈 almost every time. Cap it at one, name a small beat-matched
+  palette, and let quiet weeks skip it entirely. file: `recap/voice.ts`
+
 ## 2026-07-09
 
 - **PR #495** Include System32 in the Claude Code PATH override (issue-less) — the repo's
