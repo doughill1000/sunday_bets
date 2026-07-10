@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #516** Migrate SeasonTrendChart to layerchart 2 (issue-less, fix) — #513 merged
+  `layerchart` 2.0.1 (the major #511 held back), whose `LineChart` moved from slots to
+  snippets, so the ADR-0018 dropped-week ring overlay stopped type-checking and left
+  `pnpm check`/CI `lint` red on master. Port the `aboveMarks` slot to the v2 snippet API
+  (scales read off the snippet `context`); the ring overlay renders unchanged. file:
+  `stats/SeasonTrendChart.svelte` · ADR-0018
+
 - **#500** In-app feedback — capture path (1 of 2 PRs): a floating widget + a header
   "Beta" tag let players report a bug/idea/reaction from any authed route; submissions are
   store-first to a new `feedback` table (no LLM, app-agnostic endpoint) with auto-captured
