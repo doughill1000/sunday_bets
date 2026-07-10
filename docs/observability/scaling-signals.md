@@ -6,6 +6,9 @@ crossed. This document fills that gap: it names the baseline signals, where each
 read, and the directional thresholds that should trigger the next tier of scaling
 work. It is the durable companion to the observability wiring added for issue #190.
 
+For **failure detection** (is a cron missing, is the site down, is odds sync halted)
+rather than scaling headroom, see the sibling [health-watchdog.md](health-watchdog.md).
+
 The thresholds below are **directional heuristics** to be calibrated against the first
 real season's baseline — they are starting lines, not SLOs. Update the numbers here
 when the season-one data lands; keep the _sources_ stable.

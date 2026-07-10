@@ -8,10 +8,14 @@ Sentry.init({
   // Sentry's default fallback.
   environment: process.env.VERCEL_ENV ?? 'development',
 
-  tracesSampleRate: 1.0,
+  // Sample 10% of transactions to stay within the Sentry free-tier performance
+  // quota (issue #206). Errors (handleErrorWithSentry) are unaffected — every
+  // server-side exception is still captured.
+  tracesSampleRate: 0.1,
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true
+  // Sentry Logs is a separate quota; cron_run_log + Vercel logs already cover us,
+  // so leave it off on the free tier.
+  enableLogs: false
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: import.meta.env.DEV,
