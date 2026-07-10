@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #508** /league team drill-down overflow fix (issue-less) — the expandable team
+  list is now a disclosure list instead of a `<table>`, so an open team's game log
+  scrolls inside its own panel rather than stretching the whole table off-screen (the
+  right-hand Cover&nbsp;%/SU columns no longer clip when a row opens). Situational splits
+  render as 2×2 stat tiles (cover&nbsp;% headline, W-L-P caption) instead of the old
+  inline mash. route: `league/+page.svelte`
 - **PR #507** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
   longer fire only at release. New `cron-backup.yml` dumps prod to OneDrive weekly (flip
   to daily at season start) and prunes dumps > 90 days; Supabase Free has no managed
