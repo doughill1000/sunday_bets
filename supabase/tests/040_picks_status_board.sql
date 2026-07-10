@@ -19,7 +19,7 @@
 
 BEGIN;
 
-SELECT plan(16);
+SELECT plan(18);
 
 -- Seed users: A + B are active members of group 1; D is a PENDING member of group 1;
 -- C is the sole member of group 2.
@@ -50,7 +50,9 @@ VALUES
   ('00000000-0000-4000-8000-000000000a88', tests.get_supabase_uid('board_player_d'), 'member', 'pending'),
   ('00000000-0000-4000-8000-000000000b88', tests.get_supabase_uid('board_player_c'), 'member', 'active');
 
--- Season, week, and THREE FUTURE (pre-kickoff) games => games_available = 3.
+-- Season, week, THREE FUTURE (pre-kickoff) games plus ONE already-STARTED game.
+-- games_available counts only still-open games => 3, not the week's total of 4:
+-- the started game (and any pick on it) drops out (remaining-only, #478).
 INSERT INTO public.seasons (year) VALUES (2039) ON CONFLICT (league, year) DO NOTHING;
 
 INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts)
@@ -62,7 +64,7 @@ VALUES (
 )
 ON CONFLICT (season_id, week_number) DO NOTHING;
 
--- Six distinct teams so the three matchups don't collide on uq_games_matchup.
+-- Eight distinct teams so the four matchups don't collide on uq_games_matchup.
 INSERT INTO public.teams (external_key, name, short_name)
 VALUES
   ('BD_T1', 'Board Team 1', 'BD1'),
@@ -70,7 +72,9 @@ VALUES
   ('BD_T3', 'Board Team 3', 'BD3'),
   ('BD_T4', 'Board Team 4', 'BD4'),
   ('BD_T5', 'Board Team 5', 'BD5'),
-  ('BD_T6', 'Board Team 6', 'BD6')
+  ('BD_T6', 'Board Team 6', 'BD6'),
+  ('BD_T7', 'Board Team 7', 'BD7'),
+  ('BD_T8', 'Board Team 8', 'BD8')
 ON CONFLICT (external_key) DO NOTHING;
 
 INSERT INTO public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id)
@@ -89,7 +93,12 @@ VALUES
       AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1)),
    'bd_future_game_3', now() + interval '2 days',
    (SELECT id FROM public.teams WHERE external_key = 'BD_T5'),
-   (SELECT id FROM public.teams WHERE external_key = 'BD_T6'))
+   (SELECT id FROM public.teams WHERE external_key = 'BD_T6')),
+  ((SELECT id FROM public.weeks WHERE week_number = 1
+      AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1)),
+   'bd_started_game', now() - interval '1 hour',
+   (SELECT id FROM public.teams WHERE external_key = 'BD_T7'),
+   (SELECT id FROM public.teams WHERE external_key = 'BD_T8'))
 ON CONFLICT (external_game_id) DO NOTHING;
 
 -- Player A locks 2 of 3 (group 1) => A shows 2/3, not complete.
@@ -107,6 +116,14 @@ VALUES
    (SELECT id FROM public.teams WHERE external_key = 'BD_T3'), 'M',
    now() - interval '1 hour',
    (SELECT id FROM public.teams WHERE external_key = 'BD_T3'), -3.5,
+   tests.get_supabase_uid('board_player_a')),
+  -- ...and a pick on the already-STARTED game. This must NOT count toward A's
+  -- remaining total: A stays 2/3, not 3/3 (remaining-only, #478).
+  ('00000000-0000-4000-8000-000000000a88', tests.get_supabase_uid('board_player_a'),
+   (SELECT id FROM public.games WHERE external_game_id = 'bd_started_game'),
+   (SELECT id FROM public.teams WHERE external_key = 'BD_T7'), 'M',
+   now() - interval '2 hours',
+   (SELECT id FROM public.teams WHERE external_key = 'BD_T7'), -3.5,
    tests.get_supabase_uid('board_player_a'));
 
 -- Player B locks all 3 of 3 (group 1) => B shows 3/3, complete.
@@ -212,14 +229,46 @@ SELECT results_eq(
   'RPC: is_complete is false for a member with games left to pick'
 );
 
--- (7) games_available equals the week's game count (3) for every row.
+-- (7) games_available counts only STILL-OPEN games (3), not the week's 4 total: the
+--     already-started game is excluded from the denominator for every row.
 SELECT results_eq(
   $$ SELECT DISTINCT games_available FROM public.picks_status_board(
          '00000000-0000-4000-8000-000000000a88'::uuid,
          (SELECT id FROM public.weeks WHERE week_number = 1
             AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1))::int) $$,
   $$ VALUES (3::integer) $$,
-  'RPC: games_available is the week game count (matches the picks-page denominator)'
+  'RPC: games_available counts only still-open games (started game excluded)'
+);
+
+-- (7b) The week has 4 games but only 3 are still open — the denominator is the
+--      remaining slate, not the full week.
+SELECT results_eq(
+  $$ SELECT
+       (SELECT count(*)::integer FROM public.games
+          WHERE week_id = (SELECT id FROM public.weeks WHERE week_number = 1
+             AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1))),
+       (SELECT DISTINCT games_available FROM public.picks_status_board(
+          '00000000-0000-4000-8000-000000000a88'::uuid,
+          (SELECT id FROM public.weeks WHERE week_number = 1
+             AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1))::int)) $$,
+  $$ VALUES (4::integer, 3::integer) $$,
+  'RPC: week has 4 games but games_available is 3 (started game excluded from denominator)'
+);
+
+-- (7c) A holds 3 locked picks (2 future + 1 on the started game) but picks_made is 2:
+--      the started-game pick is excluded from the numerator, not just the denominator.
+SELECT results_eq(
+  $$ SELECT
+       (SELECT count(*)::integer FROM public.picks
+          WHERE group_id = '00000000-0000-4000-8000-000000000a88'
+            AND user_id = tests.get_supabase_uid('board_player_a')),
+       (SELECT picks_made FROM public.picks_status_board(
+          '00000000-0000-4000-8000-000000000a88'::uuid,
+          (SELECT id FROM public.weeks WHERE week_number = 1
+             AND season_id = (SELECT id FROM public.seasons WHERE year = 2039 LIMIT 1))::int)
+        WHERE user_id = tests.get_supabase_uid('board_player_a')) $$,
+  $$ VALUES (3::integer, 2::integer) $$,
+  'RPC: A has 3 locked picks but picks_made is 2 (started-game pick excluded from numerator)'
 );
 
 -- (8) Base-table picks RLS is UNTOUCHED: A still cannot read B's pick rows directly
