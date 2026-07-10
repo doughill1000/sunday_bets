@@ -44,7 +44,9 @@
   {/if}
 
   <Button
-    class="h-10 w-full text-base font-semibold transition-shadow enabled:bg-ember enabled:shadow-lg enabled:shadow-ember/40 enabled:hover:shadow-ember/60"
+    class={`lock-btn h-10 w-full text-base font-semibold transition-shadow enabled:shadow-lg enabled:shadow-ember/20 enabled:hover:shadow-ember/30 disabled:opacity-100 ${
+      saveState === 'saving' ? 'saving' : ''
+    }`}
     data-testid="lock-in"
     onclick={onLock}
     disabled={!canLock || saveState === 'saving'}
