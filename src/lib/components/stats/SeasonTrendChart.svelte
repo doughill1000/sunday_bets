@@ -31,9 +31,9 @@
   );
 
   // The forgiven week for each player (ADR-0018): the raw cumulative line is untouched, so
-  // we overlay a distinct ring on the dropped point via LineChart's `aboveMarks` slot, which
-  // hands us the chart scales for exact positioning. layerchart has no per-point styling on
-  // the high-level LineChart, so this overlay is the fallback the issue anticipated.
+  // we overlay a distinct ring on the dropped point via LineChart's `aboveMarks` snippet,
+  // whose context hands us the chart scales for exact positioning. layerchart has no per-point
+  // styling on the high-level LineChart, so this overlay is the fallback the issue anticipated.
   const droppedMarkers = $derived(
     series.flatMap((s, index) =>
       s.points
@@ -77,20 +77,20 @@
       yAxis: { tickLabelProps }
     }}
   >
-    <!-- Legacy named-slot interop: LineChart exposes the chart scales on `aboveMarks`,
+    <!-- layerchart 2 exposes the chart scales via the `aboveMarks` snippet's context,
          letting us position the dropped-week ring exactly on the raw cumulative line. -->
-    <svelte:fragment slot="aboveMarks" let:xScale let:yScale>
+    {#snippet aboveMarks({ context })}
       {#each droppedMarkers as marker (marker.key)}
         <circle
-          cx={xScale(marker.week_number)}
-          cy={yScale(marker.cumulative_points)}
+          cx={context.xScale(marker.week_number)}
+          cy={context.yScale(marker.cumulative_points)}
           r="7"
           fill="none"
           stroke={marker.color}
           stroke-width="2.5"
         />
       {/each}
-    </svelte:fragment>
+    {/snippet}
   </LineChart>
 </div>
 
