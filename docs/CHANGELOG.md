@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #511** Bundle the outstanding dependabot updates (issue-less, chore) — combines the
+  three open dependabot PRs (#483 dev-deps, #473 prod-deps, #471 `supabase/setup-cli`
+  v2→v3) into one branch. Holds back two breaking majors — `typescript` 6→7 (crashes
+  svelte-check) and `layerchart` 1→2 (`LineChart` slots→snippets breaks the ADR-0018
+  dropped-week overlay) — for separate migration PRs. Also backfills the changelog entries
+  the governance gate was flagging. files: `package.json` · `pnpm-lock.yaml` ·
+  `.github/workflows/*`
+
 - **PR #510** Add ADR-0028 for the in-app feedback tool (issue-less, docs) — records the
   design decision for the #500 in-app feedback/bug-reporting tool ahead of implementation.
   docs: `adr/0028-in-app-feedback-tool.md`
