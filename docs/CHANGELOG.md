@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #506** Backfill CHANGELOG entry for PR #505 (issue-less, docs) — #505 shipped the
+  mobile design-review fixes but merged before its `finish-pr` changelog step landed. From
+  a 390px walk-through of every screen: the Leaderboard's Total column no longer scrolls
+  off-screen (on mobile W-L-P collapse into a compact record cell and Miss is dropped so
+  Total stays visible), the disabled Lock in reads as present-but-inactive instead of
+  vanishing, admin card headers stack instead of cramping, and muted text / bottom-tab
+  labels gain contrast headroom. files: `leaderboard/+page.svelte` ·
+  `DemoStandingsTable.svelte` · `app.css` · `admin/*Card.svelte` · `BottomTabBar.svelte`
+
 - **#206** Free cron missed-run watchdog + Sentry free-tier tuning — a token-guarded
   health endpoint reports whether each scheduled cron ran on time (schedule-aware,
   from `cron_run_log`) and whether odds sync is halted at cap, so a free external
