@@ -1,15 +1,15 @@
-// scripts/backup-db.mjs
-// Usage (package.json): "backup:prod": "node -r dotenv/config scripts/backup-db.mjs dotenv_config_path=.env.production"
-// Required env: SUPABASE_DB_URL
+// supabase/scripts/backup-db.mjs
+// Usage (package.json): "db:backup:prod": "node -r dotenv/config supabase/scripts/backup-db.mjs dotenv_config_path=.env.production"
+// Required env: DATABASE_URL (or SUPABASE_DB_URL) — the prod Postgres connection string
 // Optional env: RCLONE_REMOTE=onedrive, RCLONE_DIR=supabase-backups, BACKUP_PREFIX=supabase, BACKUP_OUT_DIR=backups, PG_DUMP_BIN=pg_dump
 
 import { spawnSync, execSync } from 'node:child_process';
 import { mkdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-const DB_URL = process.env.DATABASE_URL;
+const DB_URL = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
 if (!DB_URL) {
-  console.error('❌ Missing DATABASE_URL (put it in .env.production).');
+  console.error('❌ Missing DATABASE_URL / SUPABASE_DB_URL (put it in .env.production).');
   process.exit(1);
 }
 

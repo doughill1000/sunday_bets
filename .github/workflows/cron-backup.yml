@@ -1,0 +1,38 @@
+# .github/workflows/cron-backup.yml
+# Scheduled off-platform backup of the production Supabase database.
+#
+# Supabase's Free tier provides NO managed/automated backups, so these rclone->OneDrive
+# dumps are the ONLY backup of prod. deploy-prod.yml also takes a pre-release snapshot,
+# but that only fires on a manual release -- this scheduled job guarantees a recent
+# backup regardless of release cadence. Both share the composite action
+# .github/actions/backup-supabase-db so they dump identically. See ADR-0010.
+name: 'Cron: Backup Prod DB'
+
+on:
+  schedule:
+    # Weekly, Monday 08:00 UTC. Flip to daily ('0 8 * * *') at NFL season start, when
+    # weekly picks make a day-level RPO worth the extra runs.
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: backup-prod-db
+  cancel-in-progress: false # never interrupt an in-flight dump
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: Production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/backup-supabase-db
+        with:
+          db-url: ${{ secrets.SUPABASE_DB_URL }}
+          rclone-config-b64: ${{ secrets.RCLONE_CONFIG_B64 }}
+          label: scheduled
+          prune-min-age: 90d

@@ -54,6 +54,22 @@ Project `Done` column, and Releases remain the sources of truth — see
   right-hand Cover&nbsp;%/SU columns no longer clip when a row opens). Situational splits
   render as 2×2 stat tiles (cover&nbsp;% headline, W-L-P caption) instead of the old
   inline mash. route: `league/+page.svelte`
+- **PR #507** Scheduled off-platform prod DB backup (issue-less, infra) — backups no
+  longer fire only at release. New `cron-backup.yml` dumps prod to OneDrive weekly (flip
+  to daily at season start) and prunes dumps > 90 days; Supabase Free has no managed
+  backups, so these are the only backup. The pre-release snapshot and the scheduled job
+  now share a composite action so they dump identically; the local `db:backup:prod`
+  script's stale env-var comment is corrected. files:
+  `.github/actions/backup-supabase-db/action.yml` · `cron-backup.yml` · `deploy-prod.yml`
+  · `supabase/scripts/backup-db.mjs` · ADR-0010
+- **PR #506** Backfill CHANGELOG entry for PR #505 (issue-less, docs) — #505 shipped the
+  mobile design-review fixes but merged before its `finish-pr` changelog step landed. From
+  a 390px walk-through of every screen: the Leaderboard's Total column no longer scrolls
+  off-screen (on mobile W-L-P collapse into a compact record cell and Miss is dropped so
+  Total stays visible), the disabled Lock in reads as present-but-inactive instead of
+  vanishing, admin card headers stack instead of cramping, and muted text / bottom-tab
+  labels gain contrast headroom. files: `leaderboard/+page.svelte` ·
+  `DemoStandingsTable.svelte` · `app.css` · `admin/*Card.svelte` · `BottomTabBar.svelte`
 
 - **#206** Free cron missed-run watchdog + Sentry free-tier tuning — a token-guarded
   health endpoint reports whether each scheduled cron ran on time (schedule-aware,
