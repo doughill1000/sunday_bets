@@ -34,6 +34,10 @@ declare global {
   /** Per-deploy build id injected by Vite `define` (vite.config.ts). Used as the
    * TanStack Query persister cache-buster — see ADR-0017. */
   const __BUILD_ID__: string;
+
+  /** Sentry environment injected by Vite `define` (vite.config.ts) from VERCEL_ENV.
+   * Sets `environment` in the client Sentry.init (src/hooks.client.ts). */
+  const __SENTRY_ENV__: string;
 }
 
 export {};
