@@ -609,9 +609,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/player_grants.sql": {
-    "hash": "ac0029ac3837de36db3781931aff595999cb2e7c056d12cc930027d878bd4777",
-    "migration": "20260708170457_espn_api_responses.sql",
-    "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
+    "hash": "22815f2e03ff38807979148b37c813b59c16434e2fc56118320d6f71bdd93ee3",
+    "migration": "20260710194226_add_feedback_table.sql",
+    "migrationHash": "85c67c9536bc88dcf69eb4bd4ee15d9ee56f830ba99954e412e236cc527c3bfb"
   },
   "functions/_private/capture_closing_line.sql": {
     "hash": "2ebf7db4f020f56cbab1fa206dd9660b75ca3330210b3bf8c3603aab99ad2707",
@@ -839,5 +839,15 @@
     "signature": "public.find_unsettled_weeks()",
     "migration": "20260708174903_find_unsettled_weeks_reconcile_sweep.sql",
     "migrationHash": "b54e1d3b008ce3e45e97b46e9f861c410d063f97cf497c2c8a628a26f7943c83"
+  },
+  "schemas/0230_feedback.sql": {
+    "hash": "b6e94adc237b5ecadec728123a8155ea267fb6af49db51e7bb906563f574d67d",
+    "migration": "20260710194226_add_feedback_table.sql",
+    "migrationHash": "85c67c9536bc88dcf69eb4bd4ee15d9ee56f830ba99954e412e236cc527c3bfb"
+  },
+  "policies/46_policies_feedback.sql": {
+    "hash": "23980ced8757a37c13d6425a3131dabbd9d40c6317bad3e8da0968763f94155f",
+    "migration": "20260710194226_add_feedback_table.sql",
+    "migrationHash": "85c67c9536bc88dcf69eb4bd4ee15d9ee56f830ba99954e412e236cc527c3bfb"
   }
 }

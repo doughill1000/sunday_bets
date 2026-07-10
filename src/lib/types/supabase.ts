@@ -283,6 +283,50 @@ export type Database = {
         };
         Relationships: [];
       };
+      feedback: {
+        Row: {
+          body: string;
+          context: Json;
+          created_at: string;
+          github_issue_url: string | null;
+          id: string;
+          kind: string;
+          status: string;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          body: string;
+          context?: Json;
+          created_at?: string;
+          github_issue_url?: string | null;
+          id?: string;
+          kind?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          body?: string;
+          context?: Json;
+          created_at?: string;
+          github_issue_url?: string | null;
+          id?: string;
+          kind?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'feedback_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       game_lines: {
         Row: {
           fetched_at: string;
