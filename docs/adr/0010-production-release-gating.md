@@ -1,9 +1,22 @@
 # ADR-0010: Gate deploys behind version bumps via GitHub Actions
 
-- Status: Accepted (amended 2026-06-27)
+- Status: Accepted (amended 2026-06-27, 2026-07-09)
 - Date: 2026-06-26
 - Issue: None (approved release-strategy plan; no tracking issue)
 - Supersedes: None
+
+## Amendment (2026-07-09): previews purely on demand
+
+Dropped the automatic preview on PR open/ready-for-review/reopen. `deploy-preview.yml`
+now triggers only on an `issue_comment` carrying `/preview` from an authorized author
+(`OWNER`/`MEMBER`/`COLLABORATOR`) — nothing deploys a preview automatically at any
+point in a PR's lifecycle. Point 3 of the original Decision and the Consequences below
+should be read with "one preview when a PR is opened, marked ready, or reopened" struck.
+
+Why: the per-PR-open preview was still automatic noise against the same Hobby
+deployment-count cap this ADR exists to manage, and in practice reviewers reach for
+`/preview` explicitly when they actually need a URL rather than relying on the
+auto-created one.
 
 ## Amendment (2026-06-27): one fully-manual release that migrates _and_ deploys
 

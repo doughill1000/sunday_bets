@@ -1,5 +1,5 @@
 // src/lib/components/picks/__tests__/PicksStatusBoard.test.ts
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
 import PicksStatusBoard from '$lib/components/picks/PicksStatusBoard.svelte';
 import type { PickStatusBoardEntry } from '$lib/types/picks';
@@ -33,6 +33,11 @@ function makeBoard(): PickStatusBoardEntry[] {
   ];
 }
 
+// The roster is collapsed by default (#478); expand it before asserting on rows.
+async function expandRoster() {
+  await fireEvent.click(screen.getByTestId('status-board-toggle'));
+}
+
 describe('PicksStatusBoard', () => {
   it('renders nothing for a solo group (only you on the board)', () => {
     const { container } = render(PicksStatusBoard, {
@@ -41,8 +46,28 @@ describe('PicksStatusBoard', () => {
     expect(container.querySelector('[data-testid="picks-status-board"]')).toBeNull();
   });
 
-  it('renders a row per member with their N/M count', () => {
+  it('is collapsed by default: the header shows, the roster does not', () => {
     render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    expect(screen.getByTestId('status-board-toggle')).toBeTruthy();
+    expect(screen.queryAllByTestId('status-row')).toHaveLength(0);
+  });
+
+  it('shows the locked-in summary as complete-over-total', () => {
+    render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    // Only Beth is complete (3/3) out of 4 members.
+    expect(screen.getByTestId('status-summary').textContent?.trim()).toBe('1/4 locked in');
+  });
+
+  it('summarizes who we are still waiting on when collapsed', () => {
+    render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    // Three incomplete members (you, Charlie, Hank); first two shown, rest as "+N more".
+    const waiting = screen.getByTestId('status-waiting').textContent?.trim();
+    expect(waiting).toBe('waiting on you, Charlie, +1 more');
+  });
+
+  it('renders a row per member with their N/M count when expanded', async () => {
+    render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    await expandRoster();
     const counts = screen.getAllByTestId('status-count').map((el) => el.textContent?.trim());
     // Every member's count is shown (order asserted separately).
     expect(counts).toContain('2/3');
@@ -51,35 +76,33 @@ describe('PicksStatusBoard', () => {
     expect(counts).toContain('1/3');
   });
 
-  it('shows the done summary as complete-over-total', () => {
+  it('orders incomplete members before complete ones (surface the laggards)', async () => {
     render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
-    // Only Beth is complete (3/3) out of 4 members.
-    expect(screen.getByTestId('status-summary').textContent?.trim()).toBe('1/4 done');
-  });
-
-  it('orders incomplete members before complete ones (surface the laggards)', () => {
-    render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    await expandRoster();
     const names = screen.getAllByTestId('status-row').map((li) => li.getAttribute('data-user-id'));
     // Incomplete first, you pinned to the top of that bucket, then alphabetical;
     // complete (Beth) sinks to the bottom.
     expect(names).toEqual([ME, 'charlie', 'hank', 'beth']);
   });
 
-  it('marks the current user with "(you)" and bold styling', () => {
+  it('marks the current user with "(you)" and bold styling when expanded', async () => {
     render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    await expandRoster();
     const meLabel = screen.getByText('Doug (you)');
     expect(meLabel.className).toContain('font-semibold');
   });
 
-  it('flags complete vs pending members distinctly', () => {
+  it('flags complete vs pending members distinctly when expanded', async () => {
     render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    await expandRoster();
     // Beth (3/3) is the only done member.
     expect(screen.getAllByTestId('status-done')).toHaveLength(1);
     expect(screen.getAllByTestId('status-pending')).toHaveLength(3);
   });
 
-  it('never renders any pick content (no sides, teams, or weights)', () => {
+  it('never renders any pick content (no sides, teams, or weights)', async () => {
     const { container } = render(PicksStatusBoard, { props: { board: makeBoard(), myUserId: ME } });
+    await expandRoster();
     // The board is counts-only by construction; guard against a future regression
     // that tries to surface pick detail here.
     expect(container.textContent).not.toMatch(/All-In|weight|spread/i);
