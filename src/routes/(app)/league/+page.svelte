@@ -59,11 +59,30 @@
     staleTime: 0
   }));
 
-  // Trends-tab scope: 'season' (season-picker-scoped, default) or 'multi' (the market cuts
-  // pooled over the recent seasons, epic #424). The pooled payload is season-independent and
-  // off by default, so its query is lazy — `enabled` only flips true once the user switches to
-  // multi-season, and it caches under its own group-independent root thereafter (ADR-0017).
+  // Which tab is showing. Controlled (vs. a static default) so the Trends query can lazy-load
+  // only while its tab is open — the picker lives in Teams, the pinned-season data in Trends.
+  let activeTab = $state('teams');
+
+  // Trends-tab scope: 'season' (pinned to the default season, default) or 'multi' (the market
+  // cuts pooled over the recent seasons, epic #424).
   let trendsScope = $state<'season' | 'multi'>('season');
+
+  // Trends "This season" pins to `defaultSeasonYear` (most recent season with data), NOT to the
+  // Teams picker's `seasonYear` — so browsing an older season in Teams leaves Trends put. On the
+  // default view the two keys coincide, so this dedupes onto the Teams query (initialData shared,
+  // no second fetch). Only a deliberate past-season browse makes them diverge, and then this
+  // fetches lazily — gated to when the Trends tab is actually open in season scope.
+  const defaultLeagueQuery = createQuery(() => ({
+    queryKey: queryKeys.league(pageData.defaultSeasonYear),
+    queryFn: () => fetchLeague(fetch, pageData.defaultSeasonYear),
+    initialData:
+      pageData.seasonYear === pageData.defaultSeasonYear ? pageData.initialLeague : undefined,
+    enabled: activeTab === 'trends' && trendsScope === 'season'
+  }));
+
+  // The pooled payload is season-independent and off by default, so its query is lazy — `enabled`
+  // only flips true once the user switches to multi-season, and it caches under its own
+  // group-independent root thereafter (ADR-0017).
   const trendsQuery = createQuery(() => ({
     queryKey: queryKeys.leagueTrends(),
     queryFn: () => fetchLeagueTrends(fetch),
@@ -97,6 +116,11 @@
 
   const league = $derived(leagueQuery.data ?? EMPTY);
 
+  // The season-scoped source for the Trends tab — the default season, decoupled from the Teams
+  // picker. Equals `league` on the default view (shared query key); diverges only when Teams is
+  // browsing an older season.
+  const defaultLeague = $derived(defaultLeagueQuery.data ?? EMPTY);
+
   // Opponent short names for the drill-down game log: every opponent also appears as a team
   // here (both perspectives of each game are in league_ats_base), so this map is complete.
   const teamNamesById = $derived(new Map(league.teams.map((t) => [t.teamId, t.teamShortName])));
@@ -124,13 +148,13 @@
           divisional: pooled.divisional
         }
       : {
-          favDog: league.favDogSeason,
-          favDogByWeek: league.favDogByWeek,
-          homeAway: league.homeAway,
-          spreadBuckets: league.spreadBuckets,
-          quadrants: league.quadrants,
-          primetime: league.primetime,
-          divisional: league.divisional
+          favDog: defaultLeague.favDogSeason,
+          favDogByWeek: defaultLeague.favDogByWeek,
+          homeAway: defaultLeague.homeAway,
+          spreadBuckets: defaultLeague.spreadBuckets,
+          quadrants: defaultLeague.quadrants,
+          primetime: defaultLeague.primetime,
+          divisional: defaultLeague.divisional
         }
   );
 
@@ -253,6 +277,49 @@
     <div class="h-72 w-full animate-pulse rounded-xl bg-muted"></div>
     <div class="h-40 w-full animate-pulse rounded-xl bg-muted"></div>
   </div>
+{/snippet}
+
+<!-- Teams tab panel: the season picker plus its loading/error/empty gating, wrapping the
+     browse-by-team view. The picker scopes only this tab (the Trends tab pins to the default
+     season), so it — and the gating that depends on the picked season — lives here, not
+     page-level. This keeps a season with no graded games from blanking the whole page: only the
+     Teams tab shows its empty state, and Trends stays reachable. -->
+{#snippet teamsPanel()}
+  <div class="flex flex-wrap items-center justify-end gap-3">
+    <SeasonPicker seasons={pageData.availableSeasons} selected={pageData.seasonYear} />
+  </div>
+
+  {#if leagueQuery.isPending}
+    {@render loadingState()}
+  {:else if leagueQuery.isError}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>Couldn't load team ATS records</CardTitle>
+        <CardDescription
+          >Something went wrong fetching the data. Refresh to try again.</CardDescription
+        >
+      </CardHeader>
+    </Card>
+  {:else if league.totalGames === 0}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>No graded games for {pageData.seasonYear} yet</CardTitle>
+        <CardDescription>
+          Team ATS records appear once games are graded. Try a different season above.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  {:else}
+    <!-- Sample-size caveat: descriptive, not predictive. Older imported seasons (2022–24) have
+         missing scores, so their totals are honestly thinner, not misleadingly complete. -->
+    <p class="text-sm text-muted-foreground">
+      Descriptive records against the closing spread, based on
+      <span class="font-medium text-foreground">{league.totalGames}</span>
+      scored {league.totalGames === 1 ? 'game' : 'games'} with a line in {pageData.seasonYear}. ATS
+      records are noisy — treat small samples with caution.
+    </p>
+    {@render teamsView()}
+  {/if}
 {/snippet}
 
 <!-- Teams tab: browse league ATS by team — hot/cold streaks then the full sortable table
@@ -454,7 +521,9 @@
       data-testid="league-trends-scope"
       aria-label="Trends scope"
     >
-      <ToggleGroupItem value="season" class="px-3 text-xs sm:text-sm">This season</ToggleGroupItem>
+      <ToggleGroupItem value="season" class="px-3 text-xs sm:text-sm"
+        >This season ({pageData.defaultSeasonYear})</ToggleGroupItem
+      >
       <ToggleGroupItem value="multi" class="px-3 text-xs sm:text-sm">Last 5 seasons</ToggleGroupItem
       >
     </ToggleGroup>
@@ -467,7 +536,28 @@
     {/if}
   </div>
 
-  {#if trendsScope === 'multi' && trendsQuery.isPending}
+  {#if trendsScope === 'season' && defaultLeagueQuery.isPending}
+    <div class="grid items-start gap-6 lg:grid-cols-2" aria-hidden="true">
+      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
+      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
+    </div>
+  {:else if trendsScope === 'season' && defaultLeagueQuery.isError}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>Couldn't load this season's trends</CardTitle>
+        <CardDescription>Refresh to try again.</CardDescription>
+      </CardHeader>
+    </Card>
+  {:else if trendsScope === 'season' && defaultLeague.totalGames === 0}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>No trends for {pageData.defaultSeasonYear} yet</CardTitle>
+        <CardDescription>
+          League-wide situational cuts appear once games are graded. Try the last-5-seasons view.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  {:else if trendsScope === 'multi' && trendsQuery.isPending}
     <div class="grid items-start gap-6 lg:grid-cols-2" aria-hidden="true">
       <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
       <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
@@ -506,22 +596,13 @@
 </svelte:head>
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="league-heading">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1
-        id="league-heading"
-        data-testid="league-heading"
-        class="text-3xl font-bold tracking-tight"
-      >
-        League trends
-      </h1>
-      <p class="mt-1 text-muted-foreground">
-        League-wide NFL team performance against the spread — the same for everyone.
-      </p>
-    </div>
-    <div class="flex items-center gap-3">
-      <SeasonPicker seasons={pageData.availableSeasons} selected={pageData.seasonYear} />
-    </div>
+  <div>
+    <h1 id="league-heading" data-testid="league-heading" class="text-3xl font-bold tracking-tight">
+      League trends
+    </h1>
+    <p class="mt-1 text-muted-foreground">
+      League-wide NFL team performance against the spread — the same for everyone.
+    </p>
   </div>
 
   <!-- Forward-looking slate for the current season's upcoming week (issue #429). Its own
@@ -532,47 +613,17 @@
     error={slateQuery.isError}
   />
 
-  {#if leagueQuery.isPending}
-    {@render loadingState()}
-  {:else if leagueQuery.isError}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>Couldn't load league trends</CardTitle>
-        <CardDescription
-          >Something went wrong fetching the data. Refresh to try again.</CardDescription
-        >
-      </CardHeader>
-    </Card>
-  {:else if league.totalGames === 0}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>No graded games for {pageData.seasonYear} yet</CardTitle>
-        <CardDescription>
-          Team ATS trends appear once games are graded. Try a different season above.
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  {:else}
-    <!-- Sample-size caveat: descriptive, not predictive. Older imported seasons (2022–24)
-         have missing scores, so their totals are honestly thinner, not misleadingly complete.
-         Sits above the tab bar because it applies to both Teams and Trends. -->
-    <p class="text-sm text-muted-foreground">
-      Descriptive trends against the closing spread, based on
-      <span class="font-medium text-foreground">{league.totalGames}</span>
-      scored {league.totalGames === 1 ? 'game' : 'games'} with a line this season. ATS trends are noisy
-      — treat small samples with caution.
-    </p>
-
-    <!-- Season-scoped content splits into Teams (browse by team) and Trends (league-wide
-         situational cuts). The live slate above stays outside the tabs; the season picker
-         governs the tabbed content. Default to Teams — the densest, most-referenced view. -->
-    <Tabs value="teams" class="w-full space-y-6">
-      <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-        <TabsTrigger value="teams" class={ACTIVE_TAB_TRIGGER_CLASS}>Teams</TabsTrigger>
-        <TabsTrigger value="trends" class={ACTIVE_TAB_TRIGGER_CLASS}>Trends</TabsTrigger>
-      </TabsList>
-      <TabsContent value="teams" class="space-y-6">{@render teamsView()}</TabsContent>
-      <TabsContent value="trends" class="space-y-6">{@render trendsView()}</TabsContent>
-    </Tabs>
-  {/if}
+  <!-- Teams (browse by season, via the in-tab picker) and Trends (league-wide situational cuts,
+       pinned to the default season). The tabs render unconditionally — the picker and its
+       season-scoped loading/error/empty gating live inside the Teams panel — so an empty picked
+       season never hides Trends. Controlled so the pinned-season Trends query loads only while
+       its tab is open. Default to Teams — the densest, most-referenced view. -->
+  <Tabs bind:value={activeTab} class="w-full space-y-6">
+    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
+      <TabsTrigger value="teams" class={ACTIVE_TAB_TRIGGER_CLASS}>Teams</TabsTrigger>
+      <TabsTrigger value="trends" class={ACTIVE_TAB_TRIGGER_CLASS}>Trends</TabsTrigger>
+    </TabsList>
+    <TabsContent value="teams" class="space-y-6">{@render teamsPanel()}</TabsContent>
+    <TabsContent value="trends" class="space-y-6">{@render trendsView()}</TabsContent>
+  </Tabs>
 </section>
