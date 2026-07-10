@@ -1,19 +1,16 @@
 # .github/workflows/deploy-preview.yml
-# Previews are deliberate, not per-push: one preview when a PR is opened / marked
-# ready / reopened, plus on-demand via a `/preview` comment from an authorized author.
-# Vercel's automatic Git previews are off (vercel.json), so this is the only path.
+# Previews are purely on-demand: only a `/preview` comment from an authorized
+# author on a PR triggers a deploy. Vercel's automatic Git previews are off
+# (vercel.json), so this is the only path.
 # Previews use the Vercel "Preview" environment (backed by staging Supabase). See ADR-0010.
 name: Deploy Preview
 
 on:
-  pull_request:
-    types: [opened, ready_for_review, reopened]
-    branches: [master]
   issue_comment:
     types: [created]
 
 concurrency:
-  group: preview-${{ github.event.pull_request.number || github.event.issue.number }}
+  group: preview-${{ github.event.issue.number }}
   cancel-in-progress: true
 
 permissions:
@@ -22,13 +19,11 @@ permissions:
 
 jobs:
   preview:
-    # Non-draft PR events, OR a `/preview` comment on a PR by an authorized author.
+    # A `/preview` comment on a PR by an authorized author.
     if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request != null &&
-       startsWith(github.event.comment.body, '/preview') &&
-       contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association))
+      github.event.issue.pull_request != null &&
+      startsWith(github.event.comment.body, '/preview') &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -38,7 +33,7 @@ jobs:
     steps:
       - name: Resolve PR number
         id: pr
-        run: echo "number=${{ github.event.pull_request.number || github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+        run: echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v7
 

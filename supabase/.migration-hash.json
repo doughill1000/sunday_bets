@@ -764,10 +764,10 @@
     "migrationHash": "2bc3d09e139097357a1638e314c7d65737f6edcb91eb8a2bf25cfb2435acc22c"
   },
   "functions/picks/picks_status_board.sql": {
-    "hash": "2660481b7609d7e917c75420f4aa2924ad723d1cc19d4f3a7dbf1ec60b376f7d",
+    "hash": "2ae08c03fc70c7ca636663721e8ae40b5ca51a4a5f77a726a85a8b6928efc3ca",
     "signature": "public.picks_status_board(uuid, integer)",
-    "migration": "20260706220054_add_picks_status_board.sql",
-    "migrationHash": "efd01416797b01f1fa469d2f4758fa5d0f7da17838703c7205c9ddbc6f3ff526"
+    "migration": "20260710004313_picks_status_board_remaining_only.sql",
+    "migrationHash": "6d54c2ec8040d08f089aeda498dc242e7579e0cb6a9ac530b8d1ccb9faa5a8a3"
   },
   "views/league_ats_base.sql": {
     "hash": "10ca4b09176f90c1e2551ff39e8218ea49a1983d89f9a2a4d460e12406439a63",

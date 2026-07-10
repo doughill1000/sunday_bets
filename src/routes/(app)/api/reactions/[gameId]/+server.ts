@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
-import { error as httpError, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import * as Sentry from '@sentry/sveltekit';
 
 type PostBody = { emoji: string };
 
@@ -33,7 +34,8 @@ export const POST: RequestHandler = async (event) => {
     if (error.code === '42501') {
       return json({ ok: false, reason: 'Not authorised to react here.' }, { status: 403 });
     }
-    throw httpError(500, error.message);
+    Sentry.captureException(error);
+    return json({ ok: false, reason: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 
   return json({ ok: true, reaction: data });
@@ -63,7 +65,8 @@ export const DELETE: RequestHandler = async (event) => {
     if (error.code === '42501') {
       return json({ ok: false, reason: 'Not authorised.' }, { status: 403 });
     }
-    throw httpError(500, error.message);
+    Sentry.captureException(error);
+    return json({ ok: false, reason: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 
   return json({ ok: true });

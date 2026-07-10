@@ -1,7 +1,8 @@
 // src/routes/api/picks/[gameId]/+server.ts
 import type { TeamSide, WeightCode } from '$lib/types/domain';
 import type { RequestHandler } from './$types';
-import { error as httpError, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import * as Sentry from '@sentry/sveltekit';
 
 type Body = {
   team?: TeamSide;
@@ -52,7 +53,11 @@ export const POST: RequestHandler = async (event) => {
     if (/all in already used/i.test(msg)) {
       return json({ ok: false, reason: 'All-In already used this week.' }, { status: 409 });
     }
-    throw httpError(500, msg);
+    // Unexpected DB error: don't leak the raw Postgres message to the client, and
+    // capture it (a thrown `error(500)` is an HttpError that skips `handleError`,
+    // so these 500s were previously invisible in Sentry). See the 2026-07-09 audit.
+    Sentry.captureException(error);
+    return json({ ok: false, reason: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 
   const rows = (Array.isArray(data) ? data : [data]) as FanOutRow[];
@@ -92,7 +97,8 @@ export const DELETE: RequestHandler = async (event) => {
     if (/game started/i.test(msg) || /after kickoff/i.test(msg)) {
       return json({ ok: false, reason: 'Cannot unlock after kickoff.' }, { status: 409 });
     }
-    throw httpError(500, msg);
+    Sentry.captureException(error);
+    return json({ ok: false, reason: 'Something went wrong. Please try again.' }, { status: 500 });
   }
 
   const rows = (Array.isArray(data) ? data : [data]) as FanOutRow[];
