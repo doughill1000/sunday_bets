@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **#206** Free cron missed-run watchdog + Sentry free-tier tuning — a token-guarded
+  health endpoint reports whether each scheduled cron ran on time (schedule-aware,
+  from `cron_run_log`) and whether odds sync is halted at cap, so a free external
+  uptime monitor catches missed runs, stale data, and site-down with no paid Sentry
+  Cron Monitors. Also lowers Sentry trace/replay/log sampling to stay in the free
+  tier. route: `api/health` · `cronHealth.ts` · docs: `observability/health-watchdog.md`
+
 - **PR #501** Recap voice emoji variety (issue-less) — the Commissioner's weekly-recap
   and Season Wrapped prompt allowed "one or two emojis" with no steer on which one, so
   the model converged on 😈 almost every time. Cap it at one, name a small beat-matched

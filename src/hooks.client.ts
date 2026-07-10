@@ -9,14 +9,18 @@ Sentry.init({
   // the server init in instrumentation.server.ts.
   environment: __SENTRY_ENV__,
 
-  tracesSampleRate: 1.0,
+  // Sample 10% of transactions to stay within the Sentry free-tier performance
+  // quota (issue #206). Error capture is NOT governed by this — handleError still
+  // reports every crash — so bug visibility is unchanged.
+  tracesSampleRate: 0.1,
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  // Sentry Logs is a separate quota; cron_run_log + Vercel logs already cover us,
+  // so leave it off on the free tier.
+  enableLogs: false,
 
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
+  // Record replays only when an error occurs (0 random sessions) — spends the
+  // small free-tier replay quota on sessions that actually errored, not noise.
+  replaysSessionSampleRate: 0,
 
   // If the entire session is not sampled, use the below sample rate to sample
   // sessions when an error occurs.
