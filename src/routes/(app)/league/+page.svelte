@@ -7,10 +7,13 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import WeekSlate from '$lib/components/league/WeekSlate.svelte';
-  import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import HotCold from '$lib/components/league/HotCold.svelte';
   import TeamGameLog from '$lib/components/league/TeamGameLog.svelte';
+  import { Button } from '$lib/components/ui/button';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import ArrowUp from '@lucide/svelte/icons/arrow-up';
+  import ArrowDown from '@lucide/svelte/icons/arrow-down';
+  import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
   import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
   import Quadrants from '$lib/components/league/Quadrants.svelte';
   import Primetime from '$lib/components/league/Primetime.svelte';
@@ -239,6 +242,12 @@
   }
 
   const sortedTeams = $derived(league.teams.toSorted(compareTeams));
+
+  // Shared column template for the team list. The header and each disclosure row are separate
+  // grids (a full-width drill-down panel sits between rows, so they can't share one grid), so a
+  // fixed track template — not `auto` — is what keeps their columns lined up. Team flexes; the
+  // three record/percent columns are fixed-width and right-tight.
+  const rowGrid = 'grid grid-cols-[minmax(0,1fr)_4.5rem_3.25rem_4.5rem] items-center gap-x-2';
 </script>
 
 {#snippet wlp(rec: AtsRecord)}
@@ -246,29 +255,48 @@
 {/snippet}
 
 <!-- Situational ATS splits for a team's drill-down: home/away and favorite/underdog, moved out
-     of the always-visible table (which now scans on mobile without a horizontal scroll) into the
-     detail view. Sourced from the in-memory team row, so it paints with no fetch. -->
+     of the always-visible list into the detail view. Sourced from the in-memory team row, so it
+     paints with no fetch. Each cut is a stat tile — cover % as the headline, the W-L-P record as
+     a caption beneath — matching the "Home vs away" card's language instead of mashing the two
+     onto one line. Cover % is "--" for a decision-less split (e.g. a lone push), by design. -->
 {#snippet teamSplits(team: LeagueTeamAts)}
-  <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+  <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
     {#each [{ label: 'Home', rec: team.home }, { label: 'Away', rec: team.away }, { label: 'As fav', rec: team.favorite }, { label: 'As dog', rec: team.underdog }] as split (split.label)}
-      <div>
+      <div class="rounded-lg bg-background/50 p-3">
         <dt class="text-xs font-medium text-muted-foreground">{split.label}</dt>
-        <dd class="text-sm">
-          {@render wlp(split.rec)}
-          <span class="text-xs text-muted-foreground">· {formatAccuracy(coverPct(split.rec))}</span>
-        </dd>
+        <dd class="text-2xl font-bold tabular-nums">{formatAccuracy(coverPct(split.rec))}</dd>
+        <dd class="text-xs text-muted-foreground">{@render wlp(split.rec)}</dd>
       </div>
     {/each}
   </dl>
 {/snippet}
 
-{#snippet teamHead(label: string, key: SortKey, align: 'left' | 'right' = 'left')}
-  <SortableTableHead
+<!-- Sortable column header for the team list. Same behaviour as SortableTableHead (arrow icon +
+     a next-click aria-label), but a plain button — the list is no longer a <table>, so a <th> is
+     out. aria-sort belongs to table/grid roles, so sort state is conveyed by the icon + label. -->
+{#snippet sortButton(label: string, key: SortKey, align: 'left' | 'right' = 'left')}
+  {@const dir = teamSort.key === key ? teamSort.direction : null}
+  <Button
+    variant="ghost"
+    size="sm"
+    class="h-auto px-2 py-1 text-xs font-medium text-muted-foreground {align === 'right'
+      ? 'ml-auto -mr-2'
+      : '-ml-2'}"
+    aria-label={dir === null
+      ? `Sort by ${label}`
+      : `Sort by ${label} ${dir === 'asc' ? 'descending' : 'ascending'}`}
+    title={`Sort by ${label}`}
+    onclick={() => setTeamSort(key)}
+  >
     {label}
-    {align}
-    direction={teamSort.key === key ? teamSort.direction : null}
-    onsort={() => setTeamSort(key)}
-  />
+    {#if dir === 'asc'}
+      <ArrowUp class="size-3.5" aria-hidden="true" />
+    {:else if dir === 'desc'}
+      <ArrowDown class="size-3.5" aria-hidden="true" />
+    {:else}
+      <ArrowUpDown class="size-3.5 text-muted-foreground" aria-hidden="true" />
+    {/if}
+  </Button>
 {/snippet}
 
 {#snippet loadingState()}
@@ -322,62 +350,70 @@
   {/if}
 {/snippet}
 
-<!-- Teams tab: browse league ATS by team — hot/cold streaks then the full sortable table
-     with its per-team game-log drill-down. Page-level teamSort / expandedTeamId $state lives
-     in the script above, so sorting and an open drill-down survive a Trends→Teams round-trip. -->
+<!-- Teams tab: browse league ATS by team — hot/cold streaks then the sortable team list with
+     its per-team game-log drill-down. Rendered as a disclosure list (not a <table>): the
+     drill-down is a normal block <div>, so the game-log table inside it can scroll on its own
+     `overflow-x-auto` instead of blowing the whole list out horizontally (which a <table> nested
+     in a <td> did — an auto-layout cell sizes to content and ignores a child's overflow). Sort
+     state lives in `teamSort`, the open row in `expandedTeamId` — both page-level $state, so
+     sorting and an open drill-down survive a Trends→Teams round-trip. -->
 {#snippet teamsView()}
   <!-- ── Hot & cold streaks ──────────────────────────────────────────────────── -->
   <HotCold streaks={league.streaks} />
 
-  <!-- ── Per-team ATS table ──────────────────────────────────────────────────── -->
+  <!-- ── Per-team ATS list ───────────────────────────────────────────────────── -->
   <Card data-testid="league-team-table">
     <CardHeader>
       <CardTitle>Team ATS records</CardTitle>
       <CardDescription>
-        Against-the-spread and straight-up records, with home/away and favorite/underdog splits.
+        Against-the-spread and straight-up records. Open a team for its home/away and
+        favorite/underdog splits and full game log.
       </CardDescription>
     </CardHeader>
-    <CardContent class="overflow-x-auto px-2 sm:px-6">
-      <Table class="text-xs sm:text-sm">
-        <TableHeader>
-          <TableRow>
-            {@render teamHead('Team', 'team')}
-            {@render teamHead('ATS', 'record')}
-            {@render teamHead('Cover %', 'cover', 'right')}
-            {@render teamHead('SU', 'su')}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each sortedTeams as team (team.teamId)}
-            {@const expanded = expandedTeamId === team.teamId}
-            <TableRow>
-              <TableCell class="font-medium whitespace-nowrap" title={team.teamName}>
-                <button
-                  type="button"
-                  class="-mx-1 flex items-center gap-1 rounded px-1 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  aria-expanded={expanded}
-                  data-testid="league-team-toggle"
-                  onclick={() => toggleTeam(team.teamId)}
-                >
-                  <ChevronRight
-                    class="size-3 shrink-0 transition-transform {expanded ? 'rotate-90' : ''}"
-                    aria-hidden="true"
-                  />
-                  {team.teamShortName}
-                </button>
-              </TableCell>
-              <TableCell>{@render wlp(team.ats)}</TableCell>
-              <TableCell class="text-right">{formatAccuracy(coverPct(team.ats))}</TableCell>
-              <TableCell>{@render wlp(team.su)}</TableCell>
-            </TableRow>
+    <CardContent class="px-2 text-xs sm:px-6 sm:text-sm">
+      <div class="{rowGrid} border-b px-2 pb-2">
+        {@render sortButton('Team', 'team')}
+        {@render sortButton('ATS', 'record')}
+        {@render sortButton('Cover %', 'cover', 'right')}
+        {@render sortButton('SU', 'su')}
+      </div>
+      <ul class="divide-y">
+        {#each sortedTeams as team (team.teamId)}
+          {@const expanded = expandedTeamId === team.teamId}
+          <li>
+            <button
+              type="button"
+              class="{rowGrid} w-full rounded px-2 py-2.5 text-left hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              aria-expanded={expanded}
+              aria-controls="team-drilldown-{team.teamId}"
+              data-testid="league-team-toggle"
+              onclick={() => toggleTeam(team.teamId)}
+            >
+              <span
+                class="flex items-center gap-1 font-medium whitespace-nowrap"
+                title={team.teamName}
+              >
+                <ChevronRight
+                  class="size-3 shrink-0 transition-transform {expanded ? 'rotate-90' : ''}"
+                  aria-hidden="true"
+                />
+                {team.teamShortName}
+              </span>
+              <span>{@render wlp(team.ats)}</span>
+              <span class="text-right">{formatAccuracy(coverPct(team.ats))}</span>
+              <span>{@render wlp(team.su)}</span>
+            </button>
             {#if expanded}
-              <TableRow data-testid="league-team-drilldown">
-                <TableCell colspan={4} class="bg-muted/30 p-4">
-                  <!-- Situational splits render instantly from the already-loaded team row (no
-                       fetch), so the drill-down shows content the moment it opens; only the game
-                       log below waits on the network. -->
-                  {@render teamSplits(team)}
-                  <p class="mt-4 mb-3 text-sm font-medium">
+              <!-- Normal block panel: the situational tiles paint instantly from the loaded team
+                   row; only the game log below waits on the network. -->
+              <div
+                id="team-drilldown-{team.teamId}"
+                data-testid="league-team-drilldown"
+                class="mb-2 space-y-4 rounded-lg bg-muted/30 px-3 py-4"
+              >
+                {@render teamSplits(team)}
+                <div>
+                  <p class="mb-3 text-sm font-medium">
                     {team.teamName} — {pageData.seasonYear} game log
                   </p>
                   <TeamGameLog
@@ -386,12 +422,12 @@
                     expectedGames={team.games}
                     {teamNamesById}
                   />
-                </TableCell>
-              </TableRow>
+                </div>
+              </div>
             {/if}
-          {/each}
-        </TableBody>
-      </Table>
+          </li>
+        {/each}
+      </ul>
     </CardContent>
   </Card>
 {/snippet}

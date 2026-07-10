@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #508** /league team drill-down overflow fix (issue-less) — the expandable team
+  list is now a disclosure list instead of a `<table>`, so an open team's game log
+  scrolls inside its own panel rather than stretching the whole table off-screen (the
+  right-hand Cover&nbsp;%/SU columns no longer clip when a row opens). Situational splits
+  render as 2×2 stat tiles (cover&nbsp;% headline, W-L-P caption) instead of the old
+  inline mash. route: `league/+page.svelte`
+
 - **#206** Free cron missed-run watchdog + Sentry free-tier tuning — a token-guarded
   health endpoint reports whether each scheduled cron ran on time (schedule-aware,
   from `cron_run_log`) and whether odds sync is halted at cap, so a free external
