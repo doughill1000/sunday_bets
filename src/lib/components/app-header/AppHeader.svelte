@@ -84,23 +84,23 @@
            optically centered without pushing the surrounding chrome. -->
       <img src="/logo-mark.svg" alt="Hotshot logo" class="h-16 w-16 shrink-0 md:h-20 md:w-20" />
     </a>
-    {#if user}
-      <!-- "Beta" is an invitation to report, not a quality disclaimer (ADR-0028 / #500):
-           it opens the same feedback sheet. Kept beside the wordmark, never near
-           scores/standings/money. The mark's transparent padding is pulled back with a
-           negative margin so the chip reads as attached to the logo. -->
-      <button
-        type="button"
-        data-testid="beta-tag"
-        class="pointer-events-auto -ml-4 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase transition-colors hover:bg-primary/20 md:-ml-5"
-        title="Beta — spotting something off? Tell us."
-        aria-label="Beta — send feedback"
-        onclick={() => openFeedback()}
-      >
-        Beta
-      </button>
-    {/if}
   </div>
+
+  {#if user}
+    <!-- "Beta" is an invitation to report, not a quality disclaimer (ADR-0028 / #500):
+         it opens the same feedback sheet. Sits just left of the avatar, away from
+         scores/standings/money. -->
+    <button
+      type="button"
+      data-testid="beta-tag"
+      class="mr-2 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase transition-colors hover:bg-primary/20"
+      title="Beta — spotting something off? Tell us."
+      aria-label="Beta — send feedback"
+      onclick={() => openFeedback()}
+    >
+      Beta
+    </button>
+  {/if}
 
   <!-- Avatar dropdown — always far right -->
   <HeaderAccount {user} {canSeeAdmin} {displayName} {avatarKey} {champion} />
