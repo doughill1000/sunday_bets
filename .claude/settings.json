@@ -1,6 +1,6 @@
 {
   "env": {
-    "PATH": "C:\\nvm4w\\nodejs;C:\\Program Files\\Git\\cmd;C:\\Program Files\\GitHub CLI;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\PostgreSQL\\17\\bin;C:\\Users\\dough\\scoop\\shims;${PATH}"
+    "PATH": "C:\\nvm4w\\nodejs;C:\\Program Files\\Git\\cmd;C:\\Program Files\\GitHub CLI;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\PostgreSQL\\17\\bin;C:\\Users\\dough\\scoop\\shims;C:\\Windows\\System32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;${PATH}"
   },
   "permissions": {
     "deny": ["Read(./.env.production)", "Read(./.env.staging)", "Read(./.env)"],
