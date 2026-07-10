@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **#500** In-app feedback — capture path (1 of 2 PRs): a floating widget + a header
+  "Beta" tag let players report a bug/idea/reaction from any authed route; submissions are
+  store-first to a new `feedback` table (no LLM, app-agnostic endpoint) with auto-captured
+  route/build/viewport/Sentry/season context. Admin triage queue + one-click GitHub filing
+  follow in PR 2. table: `feedback` · route: `api/feedback` · component:
+  `FeedbackWidget.svelte` · ADR-0028
+
 - **PR #511** Bundle the outstanding dependabot updates (issue-less, chore) — combines the
   three open dependabot PRs (#483 dev-deps, #473 prod-deps, #471 `supabase/setup-cli`
   v2→v3) into one branch. Holds back two breaking majors — `typescript` 6→7 (crashes
