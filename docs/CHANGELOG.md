@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #490** Pick-card color hierarchy (issue-less) — the selected team and the Lock in
+  button both lived in the ember family, so the commit CTA competed with the choice above
+  it. Give each element a fixed tier: charcoal for inactive, dark ember for the selected
+  team, brass for the selected weight, and the brightest ember reserved for Lock in, so the
+  commit button is always the loudest thing on the card; the disabled Lock in is now flat
+  and inert rather than a muddy dimmed-brass. files: `app.css` · `LockControls.svelte`
 - **#478** Subtle pick-lock micro-interaction — locking a pick no longer hard-cuts:
   the card animates out of the upcoming grid while the survivors reflow, and the
   committed row settles into place, with a symmetric reverse on unlock. Kept quick and
