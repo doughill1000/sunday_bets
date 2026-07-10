@@ -44,10 +44,13 @@
     <TableRow>
       <TableHead class="w-12 text-center">#</TableHead>
       <TableHead>Player</TableHead>
-      <TableHead class="text-right">W</TableHead>
-      <TableHead class="text-right">L</TableHead>
-      <TableHead class="text-right">P</TableHead>
-      <TableHead class="text-right">Miss</TableHead>
+      <!-- Mobile: W-L-P collapse into one "Rec" cell and Miss is dropped so Total stays
+           on-screen at 390px; the full breakdown returns from `sm` up (mirrors /leaderboard). -->
+      <TableHead class="text-right sm:hidden">Rec</TableHead>
+      <TableHead class="hidden text-right sm:table-cell">W</TableHead>
+      <TableHead class="hidden text-right sm:table-cell">L</TableHead>
+      <TableHead class="hidden text-right sm:table-cell">P</TableHead>
+      <TableHead class="hidden text-right sm:table-cell">Miss</TableHead>
       <TableHead class="text-right">Total</TableHead>
     </TableRow>
   </TableHeader>
@@ -75,10 +78,13 @@
             {isYou ? `${r.display_name} (you)` : r.display_name}
           </div>
         </TableCell>
-        <TableCell class="text-right tabular-nums">{r.wins}</TableCell>
-        <TableCell class="text-right tabular-nums">{r.losses}</TableCell>
-        <TableCell class="text-right tabular-nums">{r.pushes}</TableCell>
-        <TableCell class="text-right tabular-nums">{r.missed}</TableCell>
+        <TableCell class="whitespace-nowrap text-right tabular-nums sm:hidden"
+          >{r.wins}-{r.losses}-{r.pushes}</TableCell
+        >
+        <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.wins}</TableCell>
+        <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.losses}</TableCell>
+        <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.pushes}</TableCell>
+        <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.missed}</TableCell>
         <TableCell class="text-right font-semibold tabular-nums">{r.total_points}</TableCell>
       </TableRow>
     {/each}
