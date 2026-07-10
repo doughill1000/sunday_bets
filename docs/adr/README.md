@@ -72,5 +72,6 @@ current status.
 | [ADR-0025](0025-espn-final-scores-source.md)                                | ESPN scoreboard as the primary source of final scores (Odds API `/scores` fallback)          |
 | [ADR-0026](0026-public-demo-season-snapshot.md)                             | Public shareable demo season served from a generated read-only snapshot                      |
 | [ADR-0027](0027-rebrand-sunday-bets-to-hotshot.md)                          | Rebrand Sunday Bets → Hotshot (de-gamble the name; evolve charcoal + gold identity)          |
+| [ADR-0028](0028-in-app-feedback-tool.md)                                    | In-app feedback capture — store-first model, admin-gated GitHub egress, public-repo privacy  |
 
-_The numbering is sequential; the next ADR is 0028._
+_The numbering is sequential; the next ADR is 0029._
