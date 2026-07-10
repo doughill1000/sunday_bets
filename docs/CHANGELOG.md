@@ -48,6 +48,9 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #495** Include System32 in the Claude Code PATH override (issue-less) — the repo's
+  `.claude/settings.json` PATH prepend omitted `System32`, so some Windows shell built-ins
+  didn't resolve for the agent tools; add it. files: `.claude/settings.json`
 - **PR #491** Scope the `/league` season picker to the Teams tab (issue-less) — the
   page-level dropdown implied it governed both tabs (the WeekSlate hero ignored it) and
   its empty state blanked the whole page, hiding Trends. Move the picker and its
