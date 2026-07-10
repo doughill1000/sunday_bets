@@ -45,9 +45,9 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
 - **Branches:** trunk-based — PRs target `master` (production); there is no
   long-lived `develop` branch. **Branch from `origin/master` after `git fetch`** —
   the local clone can be months stale (Doug works across multiple machines). Vercel
-  auto-deploys are off (ADR-0010): a PR gets **one** preview deployment on open / ready
-  / reopen (backed by the staging Supabase project) plus on-demand previews via a
-  `/preview` comment — not one per push. **Merging does not ship**; production deploys
+  auto-deploys are off (ADR-0010): previews are purely on-demand via a `/preview`
+  comment on a PR (backed by the staging Supabase project) — nothing fires
+  automatically on open, ready, reopen, or push. **Merging does not ship**; production deploys
   only on a single deliberate manual dispatch (ADR-0010), which reads `package.json`
   `"version"` to tag the release (see `docs/WORKFLOW.md` §"Cutting a release").
 - **Confirm before any GitHub write** (push, PR, issue, gist) — per your user-level agent instructions.

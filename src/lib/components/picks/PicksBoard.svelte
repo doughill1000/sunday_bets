@@ -110,6 +110,24 @@
     games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
   );
 
+  // Live-derive the current user's "Who's picked" row from the local picks store so
+  // locking/unlocking updates the board immediately — the server-fetched
+  // `pickStatusBoard` is otherwise a static snapshot. Counts only games still open
+  // (kickoff in the future): remaining picks, not missed or already-started games,
+  // matching the picks_status_board RPC's own denominator. Co-members' rows stay as
+  // the server snapshot (their live picks aren't visible client-side by design).
+  const liveStatusBoard = $derived.by(() => {
+    if (!userId) return pickStatusBoard;
+    const remaining = games.filter((g) => kickoffMs(g) > now);
+    const total = remaining.length;
+    const mine = remaining.filter((g) => !!$picks[g.id]?.lockedPick).length;
+    return pickStatusBoard.map((row) =>
+      row.userId === userId
+        ? { ...row, picksMade: mine, gamesAvailable: total, isComplete: mine >= total }
+        : row
+    );
+  });
+
   // Routine lock/unlock micro-interaction (#478). A card leaving `upcoming` on
   // lock plays a quick shrink-fade while the survivors flip to fill the gap; the
   // reverse plays on unlock. `prefersReducedMotion` collapses the duration to 0
@@ -147,7 +165,7 @@
 {:else}
   <PicksSummaryBar {games} {now} />
 
-  <PicksStatusBoard board={pickStatusBoard} myUserId={userId} />
+  <PicksStatusBoard board={liveStatusBoard} myUserId={userId} />
 
   <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
 
