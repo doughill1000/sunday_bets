@@ -6,6 +6,7 @@
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
   import RecapFlash from '$lib/components/recap/RecapFlash.svelte';
+  import FeedbackWidget from '$lib/components/feedback/FeedbackWidget.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
   import { invalidate } from '$app/navigation';
@@ -176,6 +177,7 @@
       {#if user}
         <BottomTabBar />
         <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
+        <FeedbackWidget {groupId} />
         {#await data.latestRecap then recap}
           {#await data.recapSeen then seen}
             <RecapFlash {recap} alreadySeen={seen} />
