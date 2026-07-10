@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
-- **PR #[TBD]** v3.0.0 release — Hotshot Calls rebrand relaunch (name, logo, theme,
+- **PR #509** v3.0.0 release — Hotshot Calls rebrand relaunch (name, logo, theme,
   de-gamble reposition), the public shareable demo season snapshot, and the pick-lock
   micro-interaction. issues: #231 · #460 · #478 · ADR-0024
 
