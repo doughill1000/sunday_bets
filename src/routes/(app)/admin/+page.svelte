@@ -38,6 +38,14 @@
 </script>
 
 <section class="mx-auto max-w-3xl space-y-6 p-4 sm:p-6">
+  <a
+    href="/admin/feedback"
+    class="flex items-center justify-between rounded-xl border p-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+  >
+    <span>Feedback inbox — review in-app reports (issue #500)</span>
+    <span aria-hidden="true">→</span>
+  </a>
+
   <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} onNote={handleNote} />
 
   <ScheduleSyncCard onNote={handleNote} />

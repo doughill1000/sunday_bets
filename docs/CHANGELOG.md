@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **#500** In-app feedback — admin triage queue + GitHub filing (2 of 2 PRs, closes
+  #500): a global-admin `/admin/feedback` inbox lists stored reports newest-first
+  (status-filterable) and files the worth-fixing ones as sanitized public issues via a
+  fine-grained PAT — human-in-the-loop, always `source:feedback`-labelled. Public-repo
+  privacy split: only route/build/viewport/UA cross into the issue while the user id and
+  Sentry id stay in the DB, and a missing/expired token degrades to a prefilled new-issue
+  URL rather than hard-failing. route: `admin/feedback` · `lib/server/feedback/github.ts`
+  · env: `GITHUB_FEEDBACK_TOKEN` · ADR-0028
+
 - **#500** In-app feedback — capture path (1 of 2 PRs): a floating widget + a header
   "Beta" tag let players report a bug/idea/reaction from any authed route; submissions are
   store-first to a new `feedback` table (no LLM, app-agnostic endpoint) with auto-captured
