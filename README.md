@@ -136,6 +136,11 @@ happens on short-lived branches that PR into `master`; there is no `develop` bra
   `.github/workflows/deploy-prod.yml` and ADR-0010). A merge to `master` never touches
   prod's schema by itself. PRs still get a source-integrity check plus a
   `supabase db push --dry-run` against prod via `migrate-dry-run.yml`.
+- **Backups:** Supabase's Free tier has **no managed backups**, so a scheduled workflow
+  (`cron-backup.yml`) dumps prod off-platform to OneDrive (rclone) weekly — flip to daily
+  at season start — pruning dumps older than 90 days. The pre-release snapshot above and
+  this scheduled job share the `.github/actions/backup-supabase-db` composite action
+  (ADR-0010). Locally, `pnpm db:backup:prod` runs the same dump on demand.
 - **Staging DB:** `.github/workflows/clone-to-staging.yml` pushes migrations and
   clones prod's data into staging automatically once `deploy-prod.yml` completes
   successfully, so staging never runs ahead of (or behind) the released prod schema.

@@ -1,9 +1,29 @@
 # ADR-0010: Gate deploys behind version bumps via GitHub Actions
 
-- Status: Accepted (amended 2026-06-27, 2026-07-09)
+- Status: Accepted (amended 2026-06-27, 2026-07-09, 2026-07-10)
 - Date: 2026-06-26
 - Issue: None (approved release-strategy plan; no tracking issue)
 - Supersedes: None
+
+## Amendment (2026-07-10): backups run on a schedule, not only at release
+
+The pre-release `backup` job stays, but it is no longer the _only_ backup. A new
+scheduled workflow, `cron-backup.yml`, dumps the production database off-platform
+(rclone → OneDrive) on a cron (weekly now; flip to daily at NFL season start) plus a
+manual `workflow_dispatch`. Both the pre-release snapshot and the scheduled backup now
+run the shared `.github/actions/backup-supabase-db` composite action, so they dump
+identically; the scheduled job additionally prunes dumps older than 90 days.
+
+Why: releases are manual and infrequent, so a release-coupled backup could leave the
+freshest recoverable snapshot weeks old — and **Supabase's Free tier provides no managed
+backups**, which makes these dumps the only line of defense against data loss. Decoupling
+backups from releases guarantees a recent snapshot regardless of release cadence. The
+pre-release snapshot keeps its distinct role: a labeled, known-good point taken
+immediately before a migration mutates prod, so a bad migration can be rolled back.
+
+Not yet done (tracked for launch readiness): a **restore drill**. A dump that has never
+been `pg_restore`d is unproven — restore the latest dump into local/staging and diff row
+counts before the season opens.
 
 ## Amendment (2026-07-09): previews purely on demand
 
