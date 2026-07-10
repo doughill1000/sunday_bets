@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #[TBD]** v3.0.0 release — Hotshot Calls rebrand relaunch (name, logo, theme,
+  de-gamble reposition), the public shareable demo season snapshot, and the pick-lock
+  micro-interaction. issues: #231 · #460 · #478 · ADR-0024
+
 - **PR #508** /league team drill-down overflow fix (issue-less) — the expandable team
   list is now a disclosure list instead of a `<table>`, so an open team's game log
   scrolls inside its own panel rather than stretching the whole table off-screen (the
