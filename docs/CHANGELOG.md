@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-09
 
+- **PR #491** Scope the `/league` season picker to the Teams tab (issue-less) — the
+  page-level dropdown implied it governed both tabs (the WeekSlate hero ignored it) and
+  its empty state blanked the whole page, hiding Trends. Move the picker and its
+  season-scoped gating into the Teams tab; pin the Trends "This season" scope to the
+  most-recent-season-with-data, independent of the picker. files: `league/+page.svelte`
+  · `league/+page.server.ts`
 - **#478** Subtle pick-lock micro-interaction — locking a pick no longer hard-cuts:
   the card animates out of the upcoming grid while the survivors reflow, and the
   committed row settles into place, with a symmetric reverse on unlock. Kept quick and
