@@ -127,11 +127,10 @@ happens on short-lived branches that PR into `master`; there is no `develop` bra
     pending migrations → build & deploy → tag the `v<version>` GitHub Release (read
     from `package.json` at dispatch time). **A plain merge to `master` never ships** —
     someone must run the workflow to release (see ADR-0010's amendment).
-  - **Previews** (`deploy-preview.yml`) deploy **once per PR** (opened / ready /
-    reopened, drafts skipped) **plus on demand** via a `/preview` PR comment from an
-    authorized author. Previews use Vercel's Preview env (backed by the **staging**
-    Supabase project) and the URL is posted back as a PR comment. There is no longer a
-    preview on every push.
+  - **Previews** (`deploy-preview.yml`) deploy **purely on demand**, via a `/preview`
+    PR comment from an authorized author — nothing fires automatically on PR open,
+    ready, reopen, or push. Previews use Vercel's Preview env (backed by the
+    **staging** Supabase project) and the URL is posted back as a PR comment.
 - **Database:** migrations apply to prod only as part of the manual `deploy-prod.yml`
   release (after a `pg_dump` backup to OneDrive, before the app deploy — see
   `.github/workflows/deploy-prod.yml` and ADR-0010). A merge to `master` never touches
