@@ -2066,6 +2066,64 @@ export type Database = {
           }
         ];
       };
+      stats_situational_base: {
+        Row: {
+          game_id: string | null;
+          group_id: string | null;
+          is_divisional: boolean | null;
+          is_home_pick: boolean | null;
+          is_primetime: boolean | null;
+          outcome: Database['public']['Enums']['pick_outcome'] | null;
+          season_year: number | null;
+          spread_bucket_order: number | null;
+          user_id: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'ui_games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      stats_situational_splits: {
+        Row: {
+          accuracy: number | null;
+          bucket: string | null;
+          bucket_order: number | null;
+          decisions: number | null;
+          dimension: string | null;
+          group_id: string | null;
+          losses: number | null;
+          pushes: number | null;
+          user_id: string | null;
+          wins: number | null;
+        };
+        Relationships: [];
+      };
       ui_games: {
         Row: {
           away: string | null;

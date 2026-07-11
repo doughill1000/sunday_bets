@@ -33,6 +33,10 @@ begin
   refresh materialized view concurrently public.group_pick_consensus;
   refresh materialized view concurrently public.stats_accuracy_by_line_side;
   refresh materialized view concurrently public.stats_pick_streaks;
+  -- Per-user situational ATS base (#502): pick-grain classification (primetime / home-away /
+  -- spread bucket / divisional) the "Your edge" panel reads via stats_situational_splits. Driven
+  -- by the same pick_settlement rows every other per-user stat is, so this is its refresh point.
+  refresh materialized view concurrently public.stats_situational_base;
   -- League-wide team ATS facts (#406). Group-independent and driven by games/game_lines
   -- rather than pick_settlement, but the same grading run that settles picks is also when
   -- games go final + closing lines are captured, so this is the correct invalidation point.
@@ -41,5 +45,5 @@ end;
 $$;
 
 comment on function public.refresh_leaderboard_stats() is
-  'Refreshes the 13 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317/#406). '
+  'Refreshes the 14 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317/#406/#502). '
   'Called after each grading run by src/lib/server/grading.ts.';

@@ -620,10 +620,10 @@
     "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
-    "hash": "75fe58f6ec8dc98ece92c9c795f8efba8000a7d4a02b342a5a05a7dc36a9fd5f",
+    "hash": "d4fc89a378ef4e171406c817c62a4eafd84a4625106e382acd314d872471615d",
     "signature": "public.refresh_leaderboard_stats()",
-    "migration": "20260707210905_league_ats_views.sql",
-    "migrationHash": "9659474650625e7a2b3bd705e831021271e879fffd533f07c3b247055aac2666"
+    "migration": "20260711011851_stats_situational_views.sql",
+    "migrationHash": "5e8c16078ca7c7cf5dfd65a37a9d4f3616bf8d3e56749539f2eb119f185dbbea"
   },
   "functions/auth/group_active_season_settled.sql": {
     "hash": "7ec5abf4bca6381ab64f9748ed2219f9da713030f89b972fd5b60bf939c76db5",
@@ -849,5 +849,15 @@
     "hash": "23980ced8757a37c13d6425a3131dabbd9d40c6317bad3e8da0968763f94155f",
     "migration": "20260710194226_add_feedback_table.sql",
     "migrationHash": "85c67c9536bc88dcf69eb4bd4ee15d9ee56f830ba99954e412e236cc527c3bfb"
+  },
+  "views/stats_situational_base.sql": {
+    "hash": "9dc38c2002dfa3254b46f50ac75f79733289bc8617481570ef52760c6672fe1a",
+    "migration": "20260711011851_stats_situational_views.sql",
+    "migrationHash": "5e8c16078ca7c7cf5dfd65a37a9d4f3616bf8d3e56749539f2eb119f185dbbea"
+  },
+  "views/stats_situational_splits.sql": {
+    "hash": "c5da340e5a59a51fac8fb586435e35f74faa87a1351738fd51d8666c68974f36",
+    "migration": "20260711011851_stats_situational_views.sql",
+    "migrationHash": "5e8c16078ca7c7cf5dfd65a37a9d4f3616bf8d3e56749539f2eb119f185dbbea"
   }
 }
