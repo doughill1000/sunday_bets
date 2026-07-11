@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#525** /league Trends cut consolidation — drops the redundant standalone Home/away chip
+  (its cover rate was fully contained in Quadrants, the home/away × favorite/underdog joint)
+  and folds the two side marginals in as summary lines above the four cells. The Quadrants
+  card becomes "Home & away favorites"; the Trends tab now shows five chips instead of six.
+  Presentation-only — the `homeAway` payload and `league_ats_home_away` view are unchanged.
+  component: `Quadrants.svelte` · route: `/league` · follows #517
+
 - **#517** /league Trends redesign — the Trends tab now leads with a "Where the market bends"
   synthesis chart (favorite cover rate vs a 50% coin-flip baseline, gold = favorites / sky =
   dogs) and moves the six situational cuts behind a one-cut-at-a-time chip selector rendering a
