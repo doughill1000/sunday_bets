@@ -46,6 +46,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-11
+
+- **PR #521** Agent-context gotchas (docs, chore) — records in the database/testing context
+  packs the traps that cost rework on #502: verify a table's assembled shape (`picks` is
+  group-scoped; `locked_spread_*` are `NOT NULL`) rather than its base `CREATE`; how to cleanly
+  regenerate an uncommitted migration; re-run `000_setup.sql` before a single-file pgTAP run
+  after `supabase db reset`; and that a fresh-worktree `pnpm dev` cold-boot is unreliable for a
+  live eyeball. files: `docs/agent-context/{database,testing}.md`
+
 ## 2026-07-10
 
 - **#502** "Your edge" analytics (PR 1 of 2) — per-user situational ATS views plus the
