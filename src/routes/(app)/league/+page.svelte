@@ -18,6 +18,9 @@
   import Quadrants from '$lib/components/league/Quadrants.svelte';
   import Primetime from '$lib/components/league/Primetime.svelte';
   import Divisional from '$lib/components/league/Divisional.svelte';
+  import MarketBends from '$lib/components/league/MarketBends.svelte';
+  import CoverMeter from '$lib/components/CoverMeter.svelte';
+  import { topMarketBends } from '$lib/utils/leagueBends';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
@@ -174,6 +177,86 @@
       losses: activeTrends.favDog.favoriteCovers
     })
   );
+
+  // ── "Where the market bends" synthesis (issue #517) ─────────────────────────────
+  // The ranked favorite-cover deviations that lead the Trends tab, computed off whichever
+  // scope is active. The ranking + cover math live in the pure `topMarketBends` transform.
+  const bends = $derived(topMarketBends(activeTrends));
+
+  // ── One-cut-at-a-time chip selector (issue #517) ────────────────────────────────
+  // The six situational cuts move behind a chip/tab selector rendering one detail panel at a
+  // time, instead of six always-open cards. Only cuts with data for the active scope get a chip.
+  type CutId = 'favorites' | 'spread' | 'homeaway' | 'quadrants' | 'primetime' | 'divisional';
+  const CUT_LABEL: Record<CutId, string> = {
+    favorites: 'Favorites',
+    spread: 'Spread size',
+    homeaway: 'Home / away',
+    quadrants: 'Quadrants',
+    primetime: 'Primetime',
+    divisional: 'Divisional'
+  };
+  const CUT_ORDER: CutId[] = [
+    'favorites',
+    'spread',
+    'homeaway',
+    'quadrants',
+    'primetime',
+    'divisional'
+  ];
+
+  const availableCuts = $derived(
+    CUT_ORDER.filter((id) => {
+      switch (id) {
+        case 'favorites':
+          return activeTrends.favDog.games > 0;
+        case 'spread':
+          return activeTrends.spreadBuckets.length > 0;
+        case 'homeaway':
+          return activeTrends.homeAway != null;
+        case 'quadrants':
+          return activeTrends.quadrants.length > 0;
+        case 'primetime':
+          return activeTrends.primetime.length > 0;
+        case 'divisional':
+          return activeTrends.divisional.some((d) => d.games > 0);
+      }
+    })
+  );
+
+  // The user's chip choice; `activeCut` falls back to the first available cut when the choice
+  // is unset or its cut vanished (e.g. after a scope switch), so no $effect is needed to reset.
+  let selectedCut = $state<CutId | null>(null);
+  const activeCut = $derived<CutId | null>(
+    selectedCut && availableCuts.includes(selectedCut) ? selectedCut : (availableCuts[0] ?? null)
+  );
+
+  // APG tabs keyboard model: arrows/Home/End move selection and focus across the chip row.
+  function onCutKeydown(event: KeyboardEvent) {
+    if (activeCut == null) return;
+    const idx = availableCuts.indexOf(activeCut);
+    let next = idx;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (idx + 1) % availableCuts.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (idx - 1 + availableCuts.length) % availableCuts.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = availableCuts.length - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    selectedCut = availableCuts[next];
+    document.getElementById(`league-cut-tab-${selectedCut}`)?.focus();
+  }
 
   // Human "2022–2024" (or "2024") range for the pooled caption, from the seasons actually pooled.
   const pooledRangeLabel = $derived.by(() => {
@@ -432,20 +515,19 @@
   </Card>
 {/snippet}
 
-<!-- The six league-wide situational/market cuts, two-up on desktop (single column on mobile so
-     the wide fav/dog table keeps its width). Reads `activeTrends`, so the same markup renders
-     either the picked season or the pooled multi-season window. Each guarded component renders
-     nothing when empty, so an absent cut collapses out of the grid cleanly. -->
-{#snippet trendsGrid()}
-  <div class="grid items-start gap-6 lg:grid-cols-2">
-    <!-- ── Favorites vs. underdogs ─────────────────────────────────────────────── -->
-    <Card data-testid="league-fav-dog">
-      <CardHeader>
-        <CardTitle>Favorites vs. underdogs</CardTitle>
-        <CardDescription>How often the spread favorite covers, league-wide.</CardDescription>
-      </CardHeader>
-      <CardContent class="space-y-6">
-        <dl class="grid grid-cols-2 gap-4 sm:max-w-md">
+<!-- Favorites vs. underdogs detail panel: the headline cover split as a meter (favorite cover,
+     with the 50% baseline standing in for the underdog complement) plus the per-week table in
+     season scope. Reads `activeTrends`, so it renders either the picked season or the pooled
+     window. -->
+{#snippet favoritesPanel()}
+  <Card data-testid="league-fav-dog">
+    <CardHeader>
+      <CardTitle>Favorites vs. underdogs</CardTitle>
+      <CardDescription>How often the spread favorite covers, league-wide.</CardDescription>
+    </CardHeader>
+    <CardContent class="space-y-6">
+      <div class="sm:max-w-md">
+        <dl class="grid grid-cols-2 gap-4">
           <div>
             <dt class="text-xs font-medium text-muted-foreground">Favorites cover</dt>
             <dd class="text-3xl font-bold">{formatAccuracy(favPct)}</dd>
@@ -457,89 +539,84 @@
             <p class="text-xs text-muted-foreground">{activeTrends.favDog.underdogCovers} covers</p>
           </div>
         </dl>
+        <CoverMeter pct={favPct} class="mt-4" />
+        <p class="mt-1.5 text-xs text-muted-foreground">
+          Bar is the favorite cover rate; the tick marks a 50/50 coin flip.
+        </p>
+      </div>
 
-        {#if activeTrends.favDogByWeek.length > 0}
-          <div class="overflow-x-auto">
-            <Table class="text-xs sm:text-sm">
-              <TableHeader>
+      {#if activeTrends.favDogByWeek.length > 0}
+        <div class="overflow-x-auto">
+          <Table class="text-xs sm:text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Week</TableHead>
+                <TableHead class="text-right">Games</TableHead>
+                <TableHead class="text-right">Fav cover</TableHead>
+                <TableHead class="text-right">Dog cover</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {#each activeTrends.favDogByWeek as wk (wk.weekNumber)}
                 <TableRow>
-                  <TableHead>Week</TableHead>
-                  <TableHead class="text-right">Games</TableHead>
-                  <TableHead class="text-right">Fav cover</TableHead>
-                  <TableHead class="text-right">Dog cover</TableHead>
+                  <TableCell class="font-medium">Week {wk.weekNumber}</TableCell>
+                  <TableCell class="text-right tabular-nums">{wk.games}</TableCell>
+                  <TableCell class="text-right"
+                    >{formatAccuracy(
+                      coverPct({ wins: wk.favoriteCovers, losses: wk.underdogCovers })
+                    )}</TableCell
+                  >
+                  <TableCell class="text-right"
+                    >{formatAccuracy(
+                      coverPct({ wins: wk.underdogCovers, losses: wk.favoriteCovers })
+                    )}</TableCell
+                  >
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {#each activeTrends.favDogByWeek as wk (wk.weekNumber)}
-                  <TableRow>
-                    <TableCell class="font-medium">Week {wk.weekNumber}</TableCell>
-                    <TableCell class="text-right tabular-nums">{wk.games}</TableCell>
-                    <TableCell class="text-right"
-                      >{formatAccuracy(
-                        coverPct({ wins: wk.favoriteCovers, losses: wk.underdogCovers })
-                      )}</TableCell
-                    >
-                    <TableCell class="text-right"
-                      >{formatAccuracy(
-                        coverPct({ wins: wk.underdogCovers, losses: wk.favoriteCovers })
-                      )}</TableCell
-                    >
-                  </TableRow>
-                {/each}
-              </TableBody>
-            </Table>
-          </div>
-        {/if}
+              {/each}
+            </TableBody>
+          </Table>
+        </div>
+      {/if}
+    </CardContent>
+  </Card>
+{/snippet}
+
+<!-- Home vs. away detail panel: one meter row per side (ATS cover), with the straight-up win
+     rate kept as a caption. Restructured from the old four-cell grid so the cover rate reads as
+     a bar and nothing clips at 390px. -->
+{#snippet homeAwayPanel()}
+  {#if activeTrends.homeAway}
+    {@const ha = activeTrends.homeAway}
+    <Card data-testid="league-home-away">
+      <CardHeader>
+        <CardTitle>Home vs. away</CardTitle>
+        <CardDescription>League-wide home and road cover rates.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul class="space-y-4 sm:max-w-md">
+          {#each [{ label: 'Home', side: ha.home }, { label: 'Away', side: ha.away }] as row (row.label)}
+            <li>
+              <div class="flex items-baseline justify-between gap-2 text-sm">
+                <span class="font-medium">{row.label}</span>
+                <span class="flex items-baseline gap-2">
+                  <span class="font-mono tabular-nums"
+                    >{formatAccuracy(coverPct(row.side.ats))}</span
+                  >
+                  <span class="text-xs text-muted-foreground"
+                    >ATS · {@render wlp(row.side.ats)}</span
+                  >
+                </span>
+              </div>
+              <CoverMeter pct={coverPct(row.side.ats)} class="mt-1.5" />
+              <p class="mt-1.5 text-xs text-muted-foreground">
+                {formatAccuracy(coverPct(row.side.su))} win rate straight up
+              </p>
+            </li>
+          {/each}
+        </ul>
       </CardContent>
     </Card>
-
-    <!-- ── Favorites by spread size (issue #426) ───────────────────────────────── -->
-    <SpreadBuckets buckets={activeTrends.spreadBuckets} />
-
-    <!-- ── Home vs. away ───────────────────────────────────────────────────────── -->
-    {#if activeTrends.homeAway}
-      {@const ha = activeTrends.homeAway}
-      <Card data-testid="league-home-away">
-        <CardHeader>
-          <CardTitle>Home vs. away</CardTitle>
-          <CardDescription>League-wide home and road cover rates.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl class="grid grid-cols-2 gap-6 sm:grid-cols-4">
-            <div>
-              <dt class="text-xs font-medium text-muted-foreground">Home ATS cover</dt>
-              <dd class="text-2xl font-bold">{formatAccuracy(coverPct(ha.home.ats))}</dd>
-              <p class="text-xs text-muted-foreground">{@render wlp(ha.home.ats)}</p>
-            </div>
-            <div>
-              <dt class="text-xs font-medium text-muted-foreground">Home win %</dt>
-              <dd class="text-2xl font-bold">{formatAccuracy(coverPct(ha.home.su))}</dd>
-              <p class="text-xs text-muted-foreground">straight up</p>
-            </div>
-            <div>
-              <dt class="text-xs font-medium text-muted-foreground">Away ATS cover</dt>
-              <dd class="text-2xl font-bold">{formatAccuracy(coverPct(ha.away.ats))}</dd>
-              <p class="text-xs text-muted-foreground">{@render wlp(ha.away.ats)}</p>
-            </div>
-            <div>
-              <dt class="text-xs font-medium text-muted-foreground">Away win %</dt>
-              <dd class="text-2xl font-bold">{formatAccuracy(coverPct(ha.away.su))}</dd>
-              <p class="text-xs text-muted-foreground">straight up</p>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-    {/if}
-
-    <!-- ── Home/road × favorite/underdog quadrants (issue #426) ────────────────── -->
-    <Quadrants quadrants={activeTrends.quadrants} />
-
-    <!-- ── Primetime vs. daytime (issue #427) ──────────────────────────────────── -->
-    <Primetime slots={activeTrends.primetime} />
-
-    <!-- ── Divisional vs. non-divisional (issue #427) ──────────────────────────── -->
-    <Divisional splits={activeTrends.divisional} />
-  </div>
+  {/if}
 {/snippet}
 
 <!-- Trends tab: a scope toggle above the situational/market cuts. "This season" reads the
@@ -615,7 +692,66 @@
       </CardHeader>
     </Card>
   {:else}
-    {@render trendsGrid()}
+    <!-- Synthesis first (issue #517): one diverging chart showing which situations bend furthest
+         from a coin flip, before the reader drills into any single cut below. -->
+    <MarketBends {bends} />
+
+    <!-- One cut at a time: a chip/tab selector rendering a single detail panel, replacing the
+         six always-open situational cards. APG tabs pattern (roving tabindex + arrow keys). -->
+    {#if availableCuts.length > 0 && activeCut}
+      <div class="space-y-4">
+        <!-- A radiogroup, not a nested tablist: this control lives inside the page's top-level
+             (bits-ui) Teams/Trends Tabs, and a descendant role="tab" would be swept into that
+             tablist's roving-focus model and break it. "Pick one cut to view" is a radio choice;
+             the detail panel below is the region it drives. -->
+        <div
+          role="radiogroup"
+          aria-label="Situational cut"
+          class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        >
+          {#each availableCuts as cut (cut)}
+            {@const selected = activeCut === cut}
+            <button
+              type="button"
+              role="radio"
+              id="league-cut-tab-{cut}"
+              aria-checked={selected}
+              tabindex={selected ? 0 : -1}
+              data-testid="league-cut-chip"
+              class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
+              onclick={() => (selectedCut = cut)}
+              onkeydown={onCutKeydown}
+            >
+              {CUT_LABEL[cut]}
+            </button>
+          {/each}
+        </div>
+
+        <div
+          id="league-cut-panel"
+          role="region"
+          aria-label="{CUT_LABEL[activeCut]} detail"
+          data-testid="league-cut-panel"
+        >
+          {#if activeCut === 'favorites'}
+            {@render favoritesPanel()}
+          {:else if activeCut === 'spread'}
+            <SpreadBuckets buckets={activeTrends.spreadBuckets} />
+          {:else if activeCut === 'homeaway'}
+            {@render homeAwayPanel()}
+          {:else if activeCut === 'quadrants'}
+            <Quadrants quadrants={activeTrends.quadrants} />
+          {:else if activeCut === 'primetime'}
+            <Primetime slots={activeTrends.primetime} />
+          {:else if activeCut === 'divisional'}
+            <Divisional splits={activeTrends.divisional} />
+          {/if}
+        </div>
+      </div>
+    {/if}
+
     {#if trendsScope === 'multi'}
       <p class="text-xs text-muted-foreground">
         Pooled across the {pooledRangeLabel} seasons to give thin situational cuts enough sample. Even

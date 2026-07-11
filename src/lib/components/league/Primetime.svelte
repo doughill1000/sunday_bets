@@ -1,9 +1,10 @@
 <script lang="ts">
-  // /league primetime module (issue #427): favorite ATS cover rate by kickoff slot —
-  // Thursday / Sunday / Monday night vs daytime. Reads the pre-shaped LeaguePrimetimeSlot
-  // rows from the single /league payload; all cover math lives in coverPct (leagueAts.ts),
-  // never here. Thin slots (early season, sparse imported years) carry an n= caveat rather
-  // than presenting a noisy percentage as signal.
+  // /league primetime module (issue #427, meter treatment #517): favorite ATS cover rate by
+  // kickoff slot — Thursday / Saturday / Sunday / Monday night vs daytime. Reads the pre-shaped
+  // LeaguePrimetimeSlot rows from the single /league payload; all cover math lives in coverPct
+  // (leagueAts.ts), never here. Cover % renders as a shared meter with a 50% baseline tick so it
+  // never clips at 390px; thin slots (early season, sparse imported years) carry an n= caveat
+  // rather than presenting a noisy percentage as signal.
   import type { LeaguePrimetimeSlot } from '$lib/types/server/league';
   import {
     Card,
@@ -12,14 +13,7 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-  } from '$lib/components/ui/table';
+  import CoverMeter from '$lib/components/CoverMeter.svelte';
   import {
     coverPct,
     isThinSample,
@@ -41,37 +35,28 @@
         How often the spread favorite covers by kickoff slot, league-wide.
       </CardDescription>
     </CardHeader>
-    <CardContent class="overflow-x-auto">
-      <Table class="text-xs sm:text-sm">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Slot</TableHead>
-            <TableHead class="text-right">Fav cover</TableHead>
-            <TableHead class="text-right">Record</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each slots as slot (slot.slot)}
-            {@const thin = isThinSample(slot.games)}
-            <TableRow>
-              <TableCell class="font-medium whitespace-nowrap">
-                {PRIMETIME_SLOT_LABEL[slot.slot]}
-              </TableCell>
-              <TableCell class="text-right">
-                {formatAccuracy(
-                  coverPct({ wins: slot.favoriteCovers, losses: slot.underdogCovers })
-                )}
-              </TableCell>
-              <TableCell class="text-right tabular-nums text-muted-foreground">
-                {slot.favoriteCovers}-{slot.underdogCovers}-{slot.pushes}{#if thin}<span
-                    class="text-warning"
-                    title="Small sample — treat with caution">*</span
-                  >{/if}
-              </TableCell>
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Table>
+    <CardContent>
+      <ul class="space-y-3">
+        {#each slots as slot (slot.slot)}
+          {@const thin = isThinSample(slot.games)}
+          {@const pct = coverPct({ wins: slot.favoriteCovers, losses: slot.underdogCovers })}
+          <li>
+            <div class="flex items-baseline justify-between gap-2 text-sm">
+              <span class="font-medium whitespace-nowrap">{PRIMETIME_SLOT_LABEL[slot.slot]}</span>
+              <span class="flex items-baseline gap-2">
+                <span class="font-mono tabular-nums">{formatAccuracy(pct)}</span>
+                <span class="text-xs text-muted-foreground tabular-nums">
+                  {slot.favoriteCovers}-{slot.underdogCovers}-{slot.pushes}{#if thin}<span
+                      class="text-warning"
+                      title="Small sample — treat with caution">*</span
+                    >{/if}
+                </span>
+              </span>
+            </div>
+            <CoverMeter {pct} class="mt-1.5" />
+          </li>
+        {/each}
+      </ul>
 
       {#if hasThin}
         <p class="mt-3 text-xs text-muted-foreground">

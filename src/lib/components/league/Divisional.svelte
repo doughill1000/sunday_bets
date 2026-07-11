@@ -1,9 +1,9 @@
 <script lang="ts">
-  // /league divisional module (issue #427): favorite ATS cover rate for divisional vs
-  // non-divisional matchups, league-wide. Reads the pre-shaped LeagueDivisionalSplit rows
-  // from the single /league payload (games with an unknown division are excluded upstream in
-  // league_ats_divisional); cover math lives in coverPct, never here. A thin bucket carries
-  // an n= caveat instead of a noisy percentage.
+  // /league divisional module (issue #427, meter treatment #517): favorite ATS cover rate for
+  // divisional vs non-divisional matchups, league-wide. Reads the pre-shaped LeagueDivisionalSplit
+  // rows from the single /league payload (games with an unknown division are excluded upstream in
+  // league_ats_divisional); cover math lives in coverPct, never here, and is drawn as a meter with
+  // a 50% baseline tick beneath each figure. A thin bucket carries an n= caveat.
   import type { LeagueDivisionalSplit } from '$lib/types/server/league';
   import {
     Card,
@@ -12,6 +12,7 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
+  import CoverMeter from '$lib/components/CoverMeter.svelte';
   import { coverPct, isThinSample, LEAGUE_THIN_SAMPLE } from '$lib/utils/leagueAts';
   import { formatAccuracy } from '$lib/utils/stats';
 
@@ -39,16 +40,14 @@
       <dl class="grid grid-cols-1 gap-6 sm:max-w-md sm:grid-cols-2">
         {#each ordered as split (split.isDivisional)}
           {@const thin = isThinSample(split.games)}
+          {@const pct = coverPct({ wins: split.favoriteCovers, losses: split.underdogCovers })}
           <div>
             <dt class="text-xs font-medium text-muted-foreground">
               {split.isDivisional ? 'Divisional' : 'Non-divisional'}
             </dt>
-            <dd class="text-3xl font-bold">
-              {formatAccuracy(
-                coverPct({ wins: split.favoriteCovers, losses: split.underdogCovers })
-              )}
-            </dd>
-            <p class="text-xs text-muted-foreground">
+            <dd class="text-3xl font-bold">{formatAccuracy(pct)}</dd>
+            <CoverMeter {pct} class="mt-2" />
+            <p class="mt-1.5 text-xs text-muted-foreground">
               {split.favoriteCovers}-{split.underdogCovers}-{split.pushes} favorites ATS{#if thin}<span
                   class="text-warning"
                   title="Small sample — treat with caution">*</span
