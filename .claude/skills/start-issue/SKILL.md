@@ -20,7 +20,8 @@ pre-authorized per that section and per `finish-pr` step 6).
 
 1. Read the full issue and any linked ADRs: `gh issue view NNN`. Confirm it is
    **Ready** (one mergeable outcome, observable acceptance criteria, a governing ADR
-   link or a credible reason none is needed).
+   link or a credible reason none is needed). If the issue links a **design study**, treat
+   its before/after mockups as the visual target for the UI you build.
 2. Infer the areas the issue touches and read the matching context packs
    (auth / database / ui / testing) per `docs/agent-context/README.md` — they hold the
    rules most often gotten wrong.
@@ -62,5 +63,6 @@ pre-authorized per that section and per `finish-pr` step 6).
 ## See also
 
 - `docs/WORKFLOW.md` §"Claim and isolate work"
-- Sibling skills: `issue-author` (creates the issue, upstream of this one) and
-  `finish-pr` (the closing bookend this skill now invokes automatically).
+- Sibling skills: `issue-author` (creates the issue, upstream of this one),
+  `design-study` (the visual spec, if the issue links one), and `finish-pr` (the
+  closing bookend this skill now invokes automatically).
