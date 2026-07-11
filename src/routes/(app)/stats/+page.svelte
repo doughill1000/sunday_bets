@@ -8,6 +8,7 @@
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
   import YourEdge from '$lib/components/stats/YourEdge.svelte';
+  import SituationalExplorer from '$lib/components/stats/SituationalExplorer.svelte';
   import StatAccuracyList from '$lib/components/stats/StatAccuracyList.svelte';
   import {
     Card,
@@ -28,6 +29,7 @@
     headToHeadForUser,
     lineSideTendency,
     seasonScopeOptions,
+    situationalExplorer,
     streakTendency
   } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
@@ -64,7 +66,9 @@
     lineSide: [],
     streaks: [],
     situational: [],
-    leagueSituationalBaseline: []
+    leagueSituationalBaseline: [],
+    situationalSeason: [],
+    leagueSituationalBaselineSeason: []
   };
 
   // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the
@@ -159,6 +163,17 @@
   // Career situational splits for the selected player, fed to the "Your edge" panel (#502).
   const selectedSituational = $derived(
     data.situational.filter((r) => r.user_id === selectedUserId)
+  );
+  // Season situational splits for the selected player (#514) — the explorer's season lens.
+  const selectedSituationalSeason = $derived(
+    data.situationalSeason.filter((r) => r.user_id === selectedUserId)
+  );
+  // Explorer layouts per scope: every bucket of each dimension vs the matching league line (#514).
+  const careerExplorer = $derived(
+    situationalExplorer(selectedSituational, data.leagueSituationalBaseline)
+  );
+  const seasonExplorer = $derived(
+    situationalExplorer(selectedSituationalSeason, data.leagueSituationalBaselineSeason)
   );
 
   // Nulls sort last regardless; otherwise highest cover first.
@@ -324,9 +339,23 @@
       </CardHeader>
     </Card>
   {:else}
-    <!-- One context bar (#518): player + season/scope, sticky under the app header so the
-         picker never scrolls away. The season selector stays a dropdown and absorbs Career as
-         a pinned option, so scope is one control that scales as seasons accumulate. -->
+    {#if selectedCareer}
+      <!-- Edge hero leads the page (#514): the career synthesis sits ABOVE the scope line so the
+           season dropdown never floats over a card it doesn't drive. The edge stays career by
+           design — one season of any single cut is too thin to trust — with the #502 sample gate
+           and empty state unchanged. -->
+      <YourEdge
+        splits={selectedSituational}
+        baseline={data.leagueSituationalBaseline}
+        isYou={isSelectedYou}
+        displayName={selectedDisplayName}
+      />
+    {/if}
+
+    <!-- Scope line: the one context bar (#518) — player + season/scope — now sits BELOW the edge
+         hero and governs only the explorer + breakdowns beneath it (#514). Sticky under the app
+         header so the picker never scrolls away; the season selector absorbs Career as a pinned
+         option, so scope is one control that scales as seasons accumulate. -->
     <div
       data-testid="stats-context-bar"
       class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
@@ -370,18 +399,20 @@
 
     {#if selectedCareer}
       {#if scope === 'career'}
-        <!-- Career leads with the headline all-time totals, then the edge synthesis (#518). -->
+        <!-- Career: headline all-time totals, then the situational explorer (#514). The edge hero
+             already leads above the scope line. -->
         <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
 
-        <!-- Synthesis (#502): where the selected player beats or trails the market, all-time. -->
-        <YourEdge
-          splits={selectedSituational}
-          baseline={data.leagueSituationalBaseline}
+        <!-- Every split (#514): browse every ATS cut across the career, one dimension at a time. -->
+        <SituationalExplorer
+          dimensions={careerExplorer}
+          scopeLabel="Career"
           isYou={isSelectedYou}
           displayName={selectedDisplayName}
         />
 
-        <!-- All-time accuracy breakdowns (streamed off the critical path) -->
+        <!-- Legacy team/weight/H2H tables fold into one "More breakdowns" disclosure (#514),
+             streamed off the critical path. -->
         {#await data.allTimeDetail}
           <Card class="border-dashed">
             <CardHeader>
@@ -425,65 +456,63 @@
             ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
             : []}
           {#if allTimeTeamAccuracyRows.length > 0 || allTimeWeightAccuracyRows.length > 0 || careerH2H.length > 0}
-            <div class="space-y-2">
-              <h2 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                All-time breakdown
-              </h2>
-              <Accordion type="multiple" class="rounded-xl border">
-                {#if allTimeTeamAccuracyRows.length > 0}
-                  <AccordionItem value="career-team" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger(
-                        'Accuracy by team',
-                        `${allTimeTeamAccuracyRows[0].label} ${formatAccuracy(allTimeTeamAccuracyRows[0].accuracy)}`
-                      )}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <p class="mb-3 text-sm text-muted-foreground">
-                        All-time results grouped by the team backed.
-                      </p>
-                      <StatAccuracyList rows={allTimeTeamAccuracyRows} />
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
+            <Accordion type="multiple" class="rounded-xl border">
+              <AccordionItem value="more-breakdowns" class="px-4">
+                <AccordionTrigger>
+                  {@render discTrigger('More breakdowns', 'team · weight · H2H')}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Accordion type="multiple" class="-mx-4 border-t">
+                    {#if allTimeTeamAccuracyRows.length > 0}
+                      <AccordionItem value="career-team" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger(
+                            'Accuracy by team',
+                            `${allTimeTeamAccuracyRows[0].label} ${formatAccuracy(allTimeTeamAccuracyRows[0].accuracy)}`
+                          )}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p class="mb-3 text-sm text-muted-foreground">
+                            All-time results grouped by the team backed.
+                          </p>
+                          <StatAccuracyList rows={allTimeTeamAccuracyRows} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
 
-                {#if allTimeWeightAccuracyRows.length > 0}
-                  <AccordionItem value="career-weight" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Accuracy by weight', '')}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <p class="mb-3 text-sm text-muted-foreground">
-                        All-time confidence-level results, including each All-In.
-                      </p>
-                      <StatAccuracyList rows={allTimeWeightAccuracyRows} />
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
+                    {#if allTimeWeightAccuracyRows.length > 0}
+                      <AccordionItem value="career-weight" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Accuracy by weight', '')}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p class="mb-3 text-sm text-muted-foreground">
+                            All-time confidence-level results, including each All-In.
+                          </p>
+                          <StatAccuracyList rows={allTimeWeightAccuracyRows} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
 
-                {#if careerH2H.length > 0}
-                  <AccordionItem value="career-h2h" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Head to head', rivalMeta(careerH2H.length))}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      {@render h2hGrid(careerH2H, 'all-time')}
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
-              </Accordion>
-            </div>
+                    {#if careerH2H.length > 0}
+                      <AccordionItem value="career-h2h" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Head to head', rivalMeta(careerH2H.length))}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {@render h2hGrid(careerH2H, 'all-time')}
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
+                  </Accordion>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           {/if}
         {/await}
       {:else}
-        <!-- Season leads with the all-time edge synthesis, then the season snapshot (#518). -->
-        <YourEdge
-          splits={selectedSituational}
-          baseline={data.leagueSituationalBaseline}
-          isYou={isSelectedYou}
-          displayName={selectedDisplayName}
-        />
-
+        <!-- Season: snapshot + tendencies, then the season-scoped explorer (#514). The career edge
+             hero already leads above the scope line and does not re-scope by season (by design). -->
         {#if data.totals.length === 0}
           <Card class="border-dashed">
             <CardHeader>
@@ -578,70 +607,82 @@
             </Card>
           {/if}
 
-          <!-- Density pass (#518): the longer tables move behind progressive disclosure so the
-             first screen leads with synthesis (edge + snapshot + tendencies). -->
+          <!-- Every split (#514): the season-scoped situational explorer. -->
+          <SituationalExplorer
+            dimensions={seasonExplorer}
+            scopeLabel={String(data.seasonYear)}
+            isYou={isSelectedYou}
+            displayName={selectedDisplayName}
+          />
+
+          <!-- Legacy team/weight/trend/H2H tables fold into one "More breakdowns" disclosure
+               (#514; the density pass began in #518). -->
           {#if teamAccuracyRows.length > 0 || weightAccuracyRows.length > 0 || trendRows.length > 0 || seasonH2H.length > 0}
-            <div class="space-y-2">
-              <h2 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
-                Breakdown
-              </h2>
-              <Accordion type="multiple" class="rounded-xl border">
-                {#if teamAccuracyRows.length > 0}
-                  <AccordionItem value="team" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Accuracy by team', teamMeta)}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <p class="mb-3 text-sm text-muted-foreground">
-                        {possessive}
-                        {data.seasonYear} results grouped by the team backed.
-                      </p>
-                      <StatAccuracyList rows={teamAccuracyRows} />
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
+            <Accordion type="multiple" class="rounded-xl border">
+              <AccordionItem value="more-breakdowns" class="px-4">
+                <AccordionTrigger>
+                  {@render discTrigger('More breakdowns', 'team · weight · trend · H2H')}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Accordion type="multiple" class="-mx-4 border-t">
+                    {#if teamAccuracyRows.length > 0}
+                      <AccordionItem value="team" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Accuracy by team', teamMeta)}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p class="mb-3 text-sm text-muted-foreground">
+                            {possessive}
+                            {data.seasonYear} results grouped by the team backed.
+                          </p>
+                          <StatAccuracyList rows={teamAccuracyRows} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
 
-                {#if weightAccuracyRows.length > 0}
-                  <AccordionItem value="weight" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Accuracy by weight', weightMeta)}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <p class="mb-3 text-sm text-muted-foreground">
-                        {possessive}
-                        {data.seasonYear} confidence-level results, including each All-In.
-                      </p>
-                      <StatAccuracyList rows={weightAccuracyRows} />
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
+                    {#if weightAccuracyRows.length > 0}
+                      <AccordionItem value="weight" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Accuracy by weight', weightMeta)}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p class="mb-3 text-sm text-muted-foreground">
+                            {possessive}
+                            {data.seasonYear} confidence-level results, including each All-In.
+                          </p>
+                          <StatAccuracyList rows={weightAccuracyRows} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
 
-                {#if trendRows.length > 0}
-                  <AccordionItem value="trend" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Season trend', trendMeta)}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <p class="mb-3 text-sm text-muted-foreground">
-                        {possessive} cumulative points after each completed week.
-                      </p>
-                      <SeasonTrendChart rows={trendRows} showLegend={false} />
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
+                    {#if trendRows.length > 0}
+                      <AccordionItem value="trend" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Season trend', trendMeta)}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p class="mb-3 text-sm text-muted-foreground">
+                            {possessive} cumulative points after each completed week.
+                          </p>
+                          <SeasonTrendChart rows={trendRows} showLegend={false} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
 
-                {#if seasonH2H.length > 0}
-                  <AccordionItem value="h2h" class="px-4">
-                    <AccordionTrigger>
-                      {@render discTrigger('Head to head', rivalMeta(seasonH2H.length))}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      {@render h2hGrid(seasonH2H, 'this season')}
-                    </AccordionContent>
-                  </AccordionItem>
-                {/if}
-              </Accordion>
-            </div>
+                    {#if seasonH2H.length > 0}
+                      <AccordionItem value="h2h" class="px-4">
+                        <AccordionTrigger>
+                          {@render discTrigger('Head to head', rivalMeta(seasonH2H.length))}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          {@render h2hGrid(seasonH2H, 'this season')}
+                        </AccordionContent>
+                      </AccordionItem>
+                    {/if}
+                  </Accordion>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           {/if}
         {:else}
           <Card class="border-dashed">

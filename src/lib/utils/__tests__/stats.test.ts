@@ -3,11 +3,13 @@ import {
   buildTrendSeries,
   consensusTendency,
   EDGE_MIN_SAMPLE,
+  EXPLORER_MIN_SAMPLE,
   formatAccuracy,
   headToHeadForUser,
   lineSideTendency,
   seasonScopeOptions,
   situationalEdges,
+  situationalExplorer,
   streakTendency,
   TENDENCY_MIN_SAMPLE,
   topSituationalEdges
@@ -390,5 +392,69 @@ describe('top situational edges (#502)', () => {
 
   it('exposes a tunable career sample guard', () => {
     expect(EDGE_MIN_SAMPLE).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe('situational explorer (#514)', () => {
+  const league = [
+    baseline('spread', 'pickem', 0.5),
+    baseline('spread', '1-3', 0.49),
+    baseline('spread', '7-9.5', 0.53),
+    baseline('primetime', 'primetime', 0.5)
+  ];
+
+  it('lays out a dimension’s buckets in order with per-bucket deltas vs the league line', () => {
+    const dims = situationalExplorer(
+      [
+        split('spread', '7-9.5', 35, 19, { bucket_order: 3 }), // 0.6481 -> +0.118
+        split('spread', 'pickem', 22, 15, { bucket_order: 0 }) // 0.5946 -> +0.0946
+      ],
+      league
+    );
+    expect(dims).toHaveLength(1);
+    expect(dims[0].dimension).toBe('spread');
+    // Ordered by bucket_order, not input order; short bucket labels.
+    expect(dims[0].buckets.map((b) => b.bucket)).toEqual(['pickem', '7-9.5']);
+    expect(dims[0].buckets[0].label).toBe("Pick'em");
+    expect(dims[0].buckets[0].isThin).toBe(false);
+    expect(dims[0].buckets[0].delta).toBeCloseTo(0.0946, 3);
+    expect(dims[0].buckets[1].delta).toBeCloseTo(0.1181, 3);
+  });
+
+  it('dims a thin cut: no delta bar, still shows the record, reports how many more picks it needs', () => {
+    const [dim] = situationalExplorer(
+      [split('spread', '1-3', 6, 3, { bucket_order: 1 })], // 9 decided < 15
+      league
+    );
+    const bucket = dim.buckets[0];
+    expect(bucket.isThin).toBe(true);
+    expect(bucket.delta).toBeNull();
+    expect(bucket.needed).toBe(EXPLORER_MIN_SAMPLE - 9);
+    expect(bucket.accuracy).toBeCloseTo(6 / 9, 4);
+  });
+
+  it('marks a well-sampled cut thin when it has no comparable market line', () => {
+    const [dim] = situationalExplorer(
+      [split('divisional', 'divisional', 20, 10)], // no divisional baseline provided
+      league
+    );
+    expect(dim.buckets[0].isThin).toBe(true);
+    expect(dim.buckets[0].delta).toBeNull();
+    expect(dim.buckets[0].needed).toBe(0); // sample is fine; the baseline is what's missing
+  });
+
+  it('returns dimensions in display order and skips unlabelled buckets and empty dimensions', () => {
+    const dims = situationalExplorer(
+      [
+        split('primetime', 'primetime', 20, 10, { bucket_order: 0 }),
+        split('spread', 'weird', 20, 10, { bucket_order: 0 }) // unknown bucket -> dropped
+      ],
+      league
+    );
+    expect(dims.map((d) => d.dimension)).toEqual(['primetime']);
+  });
+
+  it('returns nothing when the player has no situational picks', () => {
+    expect(situationalExplorer([], league)).toEqual([]);
   });
 });

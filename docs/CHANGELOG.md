@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#514** /stats situational explorer — the "Your edge" hero (career) now leads above the scope
+  line, and a new "Every split" explorer beneath it browses every ATS cut (primetime, home/away,
+  spread bucket, divisional) one dimension at a time as bars diverging from the league line, across
+  Career **or any season**. The season lens adds season-grained situational views; the edge stays
+  career + sample-gated by design, and the legacy team/weight/trend/H2H tables fold into one "More
+  breakdowns" disclosure. views: `stats_situational_splits_season` · `league_situational_baseline_season`
+  · component: `SituationalExplorer.svelte` · route: `/stats` · ADR-0013/0017
 - **#530** Design-system foundations — one token vocabulary layered on Tailwind: semantic
   typography / spacing / elevation / motion tokens join the existing color/radius tokens in
   `@theme inline`, with theme-responsive (light+dark) elevation so a light theme can flip. The

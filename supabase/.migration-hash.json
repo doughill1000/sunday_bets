@@ -864,5 +864,15 @@
     "hash": "c517369f1674e1466e40c05bfe78200499ed9aae3e77b07863898dbe6ba32381",
     "migration": "20260711114458_league_situational_baseline.sql",
     "migrationHash": "117a72dc3418a22cdf891a5ab7247394eb97b78eed0bf31e5a02d57cfde062b3"
+  },
+  "views/league_situational_baseline_season.sql": {
+    "hash": "24e602c7ad7c9ec6acd340e96628468a6eb65b193b06bf1df065b96c67fc4cc5",
+    "migration": "20260711184725_stats_situational_season_views.sql",
+    "migrationHash": "10b7ab2803a654838a37fd00f3647b1325987974866e0e973c9921eda7eae628"
+  },
+  "views/stats_situational_splits_season.sql": {
+    "hash": "fb310174d3fc4629cf813ca16277fd0c4c18406cd384b19c93146c932892ab92",
+    "migration": "20260711184725_stats_situational_season_views.sql",
+    "migrationHash": "10b7ab2803a654838a37fd00f3647b1325987974866e0e973c9921eda7eae628"
   }
 }
