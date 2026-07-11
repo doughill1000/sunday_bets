@@ -5,7 +5,12 @@
 // importing the server-only composers in `$lib/server/**`. The underlying entry types
 // live under `$lib/types/**` (not the server-only `$lib/server` dir), so importing them
 // here is client-safe — only types cross the boundary, and they are erased at build.
-import type { SeasonStats, AllTimeTotalsEntry } from '$lib/types/server/stats';
+import type {
+  SeasonStats,
+  AllTimeTotalsEntry,
+  SituationalSplitEntry,
+  LeagueSituationalBaselineEntry
+} from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
@@ -25,6 +30,13 @@ export type StatsCachePayload = SeasonStats & {
    *  Drives the Career "Standings points" caption, which spans every season rather than
    *  the one in view, so it is not season-scoped like the Leaderboard's flag. */
   dropActive: boolean;
+  /** Per-user career situational ATS splits for the whole group (#502). Career-grain and
+   *  season-independent (like allTimeTotals), carried here so the "Your edge" panel can join
+   *  the selected player's cuts to the league baseline. */
+  situational: SituationalSplitEntry[];
+  /** League-wide market ATS cover baseline per situational cut (#502). Group-independent — the
+   *  yardstick the panel subtracts from each player's own per-cut cover rate. */
+  leagueSituationalBaseline: LeagueSituationalBaselineEntry[];
 };
 
 /**

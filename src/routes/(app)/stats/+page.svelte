@@ -7,6 +7,7 @@
   import type { PageData } from './$types';
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
+  import YourEdge from '$lib/components/stats/YourEdge.svelte';
   import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
   import { Badge } from '$lib/components/ui/badge';
   import { Button } from '$lib/components/ui/button';
@@ -66,7 +67,9 @@
     headToHead: [],
     consensusStats: [],
     lineSide: [],
-    streaks: []
+    streaks: [],
+    situational: [],
+    leagueSituationalBaseline: []
   };
 
   // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the
@@ -151,6 +154,11 @@
     consensusTendency(data.consensusStats.find((r) => r.user_id === selectedUserId))
   );
   const hasTendencies = $derived(Boolean(lineSide || streak || consensus));
+
+  // Career situational splits for the selected player, fed to the "Your edge" panel (#502).
+  const selectedSituational = $derived(
+    data.situational.filter((r) => r.user_id === selectedUserId)
+  );
 
   function setTeamSort(key: TeamSortKey) {
     teamSort =
@@ -343,6 +351,15 @@
     </div>
 
     {#if selectedCareer}
+      <!-- Synthesis first (#502): where the selected player beats or trails the market, all-time.
+           Career-grain, so it leads above the Season/Career split rather than living inside it. -->
+      <YourEdge
+        splits={selectedSituational}
+        baseline={data.leagueSituationalBaseline}
+        isYou={isSelectedYou}
+        displayName={selectedDisplayName}
+      />
+
       <Tabs value="season" class="w-full space-y-6">
         <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
           <TabsTrigger value="season" class={ACTIVE_TAB_TRIGGER_CLASS}>Season</TabsTrigger>

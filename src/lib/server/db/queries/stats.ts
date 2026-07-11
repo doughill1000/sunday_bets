@@ -8,7 +8,10 @@ import type {
   AllTimeWeightAccuracyEntry,
   ConsensusStatsEntry,
   HeadToHeadEntry,
+  LeagueSituationalBaselineEntry,
   LineSideStatsEntry,
+  SituationalDimension,
+  SituationalSplitEntry,
   StreakStatsEntry,
   SeasonStats,
   TeamAccuracyEntry,
@@ -24,6 +27,8 @@ type AllTimeTeamRow = Tables<'stats_accuracy_by_team_alltime'>;
 type AllTimeWeightRow = Tables<'stats_accuracy_by_weight_alltime'>;
 type LineSideRow = Tables<'stats_accuracy_by_line_side'>;
 type StreakRow = Tables<'stats_pick_streaks'>;
+type SituationalSplitRow = Tables<'stats_situational_splits'>;
+type LeagueSituationalBaselineRow = Tables<'league_situational_baseline'>;
 // Narrowed shape for the partial select on group_pick_consensus.
 type ConsensusPickRow = Pick<
   Tables<'group_pick_consensus'>,
@@ -210,6 +215,96 @@ function toStreak(row: StreakRow): StreakStatsEntry | null {
     current_streak: row.current_streak,
     max_streak: row.max_streak
   };
+}
+
+function toSituationalSplit(row: SituationalSplitRow): SituationalSplitEntry | null {
+  if (
+    row.user_id == null ||
+    row.dimension == null ||
+    row.bucket == null ||
+    row.bucket_order == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    dimension: row.dimension as SituationalDimension,
+    bucket: row.bucket,
+    bucket_order: row.bucket_order,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    accuracy: row.accuracy
+  };
+}
+
+function toLeagueSituationalBaseline(
+  row: LeagueSituationalBaselineRow
+): LeagueSituationalBaselineEntry | null {
+  if (
+    row.dimension == null ||
+    row.bucket == null ||
+    row.bucket_order == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null
+  ) {
+    return null;
+  }
+  return {
+    dimension: row.dimension as SituationalDimension,
+    bucket: row.bucket,
+    bucket_order: row.bucket_order,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    accuracy: row.accuracy
+  };
+}
+
+/**
+ * Per-user career situational ATS splits for the whole group (issue #502). Career-grain (all
+ * seasons pooled), so — like {@link getAllTimeTotals} — it takes only a group id and the "Your
+ * edge" panel filters to the selected player client-side.
+ */
+export async function getSituationalSplits(groupId: string): Promise<SituationalSplitEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_situational_splits')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('user_id')
+    .order('dimension')
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toSituationalSplit(row);
+    return entry ? [entry] : [];
+  });
+}
+
+/**
+ * League-wide market ATS cover baseline per situational cut (issue #502). Group- and
+ * user-independent — identical for everyone — so it takes no arguments; the panel subtracts it
+ * from each player's own per-cut cover rate to compute the edge.
+ */
+export async function getLeagueSituationalBaseline(): Promise<LeagueSituationalBaselineEntry[]> {
+  const { data, error } = await supabaseService
+    .from('league_situational_baseline')
+    .select('*')
+    .order('dimension')
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toLeagueSituationalBaseline(row);
+    return entry ? [entry] : [];
+  });
 }
 
 export async function getStatsForSeason(seasonYear: number, groupId: string): Promise<SeasonStats> {

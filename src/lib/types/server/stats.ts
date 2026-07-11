@@ -101,6 +101,39 @@ export type StreakStatsEntry = {
   max_streak: number;
 };
 
+/** The four situational cuts the "Your edge" panel (#502) works over. Kept in sync with
+ *  stats_situational_splits.dimension and league_situational_baseline.dimension. */
+export type SituationalDimension = 'primetime' | 'home_away' | 'spread' | 'divisional';
+
+/** One per-user career situational ATS record from stats_situational_splits (#502) — the
+ *  player's own cover rate in a cut, joined against the league baseline to compute their edge.
+ *  Career-grain (all seasons pooled); `accuracy` is wins/(wins+losses), null on a no-decision cut. */
+export type SituationalSplitEntry = {
+  user_id: string;
+  dimension: SituationalDimension;
+  bucket: string;
+  bucket_order: number;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  accuracy: number | null;
+};
+
+/** One league-wide market ATS cover baseline row from league_situational_baseline (#502) — how
+ *  often a side taken in that cut covers, at the same backed-side grain as SituationalSplitEntry,
+ *  so the panel can subtract it apples-to-apples. Group-independent. */
+export type LeagueSituationalBaselineEntry = {
+  dimension: SituationalDimension;
+  bucket: string;
+  bucket_order: number;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  accuracy: number | null;
+};
+
 export type SeasonStats = {
   trend: SeasonTrendEntry[];
   teamAccuracy: TeamAccuracyEntry[];

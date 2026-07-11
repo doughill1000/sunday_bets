@@ -1610,6 +1610,19 @@ export type Database = {
           }
         ];
       };
+      league_situational_baseline: {
+        Row: {
+          accuracy: number | null;
+          bucket: string | null;
+          bucket_order: number | null;
+          decisions: number | null;
+          dimension: string | null;
+          losses: number | null;
+          pushes: number | null;
+          wins: number | null;
+        };
+        Relationships: [];
+      };
       picks_group_view: {
         Row: {
           avatar_key: string | null;
