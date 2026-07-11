@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #528** Leaderboard Total column no longer clips on mobile — the player-name column now
+  truncates so a long display name can't push the standings table past a 390px viewport, keeping
+  the Total column (season, all-time, and the `/demo` table) on-screen. Presentation-only. routes:
+  `/leaderboard` · `/demo` · component: `DemoStandingsTable.svelte`
 - **#518** /stats consolidate controls + mobile density pass — the player selector and the
   season/scope selector fold into one sticky context bar, and the season dropdown now absorbs
   Career as a pinned option (the separate Season/Career tab is gone), so scope is a single
