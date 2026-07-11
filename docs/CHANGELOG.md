@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #536** Mobile-first design principles — a living `docs/DESIGN.md` (16 interaction
+  principles + a prescriptive chip-radiogroup pattern spec + a hard-constraints checklist,
+  now a UI gate in the PR template) and **ADR-0030** ratifying it. The interaction layer
+  that composes the ADR-0029 token vocabulary into mobile screens; first application will be
+  the /stats breakdown block (nested accordion → chips). docs: `docs/DESIGN.md` ·
+  `AGENTS.md` · `docs/agent-context/{ui,design-system}.md` · ADR-0030
 - **#529** /league — merged the Teams and Trends tabs into one surface: a single season dropdown
   (each season plus a pooled "Last 5" window) and a "Slice by" chip row pick the view, and "Where
   the market bends" now leads the page for everyone instead of hiding inside a tab. Removes the two

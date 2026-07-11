@@ -33,6 +33,20 @@ List commands that actually ran and explain any skipped check.
 
 Overlap / ordering notes:
 
+## Design checklist
+
+Delete this section when no user-facing UI changed. See `docs/DESIGN.md` (ADR-0030).
+
+- [ ] Nothing clips horizontally at 390px; wide content scrolls in its own container.
+- [ ] No disclosure is nested inside another disclosure.
+- [ ] "Switch a cut" uses the chip radiogroup, not a second control.
+- [ ] Colours/type/spacing come from tokens (the brand-color guard passes).
+- [ ] The primary action is visually dominant; committed vs uncommitted state is unmistakable.
+- [ ] Loading / empty / error / stale states are designed and keep the layout's hierarchy.
+- [ ] Consequential actions give immediate feedback **and** a durable confirmation.
+- [ ] Muted/body text clears AA; interactive controls have visible focus, semantic roles, and keyboard operation.
+- [ ] Motion respects `prefers-reduced-motion` and uses the motion tokens.
+
 ## Database checklist
 
 Delete this section when no database source changed.

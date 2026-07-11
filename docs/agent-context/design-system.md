@@ -5,7 +5,9 @@
 > `src/app.css` (`@theme inline`); the architecture and boundaries are
 > [ADR-0029](../adr/0029-design-system-token-architecture.md), evolving the Hotshot
 > palette of [ADR-0027](../adr/0027-rebrand-sunday-bets-to-hotshot.md). See
-> [ui.md](ui.md) for the vendored-shadcn and Svelte 5 / Tailwind 4 rules.
+> [ui.md](ui.md) for the vendored-shadcn and Svelte 5 / Tailwind 4 rules, and
+> [`../DESIGN.md`](../DESIGN.md) for the mobile-first interaction principles that
+> compose these tokens ([ADR-0030](../adr/0030-mobile-first-design-principles.md)).
 
 ## The one rule
 

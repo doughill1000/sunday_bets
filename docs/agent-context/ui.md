@@ -1,7 +1,10 @@
 # UI context pack
 
 > See `AGENTS.md` § "Repo map" for component directory layout. This pack owns
-> the agent-facing rules for the UI layer.
+> the agent-facing rules for the UI layer. For the mobile-first _interaction_
+> principles (390px canvas, one-pattern-per-job, disclosure depth) see
+> [`../DESIGN.md`](../DESIGN.md); for the _token_ vocabulary see
+> [`design-system.md`](design-system.md).
 
 ## Vendored shadcn-svelte — do not hand-edit
 
