@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #537** Brand-color lint guard is cross-platform — `check-brand-colors.ts` normalizes
+  the scanned path to POSIX separators before its `HEX_ALLOWLIST` compare, so the allowlist
+  matches on Windows (it built backslash paths and silently missed, failing `pnpm lint`
+  locally on Windows though green in CI). file: `scripts/check-brand-colors.ts`
 - **PR #536** Mobile-first design principles — a living `docs/DESIGN.md` (16 interaction
   principles + a prescriptive chip-radiogroup pattern spec + a hard-constraints checklist,
   now a UI gate in the PR template) and **ADR-0030** ratifying it. The interaction layer
