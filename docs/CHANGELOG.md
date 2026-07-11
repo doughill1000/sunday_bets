@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#517** /league Trends redesign — the Trends tab now leads with a "Where the market bends"
+  synthesis chart (favorite cover rate vs a 50% coin-flip baseline, gold = favorites / sky =
+  dogs) and moves the six situational cuts behind a one-cut-at-a-time chip selector rendering a
+  single detail panel, instead of six always-open cards. Cover% reads as a shared meter with a
+  50% tick that no longer clips at 390px. Presentation-only over the shipped `league_ats_*`
+  views — payload unchanged. components: `MarketBends.svelte` · `CoverMeter.svelte` · util:
+  `leagueBends.ts` · route: `/league` · ADR-0013/0002/0017
+
 - **PR #523** land-pr checks CI once, never polls (chore, skills) — the `land-pr` skill now
   reads a PR's checks a single time and hands back to Doug if any are still running, instead of
   waiting/polling: CI is not harness-tracked work, so there is no completion event to await.
