@@ -1,8 +1,8 @@
 # AGENTS.md
 
 Guidance for AI agents working in this repo. Read `README.md`, `docs/WORKFLOW.md`,
-`ROADMAP.md`, and `docs/adr/README.md` before planned feature work, then read the
-assigned issue and all relevant accepted ADRs. This file covers the architecture and
+`ROADMAP.md`, and `docs/adr/README.md` before planned feature work (and `docs/DESIGN.md`
+before any user-facing UI work), then read the assigned issue and all relevant accepted ADRs. This file covers the architecture and
 the things that are easy to get wrong.
 
 ## What this is

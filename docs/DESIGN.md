@@ -1,0 +1,294 @@
+# Design principles
+
+The living design guide for Hotshot's UI. It exists so the same 390px decisions stop
+being re-litigated one PR at a time — and so a new surface conforms to the patterns
+already in the app instead of re-deriving (and drifting into) its own.
+
+**This is the interaction layer.** The token _vocabulary_ every surface draws from —
+colour, typography, spacing, elevation, motion, and the "reach for a token, never a raw
+scale or inline hex" rule (enforced by `scripts/check-brand-colors.ts` in lint + CI) —
+lives in [`docs/agent-context/design-system.md`](agent-context/design-system.md)
+([ADR-0029](adr/0029-design-system-token-architecture.md)). This guide is about how those
+tokens and atoms **compose into mobile screens**: layout, patterns, action, state.
+
+Audience: humans and agents building or reviewing any user-facing screen. The standing
+decision this guide details is ratified in
+[ADR-0030](adr/0030-mobile-first-design-principles.md); the `design-study` and
+`design-review` skills operationalise it.
+
+## The stance
+
+- **The mobile decision is the default decision.** Design the 390px phone first; a desktop
+  divergence must name the **user, task, and viewport** that justify it. "What specific
+  desktop task requires this to differ?" is a fair review question. The one surface where
+  desktop earns real attention is **admin**, operated on a laptop.
+- **Dark-only.** The app ships a single dark theme (charcoal `--background` + brass-gold
+  `--primary` + warm cream `--foreground`, with an ember `--ember` accent — see
+  [ADR-0027](adr/0027-rebrand-sunday-bets-to-hotshot.md)). The light `:root` tokens are
+  placeholders for a future theme; don't design light-mode variants today.
+- **Token-driven** — every colour, and semantic type/spacing/elevation/motion, comes from
+  the vocabulary in [`design-system.md`](agent-context/design-system.md), not a raw value.
+  That layer owns the "what"; this guide owns the "how it's arranged".
+- **Confident, with signature moments.** Quiet premium by default: charcoal and gold, the
+  data leads, motion is sparing. A **signature treatment marks an event, accomplishment, or
+  consequential transition** — All-In, The Whale, Hot Hand, a streak, an award. It does not
+  decorate routine navigation, ordinary selections, empty states, or every successful save;
+  that restraint is what keeps `--ember` and the slower motion tokens meaningful. The
+  group-chat swagger lives mainly in the **copy** (the Commissioner's voice), not the
+  furniture.
+
+## Principles
+
+Each principle is a rule, a reason, and a real example from this app. They group loosely
+into **layout & hierarchy** (1–4, 15), **action & flow** (5–8), **state & resilience**
+(9–13), and **voice & access** (14, 16).
+
+### 1. 390px is the canvas, not a breakpoint
+
+Lay every screen out for a 390px-wide phone first and make sure **nothing clips
+horizontally** there. Wide content (tables, long labels, charts) scrolls inside its own
+container; the page body never scrolls sideways.
+
+_Why:_ desktop-down design silently pushes the rightmost column off a phone screen.
+_Example:_ the leaderboard "Total" column clipping off the right edge at 390px — the bug
+`fix/leaderboard-total-mobile-clip` exists to fix; the same clip drove the `/league` picker
+consolidation (#529).
+
+### 2. One pattern per job
+
+A given interaction should look the same everywhere it appears. To **switch between cuts
+of the same data, use the chip radiogroup** — the selector used by `/stats` "Every split"
+and `/league` (the #529 slice explorer). Don't introduce a second control (tabs, an
+accordion) for the same "show me one cut" job.
+
+_Why:_ two controls for one job doubles what a user has to learn and invites drift.
+_Example:_ the `/stats` bottom breakdowns used an accordion for the same job the chip row
+directly above them already did.
+
+### 3. Progressive disclosure, at most one level deep
+
+Collapse secondary content behind **one** tap. Never nest a disclosure inside a
+disclosure — a drawer-in-a-drawer means two taps to reach content and reads as a plumbing
+accident, not a design.
+
+_Why:_ each extra tap buries content and each nesting level compounds it.
+_Example:_ `/stats` "More breakdowns" (outer drawer) → "Accuracy by team" (inner drawer)
+→ a 14-row list: two taps before anything renders.
+
+### 4. Answer first, archive last
+
+Lead a screen with the synthesis — the takeaway, the one number, the edge — and push raw
+tables down behind disclosure. But don't over-rotate: burying the archive under a second
+near-identical synthesis card is its own failure (see principle 2's example).
+
+_Why:_ a phone shows one thing at a time; the first thing should be the point.
+_Example:_ `/stats` leads with "Your edge" (the top situational cuts) before the
+per-team/per-weight tables — the intent behind the #518 density pass and #514 "Every
+split".
+
+### 5. Encode state in form, not just text
+
+Make state legible at a glance through shape and colour — a meter, a pill, a severity
+stripe — not through a number alone. Keep the four meanings that tend to collapse into "a
+gold thing" **visually distinct**: _selected_ (chosen), _actionable_ (pressable),
+_primary_ (the preferred next action), and _status_ (success / warning / live / locked).
+
+_Why:_ on a small screen a glance beats a read; an invisible state is a broken state.
+_Example done right:_ the picks selection-tier ladder (cream → charcoal → brass → ember,
+codified in [`design-system.md`](agent-context/design-system.md)) — a disabled "Lock in"
+is deliberately flat/muted, never a dimmed brass, so it never reads as "kind of active".
+Cover rates get the same treatment: a `meter` bar with a 50% tick, not a table cell.
+
+### 6. One clear next action
+
+Every task-oriented screen makes the likely next action visually obvious; secondary
+actions must not compete with it, and repeated actions stay near the content they affect.
+This is action hierarchy — distinct from principle 4's information hierarchy.
+
+_Why:_ a phone exposes only a slice of the workflow; when several actions read as equal,
+the user has to reconstruct the screen's intent.
+_Example:_ on the picks board, choosing team and weight is supporting work — **Lock in** is
+the consequential action and must stay the loudest element (the ladder in
+`design-system.md`).
+
+### 7. Keep consequential actions in reach
+
+Place frequent and primary actions within comfortable thumb reach — usually the lower
+viewport — and don't make the user travel between content at the bottom and controls at the
+top. A sticky action bar is right when the action applies to the whole screen, the user may
+scroll before completing it, and the bar doesn't obscure required content.
+
+_Why:_ mobile-first is about how the device is _held_, not only how wide it is.
+_Example:_ the `/stats` context bar sticks under the header so the player/scope selectors
+never scroll away; a long picks slate keeps its lock-in reachable rather than header-bound.
+
+### 8. Preserve context through every transition
+
+A drawer, dialog, drill-down, or navigation must make clear what the user opened, what
+changed, and how to get back. Prefer an anchored overlay or inline expansion over replacing
+the whole screen when that better preserves the originating context.
+
+_Why:_ mobile transitions disorient because the previous screen is gone from view.
+_Example:_ opening a player's situational split retains the selected week / league / filter
+rather than dumping the user back to an unfiltered default on close.
+
+### 9. Design for interruption and recovery
+
+Assume the user may switch apps, lock the phone, lose connectivity, or be interrupted
+mid-task. Preserve safe intermediate state and make **committed vs uncommitted** work
+explicit.
+
+_Why:_ Hotshot is used socially and casually; mobile sessions are fragmented, and it's a
+PWA.
+_Example:_ a partially completed slate retains local selections and clearly distinguishes
+_saved locally_ → _submitted_ → _locked_ (picks lock at kickoff).
+
+### 10. Immediate feedback, durable confirmation
+
+Every interaction acknowledges input immediately (pressed state, selection treatment,
+optimistic update); a _consequential_ change also leaves a durable confirmation (a
+persistent status, timestamp, lock state, or recoverable error) — not a disappearing toast
+as the only signal.
+
+_Why:_ motion can say a tap registered, but not that the operation ultimately succeeded.
+_Example:_ **Lock in** enters a pending state immediately, then resolves to an unmistakable
+locked state (motion tokens; the stale-while-revalidate model is [ADR-0017](adr/0017-client-data-cache.md)).
+
+### 11. Empty, loading, error, and stale are designed states
+
+A component isn't done until it defines loading, empty, partial, error, offline/stale, and
+success — and each state **preserves the layout's hierarchy** instead of swapping the screen
+for a generic spinner or error box.
+
+_Why:_ mobile networks and PWA lifecycle make non-ideal states part of ordinary use.
+_Example:_ if standings can't refresh, show the last good data with a stale indicator and a
+retry, not a blank — the natural shape of the client cache ([ADR-0017](adr/0017-client-data-cache.md)).
+
+### 12. Contrast floor is AA
+
+Body and muted text must clear WCAG **AA** against the surface it sits on — including raised
+cards, which are lighter than the page ground.
+
+_Why:_ dark UIs make muted greys drift below legibility on raised surfaces.
+_Example:_ `--muted-foreground` was lifted from `#9b958a` to `#a8a294` for AA headroom on
+raised cards (see the token comment in `src/app.css`).
+
+### 13. Semantic colour is not the accent
+
+`--primary` (brass gold) is the brand accent and the "on"/selected state. Good/warning/
+critical (`--success` / `--warning` / `--destructive`) are a **separate** semantic axis —
+never repurpose the accent to carry meaning, nor let a status colour stand in for the
+accent. `--ember` is reserved for live/urgent/signature moments (principle 5's stance).
+
+_Why:_ if the accent also means "good", the user can't tell branding from signal.
+
+### 14. Copy carries personality; controls carry clarity
+
+Interactive labels say what will happen. The Commissioner voice may frame, celebrate, tease,
+or narrate — but it must never obscure an action, status, deadline, or error.
+
+_Why:_ swagger is an asset until it makes the user decode the interface.
+_Example:_ good CTA "Lock in picks" + supporting line "The Commissioner has seen enough";
+weak CTA "Send it", weak error "The Commissioner fumbled" (say what broke and how to fix it).
+
+### 15. Density follows the task
+
+Use compact layouts for comparison and repeated data; give decisions, onboarding, and
+signature moments room. Don't apply one universal card density across the app.
+
+_Why:_ "premium" drifts into excessive whitespace; "sports data" drifts into cramped
+dashboards — the task should decide.
+_Example:_ a standings list is dense and scannable; an All-In confirmation isolates the
+choice and its consequence.
+
+### 16. Accessibility survives interaction
+
+Static contrast (principle 12) is the floor, not the whole story. Every interactive surface
+supports visible focus, semantic controls, accessible names, keyboard operation where
+applicable, reduced motion, text scaling, and **non-colour** state cues.
+
+_Why:_ a PWA may be driven by assistive tech, a desktop keyboard, or user font/motion
+preferences.
+_Example:_ the chip radiogroup exposes real radio semantics and a selected value — not just
+styled buttons.
+
+## Pattern vocabulary
+
+Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens**, this
+catalogs the **composed patterns** — the atoms already in the app, and when to reach for
+each. (Component homes live under `src/lib/components/`.)
+
+| Job                             | Pattern                            | Seen in                         |
+| ------------------------------- | ---------------------------------- | ------------------------------- |
+| Switch between cuts of one data | Chip radiogroup                    | `/stats` Every split, `/league` |
+| Reveal secondary detail         | Single disclosure (one level)      | `/stats` breakdown              |
+| Show a rate / accuracy          | Meter bar + 50% reference tick     | `/stats` accuracy lists         |
+| Compare a value to a baseline   | Diverging bar from the league line | `/stats` Every split, `/league` |
+| Pick player + season/scope      | Sticky context bar (selectors)     | `/stats` context bar            |
+| Group related content           | `Card` + header/description        | everywhere                      |
+
+Prefer these before inventing a new control. If a screen genuinely needs a pattern not
+listed here, that is the signal to run a `design-study` and add it. As each pattern is next
+touched, promote its row to the full anatomy below — the chip radiogroup is the worked
+template.
+
+### Worked example — chip radiogroup
+
+1. **Job.** Select exactly one view or cut of the _same_ underlying content.
+2. **Use when.** The options are peers, labels are short, and switching is immediate (no
+   navigation, no consequential write).
+3. **Don't use when.** The choices navigate to distinct destinations, trigger a
+   consequential action, or can't fit a readable mobile row without a deliberate overflow
+   treatment — reach for tabs, a menu, or buttons instead.
+4. **Anatomy.** A labelled group; one chip per option; exactly one selected; an optional
+   scope caption ("follows Career").
+5. **States.** Selected (brass fill) · unselected (outline) · focus-visible ring · disabled
+   (flat/muted, never dimmed brass) · the panel it drives updates in place.
+6. **Mobile behaviour.** Prefer wrapping when it stays scannable; use contained horizontal
+   scroll only when wrapping would imply false grouping or blow up height. Never let the row
+   clip the page.
+7. **Accessibility contract.** `role="radiogroup"` with real `radio` children, one selected
+   value, arrow-key + Home/End keyboard operation, an accessible group name.
+8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529).
+9. **Known exceptions.** None yet — record any here with a link to the governing ADR.
+
+## Hard constraints (pre-merge checklist)
+
+These are **rules, not suggestions** — pass/fail, and they belong in the PR template as a
+gate for UI changes. The principles above guide judgment; this list gates the merge.
+Deliberately light on CI: design conformance is mostly not mechanically checkable — the one
+exception, raw hex / off-palette scales, is already guarded by `check-brand-colors` (#530).
+
+- [ ] Nothing clips horizontally at 390px; wide content scrolls in its own container.
+- [ ] No disclosure is nested inside another disclosure.
+- [ ] "Switch a cut" uses the chip radiogroup, not a second control.
+- [ ] Colours/type/spacing come from tokens (the brand-color guard passes).
+- [ ] The primary action is visually dominant; committed vs uncommitted state is unmistakable.
+- [ ] Loading / empty / error / stale states are designed and keep the layout's hierarchy.
+- [ ] Consequential actions give immediate feedback **and** a durable confirmation.
+- [ ] Muted/body text clears AA; interactive controls have visible focus, semantic roles,
+      and keyboard operation (a chip group is a real radiogroup).
+- [ ] Motion respects `prefers-reduced-motion` and uses the motion tokens.
+
+## How to check your work
+
+- **Before building** a new or reworked surface, run the `design-study` skill — it captures
+  the current screen at 390px dark, names the structural problems, and mocks before/after in
+  the real skin.
+- **To critique** a shipped screen, run a `design-review` (screenshot + scorecard at 390px
+  dark, no mockups).
+- Both share the throwaway Playwright capture harness (390px, `deviceScaleFactor: 2`,
+  `colorScheme: 'dark'`) — see the skills for the config.
+
+## Related
+
+- [ADR-0030](adr/0030-mobile-first-design-principles.md) — ratifies this guide as the
+  standing interaction-design decision.
+- [ADR-0029](adr/0029-design-system-token-architecture.md) /
+  [`design-system.md`](agent-context/design-system.md) — the token vocabulary this
+  composes.
+- [ADR-0027](adr/0027-rebrand-sunday-bets-to-hotshot.md) — the identity and palette both
+  build on.
+- [`docs/agent-context/ui.md`](agent-context/ui.md) — vendored shadcn-svelte, Svelte 5
+  runes, Tailwind 4.
+- [`src/app.css`](../src/app.css) — the single source of truth for token values.
