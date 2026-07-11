@@ -88,7 +88,7 @@ Project `Done` column, and Releases remain the sources of truth — see
   (scales read off the snippet `context`); the ring overlay renders unchanged. file:
   `stats/SeasonTrendChart.svelte` · ADR-0018
 
-- **#500** In-app feedback — capture path (1 of 2 PRs): a floating widget + a header
+- **#500** In-app feedback — capture path (PR #512, 1 of 2): a floating widget + a header
   "Beta" tag let players report a bug/idea/reaction from any authed route; submissions are
   store-first to a new `feedback` table (no LLM, app-agnostic endpoint) with auto-captured
   route/build/viewport/Sentry/season context. Admin triage queue + one-click GitHub filing
