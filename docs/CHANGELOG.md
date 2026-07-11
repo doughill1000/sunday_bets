@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#529** /league — merged the Teams and Trends tabs into one surface: a single season dropdown
+  (each season plus a pooled "Last 5" window) and a "Slice by" chip row pick the view, and "Where
+  the market bends" now leads the page for everyone instead of hiding inside a tab. Removes the two
+  out-of-sync season pickers and the chip strip that clipped off-screen at 390px; no data-model
+  change. route: `/league` · util: `leagueSlices.ts`
 - **#514** /stats situational explorer — the "Your edge" hero (career) now leads above the scope
   line, and a new "Every split" explorer beneath it browses every ATS cut (primetime, home/away,
   spread bucket, divisional) one dimension at a time as bars diverging from the league line, across

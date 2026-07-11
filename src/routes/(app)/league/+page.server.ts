@@ -17,18 +17,16 @@ async function loadLeague(event: Parameters<PageServerLoad>[0]) {
     getLeagueSeasons()
   ]);
 
+  // One page-level season dropdown now drives both the by-team roster and the situational
+  // cuts (#529), so there is a single resolved `seasonYear` — the `?season=` param, defaulting
+  // to the most recent season with data. The old split, where the Trends tab pinned its own
+  // `defaultSeasonYear` independent of the Teams picker, is gone: that decoupling was the
+  // silent season desync this redesign removes.
   const seasonYear = resolveSeasonYear(
     event.url.searchParams.get('season'),
     availableSeasons,
     currentSeasonYear
   );
 
-  // The Teams-tab season picker drives `seasonYear`, but the Trends tab pins its "This season"
-  // scope to `defaultSeasonYear` — the most recent season with data, independent of the picker —
-  // so browsing an older season in Teams doesn't drag Trends back with it (and it survives the
-  // offseason, unlike raw `currentSeasonYear`). On the default view the two coincide, so the
-  // Trends query dedupes onto the same key as the Teams query (no extra fetch).
-  const defaultSeasonYear = resolveSeasonYear(null, availableSeasons, currentSeasonYear);
-
-  return { currentSeasonYear, seasonYear, defaultSeasonYear, availableSeasons };
+  return { currentSeasonYear, seasonYear, availableSeasons };
 }

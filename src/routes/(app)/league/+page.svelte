@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
   import { fetchLeague, fetchLeagueSlate, fetchLeagueTrends } from '$lib/query/fetchers';
   import type { LeagueCachePayload } from '$lib/query/types';
   import type { LeagueTeamAts, AtsRecord, LeagueFavDogSplit } from '$lib/types/server/league';
   import type { PageData } from './$types';
-  import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import WeekSlate from '$lib/components/league/WeekSlate.svelte';
   import HotCold from '$lib/components/league/HotCold.svelte';
   import TeamGameLog from '$lib/components/league/TeamGameLog.svelte';
@@ -21,9 +21,12 @@
   import MarketBends from '$lib/components/league/MarketBends.svelte';
   import CoverMeter from '$lib/components/CoverMeter.svelte';
   import { topMarketBends } from '$lib/utils/leagueBends';
-  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import { ToggleGroup, ToggleGroupItem } from '$lib/components/ui/toggle-group';
-  import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
+  import {
+    availableLeagueSlices,
+    resolveLeagueSlice,
+    LEAGUE_SLICE_LABEL,
+    type LeagueSlice
+  } from '$lib/utils/leagueSlices';
   import {
     Card,
     CardContent,
@@ -47,7 +50,9 @@
   // Heavy ATS payload from a cached `createQuery` keyed by season (group-independent, ADR-0017):
   // a revisit renders the last value instantly and revalidates in the background.
   // `pageData.initialLeague` is the SSR-prefetched value used as `initialData` for a
-  // flash-free first paint; on a client-side cache miss the skeleton below shows.
+  // flash-free first paint; on a client-side cache miss the skeleton below shows. One page-level
+  // dropdown (#529) drives this season key for the whole page — the by-team roster and that
+  // season's situational cuts alike.
   const leagueQuery = createQuery(() => ({
     queryKey: queryKeys.league(pageData.seasonYear),
     queryFn: () => fetchLeague(fetch, pageData.seasonYear),
@@ -65,40 +70,48 @@
     staleTime: 0
   }));
 
-  // Which tab is showing. Controlled (vs. a static default) so the Trends query can lazy-load
-  // only while its tab is open — the picker lives in Teams, the pinned-season data in Trends.
-  let activeTab = $state('teams');
+  // ── Page-level scope (#529) ─────────────────────────────────────────────────────
+  // One control drives the whole page: a season (the roster + that season's situational cuts) or
+  // the pooled "Last 5" window (the market-structure cuts across the recent seasons, epic #424).
+  // Picking a season navigates so `leagueQuery` re-keys (ADR-0017); picking pooled is a pure
+  // client flip that enables the season-independent pooled query. Mirrors the Career-in-dropdown
+  // scope on /stats (#518): `scope` is set before any `goto`, so it survives the reload as
+  // 'season'. This replaces the old split — a Teams-tab picker and a separate Trends-tab toggle
+  // that silently disagreed on the window.
+  let scope = $state<'season' | 'pooled'>('season');
 
-  // Trends-tab scope: 'season' (pinned to the default season, default) or 'multi' (the market
-  // cuts pooled over the recent seasons, epic #424).
-  let trendsScope = $state<'season' | 'multi'>('season');
+  // Seasons newest-first for the dropdown; "Last 5 · pooled" is appended as a pinned option.
+  const seasonsDesc = $derived([...new Set(pageData.availableSeasons)].sort((a, b) => b - a));
 
-  // Trends "This season" pins to `defaultSeasonYear` (most recent season with data), NOT to the
-  // Teams picker's `seasonYear` — so browsing an older season in Teams leaves Trends put. On the
-  // default view the two keys coincide, so this dedupes onto the Teams query (initialData shared,
-  // no second fetch). Only a deliberate past-season browse makes them diverge, and then this
-  // fetches lazily — gated to when the Trends tab is actually open in season scope.
-  const defaultLeagueQuery = createQuery(() => ({
-    queryKey: queryKeys.league(pageData.defaultSeasonYear),
-    queryFn: () => fetchLeague(fetch, pageData.defaultSeasonYear),
-    initialData:
-      pageData.seasonYear === pageData.defaultSeasonYear ? pageData.initialLeague : undefined,
-    enabled: activeTab === 'trends' && trendsScope === 'season'
-  }));
+  // The <select> value: a year string in season scope, the sentinel 'pooled' otherwise.
+  const scopeValue = $derived(scope === 'pooled' ? 'pooled' : String(pageData.seasonYear));
 
-  // The pooled payload is season-independent and off by default, so its query is lazy — `enabled`
-  // only flips true once the user switches to multi-season, and it caches under its own
-  // group-independent root thereafter (ADR-0017).
+  const SELECT_CLASS =
+    'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
+
+  function onScopeChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value;
+    if (value === 'pooled') {
+      scope = 'pooled';
+      return;
+    }
+    scope = 'season';
+    if (value !== String(pageData.seasonYear)) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('season', value);
+      void goto(url.toString(), { invalidateAll: true, noScroll: true });
+    }
+  }
+
+  // The pooled payload is season-independent and off until selected, so its query is lazy —
+  // `enabled` flips true only in pooled scope, then caches under its own group-independent root
+  // (ADR-0017). Needed page-wide (the synthesis lead reads it regardless of the active slice), so
+  // it is not gated on any tab.
   const trendsQuery = createQuery(() => ({
     queryKey: queryKeys.leagueTrends(),
     queryFn: () => fetchLeagueTrends(fetch),
-    enabled: trendsScope === 'multi'
+    enabled: scope === 'pooled'
   }));
-
-  function onScopeChange(value: string | undefined) {
-    // Ignore a toggle-off (clicking the active item) — a scope must always be selected.
-    if (value === 'season' || value === 'multi') trendsScope = value;
-  }
 
   const EMPTY: LeagueCachePayload = {
     seasonYear: 0,
@@ -122,11 +135,6 @@
 
   const league = $derived(leagueQuery.data ?? EMPTY);
 
-  // The season-scoped source for the Trends tab — the default season, decoupled from the Teams
-  // picker. Equals `league` on the default view (shared query key); diverges only when Teams is
-  // browsing an older season.
-  const defaultLeague = $derived(defaultLeagueQuery.data ?? EMPTY);
-
   // Opponent short names for the drill-down game log: every opponent also appears as a team
   // here (both perspectives of each game are in league_ats_base), so this map is complete.
   const teamNamesById = $derived(new Map(league.teams.map((t) => [t.teamId, t.teamShortName])));
@@ -137,31 +145,48 @@
     expandedTeamId = expandedTeamId === teamId ? null : teamId;
   }
 
-  // ── Trends scope resolution ─────────────────────────────────────────────────────
-  // One markup block (the six situational cards) serves both scopes; this derives the source
-  // it reads from. In 'multi' the per-week fav/dog table is dropped (week 3 of 2022 ≠ week 3 of
-  // 2026) by feeding it an empty array; every other card takes pooled counts as-is.
+  // ── Situational-cut source resolution ───────────────────────────────────────────
+  // One markup block (the situational detail panels) serves both scopes; this derives the cuts it
+  // reads from. The season shape is reused directly; the pooled shape drops the per-week fav/dog
+  // table (week 3 of 2022 ≠ week 3 of 2026) by feeding it an empty array. While the pooled query
+  // is still loading, `activeTrends` reads EMPTY_TRENDS (not the season fallback), so the always-on
+  // synthesis lead never flashes season data under a 'pooled' label.
   const pooled = $derived(trendsQuery.data ?? null);
+
+  const seasonTrends = $derived({
+    favDog: league.favDogSeason,
+    favDogByWeek: league.favDogByWeek,
+    homeAway: league.homeAway,
+    spreadBuckets: league.spreadBuckets,
+    quadrants: league.quadrants,
+    primetime: league.primetime,
+    divisional: league.divisional
+  });
+
+  const EMPTY_TRENDS = {
+    favDog: EMPTY.favDogSeason,
+    favDogByWeek: EMPTY.favDogByWeek,
+    homeAway: EMPTY.homeAway,
+    spreadBuckets: EMPTY.spreadBuckets,
+    quadrants: EMPTY.quadrants,
+    primetime: EMPTY.primetime,
+    divisional: EMPTY.divisional
+  };
+
   const activeTrends = $derived(
-    trendsScope === 'multi' && pooled
-      ? {
-          favDog: pooled.favDog,
-          favDogByWeek: [] as LeagueFavDogSplit[],
-          homeAway: pooled.homeAway,
-          spreadBuckets: pooled.spreadBuckets,
-          quadrants: pooled.quadrants,
-          primetime: pooled.primetime,
-          divisional: pooled.divisional
-        }
-      : {
-          favDog: defaultLeague.favDogSeason,
-          favDogByWeek: defaultLeague.favDogByWeek,
-          homeAway: defaultLeague.homeAway,
-          spreadBuckets: defaultLeague.spreadBuckets,
-          quadrants: defaultLeague.quadrants,
-          primetime: defaultLeague.primetime,
-          divisional: defaultLeague.divisional
-        }
+    scope === 'pooled'
+      ? pooled
+        ? {
+            favDog: pooled.favDog,
+            favDogByWeek: [] as LeagueFavDogSplit[],
+            homeAway: pooled.homeAway,
+            spreadBuckets: pooled.spreadBuckets,
+            quadrants: pooled.quadrants,
+            primetime: pooled.primetime,
+            divisional: pooled.divisional
+          }
+        : EMPTY_TRENDS
+      : seasonTrends
   );
 
   // ── Favorite / underdog cover % (pushes excluded) ──────────────────────────────
@@ -178,75 +203,75 @@
     })
   );
 
-  // ── "Where the market bends" synthesis (issue #517) ─────────────────────────────
-  // The ranked favorite-cover deviations that lead the Trends tab, computed off whichever
-  // scope is active. The ranking + cover math live in the pure `topMarketBends` transform.
+  // ── "Where the market bends" synthesis (issue #517, promoted page-level by #529) ──
+  // The ranked favorite-cover deviations that now lead the whole page (not just the old Trends
+  // tab), computed off whichever scope is active. The ranking + cover math live in the pure
+  // `topMarketBends` transform; empty while a scope loads, so the lead self-hides then.
   const bends = $derived(topMarketBends(activeTrends));
 
-  // ── One-cut-at-a-time chip selector (issue #517) ────────────────────────────────
-  // The six situational cuts move behind a chip/tab selector rendering one detail panel at a
-  // time, instead of six always-open cards. Only cuts with data for the active scope get a chip.
-  type CutId = 'favorites' | 'spread' | 'quadrants' | 'primetime' | 'divisional';
-  const CUT_LABEL: Record<CutId, string> = {
-    favorites: 'Favorites',
-    spread: 'Spread size',
-    quadrants: 'Quadrants',
-    primetime: 'Primetime',
-    divisional: 'Divisional'
-  };
-  const CUT_ORDER: CutId[] = ['favorites', 'spread', 'quadrants', 'primetime', 'divisional'];
+  // ── "Slice by" navigation (issue #529) ──────────────────────────────────────────
+  // The Teams|Trends tab bar is gone: "By team" is now just the first way to slice the league,
+  // sitting beside the situational cuts in one chip row. Chip availability reads `sliceCuts`,
+  // which during a pooled fetch falls back to the (instant, SSR-seeded) season cuts so the row
+  // stays stable instead of collapsing to just "By team" for the length of the request — the
+  // detail below still reads the honest `activeTrends`. Slice order/labels/availability are the
+  // pure `leagueSlices` transform.
+  const sliceCuts = $derived(scope === 'pooled' && !pooled ? seasonTrends : activeTrends);
+  const availableSlices = $derived(availableLeagueSlices(sliceCuts));
 
-  const availableCuts = $derived(
-    CUT_ORDER.filter((id) => {
-      switch (id) {
-        case 'favorites':
-          return activeTrends.favDog.games > 0;
-        case 'spread':
-          return activeTrends.spreadBuckets.length > 0;
-        case 'quadrants':
-          return activeTrends.quadrants.length > 0;
-        case 'primetime':
-          return activeTrends.primetime.length > 0;
-        case 'divisional':
-          return activeTrends.divisional.some((d) => d.games > 0);
-      }
-    })
-  );
+  // The user's chip choice; `activeSlice` falls back to the first slice (always "By team") when
+  // the choice is unset or its cut vanished on a scope switch — no reset `$effect` needed.
+  let selectedSlice = $state<LeagueSlice | null>(null);
+  const activeSlice = $derived(resolveLeagueSlice(selectedSlice, availableSlices));
 
-  // The user's chip choice; `activeCut` falls back to the first available cut when the choice
-  // is unset or its cut vanished (e.g. after a scope switch), so no $effect is needed to reset.
-  let selectedCut = $state<CutId | null>(null);
-  const activeCut = $derived<CutId | null>(
-    selectedCut && availableCuts.includes(selectedCut) ? selectedCut : (availableCuts[0] ?? null)
-  );
-
-  // APG tabs keyboard model: arrows/Home/End move selection and focus across the chip row.
-  function onCutKeydown(event: KeyboardEvent) {
-    if (activeCut == null) return;
-    const idx = availableCuts.indexOf(activeCut);
+  // APG roving-tabindex model: arrows/Home/End move selection and focus across the chip row
+  // (matching the #517 cut chips). A single-choice view selector, so role="radiogroup".
+  function onSliceKeydown(event: KeyboardEvent) {
+    const idx = availableSlices.indexOf(activeSlice);
+    if (idx === -1) return;
     let next = idx;
     switch (event.key) {
       case 'ArrowRight':
       case 'ArrowDown':
-        next = (idx + 1) % availableCuts.length;
+        next = (idx + 1) % availableSlices.length;
         break;
       case 'ArrowLeft':
       case 'ArrowUp':
-        next = (idx - 1 + availableCuts.length) % availableCuts.length;
+        next = (idx - 1 + availableSlices.length) % availableSlices.length;
         break;
       case 'Home':
         next = 0;
         break;
       case 'End':
-        next = availableCuts.length - 1;
+        next = availableSlices.length - 1;
         break;
       default:
         return;
     }
     event.preventDefault();
-    selectedCut = availableCuts[next];
-    document.getElementById(`league-cut-tab-${selectedCut}`)?.focus();
+    selectedSlice = availableSlices[next];
+    document.getElementById(`league-slice-tab-${selectedSlice}`)?.focus();
   }
+
+  // Honest chip overflow (#529): the "Slice by" strip scrolls horizontally at 390px, so a
+  // right-edge fade appears only while there is un-scrolled content to the right — a visible cue
+  // that a cut is hidden, never a silent clip. Re-measured on scroll, on element resize, and when
+  // the slice set changes.
+  let sliceScroller = $state<HTMLDivElement | null>(null);
+  let sliceOverflow = $state(false);
+  function measureSliceOverflow() {
+    const el = sliceScroller;
+    sliceOverflow = el ? el.scrollWidth - el.clientWidth - Math.ceil(el.scrollLeft) > 1 : false;
+  }
+  $effect(() => {
+    const el = sliceScroller;
+    if (!el) return;
+    void availableSlices; // re-measure when the chip set changes
+    measureSliceOverflow();
+    const observer = new ResizeObserver(measureSliceOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
 
   // Human "2022–2024" (or "2024") range for the pooled caption, from the seasons actually pooled.
   const pooledRangeLabel = $derived.by(() => {
@@ -380,56 +405,14 @@
   </div>
 {/snippet}
 
-<!-- Teams tab panel: the season picker plus its loading/error/empty gating, wrapping the
-     browse-by-team view. The picker scopes only this tab (the Trends tab pins to the default
-     season), so it — and the gating that depends on the picked season — lives here, not
-     page-level. This keeps a season with no graded games from blanking the whole page: only the
-     Teams tab shows its empty state, and Trends stays reachable. -->
-{#snippet teamsPanel()}
-  <div class="flex flex-wrap items-center justify-end gap-3">
-    <SeasonPicker seasons={pageData.availableSeasons} selected={pageData.seasonYear} />
-  </div>
-
-  {#if leagueQuery.isPending}
-    {@render loadingState()}
-  {:else if leagueQuery.isError}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>Couldn't load team ATS records</CardTitle>
-        <CardDescription
-          >Something went wrong fetching the data. Refresh to try again.</CardDescription
-        >
-      </CardHeader>
-    </Card>
-  {:else if league.totalGames === 0}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>No graded games for {pageData.seasonYear} yet</CardTitle>
-        <CardDescription>
-          Team ATS records appear once games are graded. Try a different season above.
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  {:else}
-    <!-- Sample-size caveat: descriptive, not predictive. Older imported seasons (2022–24) have
-         missing scores, so their totals are honestly thinner, not misleadingly complete. -->
-    <p class="text-sm text-muted-foreground">
-      Descriptive records against the closing spread, based on
-      <span class="font-medium text-foreground">{league.totalGames}</span>
-      scored {league.totalGames === 1 ? 'game' : 'games'} with a line in {pageData.seasonYear}. ATS
-      records are noisy — treat small samples with caution.
-    </p>
-    {@render teamsView()}
-  {/if}
-{/snippet}
-
-<!-- Teams tab: browse league ATS by team — hot/cold streaks then the sortable team list with
-     its per-team game-log drill-down. Rendered as a disclosure list (not a <table>): the
+<!-- "By team" slice: browse league ATS by team — hot/cold streaks then the sortable team list
+     with its per-team game-log drill-down. Rendered as a disclosure list (not a <table>): the
      drill-down is a normal block <div>, so the game-log table inside it can scroll on its own
      `overflow-x-auto` instead of blowing the whole list out horizontally (which a <table> nested
      in a <td> did — an auto-layout cell sizes to content and ignores a child's overflow). Sort
      state lives in `teamSort`, the open row in `expandedTeamId` — both page-level $state, so
-     sorting and an open drill-down survive a Trends→Teams round-trip. -->
+     sorting and an open drill-down survive a slice round-trip. Season-scoped only (the pooled
+     window drives the situational cuts, not the roster — #529 non-goal). -->
 {#snippet teamsView()}
   <!-- ── Hot & cold streaks ──────────────────────────────────────────────────── -->
   <HotCold streaks={league.streaks} />
@@ -571,146 +554,28 @@
   </Card>
 {/snippet}
 
-<!-- Trends tab: a scope toggle above the situational/market cuts. "This season" reads the
-     season-scoped payload; "Last 5 seasons" pools the market-structure biases (spread size,
-     home field, favorite/underdog, primetime, divisional) over the recent seasons, where they
-     have enough sample to read (epic #424). The pooled query is lazy — it only fetches on the
-     first switch to multi-season. -->
-{#snippet trendsView()}
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <ToggleGroup
-      type="single"
-      variant="outline"
-      value={trendsScope}
-      onValueChange={onScopeChange}
-      data-testid="league-trends-scope"
-      aria-label="Trends scope"
-    >
-      <ToggleGroupItem value="season" class="px-3 text-xs sm:text-sm"
-        >This season ({pageData.defaultSeasonYear})</ToggleGroupItem
-      >
-      <ToggleGroupItem value="multi" class="px-3 text-xs sm:text-sm">Last 5 seasons</ToggleGroupItem
-      >
-    </ToggleGroup>
-
-    {#if trendsScope === 'multi' && pooled && pooled.totalGames > 0}
-      <p class="text-xs text-muted-foreground">
-        Pooled {pooledRangeLabel} ·
-        <span class="font-medium text-foreground">{pooled.totalGames}</span> games
-      </p>
+<!-- One situational cut's detail panel, chosen by the active slice. Reads `activeTrends`, so it
+     reflects the picked season or the pooled window. The region is labelled by the chip that
+     drives it. -->
+{#snippet situationalDetail()}
+  <div
+    id="league-slice-panel"
+    role="region"
+    aria-labelledby="league-slice-tab-{activeSlice}"
+    data-testid="league-slice-panel"
+  >
+    {#if activeSlice === 'favorites'}
+      {@render favoritesPanel()}
+    {:else if activeSlice === 'spread'}
+      <SpreadBuckets buckets={activeTrends.spreadBuckets} />
+    {:else if activeSlice === 'quadrants'}
+      <Quadrants quadrants={activeTrends.quadrants} homeAway={activeTrends.homeAway} />
+    {:else if activeSlice === 'primetime'}
+      <Primetime slots={activeTrends.primetime} />
+    {:else if activeSlice === 'divisional'}
+      <Divisional splits={activeTrends.divisional} />
     {/if}
   </div>
-
-  {#if trendsScope === 'season' && defaultLeagueQuery.isPending}
-    <div class="grid items-start gap-6 lg:grid-cols-2" aria-hidden="true">
-      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
-      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
-    </div>
-  {:else if trendsScope === 'season' && defaultLeagueQuery.isError}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>Couldn't load this season's trends</CardTitle>
-        <CardDescription>Refresh to try again.</CardDescription>
-      </CardHeader>
-    </Card>
-  {:else if trendsScope === 'season' && defaultLeague.totalGames === 0}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>No trends for {pageData.defaultSeasonYear} yet</CardTitle>
-        <CardDescription>
-          League-wide situational cuts appear once games are graded. Try the last-5-seasons view.
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  {:else if trendsScope === 'multi' && trendsQuery.isPending}
-    <div class="grid items-start gap-6 lg:grid-cols-2" aria-hidden="true">
-      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
-      <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
-    </div>
-  {:else if trendsScope === 'multi' && trendsQuery.isError}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>Couldn't load pooled trends</CardTitle>
-        <CardDescription>Switch back to this season, or refresh to try again.</CardDescription>
-      </CardHeader>
-    </Card>
-  {:else if trendsScope === 'multi' && pooled && pooled.totalGames === 0}
-    <Card class="border-dashed">
-      <CardHeader>
-        <CardTitle>No pooled trends yet</CardTitle>
-        <CardDescription
-          >Multi-season cuts appear once graded seasons are available.</CardDescription
-        >
-      </CardHeader>
-    </Card>
-  {:else}
-    <!-- Synthesis first (issue #517): one diverging chart showing which situations bend furthest
-         from a coin flip, before the reader drills into any single cut below. -->
-    <MarketBends {bends} />
-
-    <!-- One cut at a time: a chip/tab selector rendering a single detail panel, replacing the
-         six always-open situational cards. APG tabs pattern (roving tabindex + arrow keys). -->
-    {#if availableCuts.length > 0 && activeCut}
-      <div class="space-y-4">
-        <!-- A radiogroup, not a nested tablist: this control lives inside the page's top-level
-             (bits-ui) Teams/Trends Tabs, and a descendant role="tab" would be swept into that
-             tablist's roving-focus model and break it. "Pick one cut to view" is a radio choice;
-             the detail panel below is the region it drives. -->
-        <div
-          role="radiogroup"
-          aria-label="Situational cut"
-          class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        >
-          {#each availableCuts as cut (cut)}
-            {@const selected = activeCut === cut}
-            <button
-              type="button"
-              role="radio"
-              id="league-cut-tab-{cut}"
-              aria-checked={selected}
-              tabindex={selected ? 0 : -1}
-              data-testid="league-cut-chip"
-              class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
-              onclick={() => (selectedCut = cut)}
-              onkeydown={onCutKeydown}
-            >
-              {CUT_LABEL[cut]}
-            </button>
-          {/each}
-        </div>
-
-        <div
-          id="league-cut-panel"
-          role="region"
-          aria-label="{CUT_LABEL[activeCut]} detail"
-          data-testid="league-cut-panel"
-        >
-          {#if activeCut === 'favorites'}
-            {@render favoritesPanel()}
-          {:else if activeCut === 'spread'}
-            <SpreadBuckets buckets={activeTrends.spreadBuckets} />
-          {:else if activeCut === 'quadrants'}
-            <Quadrants quadrants={activeTrends.quadrants} homeAway={activeTrends.homeAway} />
-          {:else if activeCut === 'primetime'}
-            <Primetime slots={activeTrends.primetime} />
-          {:else if activeCut === 'divisional'}
-            <Divisional splits={activeTrends.divisional} />
-          {/if}
-        </div>
-      </div>
-    {/if}
-
-    {#if trendsScope === 'multi'}
-      <p class="text-xs text-muted-foreground">
-        Pooled across the {pooledRangeLabel} seasons to give thin situational cuts enough sample. Even
-        pooled, an efficient market keeps most rates within a few points of 50% — read these as descriptive,
-        not predictive. Older imported seasons (2022–24) carry a single line snapshot rather than a true
-        closing line, so a pooled rate mixes the two.
-      </p>
-    {/if}
-  {/if}
 {/snippet}
 
 <svelte:head>
@@ -720,32 +585,184 @@
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="league-heading">
   <div>
     <h1 id="league-heading" data-testid="league-heading" class="text-3xl font-bold tracking-tight">
-      League trends
+      League
     </h1>
     <p class="mt-1 text-muted-foreground">
-      League-wide NFL team performance against the spread — the same for everyone.
+      League-wide performance against the spread — the same for everyone.
     </p>
   </div>
 
   <!-- Forward-looking slate for the current season's upcoming week (issue #429). Its own
-       week-sensitive query, so it renders as a hero above the tabbed season-scoped modules. -->
+       week-sensitive query, so it renders as a hero above the season-scoped modules. -->
   <WeekSlate
     slate={slateQuery.data ?? null}
     loading={slateQuery.isPending}
     error={slateQuery.isError}
   />
 
-  <!-- Teams (browse by season, via the in-tab picker) and Trends (league-wide situational cuts,
-       pinned to the default season). The tabs render unconditionally — the picker and its
-       season-scoped loading/error/empty gating live inside the Teams panel — so an empty picked
-       season never hides Trends. Controlled so the pinned-season Trends query loads only while
-       its tab is open. Default to Teams — the densest, most-referenced view. -->
-  <Tabs bind:value={activeTab} class="w-full space-y-6">
-    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-      <TabsTrigger value="teams" class={ACTIVE_TAB_TRIGGER_CLASS}>Teams</TabsTrigger>
-      <TabsTrigger value="trends" class={ACTIVE_TAB_TRIGGER_CLASS}>Trends</TabsTrigger>
-    </TabsList>
-    <TabsContent value="teams" class="space-y-6">{@render teamsPanel()}</TabsContent>
-    <TabsContent value="trends" class="space-y-6">{@render trendsView()}</TabsContent>
-  </Tabs>
+  <!-- One page-level season control (#529): the dropdown both the by-team roster and the
+       situational cuts obey, replacing the Teams-tab picker and the Trends-tab scope toggle that
+       used to disagree. "Last 5 · pooled" is a pinned option (like Career on /stats) that drives
+       the situational cuts across the recent seasons. -->
+  <div
+    data-testid="league-scope-bar"
+    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5"
+  >
+    <span
+      id="league-scope-label"
+      class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+    >
+    <div class="flex flex-wrap items-center justify-end gap-3">
+      {#if scope === 'pooled' && pooled && pooled.totalGames > 0}
+        <p class="text-xs text-muted-foreground">
+          Pooled {pooledRangeLabel} ·
+          <span class="font-medium text-foreground">{pooled.totalGames}</span> games
+        </p>
+      {/if}
+      <select
+        class={SELECT_CLASS}
+        value={scopeValue}
+        onchange={onScopeChange}
+        aria-labelledby="league-scope-label"
+        data-testid="league-scope-select"
+      >
+        {#each seasonsDesc as year (year)}
+          <option value={String(year)}>{year}</option>
+        {/each}
+        <option value="pooled">Last 5 · pooled</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Synthesis leads the page (#517, promoted by #529): the diverging one-glance chart of which
+       situations bend furthest from a coin flip, for the active scope — no longer trapped inside
+       the old Trends tab. Self-hides while a scope loads or has no readable bends. -->
+  <MarketBends {bends} />
+
+  <div class="space-y-4">
+    <!-- "Slice by" (#529): one chip row replacing the Teams|Trends tab bar. "By team" is the
+         default lens; the situational cuts follow (only those with data for the active scope). A
+         single-choice view selector (role="radiogroup" + roving tabindex/arrow keys, matching the
+         #517 cut chips); the detail region below is what it drives. The strip scrolls at 390px
+         with a right-edge fade cue so no cut is silently clipped. -->
+    <div class="space-y-2">
+      <span
+        id="league-slice-label"
+        class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Slice by</span
+      >
+      <div class="relative">
+        <div
+          bind:this={sliceScroller}
+          onscroll={measureSliceOverflow}
+          role="radiogroup"
+          aria-labelledby="league-slice-label"
+          class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        >
+          {#each availableSlices as slice (slice)}
+            {@const selected = activeSlice === slice}
+            <button
+              type="button"
+              role="radio"
+              id="league-slice-tab-{slice}"
+              aria-checked={selected}
+              tabindex={selected ? 0 : -1}
+              data-testid="league-slice-chip"
+              class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
+              onclick={() => (selectedSlice = slice)}
+              onkeydown={onSliceKeydown}
+            >
+              {LEAGUE_SLICE_LABEL[slice]}
+            </button>
+          {/each}
+        </div>
+        {#if sliceOverflow}
+          <div
+            class="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-lg bg-gradient-to-l from-background to-transparent"
+            aria-hidden="true"
+          ></div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- One detail region for the active slice: the by-team roster or a single situational cut,
+         never more than one at a time. Scope-first gating so a pooled fetch shows a skeleton (not
+         the by-team nudge) regardless of which chip is active. -->
+    {#if scope === 'pooled'}
+      {#if trendsQuery.isPending}
+        {@render loadingState()}
+      {:else if trendsQuery.isError}
+        <Card class="border-dashed">
+          <CardHeader>
+            <CardTitle>Couldn't load pooled trends</CardTitle>
+            <CardDescription>Pick a single season above, or refresh to try again.</CardDescription>
+          </CardHeader>
+        </Card>
+      {:else if !pooled || pooled.totalGames === 0}
+        <Card class="border-dashed">
+          <CardHeader>
+            <CardTitle>No pooled trends yet</CardTitle>
+            <CardDescription
+              >Multi-season cuts appear once graded seasons are available.</CardDescription
+            >
+          </CardHeader>
+        </Card>
+      {:else if activeSlice === 'teams'}
+        <!-- Pooled has no per-team roster: a franchise's 5-year ATS blends different rosters and
+             regresses to ~50%, so "Last 5" drives the situational cuts, not the team list (#529
+             non-goal). Nudge back to a season rather than blanking the slice. -->
+        <Card class="border-dashed">
+          <CardHeader>
+            <CardTitle>Pick a season for team records</CardTitle>
+            <CardDescription>
+              The pooled “Last 5” window powers the situational cuts (Favorites, Spread, and the
+              rest). Team ATS records are season-scoped — choose a season above to browse them.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      {:else}
+        {@render situationalDetail()}
+        <p class="mt-4 text-xs text-muted-foreground">
+          Pooled across the {pooledRangeLabel} seasons to give thin situational cuts enough sample. Even
+          pooled, an efficient market keeps most rates within a few points of 50% — read these as descriptive,
+          not predictive. Older imported seasons (2022–24) carry a single line snapshot rather than a
+          true closing line, so a pooled rate mixes the two.
+        </p>
+      {/if}
+    {:else if leagueQuery.isPending}
+      {@render loadingState()}
+    {:else if leagueQuery.isError}
+      <Card class="border-dashed">
+        <CardHeader>
+          <CardTitle>Couldn't load league ATS records</CardTitle>
+          <CardDescription
+            >Something went wrong fetching the data. Refresh to try again.</CardDescription
+          >
+        </CardHeader>
+      </Card>
+    {:else if league.totalGames === 0}
+      <Card class="border-dashed">
+        <CardHeader>
+          <CardTitle>No graded games for {pageData.seasonYear} yet</CardTitle>
+          <CardDescription>
+            League ATS records appear once games are graded. Try a different season, or the pooled
+            “Last 5” window above.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    {:else if activeSlice === 'teams'}
+      <!-- Sample-size caveat: descriptive, not predictive. Older imported seasons (2022–24) have
+           missing scores, so their totals are honestly thinner, not misleadingly complete. -->
+      <p class="text-sm text-muted-foreground">
+        Descriptive records against the closing spread, based on
+        <span class="font-medium text-foreground">{league.totalGames}</span>
+        scored {league.totalGames === 1 ? 'game' : 'games'} with a line in {pageData.seasonYear}.
+        ATS records are noisy — treat small samples with caution.
+      </p>
+      {@render teamsView()}
+    {:else}
+      {@render situationalDetail()}
+    {/if}
+  </div>
 </section>
