@@ -55,6 +55,13 @@ Project `Done` column, and Releases remain the sources of truth — see
   career + sample-gated by design, and the legacy team/weight/trend/H2H tables fold into one "More
   breakdowns" disclosure. views: `stats_situational_splits_season` · `league_situational_baseline_season`
   · component: `SituationalExplorer.svelte` · route: `/stats` · ADR-0013/0017
+- **#530** Design-system foundations — one token vocabulary layered on Tailwind: semantic
+  typography / spacing / elevation / motion tokens join the existing color/radius tokens in
+  `@theme inline`, with theme-responsive (light+dark) elevation so a light theme can flip. The
+  brand-color guard now also fails raw inline hex (issue-ref-safe: comment-stripped + length/
+  value-context rule), with an allowlist for dynamic sources. New `design-system.md` context
+  pack codifies the catalog, selection-tier ladder, and elevation layering. files: `app.css` ·
+  `scripts/check-brand-colors.ts` · `docs/agent-context/design-system.md` · ADR-0029
 - **PR #528** Leaderboard Total column no longer clips on mobile — the player-name column now
   truncates so a long display name can't push the standings table past a 390px viewport, keeping
   the Total column (season, all-time, and the `/demo` table) on-screen. Presentation-only. routes:
