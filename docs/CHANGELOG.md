@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **#502** "Your edge" analytics (PR 1 of 2) — per-user situational ATS views plus the
+  previously-latent `/stats` tendency tiles. Adds career-grain situational cuts (primetime,
+  home/away, spread bucket, divisional) mirroring the `league_ats_*` pattern, and surfaces
+  favorite-vs-underdog, win-streak, and consensus tendencies for the selected player/season.
+  The join-to-league-baseline "edge" panel that consumes these views is PR 2. views:
+  `stats_situational_base`, `stats_situational_splits` · fn: `refresh_leaderboard_stats` ·
+  route: `/stats` · ADR-0013/0017
+
 - **PR #519** Design-study skill (issue-less, chore) — new `design-study` skill turns a UI
   feature idea into an opinionated before/after artifact in the app's real dark skin
   (capture current screens → diagnose → propose composable moves → mock at 390px); bundles

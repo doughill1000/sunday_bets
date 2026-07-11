@@ -26,7 +26,13 @@
     TableRow
   } from '$lib/components/ui/table';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import { formatAccuracy, headToHeadForUser } from '$lib/utils/stats';
+  import {
+    consensusTendency,
+    formatAccuracy,
+    headToHeadForUser,
+    lineSideTendency,
+    streakTendency
+  } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
@@ -132,6 +138,19 @@
     const decided = selected.wins + selected.losses;
     return decided > 0 ? selected.wins / decided : null;
   });
+
+  // Previously-latent personal cuts (#502): favorite/underdog lean, win streak, and consensus
+  // behavior for the selected player + season. Each is sample-guarded, so it renders as a compact
+  // tile only when there are enough placed picks to be meaningful (thin early-season samples fall
+  // away rather than headline a misleading rate).
+  const lineSide = $derived(
+    lineSideTendency(data.lineSide.find((r) => r.user_id === selectedUserId))
+  );
+  const streak = $derived(streakTendency(data.streaks.find((r) => r.user_id === selectedUserId)));
+  const consensus = $derived(
+    consensusTendency(data.consensusStats.find((r) => r.user_id === selectedUserId))
+  );
+  const hasTendencies = $derived(Boolean(lineSide || streak || consensus));
 
   function setTeamSort(key: TeamSortKey) {
     teamSort =
@@ -392,6 +411,56 @@
                 </dl>
               </CardContent>
             </Card>
+
+            {#if hasTendencies}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tendencies</CardTitle>
+                  <CardDescription>
+                    How {isSelectedYou ? 'you' : selectedDisplayName} played the board in {data.seasonYear}.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {#if lineSide}
+                      <div>
+                        <dt class="text-xs font-medium text-muted-foreground">
+                          Favorite vs underdog
+                        </dt>
+                        <dd class="mt-1 text-2xl font-bold">
+                          {formatAccuracy(lineSide.favoritePct)}
+                          <span class="text-sm font-normal text-muted-foreground">favorites</span>
+                        </dd>
+                        <p class="text-xs text-muted-foreground">
+                          {formatAccuracy(lineSide.underdogPct)} underdogs · {lineSide.lean ===
+                          'balanced'
+                            ? 'balanced mix'
+                            : `leans ${lineSide.lean}`}
+                        </p>
+                      </div>
+                    {/if}
+                    {#if streak}
+                      <div>
+                        <dt class="text-xs font-medium text-muted-foreground">Win streak</dt>
+                        <dd class="mt-1 text-2xl font-bold tabular-nums">{streak.current}</dd>
+                        <p class="text-xs text-muted-foreground">current · best {streak.best}</p>
+                      </div>
+                    {/if}
+                    {#if consensus}
+                      <div>
+                        <dt class="text-xs font-medium text-muted-foreground">Against the crowd</dt>
+                        <dd class="mt-1 text-2xl font-bold">
+                          {formatAccuracy(consensus.contrarianPct)}
+                        </dd>
+                        <p class="text-xs text-muted-foreground">
+                          {consensus.contrarianWins}/{consensus.contrarianPicks} contrarian picks won
+                        </p>
+                      </div>
+                    {/if}
+                  </dl>
+                </CardContent>
+              </Card>
+            {/if}
 
             {#if trendRows.length > 0}
               <Card>

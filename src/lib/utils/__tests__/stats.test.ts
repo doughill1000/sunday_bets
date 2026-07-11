@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { buildTrendSeries, formatAccuracy, headToHeadForUser } from '../stats';
-import type { HeadToHeadEntry, SeasonTrendEntry } from '$lib/types/server/stats';
+import {
+  buildTrendSeries,
+  consensusTendency,
+  formatAccuracy,
+  headToHeadForUser,
+  lineSideTendency,
+  streakTendency,
+  TENDENCY_MIN_SAMPLE
+} from '../stats';
+import type {
+  ConsensusStatsEntry,
+  HeadToHeadEntry,
+  LineSideStatsEntry,
+  SeasonTrendEntry,
+  StreakStatsEntry
+} from '$lib/types/server/stats';
 
 const trendRow = (
   user_id: string,
@@ -135,6 +149,91 @@ describe('stats utilities', () => {
       pushes: 1,
       points: 15,
       opponentPoints: 8
+    });
+  });
+});
+
+const lineSideEntry = (over: Partial<LineSideStatsEntry> = {}): LineSideStatsEntry => ({
+  user_id: 'a',
+  display_name: 'Alex',
+  decisions: 10,
+  chalk_picks: 6,
+  dog_picks: 4,
+  ...over
+});
+
+const streakEntry = (over: Partial<StreakStatsEntry> = {}): StreakStatsEntry => ({
+  user_id: 'a',
+  display_name: 'Alex',
+  graded_picks: 12,
+  current_streak: 3,
+  max_streak: 7,
+  ...over
+});
+
+const consensusEntry = (over: Partial<ConsensusStatsEntry> = {}): ConsensusStatsEntry => ({
+  user_id: 'a',
+  display_name: 'Alex',
+  decisions: 10,
+  mean_consensus_pct: 55,
+  contrarian_picks: 4,
+  contrarian_wins: 3,
+  majority_picks: 6,
+  majority_wins: 4,
+  ...over
+});
+
+describe('tendency tiles (#502)', () => {
+  it('withholds the line-side tile for a missing or thin sample', () => {
+    expect(lineSideTendency(undefined)).toBeNull();
+    expect(
+      lineSideTendency(
+        lineSideEntry({ decisions: TENDENCY_MIN_SAMPLE - 1, chalk_picks: 2, dog_picks: 1 })
+      )
+    ).toBeNull();
+  });
+
+  it('computes favorite/underdog share and lean', () => {
+    const favorites = lineSideTendency(
+      lineSideEntry({ decisions: 10, chalk_picks: 7, dog_picks: 2 })
+    );
+    expect(favorites).toMatchObject({ favoritePct: 0.7, underdogPct: 0.2, lean: 'favorites' });
+
+    const dogs = lineSideTendency(lineSideEntry({ decisions: 10, chalk_picks: 2, dog_picks: 7 }));
+    expect(dogs?.lean).toBe('underdogs');
+
+    // Within 10 points either way reads as balanced (0.50 favorites vs 0.45 underdogs).
+    const balanced = lineSideTendency(
+      lineSideEntry({ decisions: 20, chalk_picks: 10, dog_picks: 9 })
+    );
+    expect(balanced?.lean).toBe('balanced');
+  });
+
+  it('withholds the streak tile below the graded-pick guard', () => {
+    expect(streakTendency(undefined)).toBeNull();
+    expect(streakTendency(streakEntry({ graded_picks: TENDENCY_MIN_SAMPLE - 1 }))).toBeNull();
+  });
+
+  it('summarizes current and best streak', () => {
+    expect(
+      streakTendency(streakEntry({ graded_picks: 12, current_streak: 3, max_streak: 7 }))
+    ).toEqual({ current: 3, best: 7, gradedPicks: 12 });
+  });
+
+  it('withholds the consensus tile for a missing or thin sample', () => {
+    expect(consensusTendency(undefined)).toBeNull();
+    expect(consensusTendency(consensusEntry({ decisions: TENDENCY_MIN_SAMPLE - 1 }))).toBeNull();
+  });
+
+  it('computes contrarian and with-crowd share', () => {
+    const tendency = consensusTendency(
+      consensusEntry({ decisions: 10, contrarian_picks: 4, contrarian_wins: 3, majority_picks: 6 })
+    );
+    expect(tendency).toMatchObject({
+      contrarianPct: 0.4,
+      withCrowdPct: 0.6,
+      contrarianPicks: 4,
+      contrarianWins: 3
     });
   });
 });
