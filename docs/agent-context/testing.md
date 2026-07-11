@@ -45,6 +45,11 @@
   local-only on a prod-seeded DB (e.g. `005_cron`). Do **not** run a pgTAP file with raw
   `psql -f`: pgTAP's functions aren't on the connection's search_path, so `plan()` errors
   and the aborted transaction cascades — the `supabase test db` harness installs them.
+- **After a `supabase db reset --local`, re-run `000_setup.sql` before any single file.**
+  The reset drops the `tests` helper schema (`tests.create_supabase_user` et al.) — it is
+  created outside a transaction by `000_setup.sql`, not by a migration — so a single-file
+  run then fails with `schema "tests" does not exist`. Run
+  `supabase test db supabase/tests/000_setup.sql` once to reinstall it, then your file.
 - **Also runs in CI** (`ci-pgtap.yml`), path-filtered to `supabase/**` — the
   `pgTap-result` gate job passes on either a real pass or a path-filtered skip, so a
   failure there is a genuine CI gate, not decoration.
@@ -114,6 +119,12 @@ protects whichever test runs first.
 - `pnpm build` cannot complete locally on Windows (adapter-vercel EPERM), so the
   preview path is validated by CI, not locally — run the suite against `pnpm dev`
   locally.
+- **In a fresh worktree, that local `pnpm dev` can be very slow to boot or hang** on its
+  first run (cold Vite pre-bundle of the full dep graph), which makes a live in-browser
+  eyeball there unreliable. When a change is already covered by pgTAP + unit + `svelte-check`
+  (e.g. a new DB view plus an additive tile), don't block delivery chasing the dev server —
+  lean on those layers plus a DB/query-layer spot-check, and let CI's build-based e2e run
+  the browser flow.
 
 #### Pillar 4 — CI gating (smoke required / full informational)
 
