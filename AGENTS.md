@@ -193,6 +193,9 @@ link-not-copy rule.
   RLS/grants/pgTAP rules, PR review guidance (how to skip generated noise)
 - [ui.md](docs/agent-context/ui.md) — vendored shadcn-svelte restrictions, Svelte 5
   runes, Tailwind 4, demo seed
+- [design-system.md](docs/agent-context/design-system.md) — token vocabulary
+  (color / typography / spacing / elevation / motion), selection-tier + elevation
+  layering, the raw-hex guard
 - [testing.md](docs/agent-context/testing.md) — four test layers, CI gate, lint-not-in-CI
   gotcha, mock fragility
 - [recipes/](docs/agent-context/recipes/README.md) — end-to-end, multi-pack procedures

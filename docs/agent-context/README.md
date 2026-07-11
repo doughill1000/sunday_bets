@@ -9,12 +9,13 @@ See `AGENTS.md` for the top-level index, conventions, and delivery workflow.
 
 ## Packs
 
-| Pack                       | What it covers                                                              |
-| -------------------------- | --------------------------------------------------------------------------- |
-| [auth.md](auth.md)         | Cookie sessions, iOS PWA constraint, service-role vs anon, admin boundary   |
-| [database.md](database.md) | Migration flow, generated files, RLS/grants/pgTAP rules, PR review guidance |
-| [ui.md](ui.md)             | Vendored shadcn-svelte restrictions, Svelte 5 runes, Tailwind, demo seed    |
-| [testing.md](testing.md)   | Four test layers, CI gate, lint-not-in-CI gotcha, mock fragility            |
+| Pack                                 | What it covers                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------- |
+| [auth.md](auth.md)                   | Cookie sessions, iOS PWA constraint, service-role vs anon, admin boundary         |
+| [database.md](database.md)           | Migration flow, generated files, RLS/grants/pgTAP rules, PR review guidance       |
+| [ui.md](ui.md)                       | Vendored shadcn-svelte restrictions, Svelte 5 runes, Tailwind, demo seed          |
+| [design-system.md](design-system.md) | Token vocabulary (color/type/spacing/elevation/motion), selection-tier, hex guard |
+| [testing.md](testing.md)             | Four test layers, CI gate, lint-not-in-CI gotcha, mock fragility                  |
 
 ## Recipes
 
