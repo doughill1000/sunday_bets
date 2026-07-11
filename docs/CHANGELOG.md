@@ -48,6 +48,12 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#502** "Your edge" analytics (PR 2 of 2) — closes the epic: `/stats` now leads with a
+  "Your edge" panel calling out where the selected player most beats or trails the market against
+  the spread, career-first and sample-guarded. Joins the per-user situational cuts from PR 1 to a
+  new league-wide market baseline computed at the same backed-side grain. view:
+  `league_situational_baseline` · component: `YourEdge.svelte` · route: `/stats` · ADR-0013/0017
+
 - **PR #521** Agent-context gotchas (docs, chore) — records in the database/testing context
   packs the traps that cost rework on #502: verify a table's assembled shape (`picks` is
   group-scoped; `locked_spread_*` are `NOT NULL`) rather than its base `CREATE`; how to cleanly

@@ -1,8 +1,11 @@
 import type {
   ConsensusStatsEntry,
   HeadToHeadEntry,
+  LeagueSituationalBaselineEntry,
   LineSideStatsEntry,
   SeasonTrendEntry,
+  SituationalDimension,
+  SituationalSplitEntry,
   StreakStatsEntry
 } from '$lib/types/server/stats';
 
@@ -186,4 +189,119 @@ export function consensusTendency(
     contrarianPct: entry.contrarian_picks / entry.decisions,
     withCrowdPct: entry.majority_picks / entry.decisions
   };
+}
+
+// ── "Your edge" panel (issue #502, PR 2) ──────────────────────────────────────
+// Joins a player's career situational cover rates (stats_situational_splits) to the league
+// market baseline (league_situational_baseline) at the same backed-side grain, and surfaces the
+// cuts where they most beat or trail the market. Career-first: the edge is meaningful day one off
+// the imported seasons, and per-season situational samples are too thin to headline.
+
+/**
+ * Minimum decided picks (wins + losses, pushes excluded) in a single career cut before it can
+ * headline as an edge. Higher than the season tendency guard because a "you beat the market here"
+ * claim needs enough sample not to be noise, and career pools every season.
+ */
+export const EDGE_MIN_SAMPLE = 15;
+
+/** Display label for each (dimension, bucket) pair the panel can surface. */
+const EDGE_BUCKET_LABELS: Record<SituationalDimension, Record<string, string>> = {
+  primetime: { primetime: 'In primetime', day: 'In daytime games' },
+  home_away: { home: 'Backing the home side', away: 'Backing the road side' },
+  spread: {
+    pickem: "On pick'em games",
+    '1-3': 'On short spreads (1–3)',
+    '3.5-6.5': 'On mid spreads (3.5–6.5)',
+    '7-9.5': 'On long spreads (7–9.5)',
+    '10+': 'On double-digit spreads'
+  },
+  divisional: { divisional: 'In divisional games', non_divisional: 'In non-divisional games' }
+};
+
+/** One situational cut where the player's cover rate is compared to the market baseline. */
+export type SituationalEdge = {
+  dimension: SituationalDimension;
+  bucket: string;
+  /** Human label, e.g. "In primetime". */
+  label: string;
+  /** Decided picks in the cut (wins + losses; the sample the guard applies to). */
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  /** Player cover rate in this cut (0–1). */
+  accuracy: number;
+  /** League market cover rate for the same cut (0–1). */
+  leagueAccuracy: number;
+  /** accuracy − leagueAccuracy; positive = beating the market in this cut. */
+  delta: number;
+};
+
+/**
+ * Join one player's career situational splits to the league market baseline, keeping only the
+ * cuts with a comparable baseline and enough decided picks, and return them strongest-signal
+ * first (largest absolute distance from the market). Pushes never count toward the sample or the
+ * rate. Pass `userSplits` already filtered to the selected player.
+ */
+export function situationalEdges(
+  userSplits: SituationalSplitEntry[],
+  leagueBaseline: LeagueSituationalBaselineEntry[],
+  minSample = EDGE_MIN_SAMPLE
+): SituationalEdge[] {
+  const baselineByKey = new Map<string, number>();
+  for (const b of leagueBaseline) {
+    if (b.accuracy != null) baselineByKey.set(`${b.dimension}:${b.bucket}`, b.accuracy);
+  }
+
+  const edges: SituationalEdge[] = [];
+  for (const s of userSplits) {
+    const decided = s.wins + s.losses;
+    if (decided < minSample || s.accuracy == null) continue;
+    const leagueAccuracy = baselineByKey.get(`${s.dimension}:${s.bucket}`);
+    if (leagueAccuracy == null) continue;
+    const label = EDGE_BUCKET_LABELS[s.dimension]?.[s.bucket];
+    if (!label) continue;
+    edges.push({
+      dimension: s.dimension,
+      bucket: s.bucket,
+      label,
+      decisions: decided,
+      wins: s.wins,
+      losses: s.losses,
+      pushes: s.pushes,
+      accuracy: s.accuracy,
+      leagueAccuracy,
+      delta: s.accuracy - leagueAccuracy
+    });
+  }
+
+  // Strongest edges first; deterministic tiebreak on sample size, then dimension/bucket.
+  return edges.toSorted(
+    (a, b) =>
+      Math.abs(b.delta) - Math.abs(a.delta) ||
+      b.decisions - a.decisions ||
+      a.dimension.localeCompare(b.dimension) ||
+      a.bucket.localeCompare(b.bucket)
+  );
+}
+
+/**
+ * Pick the panel's display set from {@link situationalEdges} output: the strongest edges, capped
+ * at `limit`, with at most `perDimension` from any one dimension so the panel reads as a varied
+ * synthesis rather than, say, four spread buckets. Assumes `edges` is already sorted by strength.
+ */
+export function topSituationalEdges(
+  edges: SituationalEdge[],
+  { limit = 4, perDimension = 2 }: { limit?: number; perDimension?: number } = {}
+): SituationalEdge[] {
+  const usedByDimension = new Map<SituationalDimension, number>();
+  const picked: SituationalEdge[] = [];
+  for (const edge of edges) {
+    if (picked.length >= limit) break;
+    const used = usedByDimension.get(edge.dimension) ?? 0;
+    if (used >= perDimension) continue;
+    usedByDimension.set(edge.dimension, used + 1);
+    picked.push(edge);
+  }
+  return picked;
 }

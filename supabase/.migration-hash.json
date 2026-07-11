@@ -859,5 +859,10 @@
     "hash": "c5da340e5a59a51fac8fb586435e35f74faa87a1351738fd51d8666c68974f36",
     "migration": "20260711011851_stats_situational_views.sql",
     "migrationHash": "5e8c16078ca7c7cf5dfd65a37a9d4f3616bf8d3e56749539f2eb119f185dbbea"
+  },
+  "views/league_situational_baseline.sql": {
+    "hash": "c517369f1674e1466e40c05bfe78200499ed9aae3e77b07863898dbe6ba32381",
+    "migration": "20260711114458_league_situational_baseline.sql",
+    "migrationHash": "117a72dc3418a22cdf891a5ab7247394eb97b78eed0bf31e5a02d57cfde062b3"
   }
 }

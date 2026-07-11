@@ -2,17 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   buildTrendSeries,
   consensusTendency,
+  EDGE_MIN_SAMPLE,
   formatAccuracy,
   headToHeadForUser,
   lineSideTendency,
+  situationalEdges,
   streakTendency,
-  TENDENCY_MIN_SAMPLE
+  TENDENCY_MIN_SAMPLE,
+  topSituationalEdges
 } from '../stats';
 import type {
   ConsensusStatsEntry,
   HeadToHeadEntry,
+  LeagueSituationalBaselineEntry,
   LineSideStatsEntry,
   SeasonTrendEntry,
+  SituationalSplitEntry,
   StreakStatsEntry
 } from '$lib/types/server/stats';
 
@@ -235,5 +240,124 @@ describe('tendency tiles (#502)', () => {
       contrarianPicks: 4,
       contrarianWins: 3
     });
+  });
+});
+
+const split = (
+  dimension: SituationalSplitEntry['dimension'],
+  bucket: string,
+  wins: number,
+  losses: number,
+  over: Partial<SituationalSplitEntry> = {}
+): SituationalSplitEntry => ({
+  user_id: 'a',
+  dimension,
+  bucket,
+  bucket_order: 0,
+  decisions: wins + losses,
+  wins,
+  losses,
+  pushes: 0,
+  accuracy: wins + losses > 0 ? wins / (wins + losses) : null,
+  ...over
+});
+
+const baseline = (
+  dimension: SituationalSplitEntry['dimension'],
+  bucket: string,
+  accuracy: number | null
+): LeagueSituationalBaselineEntry => ({
+  dimension,
+  bucket,
+  bucket_order: 0,
+  decisions: 100,
+  wins: 50,
+  losses: 50,
+  pushes: 0,
+  accuracy
+});
+
+describe('situational edges (#502)', () => {
+  const league = [
+    baseline('home_away', 'home', 0.5),
+    baseline('spread', '10+', 0.5),
+    baseline('primetime', 'primetime', 0.5)
+  ];
+
+  it('withholds a cut below the decided-pick guard (pushes never count)', () => {
+    // 14 decided + 20 pushes still fails the guard of 15 decided picks.
+    const thin = split('home_away', 'home', 9, 5, { pushes: 20 });
+    expect(situationalEdges([thin], league)).toEqual([]);
+  });
+
+  it('drops cuts with no comparable baseline or no known label', () => {
+    const noBaseline = split('divisional', 'divisional', 20, 10); // not in `league`
+    const unknownBucket = split('spread', 'weird-bucket', 20, 10); // no label
+    expect(
+      situationalEdges(
+        [noBaseline, unknownBucket],
+        [...league, baseline('spread', 'weird-bucket', 0.5)]
+      )
+    ).toEqual([]);
+  });
+
+  it('computes the delta vs league and ranks by absolute distance from the market', () => {
+    const edges = situationalEdges(
+      [
+        split('home_away', 'home', 24, 16), // 0.60 -> +0.10
+        split('spread', '10+', 10, 20), // 0.3333 -> -0.1667 (strongest)
+        split('primetime', 'primetime', 22, 18) // 0.55 -> +0.05
+      ],
+      league
+    );
+
+    expect(edges.map((e) => e.dimension)).toEqual(['spread', 'home_away', 'primetime']);
+    expect(edges[0]).toMatchObject({ bucket: '10+', label: 'On double-digit spreads', wins: 10 });
+    expect(edges[0].delta).toBeCloseTo(-0.1667, 4);
+    expect(edges[1].delta).toBeCloseTo(0.1, 4);
+    expect(edges[2].delta).toBeCloseTo(0.05, 4);
+  });
+});
+
+describe('top situational edges (#502)', () => {
+  const league = [
+    baseline('spread', '1-3', 0.5),
+    baseline('spread', '3.5-6.5', 0.5),
+    baseline('spread', '7-9.5', 0.5),
+    baseline('home_away', 'home', 0.5),
+    baseline('primetime', 'primetime', 0.5)
+  ];
+  const edges = situationalEdges(
+    [
+      split('spread', '1-3', 30, 10), // +0.25, 40 decided
+      split('spread', '3.5-6.5', 8, 24), // -0.25, 32 decided
+      split('spread', '7-9.5', 24, 16), // +0.10
+      split('home_away', 'home', 22, 18), // +0.05
+      split('primetime', 'primetime', 21, 19) // +0.025
+    ],
+    league
+  );
+
+  it('caps how many cuts come from any one dimension so the panel stays varied', () => {
+    const top = topSituationalEdges(edges); // default limit 4, perDimension 2
+    expect(top.map((e) => `${e.dimension}:${e.bucket}`)).toEqual([
+      'spread:1-3',
+      'spread:3.5-6.5',
+      'home_away:home',
+      'primetime:primetime'
+    ]);
+    // The third spread bucket is dropped by the per-dimension cap, not just the limit.
+    expect(top.some((e) => e.bucket === '7-9.5')).toBe(false);
+  });
+
+  it('honors the limit', () => {
+    expect(topSituationalEdges(edges, { limit: 2 }).map((e) => e.bucket)).toEqual([
+      '1-3',
+      '3.5-6.5'
+    ]);
+  });
+
+  it('exposes a tunable career sample guard', () => {
+    expect(EDGE_MIN_SAMPLE).toBeGreaterThanOrEqual(10);
   });
 });

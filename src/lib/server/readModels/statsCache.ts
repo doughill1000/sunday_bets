@@ -5,7 +5,12 @@
 // functions — no new SQL. The heavier all-time detail (Career/Head-to-head tabs) is NOT
 // part of this payload: it stays streamed off the page `load` critical path.
 import { getSeasonLeaderboard } from '$lib/server/db/queries/leaderboard';
-import { getStatsForSeason, getAllTimeTotals } from '$lib/server/db/queries/stats';
+import {
+  getStatsForSeason,
+  getAllTimeTotals,
+  getSituationalSplits,
+  getLeagueSituationalBaseline
+} from '$lib/server/db/queries/stats';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { isDropWorstWeekEnabled, type DropWorstWeekRules } from '$lib/domain/scoring';
 import type { StatsCachePayload } from '$lib/query/types';
@@ -16,15 +21,27 @@ export async function getStatsCachePayload(
   groupId: string,
   seasonYear: number
 ): Promise<StatsCachePayload> {
-  const [allTimeTotals, stats, totals, config] = await Promise.all([
-    getAllTimeTotals(groupId),
-    getStatsForSeason(seasonYear, groupId),
-    getSeasonLeaderboard(seasonYear, groupId),
-    getGroupConfig(groupId)
-  ]);
+  const [allTimeTotals, stats, totals, config, situational, leagueSituationalBaseline] =
+    await Promise.all([
+      getAllTimeTotals(groupId),
+      getStatsForSeason(seasonYear, groupId),
+      getSeasonLeaderboard(seasonYear, groupId),
+      getGroupConfig(groupId),
+      // Career-grain (#502): the "Your edge" panel joins these per-user cuts to the league baseline.
+      getSituationalSplits(groupId),
+      getLeagueSituationalBaseline()
+    ]);
 
   // Group-level (cross-season) flag for the Career "Standings points" caption (ADR-0018).
   const dropActive = isDropWorstWeekEnabled(config?.scoring_rules as DropWorstWeekRules);
 
-  return { seasonYear, totals, allTimeTotals, dropActive, ...stats };
+  return {
+    seasonYear,
+    totals,
+    allTimeTotals,
+    dropActive,
+    situational,
+    leagueSituationalBaseline,
+    ...stats
+  };
 }
