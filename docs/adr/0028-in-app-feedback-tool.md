@@ -1,6 +1,6 @@
 # ADR-0028: In-app feedback capture — store-first model, admin-gated GitHub egress, and public-repo context privacy
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-10
 - Issue: #500
 - Supersedes: None
