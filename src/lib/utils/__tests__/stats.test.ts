@@ -6,6 +6,7 @@ import {
   formatAccuracy,
   headToHeadForUser,
   lineSideTendency,
+  seasonScopeOptions,
   situationalEdges,
   streakTendency,
   TENDENCY_MIN_SAMPLE,
@@ -186,6 +187,36 @@ const consensusEntry = (over: Partial<ConsensusStatsEntry> = {}): ConsensusStats
   majority_picks: 6,
   majority_wins: 4,
   ...over
+});
+
+describe('seasonScopeOptions (#518)', () => {
+  it('pins the newest season as "This season" and lists the rest newest-first', () => {
+    expect(seasonScopeOptions([2022, 2025, 2023, 2024])).toEqual({
+      latest: 2025,
+      pastSeasons: [2024, 2023, 2022]
+    });
+  });
+
+  it('leaves no past seasons when only one season has data', () => {
+    expect(seasonScopeOptions([2025])).toEqual({ latest: 2025, pastSeasons: [] });
+  });
+
+  it('returns a null latest when no seasons have data', () => {
+    expect(seasonScopeOptions([])).toEqual({ latest: null, pastSeasons: [] });
+  });
+
+  it('dedupes repeated seasons', () => {
+    expect(seasonScopeOptions([2024, 2024, 2023])).toEqual({
+      latest: 2024,
+      pastSeasons: [2023]
+    });
+  });
+
+  it('does not mutate the caller’s array', () => {
+    const input = [2023, 2025, 2024];
+    seasonScopeOptions(input);
+    expect(input).toEqual([2023, 2025, 2024]);
+  });
 });
 
 describe('tendency tiles (#502)', () => {

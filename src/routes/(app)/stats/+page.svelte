@@ -8,9 +8,7 @@
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
   import YourEdge from '$lib/components/stats/YourEdge.svelte';
-  import SortableTableHead from '$lib/components/table/SortableTableHead.svelte';
-  import { Badge } from '$lib/components/ui/badge';
-  import { Button } from '$lib/components/ui/button';
+  import StatAccuracyList from '$lib/components/stats/StatAccuracyList.svelte';
   import {
     Card,
     CardContent,
@@ -19,23 +17,20 @@
     CardTitle
   } from '$lib/components/ui/card';
   import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-  } from '$lib/components/ui/table';
-  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger
+  } from '$lib/components/ui/accordion';
   import {
     consensusTendency,
     formatAccuracy,
     headToHeadForUser,
     lineSideTendency,
+    seasonScopeOptions,
     streakTendency
   } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
-  import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
 
   let { data: pageData }: { data: PageData } = $props();
 
@@ -76,30 +71,11 @@
   // cached/empty payload supplies totals / accuracy / head-to-head.
   const data = $derived({ ...(statsQuery.data ?? EMPTY_STATS), ...pageData });
 
-  // All-time detail (team/weight/head-to-head) streams in after first paint, so it is a
-  // promise on `data`. This alias lets comparators reference its resolved element types.
-  type AllTimeDetail = Awaited<typeof data.allTimeDetail>;
-
-  type TeamSortKey = 'team' | 'record' | 'accuracy' | 'points';
-  type SortDirection = 'asc' | 'desc';
-
   // Light → All-In, so the highlighted All-In row sorts last.
   const WEIGHT_ORDER = ['L', 'M', 'H', 'A'];
-  const DEFAULT_SORT_DIRECTION: Record<TeamSortKey, SortDirection> = {
-    team: 'asc',
-    record: 'desc',
-    accuracy: 'desc',
-    points: 'desc'
-  };
-  let teamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
-    key: 'accuracy',
-    direction: 'desc'
-  });
 
-  let allTimeTeamSort = $state<{ key: TeamSortKey; direction: SortDirection }>({
-    key: 'accuracy',
-    direction: 'desc'
-  });
+  const SELECT_CLASS =
+    'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
 
   const orderedPlayersForPicker = $derived.by(() => {
     const you = data.allTimeTotals.find((t) => t.user_id === data.currentUserId);
@@ -107,11 +83,10 @@
     return you ? [you, ...others] : data.allTimeTotals;
   });
 
-  // Plain `$state`, set explicitly on click and otherwise left alone — a `$derived` here
-  // would recompute (and stomp the user's pick) whenever `data.allTimeTotals` gets a new
-  // object identity, which happens on every season change via `goto`. The `$effect` below
-  // only steps in to pick a default/repair an invalid selection, never to "follow" the
-  // season.
+  // Plain `$state`, set explicitly and otherwise left alone — a `$derived` here would
+  // recompute (and stomp the user's pick) whenever `data.allTimeTotals` gets a new object
+  // identity, which happens on every season change via `goto`. The `$effect` below only steps
+  // in to pick a default/repair an invalid selection, never to "follow" the season.
   let selectedUserId = $state<string | null>(null);
   $effect(() => {
     if (selectedUserId !== null && data.allTimeTotals.some((t) => t.user_id === selectedUserId)) {
@@ -121,7 +96,34 @@
       ? data.currentUserId
       : (data.allTimeTotals[0]?.user_id ?? null);
   });
-  let selectedSeasonYear = $derived(String(data.seasonYear));
+
+  // ── Scope: player + season/Career fold into one context bar (#518) ──────────────
+  // The Season/Career tab is gone. `scope` is a single value: 'season' shows the season
+  // resolved from the URL, 'career' the all-time view. Switching to Career is a pure
+  // client-side view flip (career data always loads); changing the *season* navigates so the
+  // season-scoped query re-keys (ADR-0017). Because a full navigation re-mounts nothing, the
+  // scope is set before `goto` so it survives the reload as 'season'.
+  let scope = $state<'season' | 'career'>('season');
+  const scopeOptions = $derived(seasonScopeOptions(data.availableSeasons));
+  const scopeValue = $derived(scope === 'career' ? 'career' : String(data.seasonYear));
+
+  function onScopeChange(e: Event) {
+    const value = (e.target as HTMLSelectElement).value;
+    if (value === 'career') {
+      scope = 'career';
+      return;
+    }
+    scope = 'season';
+    if (value !== String(data.seasonYear)) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('season', value);
+      void goto(url.toString(), { noScroll: true });
+    }
+  }
+
+  function onPlayerChange(e: Event) {
+    selectedUserId = (e.target as HTMLSelectElement).value;
+  }
 
   const selected = $derived(data.totals.find((t) => t.user_id === selectedUserId) ?? null);
   const selectedCareer = $derived(
@@ -144,8 +146,7 @@
 
   // Previously-latent personal cuts (#502): favorite/underdog lean, win streak, and consensus
   // behavior for the selected player + season. Each is sample-guarded, so it renders as a compact
-  // tile only when there are enough placed picks to be meaningful (thin early-season samples fall
-  // away rather than headline a misleading rate).
+  // tile only when there are enough placed picks to be meaningful.
   const lineSide = $derived(
     lineSideTendency(data.lineSide.find((r) => r.user_id === selectedUserId))
   );
@@ -160,89 +161,24 @@
     data.situational.filter((r) => r.user_id === selectedUserId)
   );
 
-  function setTeamSort(key: TeamSortKey) {
-    teamSort =
-      teamSort.key === key
-        ? { key, direction: teamSort.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: DEFAULT_SORT_DIRECTION[key] };
-  }
-
-  function setAllTimeTeamSort(key: TeamSortKey) {
-    allTimeTeamSort =
-      allTimeTeamSort.key === key
-        ? { key, direction: allTimeTeamSort.direction === 'asc' ? 'desc' : 'asc' }
-        : { key, direction: DEFAULT_SORT_DIRECTION[key] };
-  }
-
-  function compareNumber(a: number | null, b: number | null, direction: SortDirection) {
+  // Nulls sort last regardless; otherwise highest cover first.
+  function compareCoverDesc(a: number | null, b: number | null) {
     if (a == null && b == null) return 0;
     if (a == null) return 1;
     if (b == null) return -1;
-    return direction === 'asc' ? a - b : b - a;
-  }
-
-  function compareRecord(
-    a: { wins: number; losses: number; pushes: number },
-    b: { wins: number; losses: number; pushes: number },
-    direction: SortDirection
-  ) {
-    const multiplier = direction === 'asc' ? 1 : -1;
-    return (
-      multiplier * (a.wins - b.wins) ||
-      -multiplier * (a.losses - b.losses) ||
-      multiplier * (a.pushes - b.pushes)
-    );
-  }
-
-  function compareTeamRows(
-    a: (typeof data.teamAccuracy)[number],
-    b: (typeof data.teamAccuracy)[number]
-  ) {
-    const direction = teamSort.direction;
-    const fallback = a.team_short_name.localeCompare(b.team_short_name);
-
-    switch (teamSort.key) {
-      case 'team':
-        return direction === 'asc' ? fallback : -fallback;
-      case 'record':
-        return compareRecord(a, b, direction) || fallback;
-      case 'accuracy':
-        return (
-          compareNumber(a.accuracy, b.accuracy, direction) ||
-          compareNumber(a.decisions, b.decisions, 'desc') ||
-          fallback
-        );
-      case 'points':
-        return compareNumber(a.points, b.points, direction) || fallback;
-    }
-  }
-
-  function compareAllTimeTeamRows(
-    a: AllTimeDetail['allTimeTeamAccuracy'][number],
-    b: AllTimeDetail['allTimeTeamAccuracy'][number]
-  ) {
-    const direction = allTimeTeamSort.direction;
-    const fallback = a.team_short_name.localeCompare(b.team_short_name);
-
-    switch (allTimeTeamSort.key) {
-      case 'team':
-        return direction === 'asc' ? fallback : -fallback;
-      case 'record':
-        return compareRecord(a, b, direction) || fallback;
-      case 'accuracy':
-        return (
-          compareNumber(a.accuracy, b.accuracy, direction) ||
-          compareNumber(a.decisions, b.decisions, 'desc') ||
-          fallback
-        );
-      case 'points':
-        return compareNumber(a.points, b.points, direction) || fallback;
-    }
+    return b - a;
   }
 
   const trendRows = $derived(data.trend.filter((r) => r.user_id === selectedUserId));
   const teamRows = $derived(
-    data.teamAccuracy.filter((r) => r.user_id === selectedUserId).toSorted(compareTeamRows)
+    data.teamAccuracy
+      .filter((r) => r.user_id === selectedUserId)
+      .toSorted(
+        (a, b) =>
+          compareCoverDesc(a.accuracy, b.accuracy) ||
+          b.decisions - a.decisions ||
+          a.team_short_name.localeCompare(b.team_short_name)
+      )
   );
   const weightRows = $derived(
     data.weightAccuracy
@@ -250,28 +186,66 @@
       .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))
   );
 
-  // All-time row derivations (allTimeTeamRows / allTimeWeightRows / headToHead) live inside
-  // the {#await data.allTimeDetail} blocks below, since that data streams in asynchronously.
+  // Normalized rows for the shared meter list.
+  const teamAccuracyRows = $derived(
+    teamRows.map((r) => ({
+      key: r.team_id,
+      label: r.team_short_name,
+      title: r.team_name,
+      wins: r.wins,
+      losses: r.losses,
+      pushes: r.pushes,
+      accuracy: r.accuracy,
+      points: r.points
+    }))
+  );
+  const weightAccuracyRows = $derived(
+    weightRows.map((r) => ({
+      key: r.weight,
+      label: weightLabel(r.weight),
+      isAllIn: r.weight === 'A',
+      wins: r.wins,
+      losses: r.losses,
+      pushes: r.pushes,
+      accuracy: r.accuracy,
+      points: r.points
+    }))
+  );
 
-  function onSeasonChange(e: Event) {
-    const year = (e.target as HTMLSelectElement).value;
-    selectedSeasonYear = year;
-    const url = new URL(window.location.href);
-    url.searchParams.set('season', year);
-    void goto(url.toString());
+  const seasonH2H = $derived(
+    selectedUserId ? headToHeadForUser(data.headToHead, selectedUserId) : []
+  );
+
+  // Cheap glances for the collapsed disclosure rows, so a section reads without opening it.
+  const teamMeta = $derived(
+    teamAccuracyRows.length > 0
+      ? `${teamAccuracyRows[0].label} ${formatAccuracy(teamAccuracyRows[0].accuracy)}`
+      : ''
+  );
+  const weightMeta = $derived.by(() => {
+    const allIn = weightRows.find((r) => r.weight === 'A');
+    return allIn ? `All-In ${allIn.wins}-${allIn.losses}-${allIn.pushes}` : '';
+  });
+  const trendMeta = $derived.by(() => {
+    const last = trendRows.at(-1);
+    if (!last) return '';
+    return `${last.cumulative_points >= 0 ? '+' : ''}${last.cumulative_points} pts`;
+  });
+
+  function rivalMeta(n: number) {
+    return `${n} rival${n === 1 ? '' : 's'}`;
   }
+
+  // All-time row derivations (allTimeTeamRows / allTimeWeightRows / careerH2H) live inside the
+  // {#await data.allTimeDetail} block below, since that data streams in asynchronously.
 </script>
 
 {#snippet loadingState()}
   <!-- Cache miss (no SSR initialData, nothing cached yet): show a skeleton while the
        query loads, rather than the empty-state card. -->
   <div class="space-y-6" aria-hidden="true">
-    <div class="flex gap-2">
-      {#each [0, 1, 2, 3] as i (i)}
-        <div class="h-8 w-20 animate-pulse rounded-md bg-muted"></div>
-      {/each}
-    </div>
-    <div class="h-64 w-full animate-pulse rounded-xl bg-muted"></div>
+    <div class="h-12 w-full animate-pulse rounded-xl bg-muted"></div>
+    <div class="h-40 w-full animate-pulse rounded-xl bg-muted"></div>
     <div class="h-48 w-full animate-pulse rounded-xl bg-muted"></div>
   </div>
 {/snippet}
@@ -291,22 +265,39 @@
   <span class="tabular-nums text-white">{wins}-{losses}-{pushes}</span>
 {/snippet}
 
-{#snippet teamHead(label: string, key: TeamSortKey, align: 'left' | 'right' = 'left')}
-  <SortableTableHead
-    {label}
-    {align}
-    direction={teamSort.key === key ? teamSort.direction : null}
-    onsort={() => setTeamSort(key)}
-  />
+{#snippet discTrigger(title: string, meta: string)}
+  <span class="flex w-full items-center justify-between gap-3">
+    <span>{title}</span>
+    {#if meta}
+      <span class="text-xs font-normal tabular-nums text-muted-foreground">{meta}</span>
+    {/if}
+  </span>
 {/snippet}
 
-{#snippet allTimeTeamHead(label: string, key: TeamSortKey, align: 'left' | 'right' = 'left')}
-  <SortableTableHead
-    {label}
-    {align}
-    direction={allTimeTeamSort.key === key ? allTimeTeamSort.direction : null}
-    onsort={() => setAllTimeTeamSort(key)}
-  />
+{#snippet h2hGrid(rows: ReturnType<typeof headToHeadForUser>, span: string)}
+  <p class="mb-3 text-sm text-muted-foreground">
+    {possessive} weighted results against each player on games where you picked opposite sides {span}.
+  </p>
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    {#each rows as row (row.opponentUserId)}
+      <Card class="gap-3 py-4">
+        <CardHeader class="px-4">
+          <CardTitle class="text-base">
+            {subjectLabel} <span class="text-muted-foreground">vs</span>
+            {row.opponentDisplayName}
+          </CardTitle>
+          <CardDescription>{row.gamesCompared} games you disagreed on</CardDescription>
+        </CardHeader>
+        <CardContent class="flex items-end justify-between px-4">
+          <div>
+            <p class="text-2xl font-bold">{@render wlp(row.wins, row.losses, row.pushes)}</p>
+            <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
+          </div>
+          <p class="text-sm font-medium">{row.points} to {row.opponentPoints} pts</p>
+        </CardContent>
+      </Card>
+    {/each}
+  </div>
 {/snippet}
 
 <svelte:head>
@@ -314,11 +305,9 @@
 </svelte:head>
 
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="stats-heading">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 id="stats-heading" class="text-3xl font-bold tracking-tight">Stats & history</h1>
-      <p class="mt-1 text-muted-foreground">How you've performed against the spread.</p>
-    </div>
+  <div>
+    <h1 id="stats-heading" class="text-3xl font-bold tracking-tight">Stats & history</h1>
+    <p class="mt-1 text-muted-foreground">How you've performed against the spread.</p>
   </div>
 
   {#if statsQuery.isPending}
@@ -335,439 +324,334 @@
       </CardHeader>
     </Card>
   {:else}
-    <!-- Player selector -->
-    <div class="flex flex-wrap gap-2" aria-label="Select a player">
-      {#each orderedPlayersForPicker as player (player.user_id)}
-        {@const isYou = player.user_id === data.currentUserId}
-        <Button
-          aria-pressed={player.user_id === selectedUserId}
-          variant={player.user_id === selectedUserId ? 'default' : 'outline'}
-          size="sm"
-          onclick={() => (selectedUserId = player.user_id)}
+    <!-- One context bar (#518): player + season/scope, sticky under the app header so the
+         picker never scrolls away. The season selector stays a dropdown and absorbs Career as
+         a pinned option, so scope is one control that scales as seasons accumulate. -->
+    <div
+      data-testid="stats-context-bar"
+      class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
+    >
+      {#if orderedPlayersForPicker.length > 1}
+        <select
+          class={SELECT_CLASS}
+          value={selectedUserId ?? ''}
+          onchange={onPlayerChange}
+          aria-label="Select a player"
         >
-          {isYou ? 'You' : player.display_name}
-        </Button>
-      {/each}
+          {#each orderedPlayersForPicker as player (player.user_id)}
+            <option value={player.user_id}>
+              {player.user_id === data.currentUserId ? 'You' : player.display_name}
+            </option>
+          {/each}
+        </select>
+      {:else}
+        <span class="px-1 text-sm font-medium">{subjectLabel}</span>
+      {/if}
+
+      <select
+        class="{SELECT_CLASS} ml-auto"
+        value={scopeValue}
+        onchange={onScopeChange}
+        aria-label="Select season or career"
+      >
+        {#if scopeOptions.latest !== null}
+          <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+        {/if}
+        <option value="career">Career</option>
+        {#if scopeOptions.pastSeasons.length > 0}
+          <optgroup label="Past seasons">
+            {#each scopeOptions.pastSeasons as year (year)}
+              <option value={String(year)}>{year}</option>
+            {/each}
+          </optgroup>
+        {/if}
+      </select>
     </div>
 
     {#if selectedCareer}
-      <!-- Synthesis first (#502): where the selected player beats or trails the market, all-time.
-           Career-grain, so it leads above the Season/Career split rather than living inside it. -->
-      <YourEdge
-        splits={selectedSituational}
-        baseline={data.leagueSituationalBaseline}
-        isYou={isSelectedYou}
-        displayName={selectedDisplayName}
-      />
+      {#if scope === 'career'}
+        <!-- Career leads with the headline all-time totals, then the edge synthesis (#518). -->
+        <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
 
-      <Tabs value="season" class="w-full space-y-6">
-        <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-          <TabsTrigger value="season" class={ACTIVE_TAB_TRIGGER_CLASS}>Season</TabsTrigger>
-          <TabsTrigger value="career" class={ACTIVE_TAB_TRIGGER_CLASS}>Career</TabsTrigger>
-        </TabsList>
+        <!-- Synthesis (#502): where the selected player beats or trails the market, all-time. -->
+        <YourEdge
+          splits={selectedSituational}
+          baseline={data.leagueSituationalBaseline}
+          isYou={isSelectedYou}
+          displayName={selectedDisplayName}
+        />
 
-        <TabsContent value="season" class="space-y-6">
-          <!-- Season picker + per-season heading -->
-          <div class="flex flex-wrap items-center gap-3">
-            <h2 class="text-xl font-semibold tracking-tight">Season breakdown</h2>
-            {#if data.availableSeasons.length > 1}
-              <select
-                class="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                bind:value={selectedSeasonYear}
-                onchange={onSeasonChange}
-                aria-label="Select season"
-              >
-                {#each data.availableSeasons as year (year)}
-                  <option value={String(year)}>{year}</option>
-                {/each}
-              </select>
-            {:else}
-              <span class="text-sm text-muted-foreground">{data.seasonYear} season</span>
-            {/if}
-          </div>
+        <!-- All-time accuracy breakdowns (streamed off the critical path) -->
+        {#await data.allTimeDetail}
+          <Card class="border-dashed">
+            <CardHeader>
+              <CardTitle>Loading all-time accuracy…</CardTitle>
+              <CardDescription>One moment while the career breakdowns load.</CardDescription>
+            </CardHeader>
+          </Card>
+        {:then detail}
+          {@const allTimeTeamRows = detail.allTimeTeamAccuracy
+            .filter((r) => r.user_id === selectedUserId)
+            .toSorted(
+              (a, b) =>
+                compareCoverDesc(a.accuracy, b.accuracy) ||
+                b.decisions - a.decisions ||
+                a.team_short_name.localeCompare(b.team_short_name)
+            )}
+          {@const allTimeWeightRows = detail.allTimeWeightAccuracy
+            .filter((r) => r.user_id === selectedUserId)
+            .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))}
+          {@const allTimeTeamAccuracyRows = allTimeTeamRows.map((r) => ({
+            key: r.team_id,
+            label: r.team_short_name,
+            title: r.team_name,
+            wins: r.wins,
+            losses: r.losses,
+            pushes: r.pushes,
+            accuracy: r.accuracy,
+            points: r.points
+          }))}
+          {@const allTimeWeightAccuracyRows = allTimeWeightRows.map((r) => ({
+            key: r.weight,
+            label: weightLabel(r.weight),
+            isAllIn: r.weight === 'A',
+            wins: r.wins,
+            losses: r.losses,
+            pushes: r.pushes,
+            accuracy: r.accuracy,
+            points: r.points
+          }))}
+          {@const careerH2H = selectedUserId
+            ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
+            : []}
+          {#if allTimeTeamAccuracyRows.length > 0 || allTimeWeightAccuracyRows.length > 0 || careerH2H.length > 0}
+            <div class="space-y-2">
+              <h2 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                All-time breakdown
+              </h2>
+              <Accordion type="multiple" class="rounded-xl border">
+                {#if allTimeTeamAccuracyRows.length > 0}
+                  <AccordionItem value="career-team" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger(
+                        'Accuracy by team',
+                        `${allTimeTeamAccuracyRows[0].label} ${formatAccuracy(allTimeTeamAccuracyRows[0].accuracy)}`
+                      )}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p class="mb-3 text-sm text-muted-foreground">
+                        All-time results grouped by the team backed.
+                      </p>
+                      <StatAccuracyList rows={allTimeTeamAccuracyRows} />
+                    </AccordionContent>
+                  </AccordionItem>
+                {/if}
 
-          {#if data.totals.length === 0}
-            <Card class="border-dashed">
-              <CardHeader>
-                <CardTitle>No settled picks for {data.seasonYear}</CardTitle>
-                <CardDescription>Select a different season above.</CardDescription>
-              </CardHeader>
-            </Card>
-          {:else if selected}
-            <!-- Per-season summary -->
+                {#if allTimeWeightAccuracyRows.length > 0}
+                  <AccordionItem value="career-weight" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Accuracy by weight', '')}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p class="mb-3 text-sm text-muted-foreground">
+                        All-time confidence-level results, including each All-In.
+                      </p>
+                      <StatAccuracyList rows={allTimeWeightAccuracyRows} />
+                    </AccordionContent>
+                  </AccordionItem>
+                {/if}
+
+                {#if careerH2H.length > 0}
+                  <AccordionItem value="career-h2h" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Head to head', rivalMeta(careerH2H.length))}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {@render h2hGrid(careerH2H, 'all-time')}
+                    </AccordionContent>
+                  </AccordionItem>
+                {/if}
+              </Accordion>
+            </div>
+          {/if}
+        {/await}
+      {:else}
+        <!-- Season leads with the all-time edge synthesis, then the season snapshot (#518). -->
+        <YourEdge
+          splits={selectedSituational}
+          baseline={data.leagueSituationalBaseline}
+          isYou={isSelectedYou}
+          displayName={selectedDisplayName}
+        />
+
+        {#if data.totals.length === 0}
+          <Card class="border-dashed">
+            <CardHeader>
+              <CardTitle>No settled picks for {data.seasonYear}</CardTitle>
+              <CardDescription>Pick another season or Career above.</CardDescription>
+            </CardHeader>
+          </Card>
+        {:else if selected}
+          <!-- Compact season snapshot — the player + season already live in the context bar. -->
+          <Card>
+            <CardHeader class="pb-2">
+              <CardTitle class="text-base font-semibold">
+                {subjectLabel} · {data.seasonYear} season
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <!-- Analytics only: standings score + rank live on the Leaderboard now (ADR-0018).
+                 These tiles describe actual performance, always raw. -->
+              <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div>
+                  <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
+                  <dd class="text-2xl font-bold">
+                    {@render wlp(selected.wins, selected.losses, selected.pushes)}
+                  </dd>
+                  {#if selected.missed > 0}
+                    <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
+                  {/if}
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
+                  <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-muted-foreground">Decisions</dt>
+                  <dd class="text-2xl font-bold">{selected.decisions}</dd>
+                </div>
+                <div>
+                  <dt class="text-xs font-medium text-muted-foreground">Missed</dt>
+                  <dd class="text-2xl font-bold">{selected.missed}</dd>
+                </div>
+              </dl>
+            </CardContent>
+          </Card>
+
+          {#if hasTendencies}
             <Card>
               <CardHeader>
-                <CardDescription>{data.seasonYear} season</CardDescription>
-                <CardTitle class="text-2xl">{subjectLabel}</CardTitle>
+                <CardTitle>Tendencies</CardTitle>
+                <CardDescription>
+                  How {isSelectedYou ? 'you' : selectedDisplayName} played the board in {data.seasonYear}.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <!-- Analytics only: standings score + rank live on the Leaderboard now
-                     (ADR-0018). These tiles describe actual performance, always raw. -->
-                <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
-                    <dd class="text-2xl font-bold">
-                      {@render wlp(selected.wins, selected.losses, selected.pushes)}
-                    </dd>
-                    {#if selected.missed > 0}
-                      <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
-                    {/if}
-                  </div>
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
-                    <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
-                  </div>
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">Decisions</dt>
-                    <dd class="text-2xl font-bold">{selected.decisions}</dd>
-                  </div>
-                  <div>
-                    <dt class="text-xs font-medium text-muted-foreground">Missed</dt>
-                    <dd class="text-2xl font-bold">{selected.missed}</dd>
-                  </div>
+                <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  {#if lineSide}
+                    <div>
+                      <dt class="text-xs font-medium text-muted-foreground">
+                        Favorite vs underdog
+                      </dt>
+                      <dd class="mt-1 text-2xl font-bold">
+                        {formatAccuracy(lineSide.favoritePct)}
+                        <span class="text-sm font-normal text-muted-foreground">favorites</span>
+                      </dd>
+                      <p class="text-xs text-muted-foreground">
+                        {formatAccuracy(lineSide.underdogPct)} underdogs · {lineSide.lean ===
+                        'balanced'
+                          ? 'balanced mix'
+                          : `leans ${lineSide.lean}`}
+                      </p>
+                    </div>
+                  {/if}
+                  {#if streak}
+                    <div>
+                      <dt class="text-xs font-medium text-muted-foreground">Win streak</dt>
+                      <dd class="mt-1 text-2xl font-bold tabular-nums">{streak.current}</dd>
+                      <p class="text-xs text-muted-foreground">current · best {streak.best}</p>
+                    </div>
+                  {/if}
+                  {#if consensus}
+                    <div>
+                      <dt class="text-xs font-medium text-muted-foreground">Against the crowd</dt>
+                      <dd class="mt-1 text-2xl font-bold">
+                        {formatAccuracy(consensus.contrarianPct)}
+                      </dd>
+                      <p class="text-xs text-muted-foreground">
+                        {consensus.contrarianWins}/{consensus.contrarianPicks} contrarian picks won
+                      </p>
+                    </div>
+                  {/if}
                 </dl>
               </CardContent>
             </Card>
-
-            {#if hasTendencies}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tendencies</CardTitle>
-                  <CardDescription>
-                    How {isSelectedYou ? 'you' : selectedDisplayName} played the board in {data.seasonYear}.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    {#if lineSide}
-                      <div>
-                        <dt class="text-xs font-medium text-muted-foreground">
-                          Favorite vs underdog
-                        </dt>
-                        <dd class="mt-1 text-2xl font-bold">
-                          {formatAccuracy(lineSide.favoritePct)}
-                          <span class="text-sm font-normal text-muted-foreground">favorites</span>
-                        </dd>
-                        <p class="text-xs text-muted-foreground">
-                          {formatAccuracy(lineSide.underdogPct)} underdogs · {lineSide.lean ===
-                          'balanced'
-                            ? 'balanced mix'
-                            : `leans ${lineSide.lean}`}
-                        </p>
-                      </div>
-                    {/if}
-                    {#if streak}
-                      <div>
-                        <dt class="text-xs font-medium text-muted-foreground">Win streak</dt>
-                        <dd class="mt-1 text-2xl font-bold tabular-nums">{streak.current}</dd>
-                        <p class="text-xs text-muted-foreground">current · best {streak.best}</p>
-                      </div>
-                    {/if}
-                    {#if consensus}
-                      <div>
-                        <dt class="text-xs font-medium text-muted-foreground">Against the crowd</dt>
-                        <dd class="mt-1 text-2xl font-bold">
-                          {formatAccuracy(consensus.contrarianPct)}
-                        </dd>
-                        <p class="text-xs text-muted-foreground">
-                          {consensus.contrarianWins}/{consensus.contrarianPicks} contrarian picks won
-                        </p>
-                      </div>
-                    {/if}
-                  </dl>
-                </CardContent>
-              </Card>
-            {/if}
-
-            {#if trendRows.length > 0}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Season trend</CardTitle>
-                  <CardDescription
-                    >{possessive} cumulative points after each completed week.</CardDescription
-                  >
-                </CardHeader>
-                <CardContent>
-                  <SeasonTrendChart rows={trendRows} showLegend={false} />
-                </CardContent>
-              </Card>
-            {/if}
-
-            <div class="grid gap-6 xl:grid-cols-2">
-              {#if teamRows.length > 0}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Accuracy by team</CardTitle>
-                    <CardDescription
-                      >{possessive}
-                      {data.seasonYear} results grouped by the team backed.</CardDescription
-                    >
-                  </CardHeader>
-                  <CardContent class="overflow-x-auto px-2 sm:px-6">
-                    <Table class="text-xs sm:text-sm">
-                      <TableHeader>
-                        <TableRow>
-                          {@render teamHead('Team', 'team')}
-                          {@render teamHead('Record', 'record')}
-                          {@render teamHead('Win %', 'accuracy', 'right')}
-                          {@render teamHead('Pts', 'points', 'right')}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {#each teamRows as row (row.team_id)}
-                          <TableRow>
-                            <TableCell class="font-medium" title={row.team_name}>
-                              {row.team_short_name}
-                            </TableCell>
-                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                            <TableCell class="text-right">{row.points}</TableCell>
-                          </TableRow>
-                        {/each}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              {/if}
-
-              {#if weightRows.length > 0}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Accuracy by weight</CardTitle>
-                    <CardDescription
-                      >{possessive}
-                      {data.seasonYear} confidence-level results, including each All-In.</CardDescription
-                    >
-                  </CardHeader>
-                  <CardContent class="overflow-x-auto px-2 sm:px-6">
-                    <Table class="text-xs sm:text-sm">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Weight</TableHead>
-                          <TableHead>Record</TableHead>
-                          <TableHead class="text-right">Win %</TableHead>
-                          <TableHead class="text-right">Pts</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {#each weightRows as row (row.weight)}
-                          <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
-                            <TableCell>
-                              {#if row.weight === 'A'}
-                                <Badge>All-In</Badge>
-                              {:else}
-                                {weightLabel(row.weight)}
-                              {/if}
-                            </TableCell>
-                            <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                            <TableCell class="text-right">{formatAccuracy(row.accuracy)}</TableCell>
-                            <TableCell class="text-right font-medium">{row.points}</TableCell>
-                          </TableRow>
-                        {/each}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              {/if}
-            </div>
-
-            {@const seasonH2H = selectedUserId
-              ? headToHeadForUser(data.headToHead, selectedUserId)
-              : []}
-            {#if seasonH2H.length > 0}
-              <section class="space-y-3" aria-labelledby="season-h2h-heading">
-                <div>
-                  <h2 id="season-h2h-heading" class="text-xl font-semibold tracking-tight">
-                    Head to head
-                  </h2>
-                  <p class="text-sm text-muted-foreground">
-                    {possessive} weighted results against each player on games where you picked opposite
-                    sides this season.
-                  </p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {#each seasonH2H as row (row.opponentUserId)}
-                    <Card class="gap-3 py-4">
-                      <CardHeader class="px-4">
-                        <CardTitle class="text-base">
-                          {subjectLabel} <span class="text-muted-foreground">vs</span>
-                          {row.opponentDisplayName}
-                        </CardTitle>
-                        <CardDescription>{row.gamesCompared} games you disagreed on</CardDescription
-                        >
-                      </CardHeader>
-                      <CardContent class="flex items-end justify-between px-4">
-                        <div>
-                          <p class="text-2xl font-bold">
-                            {@render wlp(row.wins, row.losses, row.pushes)}
-                          </p>
-                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
-                        </div>
-                        <p class="text-sm font-medium">
-                          {row.points} to {row.opponentPoints} pts
-                        </p>
-                      </CardContent>
-                    </Card>
-                  {/each}
-                </div>
-              </section>
-            {/if}
-          {:else}
-            <Card class="border-dashed">
-              <CardHeader>
-                <CardTitle>No settled picks for {emptyStateSubject} in {data.seasonYear}</CardTitle>
-                <CardDescription>Select another player or season.</CardDescription>
-              </CardHeader>
-            </Card>
           {/if}
-        </TabsContent>
 
-        <TabsContent value="career" class="space-y-6">
-          <!-- Career summary -->
-          <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
-
-          <!-- All-time accuracy breakdowns (streamed off the critical path) -->
-          {#await data.allTimeDetail}
-            <Card class="border-dashed">
-              <CardHeader>
-                <CardTitle>Loading all-time accuracy…</CardTitle>
-                <CardDescription>One moment while the career breakdowns load.</CardDescription>
-              </CardHeader>
-            </Card>
-          {:then detail}
-            {@const allTimeTeamRows = detail.allTimeTeamAccuracy
-              .filter((r) => r.user_id === selectedUserId)
-              .toSorted(compareAllTimeTeamRows)}
-            {@const allTimeWeightRows = detail.allTimeWeightAccuracy
-              .filter((r) => r.user_id === selectedUserId)
-              .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))}
-            {#if allTimeTeamRows.length > 0 || allTimeWeightRows.length > 0}
-              <div>
-                <h2 class="text-xl font-semibold tracking-tight">All-time accuracy</h2>
-                <p class="mt-1 text-sm text-muted-foreground">Aggregated across all seasons.</p>
-              </div>
-              <div class="grid gap-6 xl:grid-cols-2">
-                {#if allTimeTeamRows.length > 0}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Accuracy by team</CardTitle>
-                      <CardDescription>All-time results grouped by the team backed.</CardDescription
-                      >
-                    </CardHeader>
-                    <CardContent class="overflow-x-auto px-2 sm:px-6">
-                      <Table class="text-xs sm:text-sm">
-                        <TableHeader>
-                          <TableRow>
-                            {@render allTimeTeamHead('Team', 'team')}
-                            {@render allTimeTeamHead('Record', 'record')}
-                            {@render allTimeTeamHead('Win %', 'accuracy', 'right')}
-                            {@render allTimeTeamHead('Pts', 'points', 'right')}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {#each allTimeTeamRows as row (row.team_id)}
-                            <TableRow>
-                              <TableCell class="font-medium" title={row.team_name}>
-                                {row.team_short_name}
-                              </TableCell>
-                              <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                              <TableCell class="text-right"
-                                >{formatAccuracy(row.accuracy)}</TableCell
-                              >
-                              <TableCell class="text-right">{row.points}</TableCell>
-                            </TableRow>
-                          {/each}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+          <!-- Density pass (#518): the longer tables move behind progressive disclosure so the
+             first screen leads with synthesis (edge + snapshot + tendencies). -->
+          {#if teamAccuracyRows.length > 0 || weightAccuracyRows.length > 0 || trendRows.length > 0 || seasonH2H.length > 0}
+            <div class="space-y-2">
+              <h2 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                Breakdown
+              </h2>
+              <Accordion type="multiple" class="rounded-xl border">
+                {#if teamAccuracyRows.length > 0}
+                  <AccordionItem value="team" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Accuracy by team', teamMeta)}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p class="mb-3 text-sm text-muted-foreground">
+                        {possessive}
+                        {data.seasonYear} results grouped by the team backed.
+                      </p>
+                      <StatAccuracyList rows={teamAccuracyRows} />
+                    </AccordionContent>
+                  </AccordionItem>
                 {/if}
 
-                {#if allTimeWeightRows.length > 0}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Accuracy by weight</CardTitle>
-                      <CardDescription>All-time confidence-level results.</CardDescription>
-                    </CardHeader>
-                    <CardContent class="overflow-x-auto px-2 sm:px-6">
-                      <Table class="text-xs sm:text-sm">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Weight</TableHead>
-                            <TableHead>Record</TableHead>
-                            <TableHead class="text-right">Win %</TableHead>
-                            <TableHead class="text-right">Pts</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {#each allTimeWeightRows as row (row.weight)}
-                            <TableRow class={row.weight === 'A' ? 'bg-primary/5' : undefined}>
-                              <TableCell>
-                                {#if row.weight === 'A'}
-                                  <Badge>All-In</Badge>
-                                {:else}
-                                  {weightLabel(row.weight)}
-                                {/if}
-                              </TableCell>
-                              <TableCell>{@render wlp(row.wins, row.losses, row.pushes)}</TableCell>
-                              <TableCell class="text-right"
-                                >{formatAccuracy(row.accuracy)}</TableCell
-                              >
-                              <TableCell class="text-right font-medium">{row.points}</TableCell>
-                            </TableRow>
-                          {/each}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                {#if weightAccuracyRows.length > 0}
+                  <AccordionItem value="weight" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Accuracy by weight', weightMeta)}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p class="mb-3 text-sm text-muted-foreground">
+                        {possessive}
+                        {data.seasonYear} confidence-level results, including each All-In.
+                      </p>
+                      <StatAccuracyList rows={weightAccuracyRows} />
+                    </AccordionContent>
+                  </AccordionItem>
                 {/if}
-              </div>
-            {/if}
 
-            {@const careerH2H = selectedUserId
-              ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
-              : []}
-            {#if careerH2H.length > 0}
-              <section class="space-y-3" aria-labelledby="career-h2h-heading">
-                <div>
-                  <h2 id="career-h2h-heading" class="text-xl font-semibold tracking-tight">
-                    Head to head
-                  </h2>
-                  <p class="text-sm text-muted-foreground">
-                    {possessive} weighted results against each player on games where you picked opposite
-                    sides, all-time.
-                  </p>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {#each careerH2H as row (row.opponentUserId)}
-                    <Card class="gap-3 py-4">
-                      <CardHeader class="px-4">
-                        <CardTitle class="text-base">
-                          {subjectLabel} <span class="text-muted-foreground">vs</span>
-                          {row.opponentDisplayName}
-                        </CardTitle>
-                        <CardDescription>{row.gamesCompared} games you disagreed on</CardDescription
-                        >
-                      </CardHeader>
-                      <CardContent class="flex items-end justify-between px-4">
-                        <div>
-                          <p class="text-2xl font-bold">
-                            {@render wlp(row.wins, row.losses, row.pushes)}
-                          </p>
-                          <p class="text-xs text-muted-foreground">wins-losses-pushes</p>
-                        </div>
-                        <p class="text-sm font-medium">
-                          {row.points} to {row.opponentPoints} pts
-                        </p>
-                      </CardContent>
-                    </Card>
-                  {/each}
-                </div>
-              </section>
-            {/if}
-          {/await}
-        </TabsContent>
-      </Tabs>
+                {#if trendRows.length > 0}
+                  <AccordionItem value="trend" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Season trend', trendMeta)}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <p class="mb-3 text-sm text-muted-foreground">
+                        {possessive} cumulative points after each completed week.
+                      </p>
+                      <SeasonTrendChart rows={trendRows} showLegend={false} />
+                    </AccordionContent>
+                  </AccordionItem>
+                {/if}
+
+                {#if seasonH2H.length > 0}
+                  <AccordionItem value="h2h" class="px-4">
+                    <AccordionTrigger>
+                      {@render discTrigger('Head to head', rivalMeta(seasonH2H.length))}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {@render h2hGrid(seasonH2H, 'this season')}
+                    </AccordionContent>
+                  </AccordionItem>
+                {/if}
+              </Accordion>
+            </div>
+          {/if}
+        {:else}
+          <Card class="border-dashed">
+            <CardHeader>
+              <CardTitle>No settled picks for {emptyStateSubject} in {data.seasonYear}</CardTitle>
+              <CardDescription>Pick another player or season above.</CardDescription>
+            </CardHeader>
+          </Card>
+        {/if}
+      {/if}
     {/if}
   {/if}
 </section>

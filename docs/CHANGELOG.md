@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#518** /stats consolidate controls + mobile density pass — the player selector and the
+  season/scope selector fold into one sticky context bar, and the season dropdown now absorbs
+  Career as a pinned option (the separate Season/Career tab is gone), so scope is a single
+  control that scales as seasons accumulate. The page leads with synthesis — the #502 "Your
+  edge" hero plus a compact snapshot — and demotes the by-team / by-weight / trend /
+  head-to-head tables behind a collapsible Breakdown; accuracy now renders as the shared
+  cover% meter with a 50% baseline so nothing clips at 390px. Presentation-only over the
+  existing stats views. component: `StatAccuracyList.svelte` · shared: `CoverMeter.svelte` ·
+  route: `/stats` · ADR-0013/0017
 - **#525** /league Trends cut consolidation — drops the redundant standalone Home/away chip
   (its cover rate was fully contained in Quadrants, the home/away × favorite/underdog joint)
   and folds the two side marginals in as summary lines above the four cells. The Quadrants
