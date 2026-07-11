@@ -191,20 +191,16 @@
 {/snippet}
 
 {#snippet statsSkeleton()}
+  <!-- Mirrors the /stats IA (#518): heading, one context bar, then the edge hero + cards. -->
   <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-hidden="true">
     <div class="h-8 w-48 animate-pulse rounded bg-muted" />
-    <div class="flex gap-2">
-      {#each [0, 1, 2, 3] as i (i)}
-        <div class="h-8 w-20 animate-pulse rounded-md bg-muted" />
-      {/each}
+    <div class="flex items-center justify-between gap-2">
+      <div class="h-9 w-28 animate-pulse rounded-md bg-muted" />
+      <div class="h-9 w-32 animate-pulse rounded-md bg-muted" />
     </div>
-    <div class="flex gap-2">
-      <div class="h-10 w-24 animate-pulse rounded bg-muted" />
-      <div class="h-10 w-24 animate-pulse rounded bg-muted" />
-    </div>
-    <div class="h-64 w-full animate-pulse rounded-xl bg-muted" />
-    <div class="h-48 w-full animate-pulse rounded-xl bg-muted" />
     <div class="h-40 w-full animate-pulse rounded-xl bg-muted" />
+    <div class="h-28 w-full animate-pulse rounded-xl bg-muted" />
+    <div class="h-48 w-full animate-pulse rounded-xl bg-muted" />
   </section>
 {/snippet}
 

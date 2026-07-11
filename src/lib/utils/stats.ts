@@ -102,6 +102,24 @@ export function formatAccuracy(accuracy: number | null): string {
   return accuracy == null ? '--' : `${Math.round(accuracy * 100)}%`;
 }
 
+// ── /stats scope selector (issue #518) ────────────────────────────────────────
+// The Season/Career tab is gone: scope folds into one dropdown that pins the newest
+// season ("This season") and Career, then lists older seasons newest-first. This derives
+// that option model from the seasons that actually have data, so the control scales as
+// years accumulate. Pure, so the ordering/scaling is unit-tested without a DOM.
+
+export type SeasonScopeOptions = {
+  /** Newest season with data — the pinned "This season" option; null when none exist. */
+  latest: number | null;
+  /** Older seasons, newest-first, listed beneath "This season" and "Career". */
+  pastSeasons: number[];
+};
+
+export function seasonScopeOptions(availableSeasons: number[]): SeasonScopeOptions {
+  const desc = [...new Set(availableSeasons)].sort((a, b) => b - a);
+  return { latest: desc[0] ?? null, pastSeasons: desc.slice(1) };
+}
+
 // ── Personal tendency tiles (issue #502) ──────────────────────────────────────
 // These surface the previously-latent per-user cuts already carried in the Stats payload
 // (favorite/underdog line-side, win streak, consensus behavior) as compact, guarded tiles.
