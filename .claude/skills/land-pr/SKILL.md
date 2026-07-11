@@ -1,6 +1,6 @@
 ---
 name: land-pr
-description: Land a PR that's already open — poll its CI checks, hand off a red one to ci-triage, confirm before merging, then move the closed issue's Project item to Done and clean up its worktree. Use when Doug says "land PR #NNN", "merge it", "is it ready to merge", or after finish-pr has opened a PR and checks are running. Bookends finish-pr (opens the PR); handles ONE specific PR through to merge, unlike cleanup-worktrees' batch sweep.
+description: Land a PR that's already open — check its CI checks once (never poll), hand off a red one to ci-triage, confirm before merging, then move the closed issue's Project item to Done and clean up its worktree. Use when Doug says "land PR #NNN", "merge it", "is it ready to merge", or after finish-pr has opened a PR and checks are running. Bookends finish-pr (opens the PR); handles ONE specific PR through to merge, unlike cleanup-worktrees' batch sweep.
 ---
 
 # Land the PR
@@ -10,14 +10,18 @@ Closing half of the delivery loop that `finish-pr` opens. Canonical:
 
 ## Steps
 
-1. **Poll checks.**
+1. **Check the checks once — do not poll.**
 
    ```powershell
    gh pr checks <NNN> --repo doughill1000/sunday_bets
    ```
 
-   If checks are still running, say so and wait rather than merging into an unknown
-   state — don't busy-poll in a tight loop.
+   Read the status a **single** time. If everything required has passed, continue. If
+   any check is still running, **stop here** — report the current state and hand back to
+   Doug. Do not wait, sleep, or re-run this in a loop (not even a "wait for green"
+   background poll). CI is not harness-tracked work, so there is no completion
+   notification to wait on; Doug — or a later `land-pr` invocation — resumes the skill
+   once CI has settled. Only ever merge from a fully-known state.
 
 2. **Triage any red check.** Hand off to the `ci-triage` skill rather than re-deriving
    log-fetching logic here. Not every red check is a hard blocker — see its "Remember"

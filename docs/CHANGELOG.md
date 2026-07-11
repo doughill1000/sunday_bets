@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #523** land-pr checks CI once, never polls (chore, skills) — the `land-pr` skill now
+  reads a PR's checks a single time and hands back to Doug if any are still running, instead of
+  waiting/polling: CI is not harness-tracked work, so there is no completion event to await.
+  file: `.claude/skills/land-pr/SKILL.md`
+
 - **#502** "Your edge" analytics (PR 2 of 2) — closes the epic: `/stats` now leads with a
   "Your edge" panel calling out where the selected player most beats or trails the market against
   the spread, career-first and sample-guarded. Joins the per-user situational cuts from PR 1 to a
