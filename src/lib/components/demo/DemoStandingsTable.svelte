@@ -67,15 +67,17 @@
             <span class="font-semibold tabular-nums">{r.rank}</span>
           {/if}
         </TableCell>
-        <TableCell>
-          <div class="flex items-center gap-2">
+        <!-- max-w-0 + truncate keeps a long name from pushing Total off-screen at 390px
+             (mirrors /leaderboard). -->
+        <TableCell class="max-w-0">
+          <div class="flex min-w-0 items-center gap-2">
             <UserAvatar
               avatarKey={r.avatar_key ?? null}
               displayName={r.display_name}
               size="xs"
               champion={isChampion}
             />
-            {isYou ? `${r.display_name} (you)` : r.display_name}
+            <span class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</span>
           </div>
         </TableCell>
         <TableCell class="whitespace-nowrap text-right tabular-nums sm:hidden"
