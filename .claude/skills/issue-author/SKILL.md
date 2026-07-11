@@ -1,6 +1,6 @@
 ---
 name: issue-author
-description: Author a GitHub issue from a natural-language request — when Doug asks to create/open/file an issue, create a feature/feature issue, or add something to the backlog with no implementation requested. Pick the template, fill it from repo context, run the ADR trigger test, draft for approval, then create.
+description: Author a GitHub issue from a natural-language request — when Doug asks to create/open/file an issue, create a feature/feature issue, or add something to the backlog with no implementation requested. Pick the template, fill it from repo context, run the ADR trigger test, offer a design study for non-trivial UI features, draft for approval, then create.
 ---
 
 # Author an issue
@@ -17,26 +17,40 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
 2. Inspect enough repository context to fill the template credibly — likely files,
    constraints, dependencies/integration order, a verification plan appropriate to the
    risk, and the **ADR decision** (run the trigger test in `docs/adr/README.md`).
-3. **Set version intent** (ADR-0015): assign a **target milestone** (the version the
+3. **UI-study gate.** If the issue introduces a **non-trivial UI surface** — a new or
+   reworked screen/route, a multi-screen or multi-step flow, a significant new component, or
+   an information-architecture change — flag it and **offer a design study** (the
+   `design-study` skill) _before_ drafting the body. **Skip the offer** for bug fixes,
+   copy/label tweaks, single-property style changes, small additive tweaks to an existing
+   component, and backend-only work — the gate is for complex UI workflows, not small ones.
+   If Doug wants one, run `design-study`, then fold its artifact link and conclusions into
+   the issue's UX/design notes and acceptance criteria so the visual argument is settled
+   before the issue is Ready. If he declines, note that and carry on.
+4. **Set version intent** (ADR-0015): assign a **target milestone** (the version the
    work is slated for — the current open roadmap milestone, or a named future one) and
    a **`semver:patch|minor|major`** label per the SemVer mapping in
    `docs/adr/0015-versioning-and-release-policy.md` (major = removed/breaking/epoch
    shift · minor = new user-facing feature · patch = fix/perf/infra/docs/chore). The
    label is the durable carrier of version impact that `cut-release` later consumes.
-4. A Ready issue has: one independently mergeable outcome + explicit exclusions;
+5. A Ready issue has: one independently mergeable outcome + explicit exclusions;
    observable acceptance criteria; resolved dependencies or a documented integration
    order; an ADR link / governing ADR / credible reason none is needed; likely paths
-   and shared-or-generated ownership called out; a target milestone and `semver:` label.
-5. **Present the completed title + body + the target milestone + `semver:` label + the
+   and shared-or-generated ownership called out; a target milestone and `semver:` label
+   (plus a design-study link if one was produced).
+6. **Present the completed title + body + the target milestone + `semver:` label + the
    exact target repo** and wait for explicit approval before writing. A direct "skip the
    preview and create it" counts as approval.
-6. Create via `gh` (apply the milestone and `semver:` label on creation), report the
-   issue URL, and **stop** — do not implement unless implementation was also requested
-   (then hand off to `start-issue`).
+7. Create via `gh` (apply the milestone and `semver:` label on creation) and report the
+   issue URL. For **complex, multi-decision** work, offer to run `scope-issue` next (an
+   interview that settles essential vs nice-to-have and splits off follow-ups) before any
+   implementation — skip the offer for small or already-unambiguous issues. Then **stop** —
+   do not implement unless implementation was also requested (then hand off to `start-issue`).
 
 ## See also
 
 - `docs/WORKFLOW.md` §"From idea to Ready", §"ADR timing", and §"Versioning"
 - `docs/adr/0015-versioning-and-release-policy.md` (the `semver:` label policy)
-- Sibling skills: `new-adr` (if the trigger test requires one), `start-issue`,
-  `cut-release` (consumes the `semver:` labels at release time).
+- Sibling skills: `design-study` (visual proposal for a non-trivial UI feature — the
+  UI-study gate), `scope-issue` (interview to triage essential vs nice-to-have for complex
+  work), `new-adr` (if the trigger test requires one), `start-issue`, `cut-release`
+  (consumes the `semver:` labels at release time).

@@ -35,9 +35,12 @@ governing ADR already settled. Read those, then interview around them.
      state it — don't ask.
 4. **Interview with `AskUserQuestion`.** Lead with the highest-leverage decisions. Give a
    recommendation (first option, "(Recommended)"). Use `preview` ASCII mockups for
-   layout/IA/UI choices so Doug can compare side by side. Use `multiSelect` for "pick
-   everything that's MVP-essential." Keep rounds tight (≈2–4 questions); one short follow-up
-   round to close loose ends is fine — don't over-interview.
+   layout/IA/UI choices so Doug can compare side by side. When the open questions are
+   substantially **visual** — a new/reworked screen, a multi-screen flow, an IA change —
+   a `design-study` (before/after mockups in the app's real skin) settles them better than
+   ASCII previews; offer one before or instead of interviewing that slice. Use `multiSelect`
+   for "pick everything that's MVP-essential." Keep rounds tight (≈2–4 questions); one short
+   follow-up round to close loose ends is fine — don't over-interview.
 5. **Triage and surface consequences.** Turn the answers into an explicit **Essential vs
    Nice-to-have** table, and call out the scope/dependency consequences a choice creates
    (e.g. deferring a sub-feature removed a dependency or unblocked the issue). Recommend
@@ -59,5 +62,6 @@ governing ADR already settled. Read those, then interview around them.
 ## See also
 
 - `docs/WORKFLOW.md` §"From idea to Ready" and §"ADR timing"
-- Sibling skills: `issue-author` (creates the issue), `new-adr` (if a decision needs one),
-  `start-issue` (begins implementation).
+- Sibling skills: `issue-author` (creates the issue), `design-study` (before/after mockups
+  when the open questions are visual), `new-adr` (if a decision needs one), `start-issue`
+  (begins implementation).

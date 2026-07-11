@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-10
 
+- **PR #519** Design-study skill (issue-less, chore) — new `design-study` skill turns a UI
+  feature idea into an opinionated before/after artifact in the app's real dark skin
+  (capture current screens → diagnose → propose composable moves → mock at 390px); bundles
+  the study scaffold + throwaway Playwright capture harness. Wired into issue planning:
+  `issue-author` gains a UI-study gate and a `scope-issue` offer for complex work, and
+  `scope-issue`/`start-issue` cross-reference it. files: `.claude/skills/design-study/**`
+
 - **#500** In-app feedback — admin triage queue + GitHub filing (2 of 2 PRs, closes
   #500): a global-admin `/admin/feedback` inbox lists stored reports newest-first
   (status-filterable) and files the worth-fixing ones as sanitized public issues via a
@@ -56,7 +63,7 @@ Project `Done` column, and Releases remain the sources of truth — see
   Sentry id stay in the DB, and a missing/expired token degrades to a prefilled new-issue
   URL rather than hard-failing. route: `admin/feedback` · `lib/server/feedback/github.ts`
   · env: `GITHUB_FEEDBACK_TOKEN` · ADR-0028
-  
+
 - **PR #516** Migrate SeasonTrendChart to layerchart 2 (issue-less, fix) — #513 merged
   `layerchart` 2.0.1 (the major #511 held back), whose `LineChart` moved from slots to
   snippets, so the ADR-0018 dropped-week ring overlay stopped type-checking and left
