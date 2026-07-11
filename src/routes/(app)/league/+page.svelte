@@ -186,23 +186,15 @@
   // ── One-cut-at-a-time chip selector (issue #517) ────────────────────────────────
   // The six situational cuts move behind a chip/tab selector rendering one detail panel at a
   // time, instead of six always-open cards. Only cuts with data for the active scope get a chip.
-  type CutId = 'favorites' | 'spread' | 'homeaway' | 'quadrants' | 'primetime' | 'divisional';
+  type CutId = 'favorites' | 'spread' | 'quadrants' | 'primetime' | 'divisional';
   const CUT_LABEL: Record<CutId, string> = {
     favorites: 'Favorites',
     spread: 'Spread size',
-    homeaway: 'Home / away',
     quadrants: 'Quadrants',
     primetime: 'Primetime',
     divisional: 'Divisional'
   };
-  const CUT_ORDER: CutId[] = [
-    'favorites',
-    'spread',
-    'homeaway',
-    'quadrants',
-    'primetime',
-    'divisional'
-  ];
+  const CUT_ORDER: CutId[] = ['favorites', 'spread', 'quadrants', 'primetime', 'divisional'];
 
   const availableCuts = $derived(
     CUT_ORDER.filter((id) => {
@@ -211,8 +203,6 @@
           return activeTrends.favDog.games > 0;
         case 'spread':
           return activeTrends.spreadBuckets.length > 0;
-        case 'homeaway':
-          return activeTrends.homeAway != null;
         case 'quadrants':
           return activeTrends.quadrants.length > 0;
         case 'primetime':
@@ -581,44 +571,6 @@
   </Card>
 {/snippet}
 
-<!-- Home vs. away detail panel: one meter row per side (ATS cover), with the straight-up win
-     rate kept as a caption. Restructured from the old four-cell grid so the cover rate reads as
-     a bar and nothing clips at 390px. -->
-{#snippet homeAwayPanel()}
-  {#if activeTrends.homeAway}
-    {@const ha = activeTrends.homeAway}
-    <Card data-testid="league-home-away">
-      <CardHeader>
-        <CardTitle>Home vs. away</CardTitle>
-        <CardDescription>League-wide home and road cover rates.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ul class="space-y-4 sm:max-w-md">
-          {#each [{ label: 'Home', side: ha.home }, { label: 'Away', side: ha.away }] as row (row.label)}
-            <li>
-              <div class="flex items-baseline justify-between gap-2 text-sm">
-                <span class="font-medium">{row.label}</span>
-                <span class="flex items-baseline gap-2">
-                  <span class="font-mono tabular-nums"
-                    >{formatAccuracy(coverPct(row.side.ats))}</span
-                  >
-                  <span class="text-xs text-muted-foreground"
-                    >ATS · {@render wlp(row.side.ats)}</span
-                  >
-                </span>
-              </div>
-              <CoverMeter pct={coverPct(row.side.ats)} class="mt-1.5" />
-              <p class="mt-1.5 text-xs text-muted-foreground">
-                {formatAccuracy(coverPct(row.side.su))} win rate straight up
-              </p>
-            </li>
-          {/each}
-        </ul>
-      </CardContent>
-    </Card>
-  {/if}
-{/snippet}
-
 <!-- Trends tab: a scope toggle above the situational/market cuts. "This season" reads the
      season-scoped payload; "Last 5 seasons" pools the market-structure biases (spread size,
      home field, favorite/underdog, primetime, divisional) over the recent seasons, where they
@@ -739,10 +691,8 @@
             {@render favoritesPanel()}
           {:else if activeCut === 'spread'}
             <SpreadBuckets buckets={activeTrends.spreadBuckets} />
-          {:else if activeCut === 'homeaway'}
-            {@render homeAwayPanel()}
           {:else if activeCut === 'quadrants'}
-            <Quadrants quadrants={activeTrends.quadrants} />
+            <Quadrants quadrants={activeTrends.quadrants} homeAway={activeTrends.homeAway} />
           {:else if activeCut === 'primetime'}
             <Primetime slots={activeTrends.primetime} />
           {:else if activeCut === 'divisional'}
