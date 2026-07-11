@@ -115,7 +115,9 @@ function isAllowedHex(relFile: string, token: string, line: string): boolean {
 
 function findViolations(file: string): Violation[] {
   const violations: Violation[] = [];
-  const relFile = path.relative(REPO_ROOT, file);
+  // Normalize to POSIX separators so the forward-slash HEX_ALLOWLIST entries match on
+  // Windows too (path.relative yields backslashes there, silently missing the allowlist).
+  const relFile = path.relative(REPO_ROOT, file).split(path.sep).join('/');
   const raw = readFileSync(file, 'utf8');
   const rawLines = raw.split('\n');
   const hexLines = stripComments(raw).split('\n');
