@@ -31,6 +31,16 @@ idempotency.
 
 For Codex on Windows: use `corepack pnpm db:migration --name=<name>`.
 
+### Re-generating a not-yet-committed migration
+
+If you edit `supabase/src/**` **after** already running `pnpm db:migration` (e.g. to fix a
+view before the PR is up), don't stack a second migration on top. Reset to one clean
+migration: revert the ledger (`git checkout -- supabase/.migration-hash.json`), delete the
+just-generated migration file, then re-run `pnpm db:migration --name=…`. Replay it onto the
+local DB with `supabase db reset --local` — the raw CLI reset just replays migrations,
+whereas the pnpm `db:reset:*` wrappers add a prod-clone/demo-seed step — then regenerate
+types with `pnpm db:types`.
+
 ## Every new public table needs three things
 
 1. `enable row level security` — without this the REST API can see all rows for any role.
@@ -45,6 +55,26 @@ Add a pgTAP test in `supabase/tests/` for every new policy. See
 Keep one table, view, or function as the primary subject of each source file.
 Auxiliary objects (triggers, supporting functions) that belong to it can live in
 the same file, but avoid grouping unrelated objects.
+
+## Read the assembled table shape, not just the base `CREATE`
+
+A table's real shape is the sum of **every** migration that touched it, not its first
+`create table`. Later migrations add columns, tighten nullability, and even move the
+primary key — so reading only, say, `schemas/0200_06_picks.sql` will mislead you. Before
+writing a view, function, or pgTAP fixture against a table, confirm its current columns
+and constraints: `\d public.<table>` on the local DB, or grep `schemas/` for every
+`alter table public.<table>`.
+
+Two that bite specifically (both cost real rework when assumed wrong):
+
+- **`picks` is group-scoped.** Its primary key is `(group_id, user_id, game_id)` with
+  `group_id` `not null` (added in `0210_pick_group_foreign_keys.sql`); the surrogate `id`
+  is a separate unique key that `pick_settlement.pick_id` references. A fixture insert or
+  `on conflict` that assumes the original `(user_id, game_id)` key fails.
+- **`picks.locked_spread_team_id` / `locked_spread_value` are `not null`** (set in
+  `0204_require_locks.sql`), so every settled pick carries a line. Read it without a null
+  guard — the way `stats_accuracy_by_line_side` / `stats_situational_base` do — rather than
+  adding a defensive branch that can never fire.
 
 ## Generator emit order (name files so dependencies sort first)
 
