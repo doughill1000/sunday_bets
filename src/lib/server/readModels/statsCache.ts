@@ -9,7 +9,9 @@ import {
   getStatsForSeason,
   getAllTimeTotals,
   getSituationalSplits,
-  getLeagueSituationalBaseline
+  getLeagueSituationalBaseline,
+  getSituationalSplitsSeason,
+  getLeagueSituationalBaselineSeason
 } from '$lib/server/db/queries/stats';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { isDropWorstWeekEnabled, type DropWorstWeekRules } from '$lib/domain/scoring';
@@ -21,16 +23,28 @@ export async function getStatsCachePayload(
   groupId: string,
   seasonYear: number
 ): Promise<StatsCachePayload> {
-  const [allTimeTotals, stats, totals, config, situational, leagueSituationalBaseline] =
-    await Promise.all([
-      getAllTimeTotals(groupId),
-      getStatsForSeason(seasonYear, groupId),
-      getSeasonLeaderboard(seasonYear, groupId),
-      getGroupConfig(groupId),
-      // Career-grain (#502): the "Your edge" panel joins these per-user cuts to the league baseline.
-      getSituationalSplits(groupId),
-      getLeagueSituationalBaseline()
-    ]);
+  const [
+    allTimeTotals,
+    stats,
+    totals,
+    config,
+    situational,
+    leagueSituationalBaseline,
+    situationalSeason,
+    leagueSituationalBaselineSeason
+  ] = await Promise.all([
+    getAllTimeTotals(groupId),
+    getStatsForSeason(seasonYear, groupId),
+    getSeasonLeaderboard(seasonYear, groupId),
+    getGroupConfig(groupId),
+    // Career-grain (#502): the "Your edge" panel joins these per-user cuts to the league baseline.
+    getSituationalSplits(groupId),
+    getLeagueSituationalBaseline(),
+    // Season-grain (#514): the situational explorer's season lens joins the same way for the
+    // season in view. The query re-keys on season, so these follow the scope dropdown.
+    getSituationalSplitsSeason(seasonYear, groupId),
+    getLeagueSituationalBaselineSeason(seasonYear)
+  ]);
 
   // Group-level (cross-season) flag for the Career "Standings points" caption (ADR-0018).
   const dropActive = isDropWorstWeekEnabled(config?.scoring_rules as DropWorstWeekRules);
@@ -42,6 +56,8 @@ export async function getStatsCachePayload(
     dropActive,
     situational,
     leagueSituationalBaseline,
+    situationalSeason,
+    leagueSituationalBaselineSeason,
     ...stats
   };
 }

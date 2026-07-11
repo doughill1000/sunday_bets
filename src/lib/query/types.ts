@@ -37,6 +37,12 @@ export type StatsCachePayload = SeasonStats & {
   /** League-wide market ATS cover baseline per situational cut (#502). Group-independent — the
    *  yardstick the panel subtracts from each player's own per-cut cover rate. */
   leagueSituationalBaseline: LeagueSituationalBaselineEntry[];
+  /** Per-user situational ATS splits for the season in view (#514). Season-scoped (re-keyed with
+   *  the query), the season lens of the situational explorer; the "Your edge" hero stays career. */
+  situationalSeason: SituationalSplitEntry[];
+  /** League-wide market ATS cover baseline per situational cut for the season in view (#514) — the
+   *  per-season yardstick the explorer subtracts from a player's own season cover rate. */
+  leagueSituationalBaselineSeason: LeagueSituationalBaselineEntry[];
 };
 
 /**

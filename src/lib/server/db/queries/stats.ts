@@ -29,6 +29,8 @@ type LineSideRow = Tables<'stats_accuracy_by_line_side'>;
 type StreakRow = Tables<'stats_pick_streaks'>;
 type SituationalSplitRow = Tables<'stats_situational_splits'>;
 type LeagueSituationalBaselineRow = Tables<'league_situational_baseline'>;
+type SituationalSplitSeasonRow = Tables<'stats_situational_splits_season'>;
+type LeagueSituationalBaselineSeasonRow = Tables<'league_situational_baseline_season'>;
 // Narrowed shape for the partial select on group_pick_consensus.
 type ConsensusPickRow = Pick<
   Tables<'group_pick_consensus'>,
@@ -303,6 +305,105 @@ export async function getLeagueSituationalBaseline(): Promise<LeagueSituationalB
   if (error) throw error;
   return (data ?? []).flatMap((row) => {
     const entry = toLeagueSituationalBaseline(row);
+    return entry ? [entry] : [];
+  });
+}
+
+// The season-grained rows carry an extra `season_year`; the query filters to one season, so both
+// map to the same client entry types (season is implied by the query key) the career cuts use.
+function toSituationalSplitSeason(row: SituationalSplitSeasonRow): SituationalSplitEntry | null {
+  if (
+    row.user_id == null ||
+    row.dimension == null ||
+    row.bucket == null ||
+    row.bucket_order == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    dimension: row.dimension as SituationalDimension,
+    bucket: row.bucket,
+    bucket_order: row.bucket_order,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    accuracy: row.accuracy
+  };
+}
+
+function toLeagueSituationalBaselineSeason(
+  row: LeagueSituationalBaselineSeasonRow
+): LeagueSituationalBaselineEntry | null {
+  if (
+    row.dimension == null ||
+    row.bucket == null ||
+    row.bucket_order == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null
+  ) {
+    return null;
+  }
+  return {
+    dimension: row.dimension as SituationalDimension,
+    bucket: row.bucket,
+    bucket_order: row.bucket_order,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    accuracy: row.accuracy
+  };
+}
+
+/**
+ * Per-user situational ATS splits for ONE season (issue #514) — the season lens of the /stats
+ * situational explorer. Season-scoped counterpart to {@link getSituationalSplits}; the explorer
+ * filters to the selected player client-side, as the career panel does.
+ */
+export async function getSituationalSplitsSeason(
+  seasonYear: number,
+  groupId: string
+): Promise<SituationalSplitEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_situational_splits_season')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('season_year', seasonYear)
+    .order('user_id')
+    .order('dimension')
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toSituationalSplitSeason(row);
+    return entry ? [entry] : [];
+  });
+}
+
+/**
+ * League-wide market ATS cover baseline per situational cut for ONE season (issue #514) — the
+ * season yardstick the explorer subtracts from a player's own season cover rate. Group-independent
+ * like {@link getLeagueSituationalBaseline}, so it takes only the season.
+ */
+export async function getLeagueSituationalBaselineSeason(
+  seasonYear: number
+): Promise<LeagueSituationalBaselineEntry[]> {
+  const { data, error } = await supabaseService
+    .from('league_situational_baseline_season')
+    .select('*')
+    .eq('season_year', seasonYear)
+    .order('dimension')
+    .order('bucket_order');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toLeagueSituationalBaselineSeason(row);
     return entry ? [entry] : [];
   });
 }

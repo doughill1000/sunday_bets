@@ -323,3 +323,127 @@ export function topSituationalEdges(
   }
   return picked;
 }
+
+// ── Situational explorer (issue #514) ─────────────────────────────────────────
+// The browsable counterpart to the "Your edge" hero: rather than only the top strongest cuts, it
+// lays out EVERY bucket of a chosen dimension as a bar diverging from the league line, across
+// Career or any Season. Career reuses the #502 career splits + baseline; Season uses the
+// season-grained #514 views. Pure, so the layout + sample guard are unit-tested without a DOM.
+
+/** The four dimensions the explorer's chip nav walks, in display order. */
+export const EXPLORER_DIMENSIONS: SituationalDimension[] = [
+  'primetime',
+  'home_away',
+  'spread',
+  'divisional'
+];
+
+/** Chip labels for each dimension. */
+export const EXPLORER_DIMENSION_LABELS: Record<SituationalDimension, string> = {
+  primetime: 'Primetime',
+  home_away: 'Home & away',
+  spread: 'Spread',
+  divisional: 'Divisional'
+};
+
+/** Short per-bucket labels for the explorer bars — the edge card uses fuller sentence labels. */
+const EXPLORER_BUCKET_LABELS: Record<SituationalDimension, Record<string, string>> = {
+  primetime: { primetime: 'Primetime', day: 'Daytime' },
+  home_away: { home: 'Home side', away: 'Road side' },
+  spread: {
+    pickem: "Pick'em",
+    '1-3': 'Short (1–3)',
+    '3.5-6.5': 'Mid (3.5–6.5)',
+    '7-9.5': 'Long (7–9.5)',
+    '10+': 'Double-digit (10+)'
+  },
+  divisional: { divisional: 'Divisional', non_divisional: 'Non-divisional' }
+};
+
+/**
+ * Decided picks a cut needs before its delta bar shows; below it the bucket dims to a "needs N
+ * more" state instead of plotting noise. Same floor as the edge headline ({@link EDGE_MIN_SAMPLE}) —
+ * a season lens of any one cut is deliberately often below it, which is why the edge stays career.
+ */
+export const EXPLORER_MIN_SAMPLE = EDGE_MIN_SAMPLE;
+
+/** One bucket row within a dimension's explorer panel. */
+export type ExplorerBucket = {
+  dimension: SituationalDimension;
+  bucket: string;
+  /** Short display label, e.g. "Long (7–9.5)". */
+  label: string;
+  /** Decided picks (wins + losses; pushes excluded) — the sample the guard applies to. */
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  /** Player cover rate in this cut (0–1), null on a no-decision bucket. */
+  accuracy: number | null;
+  /** League market cover for the same cut (0–1), null when no comparable baseline. */
+  leagueAccuracy: number | null;
+  /** accuracy − leagueAccuracy; null when the bucket is thin or has no comparable baseline. */
+  delta: number | null;
+  /** True when there isn't enough sample (or no baseline) to trust a delta bar. */
+  isThin: boolean;
+  /** Decided picks still needed to clear the sample floor (0 once cleared). */
+  needed: number;
+};
+
+/** One dimension's explorer panel: its chip label and every bucket the player has picks in. */
+export type ExplorerDimension = {
+  dimension: SituationalDimension;
+  label: string;
+  buckets: ExplorerBucket[];
+};
+
+/**
+ * Lay out a player's situational splits for the explorer: for each dimension the player has picks
+ * in, every bucket (ordered by magnitude/slot) joined to the league baseline, with a per-bucket
+ * delta and a sample guard. Only dimensions with at least one labelled bucket are returned, so the
+ * chip nav shows exactly the cuts with data. Pass `userSplits` already filtered to the selected
+ * player and scope (career or the season in view); `leagueBaseline` at the matching scope.
+ */
+export function situationalExplorer(
+  userSplits: SituationalSplitEntry[],
+  leagueBaseline: LeagueSituationalBaselineEntry[],
+  minSample = EXPLORER_MIN_SAMPLE
+): ExplorerDimension[] {
+  const baselineByKey = new Map<string, number>();
+  for (const b of leagueBaseline) {
+    if (b.accuracy != null) baselineByKey.set(`${b.dimension}:${b.bucket}`, b.accuracy);
+  }
+
+  return EXPLORER_DIMENSIONS.flatMap((dimension) => {
+    const buckets = userSplits
+      .filter((s) => s.dimension === dimension)
+      .toSorted((a, b) => a.bucket_order - b.bucket_order)
+      .flatMap((s): ExplorerBucket[] => {
+        const label = EXPLORER_BUCKET_LABELS[dimension]?.[s.bucket];
+        if (!label) return [];
+        const decided = s.wins + s.losses;
+        const leagueAccuracy = baselineByKey.get(`${dimension}:${s.bucket}`) ?? null;
+        // A bar needs enough decided picks AND a comparable market line; otherwise it dims.
+        const comparable = decided >= minSample && s.accuracy != null && leagueAccuracy != null;
+        return [
+          {
+            dimension,
+            bucket: s.bucket,
+            label,
+            decisions: decided,
+            wins: s.wins,
+            losses: s.losses,
+            pushes: s.pushes,
+            accuracy: s.accuracy,
+            leagueAccuracy,
+            delta: comparable ? (s.accuracy as number) - leagueAccuracy : null,
+            isThin: !comparable,
+            needed: Math.max(0, minSample - decided)
+          }
+        ];
+      });
+    return buckets.length > 0
+      ? [{ dimension, label: EXPLORER_DIMENSION_LABELS[dimension], buckets }]
+      : [];
+  });
+}
