@@ -6,7 +6,9 @@ import type {
   SeasonTrendEntry,
   SituationalDimension,
   SituationalSplitEntry,
-  StreakStatsEntry
+  StreakStatsEntry,
+  TeamBookEntry,
+  TeamBookSide
 } from '$lib/types/server/stats';
 
 export type TrendPoint = {
@@ -446,4 +448,257 @@ export function situationalExplorer(
       ? [{ dimension, label: EXPLORER_DIMENSION_LABELS[dimension], buckets }]
       : [];
   });
+}
+
+// ── Team book standouts (issue #564) ──────────────────────────────────────────
+// The two-sided team book carries, for every team, the player's ATS record backing it (ride) and
+// fading it (bet against). Rather than 32 noisy rows, the UI surfaces only STANDOUTS — the teams
+// you most ride and most fade — sample-guarded. This transform picks them; the component draws
+// the Ride ▸ / Fade ▸ lists. Pure, so the selection + guard are unit-tested without a DOM.
+
+/**
+ * Minimum decided picks (wins + losses, pushes excluded) before a team appears in the book or can
+ * anchor a signature tell. Below this a hot/cold record is just noise — the same reason the edge
+ * hero guards on sample, tuned lower here because a single team pools fewer picks than a whole cut.
+ */
+export const TEAM_BOOK_MIN_SAMPLE = 5;
+
+/** One standout team in the book: the player's record backing or fading it. */
+export type TeamBookStandout = {
+  side: TeamBookSide;
+  teamId: number;
+  teamName: string;
+  teamShort: string;
+  wins: number;
+  losses: number;
+  pushes: number;
+  /** Decided picks (wins + losses; pushes excluded) — the sample the guard applies to. */
+  decided: number;
+  /** Cover rate on that side (0–1); on a fade row, the rate covering AGAINST the team. */
+  cover: number;
+};
+
+/** The book's two sides: teams you most ride (backed) and most fade, standouts only. */
+export type TeamBookStandouts = {
+  ride: TeamBookStandout[];
+  fade: TeamBookStandout[];
+};
+
+/**
+ * Reduce a player's full team book to the standouts each side shows: the teams they most ride and
+ * most fade (by decided volume), guarded so a team seen only a couple of times never surfaces.
+ * Pass `entries` already filtered to the selected player + scope (season or career).
+ */
+export function teamBookStandouts(
+  entries: TeamBookEntry[],
+  { limit = 3, minSample = TEAM_BOOK_MIN_SAMPLE }: { limit?: number; minSample?: number } = {}
+): TeamBookStandouts {
+  const pickSide = (side: TeamBookSide): TeamBookStandout[] =>
+    entries
+      .filter((e) => e.side === side)
+      .flatMap((e): TeamBookStandout[] => {
+        const decided = e.wins + e.losses;
+        if (decided < minSample) return [];
+        return [
+          {
+            side,
+            teamId: e.team_id,
+            teamName: e.team_name,
+            teamShort: e.team_short_name,
+            wins: e.wins,
+            losses: e.losses,
+            pushes: e.pushes,
+            decided,
+            cover: e.wins / decided
+          }
+        ];
+      })
+      // Most-ridden / most-faded first (decided volume), then how reliably they cover, then a
+      // stable team-name tiebreak.
+      .toSorted(
+        (a, b) =>
+          b.decided - a.decided || b.cover - a.cover || a.teamShort.localeCompare(b.teamShort)
+      )
+      .slice(0, limit);
+
+  return { ride: pickSide('backed'), fade: pickSide('faded') };
+}
+
+// ── Signature tendencies (issue #564) ─────────────────────────────────────────
+// A plain-language strip that reads a player's strongest already-computed cuts back to them as
+// sentences — "you keep fading DAL", "you lean underdog", "you own primetime". It ranks over three
+// feeders that ALL exist already at a single dimension: the situational edges (#502), the fav/dog
+// lean (#317), and the new team book. Because every feeder is single-dimension, the strip can never
+// invent a compound tell ("underdog when it's 10+") — that needs signed-compound data we don't
+// build here. The util decides WHICH tells and their ranking; the component writes the English.
+
+/** A team must clear this many decided picks on a side before it can anchor the team tell — the
+ *  strip's headline ("you keep fading DAL") needs a real sample behind it. */
+export const SIGNATURE_TEAM_MIN_SAMPLE = TEAM_BOOK_MIN_SAMPLE;
+/** A fav/dog mix must clear this many decided picks before "you lean underdog" reads as a habit
+ *  rather than a blip. Career-first, so a career clears it easily; a young season may not. */
+export const SIGNATURE_LEAN_MIN_SAMPLE = 10;
+/** Most tells the strip states at once. */
+export const SIGNATURE_LIMIT = 4;
+/** Cap on how many tells come from the situational cuts, so the strip reads as a varied signature
+ *  (a team + a lean + a cut) rather than four spread buckets. */
+const SIGNATURE_SITUATIONAL_CAP = 2;
+
+/** One ranked signature tell. `score` is a common notability distance in [0, 0.5] so the three
+ *  heterogeneous kinds can be ordered against each other. The component turns each into a
+ *  sentence + stat; every kind is single-dimension by construction. */
+export type SignatureTell =
+  | {
+      kind: 'team';
+      side: TeamBookSide;
+      teamShort: string;
+      teamName: string;
+      wins: number;
+      losses: number;
+      pushes: number;
+      /** Cover rate on that side (0–1). */
+      cover: number;
+      score: number;
+    }
+  | {
+      kind: 'lean';
+      lean: 'favorites' | 'underdogs';
+      favoritePct: number;
+      underdogPct: number;
+      /** Share of picks on the leaned side (0–1). */
+      leanPct: number;
+      score: number;
+    }
+  | {
+      kind: 'situational';
+      dimension: SituationalDimension;
+      bucket: string;
+      /** Sentence-ready cut label from {@link situationalEdges}, e.g. "In primetime". */
+      label: string;
+      accuracy: number;
+      leagueAccuracy: number;
+      /** accuracy − leagueAccuracy; positive = beating the market. */
+      delta: number;
+      wins: number;
+      losses: number;
+      pushes: number;
+      score: number;
+    };
+
+const SIGNATURE_KIND_RANK: Record<SignatureTell['kind'], number> = {
+  team: 0,
+  lean: 1,
+  situational: 2
+};
+
+function signatureKey(tell: SignatureTell): string {
+  switch (tell.kind) {
+    case 'team':
+      return `team:${tell.side}:${tell.teamShort}`;
+    case 'lean':
+      return `lean:${tell.lean}`;
+    case 'situational':
+      return `situational:${tell.dimension}:${tell.bucket}`;
+  }
+}
+
+/**
+ * Rank the player's strongest tells from the three feeders and return the top {@link SIGNATURE_LIMIT}.
+ * Scoring is a shared "distance from a coin flip / from the market" so the kinds compare: a team by
+ * how far its cover sits above .500, a lean by how lopsided the mix is, a cut by its market delta.
+ * Ties break by kind (team ▸ lean ▸ cut, matching the design order) then a stable key. Returns []
+ * when nothing clears its guard, so the component can show an honest "not enough history" state.
+ *
+ * Pass feeders already scoped to the selected player + season/career: `edges` from
+ * {@link situationalEdges} at that scope, `lineSide` from {@link lineSideTendency}, and `teamBook`
+ * from {@link teamBookStandouts}. It stays career-first purely by what the page feeds it.
+ */
+export function signatureTendencies(
+  inputs: {
+    edges: SituationalEdge[];
+    lineSide: LineSideTendency | null;
+    teamBook: TeamBookStandouts;
+  },
+  {
+    limit = SIGNATURE_LIMIT,
+    situationalCap = SIGNATURE_SITUATIONAL_CAP,
+    teamMinSample = SIGNATURE_TEAM_MIN_SAMPLE,
+    leanMinSample = SIGNATURE_LEAN_MIN_SAMPLE
+  }: {
+    limit?: number;
+    situationalCap?: number;
+    teamMinSample?: number;
+    leanMinSample?: number;
+  } = {}
+): SignatureTell[] {
+  const candidates: SignatureTell[] = [];
+
+  // Team: the ride or fade you cover most reliably (highest cover ≥ .500, enough sample). Kept to a
+  // winning record so the headline reads as a habit you profit from, matching the book's framing.
+  const bestTeam = [...inputs.teamBook.ride, ...inputs.teamBook.fade]
+    .filter((t) => t.decided >= teamMinSample && t.cover >= 0.5)
+    .toSorted(
+      (a, b) => b.cover - a.cover || b.decided - a.decided || a.teamShort.localeCompare(b.teamShort)
+    )[0];
+  if (bestTeam) {
+    candidates.push({
+      kind: 'team',
+      side: bestTeam.side,
+      teamShort: bestTeam.teamShort,
+      teamName: bestTeam.teamName,
+      wins: bestTeam.wins,
+      losses: bestTeam.losses,
+      pushes: bestTeam.pushes,
+      cover: bestTeam.cover,
+      score: bestTeam.cover - 0.5
+    });
+  }
+
+  // Lean: a clear favorite/underdog tilt with enough sample. lineSideTendency already collapses a
+  // within-10-points mix to 'balanced', so only a real tilt reaches here.
+  const lineSide = inputs.lineSide;
+  if (lineSide && lineSide.lean !== 'balanced' && lineSide.decisions >= leanMinSample) {
+    const leanPct = lineSide.lean === 'favorites' ? lineSide.favoritePct : lineSide.underdogPct;
+    candidates.push({
+      kind: 'lean',
+      lean: lineSide.lean,
+      favoritePct: lineSide.favoritePct,
+      underdogPct: lineSide.underdogPct,
+      leanPct,
+      score: Math.abs(leanPct - 0.5)
+    });
+  }
+
+  // Situational: the strongest cuts where the player BEATS the market, at most one per dimension so
+  // the strip never shows two spread buckets. Strengths-only — a cut the player trails on is a
+  // weakness, not a signature, so it belongs in the two-sided Every-split explorer, not the
+  // headline (mirrors the team tell's winning-only rule, #564). `edges` is pre-ranked + guarded.
+  const beatingEdges = inputs.edges.filter((edge) => edge.delta > 0);
+  for (const edge of topSituationalEdges(beatingEdges, {
+    limit: situationalCap,
+    perDimension: 1
+  })) {
+    candidates.push({
+      kind: 'situational',
+      dimension: edge.dimension,
+      bucket: edge.bucket,
+      label: edge.label,
+      accuracy: edge.accuracy,
+      leagueAccuracy: edge.leagueAccuracy,
+      delta: edge.delta,
+      wins: edge.wins,
+      losses: edge.losses,
+      pushes: edge.pushes,
+      score: Math.abs(edge.delta)
+    });
+  }
+
+  return candidates
+    .toSorted(
+      (a, b) =>
+        b.score - a.score ||
+        SIGNATURE_KIND_RANK[a.kind] - SIGNATURE_KIND_RANK[b.kind] ||
+        signatureKey(a).localeCompare(signatureKey(b))
+    )
+    .slice(0, limit);
 }

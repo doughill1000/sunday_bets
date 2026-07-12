@@ -3,19 +3,19 @@
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
-  import Users from '@lucide/svelte/icons/users';
   import TrendingUp from '@lucide/svelte/icons/trending-up';
 
-  // Wrapped is a seasonal moment, not a year-round destination — it has no content until a
-  // season finalises. Rather than burn a permanent tab on an empty-most-of-the-year page,
-  // it is surfaced via a seasonal CTA on the Leaderboard (WrappedPromo) and a link from the
-  // Group honors card when a Wrapped exists.
+  // Four first-class tabs after the #561 IA merge: Picks, League (the merged Leaderboard+Group
+  // home — standings, the season race, honors, and the Members & manage subpage), Stats, and
+  // Teams (the former "League" market ATS page, renamed so the user's own league owns the name).
+  // Wrapped is a seasonal moment, not a year-round destination — it has no content until a season
+  // finalises, so rather than burn a permanent tab it is surfaced via the League home CTA
+  // (WrappedPromo) and the honors card's Wrapped link when one exists.
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
-    { href: '/leaderboard', label: 'Leaderboard', Icon: Trophy },
-    { href: '/group', label: 'Group', Icon: Users },
+    { href: '/league', label: 'League', Icon: Trophy },
     { href: '/stats', label: 'Stats', Icon: BarChart2 },
-    { href: '/league', label: 'League', Icon: TrendingUp }
+    { href: '/teams', label: 'Teams', Icon: TrendingUp }
   ];
 </script>
 

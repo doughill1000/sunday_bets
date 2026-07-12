@@ -3,7 +3,9 @@ import { leaderboardPage } from './helpers/leaderboard-page';
 
 /**
  * Client-side stale-while-revalidate cache for Stats / Group / Leaderboard
- * (ADR-0017, issue #330).
+ * (ADR-0017, issue #330). Post-#561 the standings live on the League home (`/league`) and the
+ * members list on its Members & manage subpage (`/league/manage`), reached from the League home's
+ * manage entry — the cached read models (and their `/api/*` endpoints) are unchanged.
  *
  * These specs assert the *observable* cache contract rather than internals:
  *   1. Each read screen renders its content when reached by client navigation
@@ -35,8 +37,13 @@ function trackApiCalls(page: Page) {
   return counts;
 }
 
-function navTo(page: Page, name: 'Leaderboard' | 'Stats' | 'Group') {
+function navTo(page: Page, name: 'League' | 'Stats') {
   return page.getByTestId('primary-nav').getByRole('link', { name, exact: true }).click();
+}
+
+/** Reach the members list (group cache) via the League home's Members & manage entry. */
+function navToManage(page: Page) {
+  return page.getByTestId('manage-entry').click();
 }
 
 const statsHeading = (page: Page) => page.getByRole('heading', { name: 'Stats & history' });
@@ -48,19 +55,19 @@ test('cached read routes render across client navigation', { tag: '@smoke' }, as
   await lb.goto();
   await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
 
-  // Leaderboard → Stats: cache-backed query fetches and the screen renders.
+  // League → Stats: cache-backed query fetches and the screen renders.
   await navTo(page, 'Stats');
   await expect(statsHeading(page)).toBeVisible({ timeout: RENDER_TIMEOUT });
 
-  // Stats → Group: members list (shareable cached data) renders.
-  await navTo(page, 'Group');
-  await expect(groupMembers(page)).toBeVisible({ timeout: RENDER_TIMEOUT });
-
-  // Group → Leaderboard: standings render from the cache-backed query.
-  await navTo(page, 'Leaderboard');
+  // Stats → League: standings render from the cache-backed query.
+  await navTo(page, 'League');
   await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible({
     timeout: RENDER_TIMEOUT
   });
+
+  // League → Members & manage: members list (shareable cached data) renders.
+  await navToManage(page);
+  await expect(groupMembers(page)).toBeVisible({ timeout: RENDER_TIMEOUT });
 });
 
 test('revisit within staleTime serves from cache without refetching', async ({ page }) => {
@@ -76,9 +83,11 @@ test('revisit within staleTime serves from cache without refetching', async ({ p
   expect(calls.stats).toBeGreaterThanOrEqual(1);
   const afterFirstVisit = calls.stats;
 
-  // Leave and immediately return (well within the 45s staleTime).
-  await navTo(page, 'Group');
-  await expect(groupMembers(page)).toBeVisible({ timeout: RENDER_TIMEOUT });
+  // Leave to League and immediately return (well within the 45s staleTime).
+  await navTo(page, 'League');
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible({
+    timeout: RENDER_TIMEOUT
+  });
 
   await navTo(page, 'Stats');
   // Served from cache: content paints right away and no new request is issued.

@@ -8,8 +8,10 @@
 import type {
   SeasonStats,
   AllTimeTotalsEntry,
+  LineSideStatsEntry,
   SituationalSplitEntry,
-  LeagueSituationalBaselineEntry
+  LeagueSituationalBaselineEntry,
+  TeamBookEntry
 } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
@@ -43,6 +45,16 @@ export type StatsCachePayload = SeasonStats & {
   /** League-wide market ATS cover baseline per situational cut for the season in view (#514) — the
    *  per-season yardstick the explorer subtracts from a player's own season cover rate. */
   leagueSituationalBaselineSeason: LeagueSituationalBaselineEntry[];
+  /** Two-sided team book for the season in view (#564): each team's backed + faded ATS record.
+   *  Season-scoped (re-keyed with the query); feeds the season "Team book" breakdown + signature. */
+  teamBook: TeamBookEntry[];
+  /** Career-grain two-sided team book (#564). Career-first and season-independent (like
+   *  situational/allTimeTotals), carried eagerly so the signature strip — which leads the page —
+   *  can name the player's most-notable ride/fade without waiting on the streamed career detail. */
+  teamBookAllTime: TeamBookEntry[];
+  /** Career favorite-vs-underdog lean per player (#564): season line-side rows pooled across every
+   *  season, so the career-first signature strip can state a lean the season-only lineSide can't. */
+  lineSideAllTime: LineSideStatsEntry[];
 };
 
 /**

@@ -50,23 +50,23 @@ horizontally** there. Wide content (tables, long labels, charts) scrolls inside 
 container; the page body never scrolls sideways.
 
 _Why:_ desktop-down design silently pushes the rightmost column off a phone screen.
-_Example:_ the leaderboard "Total" column clipping off the right edge at 390px — the bug
-`fix/leaderboard-total-mobile-clip` exists to fix; the same clip drove the `/league` picker
-consolidation (#529).
+_Example:_ the standings "Total" column once clipped off the right edge at 390px; the League
+home standings (#561) keep it on-screen by collapsing W-L-P into one "Rec" cell on mobile (and
+carry rank movement inside the existing "#" cell rather than adding a column). The same class of
+clip drove the `/teams` picker consolidation (#529).
 
 ### 2. One pattern per job
 
 A given interaction should look the same everywhere it appears. To **switch between cuts
 of the same data, use the chip radiogroup** — the selector used by `/stats` "Every split"
-and `/league` (the #529 slice explorer). Don't introduce a second control (tabs, an
+and `/teams` (the #529 slice explorer). Don't introduce a second control (tabs, an
 accordion) for the same "show me one cut" job.
 
 The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
 switches cuts **within a section**; **Tabs** may split a **whole page** into two or three
-top-level views (`/leaderboard` Standings · Weekly, `/wrapped` Your Year · The League,
-`/group` League · Manage). The test: if the switch re-renders one panel inside a
-scrolling page, it's chips; if it changes what the entire page is, it's Tabs. Never both
-on one screen for sibling jobs.
+top-level views (`/league` Standings · Weekly, `/wrapped` Your Year · The League). The test:
+if the switch re-renders one panel inside a scrolling page, it's chips; if it changes what
+the entire page is, it's Tabs. Never both on one screen for sibling jobs.
 
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
 _Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the
@@ -250,19 +250,19 @@ Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens
 catalogs the **composed patterns** — the atoms already in the app, and when to reach for
 each. (Component homes live under `src/lib/components/`.)
 
-| Job                               | Pattern                                            | Seen in                                      |
-| --------------------------------- | -------------------------------------------------- | -------------------------------------------- |
-| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/league` |
-| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/leaderboard`, `/wrapped`                   |
-| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                      |
-| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                 |
-| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/league`              |
-| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
-| Group related content             | `Card` + header/description                        | everywhere                                   |
-| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)            |
-| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
-| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/group`, `/league`, `/stats`                |
-| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
+| Job                               | Pattern                                            | Seen in                                     |
+| --------------------------------- | -------------------------------------------------- | ------------------------------------------- |
+| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/teams` |
+| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/league`, `/wrapped`                       |
+| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                     |
+| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                |
+| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/teams`              |
+| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                        |
+| Group related content             | `Card` + header/description                        | everywhere                                  |
+| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)           |
+| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                           |
+| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/teams`, `/stats`        |
+| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                      |
 
 Prefer these before inventing a new control. If a screen genuinely needs a pattern not
 listed here, that is the signal to run a `design-study` and add it. As each pattern is next
