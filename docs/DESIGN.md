@@ -61,9 +61,17 @@ of the same data, use the chip radiogroup** — the selector used by `/stats` "E
 and `/league` (the #529 slice explorer). Don't introduce a second control (tabs, an
 accordion) for the same "show me one cut" job.
 
+The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
+switches cuts **within a section**; **Tabs** may split a **whole page** into two or three
+top-level views (`/leaderboard` Standings · Weekly, `/wrapped` Your Year · The League,
+`/group` League · Manage). The test: if the switch re-renders one panel inside a
+scrolling page, it's chips; if it changes what the entire page is, it's Tabs. Never both
+on one screen for sibling jobs.
+
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
-_Example:_ the `/stats` bottom breakdowns used an accordion for the same job the chip row
-directly above them already did.
+_Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the
+situational explorer directly above them — #538 replaced an accordion that had been doing
+that one job a second way (and extracted the shared `ChipRadiogroup` in the process).
 
 ### 3. Progressive disclosure, at most one level deep
 
@@ -72,8 +80,10 @@ disclosure — a drawer-in-a-drawer means two taps to reach content and reads as
 accident, not a design.
 
 _Why:_ each extra tap buries content and each nesting level compounds it.
-_Example:_ `/stats` "More breakdowns" (outer drawer) → "Accuracy by team" (inner drawer)
-→ a 14-row list: two taps before anything renders.
+_Example:_ the picks page collapses committed picks behind a single "_N_ committed picks"
+disclosure — one tap, one level. The `/stats` breakdowns once nested "Accuracy by team"
+inside a "More breakdowns" drawer (two taps before anything rendered); #538 flattened that
+to a chip radiogroup, so no drawer-in-a-drawer ships today.
 
 ### 4. Answer first, archive last
 
@@ -150,6 +160,19 @@ optimistic update); a _consequential_ change also leaves a durable confirmation 
 persistent status, timestamp, lock state, or recoverable error) — not a disappearing toast
 as the only signal.
 
+Two house rules make this concrete on every surface:
+
+- **The feedback ladder.** Prefer a durable state change (the lock flow's committed row);
+  otherwise a persistent inline status note beside the control (`role="status"`, icon +
+  semantic colour — one shared note component, not a hand-rolled div per call site). A
+  toast is only ever a transient echo on top of one of those, never the sole signal for
+  anything consequential.
+- **Pending is not unavailable.** A control disabled because its work is in flight keeps
+  its active styling with only the label changing ("Locking in…", "Syncing…"); the
+  flat/muted disabled treatment is reserved for unavailable/incomplete. This generalizes
+  the picks lock rule (design-system.md's selection tiers) to every surface, admin
+  included.
+
 _Why:_ motion can say a tap registered, but not that the operation ultimately succeeded.
 _Example:_ **Lock in** enters a pending state immediately, then resolves to an unmistakable
 locked state (motion tokens; the stale-while-revalidate model is [ADR-0017](adr/0017-client-data-cache.md)).
@@ -179,6 +202,14 @@ raised cards (see the token comment in `src/app.css`).
 critical (`--success` / `--warning` / `--destructive`) are a **separate** semantic axis —
 never repurpose the accent to carry meaning, nor let a status colour stand in for the
 accent. `--ember` is reserved for live/urgent/signature moments (principle 5's stance).
+
+Ember's sanctioned moments — a positive spec, so under-spend is as visible as leakage:
+**Lock in** (the primary commitment), an **All-In** declaration, **live/urgent** game
+states, and the **Wrapped champion reveal** (to be built — the season's one celebration
+peak, reduced-motion-guarded). Routine data fills use `--primary` (the CoverMeter's
+ember gradient is drift to re-base, not an exception). One recorded exception: the
+public demo's single "Start your league" CTA — the marketing surface's one conversion
+verb. Anything new earns its place via a design study and a new entry in this list.
 
 _Why:_ if the accent also means "good", the user can't tell branding from signal.
 
@@ -218,39 +249,70 @@ Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens
 catalogs the **composed patterns** — the atoms already in the app, and when to reach for
 each. (Component homes live under `src/lib/components/`.)
 
-| Job                             | Pattern                            | Seen in                         |
-| ------------------------------- | ---------------------------------- | ------------------------------- |
-| Switch between cuts of one data | Chip radiogroup                    | `/stats` Every split, `/league` |
-| Reveal secondary detail         | Single disclosure (one level)      | `/stats` breakdown              |
-| Show a rate / accuracy          | Meter bar + 50% reference tick     | `/stats` accuracy lists         |
-| Compare a value to a baseline   | Diverging bar from the league line | `/stats` Every split, `/league` |
-| Pick player + season/scope      | Sticky context bar (selectors)     | `/stats` context bar            |
-| Group related content           | `Card` + header/description        | everywhere                      |
+| Job                               | Pattern                                            | Seen in                                      |
+| --------------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/league` |
+| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/leaderboard`, `/wrapped`                   |
+| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                      |
+| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                 |
+| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/league`              |
+| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
+| Group related content             | `Card` + header/description                        | everywhere                                   |
+| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)            |
+| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
+| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/group`, `/league`, `/stats`                |
+| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
 
 Prefer these before inventing a new control. If a screen genuinely needs a pattern not
 listed here, that is the signal to run a `design-study` and add it. As each pattern is next
 touched, promote its row to the full anatomy below — the chip radiogroup is the worked
 template.
 
+**The second consumer triggers extraction.** "Seen in" is a starting point, not a licence
+to copy markup: as soon as a second surface needs a pattern, extract it into a shared
+component under `src/lib/components/` and update its row here to name the import. The
+2026-07-11 audit found three hand-copies of the chip radiogroup — one of which had
+silently lost its keyboard contract — and twelve hand-copies of the status note; copies
+drift, imports don't.
+
 ### Worked example — chip radiogroup
 
-1. **Job.** Select exactly one view or cut of the _same_ underlying content.
-2. **Use when.** The options are peers, labels are short, and switching is immediate (no
-   navigation, no consequential write).
+1. **Job.** Select exactly one **peer view within one analytical surface and context** —
+   the peers may be cuts of one dataset _or_ different renderings of the same subject
+   (Team · Weight · Trend · H2H all describe one player's picks). "Same content" is the
+   context, not the chart type.
+2. **Use when.** The options are peers, labels are short, switching is immediate (no
+   navigation, no consequential write), and the user does **not** need to see more than one
+   panel at once.
 3. **Don't use when.** The choices navigate to distinct destinations, trigger a
-   consequential action, or can't fit a readable mobile row without a deliberate overflow
-   treatment — reach for tabs, a menu, or buttons instead.
+   consequential action, need **simultaneous comparison** (keep the panels visible, or use
+   independent disclosures, instead), or can't fit a readable mobile row without a
+   deliberate overflow treatment — reach for tabs, a menu, or buttons instead.
 4. **Anatomy.** A labelled group; one chip per option; exactly one selected; an optional
    scope caption ("follows Career").
 5. **States.** Selected (brass fill) · unselected (outline) · focus-visible ring · disabled
-   (flat/muted, never dimmed brass) · the panel it drives updates in place.
+   (flat/muted, never dimmed brass) · the panel it drives updates in place. **Dynamic
+   option sets** (scope changes which cuts exist — e.g. Career vs Season): keep the current
+   selection if it's still available, else fall back to a deliberate default; at all times
+   exactly one _available_ radio has `aria-checked="true"` and the roving `tabindex="0"`.
 6. **Mobile behaviour.** Prefer wrapping when it stays scannable; use contained horizontal
-   scroll only when wrapping would imply false grouping or blow up height. Never let the row
-   clip the page.
+   scroll only when wrapping would imply false grouping or blow up height, and give a
+   scrollable row a visible continuation cue (an edge fade). Never let the row clip the
+   page; wide panel content owns its own overflow independently of the chip row. The
+   initial selection is a deliberate design decision, not whatever array order yields.
 7. **Accessibility contract.** `role="radiogroup"` with real `radio` children, one selected
-   value, arrow-key + Home/End keyboard operation, an accessible group name.
-8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529).
-9. **Known exceptions.** None yet — record any here with a link to the governing ADR.
+   value, arrow-key + Home/End keyboard operation, an accessible group name; selecting a
+   chip does not move focus into the panel. **When several chip groups share a page** (as on
+   `/stats`, which runs three — the situational explorer plus the career and season
+   breakdowns): each has a distinct visible heading and accessible name, and every
+   control/panel `id` is unique. The shared `ChipRadiogroup` takes an `idPrefix` prop for
+   exactly this reason — the three groups pass `stats-cut-tab`, `career-breakdown`, and
+   `season-breakdown`, so their radio `id`s never collide. The active panel's accessible
+   name derives from the selected cut.
+8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529);
+   `/stats` "Breakdowns" (career + season, #538).
+9. **Known exceptions.** None. (Page-level Tabs are **not** an exception — they own a
+   different job; see principle 2's boundary.)
 
 ## Hard constraints (pre-merge checklist)
 
@@ -265,9 +327,12 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
 - [ ] Colours/type/spacing come from tokens (the brand-color guard passes).
 - [ ] The primary action is visually dominant; committed vs uncommitted state is unmistakable.
 - [ ] Loading / empty / error / stale states are designed and keep the layout's hierarchy.
-- [ ] Consequential actions give immediate feedback **and** a durable confirmation.
-- [ ] Muted/body text clears AA; interactive controls have visible focus, semantic roles,
-      and keyboard operation (a chip group is a real radiogroup).
+- [ ] Consequential actions give immediate feedback **and** a durable confirmation (a toast
+      is never the sole signal); in-flight controls keep their active style — pending ≠
+      unavailable.
+- [ ] Muted/body text clears AA; interactive controls have visible focus using the
+      canonical ring recipe (design-system.md), semantic roles, and keyboard operation (a
+      chip group is a real radiogroup).
 - [ ] Motion respects `prefers-reduced-motion` and uses the motion tokens.
 
 ## How to check your work
@@ -279,6 +344,13 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
   dark, no mockups).
 - Both share the throwaway Playwright capture harness (390px, `deviceScaleFactor: 2`,
   `colorScheme: 'dark'`) — see the skills for the config.
+- **When this guide names a screen as canonical, re-verify that screen in the same PR** —
+  the guide originally shipped citing `/stats` as the exemplar while `/stats` carried the
+  guide's own named anti-pattern (the nested drawer).
+- **Re-audit periodically.** The baseline drift log is
+  [`docs/audits/2026-07-11-ui-consistency-audit.md`](audits/2026-07-11-ui-consistency-audit.md);
+  re-run a full consistency audit after every ~10 UI-touching PRs or at each offseason, and
+  update that baseline.
 
 ## Related
 
@@ -292,3 +364,6 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
 - [`docs/agent-context/ui.md`](agent-context/ui.md) — vendored shadcn-svelte, Svelte 5
   runes, Tailwind 4.
 - [`src/app.css`](../src/app.css) — the single source of truth for token values.
+- [`docs/audits/2026-07-11-ui-consistency-audit.md`](audits/2026-07-11-ui-consistency-audit.md) —
+  the baseline drift log this guide's 2026-07-11 amendments (Tabs boundary, feedback
+  ladder, ember spec, extraction rule) respond to.
