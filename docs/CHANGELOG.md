@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#545** One announced feedback primitive + Toaster config — the hand-rolled, unannounced
+  status banners across group/admin/auth collapse into one `FormNote` (icon + semantic colour +
+  `role="status"`/`alert`), auth sign-in/up/reset errors now render inline, the password-reset
+  success shows a durable confirmation instead of a silent redirect, and the Toaster clears the
+  mobile tab bar and gains a close button. routes: `/group` · `/admin` · `/auth` · `/auth/reset` ·
+  `FormNote.svelte` · ADR-0030
+
 - **#544** Stale/error resilience on the cached read screens — a failed background refetch now
   keeps the last-good screen (the point of the client cache) instead of swapping to a
   "Couldn't load" card; a single shell-level offline/stale pill flags the staleness and error

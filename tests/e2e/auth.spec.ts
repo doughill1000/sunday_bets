@@ -124,12 +124,11 @@ test('resend confirmation email shows a success toast', async ({ page }) => {
   await expect(page.getByText('Confirmation email resent')).toBeVisible({ timeout: 8000 });
 });
 
-// SKIPPED (pre-existing failure, separate follow-up): the reset itself now works
-// — the guide-interception and reused-password bugs are fixed — but after a
-// successful update the action redirects to /picks, which bounces to /join
-// because E2E_RESET_USER has no group membership. Re-enable once global-setup
-// seeds this user into a group so the post-reset redirect actually reaches /picks.
-test.skip('password reset: token exchange lands on set-new-password page and redirects after update', async ({
+// Re-enabled with #545: a successful update now shows a durable in-page confirmation
+// instead of redirecting to /picks, so the test no longer depends on E2E_RESET_USER
+// having a group membership (the old skip reason — the post-reset redirect bounced to
+// /join). The assertion is now the confirmation view, not a URL change.
+test('password reset: token exchange lands on set-new-password page and confirms after update', async ({
   page
 }) => {
   const auth = authPage(page);
@@ -167,8 +166,9 @@ test.skip('password reset: token exchange lands on set-new-password page and red
   await auth.resetSubmitButton().click();
   await submitted;
 
-  // Successful reset ends in a valid session and lands on /picks
-  await expect(page).toHaveURL(/\/picks/);
+  // A successful reset now shows a durable confirmation in place of the form
+  // (no silent redirect), independent of group membership.
+  await expect(auth.resetSuccessTitle()).toBeVisible();
 
   // Restore the reset user's original password so the next test run can also
   // generate a fresh recovery token (generateLink requires the user to exist).

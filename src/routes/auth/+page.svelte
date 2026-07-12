@@ -14,6 +14,7 @@
   import { Label } from '$lib/components/ui/label';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
+  import FormNote from '$lib/components/FormNote.svelte';
   import MailCheck from '@lucide/svelte/icons/mail-check';
 
   type Mode = 'signin' | 'signup' | 'resetRequest';
@@ -24,6 +25,9 @@
   let submitting = $state(false);
   let signupSentEmail = $state<string | null>(null);
   let resending = $state(false);
+  // Sign-in/up/reset outcomes render inline beside the form (the feedback ladder,
+  // DESIGN.md principle 10) rather than as a toast that vanishes off the launch screen.
+  let formNote = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
 
   const titles: Record<Mode, string> = {
     signin: 'Sign in',
@@ -48,6 +52,7 @@
     email = '';
     password = '';
     signupSentEmail = null;
+    formNote = null;
   }
 
   // Post-auth redirect target (e.g. /join/[code]). A form's `action` attribute
@@ -139,15 +144,29 @@
           method="POST"
           use:enhance={() => {
             submitting = true;
+            formNote = null;
             return async ({ result, update }) => {
               submitting = false;
               if (result.type === 'failure') {
-                toast.error(String(result.data?.message ?? 'Something went wrong'));
-              } else if (result.type === 'success') {
-                toast.success(String(result.data?.message ?? 'Done'));
-                if (mode === 'signup') signupSentEmail = email;
+                formNote = {
+                  kind: 'error',
+                  text: String(result.data?.message ?? 'Something went wrong')
+                };
               } else if (result.type === 'error') {
-                toast.error(result.error?.message ?? 'Something went wrong');
+                formNote = { kind: 'error', text: result.error?.message ?? 'Something went wrong' };
+              } else if (result.type === 'success') {
+                if (mode === 'signup') {
+                  // The "check your email" view swap below is the durable confirmation;
+                  // the toast is only a transient echo on top of it.
+                  signupSentEmail = email;
+                  toast.success(String(result.data?.message ?? 'Done'));
+                } else if (mode === 'resetRequest') {
+                  formNote = {
+                    kind: 'success',
+                    text: String(result.data?.message ?? 'Reset link sent')
+                  };
+                }
+                // signin success returns a server redirect — nothing to render here.
               }
               await update({ reset: false });
             };
@@ -215,6 +234,10 @@
           <Button type="submit" class="w-full" disabled={submitting} data-testid="auth-submit">
             {submitting ? submitLabels[mode][1] : submitLabels[mode][0]}
           </Button>
+
+          {#if formNote}
+            <FormNote kind={formNote.kind} text={formNote.text} />
+          {/if}
         </form>
       </CardContent>
 

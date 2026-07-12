@@ -191,7 +191,11 @@
       {/if}
     {/if}
 
-    <Toaster />
+    <!-- Global toast host. Pinned to dark (the app is dark-only, and the vendored Sonner
+         otherwise reads mode-watcher, which is never mounted here) and lifted above the
+         mobile bottom tab bar (pb-20 = 5rem) so a toast never covers primary nav right
+         after the user acts (audit S4). closeButton gives every toast a manual dismiss. -->
+    <Toaster theme="dark" closeButton mobileOffset={{ bottom: '5rem' }} />
   </div>
 {/snippet}
 

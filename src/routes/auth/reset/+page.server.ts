@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+// `redirect` stays in use for the recovery-token exchange in `load` below.
 
 export const load: PageServerLoad = async ({ url, locals }) => {
   const token_hash = url.searchParams.get('token_hash');
@@ -51,6 +52,9 @@ export const actions: Actions = {
       return fail(400, { message: error.message ?? 'Could not update password' });
     }
 
-    redirect(303, '/picks');
+    // Return success instead of redirecting silently so the page can show a durable
+    // confirmation (audit S4). The recovery session is already active, so the
+    // "Continue to picks" link on the confirmation lands the user in the app.
+    return { success: true };
   }
 };
