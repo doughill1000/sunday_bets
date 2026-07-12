@@ -20,25 +20,23 @@ test('leaderboard renders Standings and Weekly tabs', { tag: '@smoke' }, async (
   await expect(lb.weeklyBreakdown()).toBeVisible();
 });
 
-test('all-time tab renders career standings and hides the season picker', async ({ page }) => {
+test('All-time is a pinned scope option that renders career standings', async ({ page }) => {
   const lb = leaderboardPage(page);
   await lb.goto();
 
+  const seasonValue = await lb.scopeSelect().inputValue();
   const standingsSubtitle = await lb.subtitle().textContent();
-  const seasonPickerVisibleBefore = (await lb.seasonPicker().count()) > 0;
 
-  await lb.allTimeTab().click();
-  await expect(lb.allTimeTable().or(lb.allTimeEmpty())).toBeVisible();
+  // All-time folded into the season dropdown (#546): it is one scope option, not a tab.
+  await lb.selectAllTime();
   await expect(lb.subtitle()).toHaveText('All-time · every season combined.');
-  await expect(lb.seasonPicker()).toBeHidden();
+  // The Standings panel now hosts the career table (All-time is a standings window).
+  await expect(lb.standingsTab()).toBeVisible();
 
-  // Switching back to Standings restores the same season (the subtitle text, which
-  // encodes the season year, is unchanged from before the All-time tab was opened).
-  await lb.standingsTab().click();
+  // Selecting the same season again restores the season standings + subtitle.
+  await lb.selectScope(seasonValue);
   await expect(lb.subtitle()).toHaveText(standingsSubtitle ?? '');
-  if (seasonPickerVisibleBefore) {
-    await expect(lb.seasonPicker()).toBeVisible();
-  }
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
 });
 
 test('weekly tab shows a jump-to-week dropdown', async ({ page }) => {

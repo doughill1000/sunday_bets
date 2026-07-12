@@ -9,6 +9,7 @@
     SheetDescription
   } from '$lib/components/ui/sheet';
   import { Button } from '$lib/components/ui/button';
+  import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
   import { toast } from 'svelte-sonner';
   import { feedbackOpen } from '$lib/feedback/store';
   import { buildFeedbackContext, type FeedbackKind } from '$lib/feedback/context';
@@ -25,6 +26,10 @@
     { code: 'confused', label: '😕 Confused' },
     { code: 'love', label: '🔥 Love it' }
   ];
+
+  // The kind picker is the canonical chip radiogroup (roving tabindex + arrow keys + focus
+  // ring), the same control /stats and /league use — not a hand-rolled radiogroup (audit S7).
+  const KIND_OPTIONS = KINDS.map((k) => ({ value: k.code, label: k.label }));
 
   const MAX_BODY = 4000;
 
@@ -97,22 +102,13 @@
     </SheetHeader>
 
     <div class="flex flex-col gap-3 px-4">
-      <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Feedback type">
-        {#each KINDS as k (k.code)}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={kind === k.code}
-            data-testid={`feedback-kind-${k.code}`}
-            class="rounded-full border px-3 py-1 text-sm transition-colors {kind === k.code
-              ? 'border-primary bg-primary/10 font-medium text-foreground'
-              : 'border-input text-muted-foreground hover:bg-accent'}"
-            onclick={() => (kind = k.code)}
-          >
-            {k.label}
-          </button>
-        {/each}
-      </div>
+      <ChipRadiogroup
+        options={KIND_OPTIONS}
+        value={kind}
+        ariaLabel="Feedback type"
+        idPrefix="feedback-kind"
+        onchange={(value) => (kind = value as FeedbackKind)}
+      />
 
       <textarea
         bind:value={body}

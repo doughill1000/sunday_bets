@@ -45,12 +45,8 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('leaderboard-tab-weekly');
     },
 
-    allTimeTab(): Locator {
-      return page.getByTestId('leaderboard-tab-alltime');
-    },
-
     /** The subtitle line under the heading — swaps between "<year> season." and the
-     *  All-time copy depending on the active tab. */
+     *  All-time copy depending on the selected scope. */
     subtitle(): Locator {
       return page.getByTestId('leaderboard-subtitle');
     },
@@ -90,9 +86,10 @@ export function leaderboardPage(page: Page) {
       }).toPass({ timeout: 8000 });
     },
 
-    // --- all-time panel --------------------------------------------------------
+    // --- all-time window (folded into the scope dropdown, #546) ----------------
 
-    /** The all-time results table (present only when career totals exist). */
+    /** The all-time results table (shown when the All-time scope is selected and career
+     *  totals exist). */
     allTimeTable(): Locator {
       return page.getByTestId('alltime-table');
     },
@@ -102,19 +99,24 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('alltime-empty');
     },
 
-    /** Click the All-time tab and wait for its content to load. */
-    async openAllTime() {
-      await expect(async () => {
-        await api.allTimeTab().click();
-        await expect(api.allTimeTable().or(api.allTimeEmpty())).toBeVisible({ timeout: 5000 });
-      }).toPass({ timeout: 8000 });
+    /** Select the pinned "All-time" option from the scope dropdown and wait for the
+     *  career standings (or their empty state) to render on the Standings panel. */
+    async selectAllTime() {
+      await api.scopeSelect().selectOption('alltime');
+      await expect(api.allTimeTable().or(api.allTimeEmpty())).toBeVisible({ timeout: 5000 });
     },
 
-    // --- season picker -------------------------------------------------------
+    /** Select a specific scope-dropdown option by its `<option>` value (a season year
+     *  string, or the `alltime` sentinel). */
+    async selectScope(value: string) {
+      await api.scopeSelect().selectOption(value);
+    },
 
-    /** The season <select> (only rendered when 2+ seasons are available). */
-    seasonPicker(): Locator {
-      return page.getByRole('combobox', { name: 'Select season' });
+    // --- scope dropdown ------------------------------------------------------
+
+    /** The season/scope <select> — seasons plus the pinned "All-time" option (#546). */
+    scopeSelect(): Locator {
+      return page.getByTestId('leaderboard-scope');
     },
 
     // --- week navigator ------------------------------------------------------
