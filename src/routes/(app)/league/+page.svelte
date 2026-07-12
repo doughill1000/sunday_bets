@@ -603,10 +603,12 @@
   <!-- One page-level season control (#529): the dropdown both the by-team roster and the
        situational cuts obey, replacing the Teams-tab picker and the Trends-tab scope toggle that
        used to disagree. "Last 5 · pooled" is a pinned option (like Career on /stats) that drives
-       the situational cuts across the recent seasons. -->
+       the situational cuts across the recent seasons. Sticky under the app header (matching the
+       /stats scope line) so the season picker never scrolls away as the cuts below get long;
+       full-bleed with a blurred bottom border so it reads as an extension of the header. -->
   <div
     data-testid="league-scope-bar"
-    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2.5"
+    class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
   >
     <span
       id="league-scope-label"
