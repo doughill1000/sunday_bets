@@ -669,9 +669,12 @@ export function signatureTendencies(
     });
   }
 
-  // Situational: the strongest cuts vs the market, at most one per dimension so the strip never
-  // shows two spread buckets. `edges` is already sample-guarded + ranked by situationalEdges.
-  for (const edge of topSituationalEdges(inputs.edges, {
+  // Situational: the strongest cuts where the player BEATS the market, at most one per dimension so
+  // the strip never shows two spread buckets. Strengths-only — a cut the player trails on is a
+  // weakness, not a signature, so it belongs in the two-sided Every-split explorer, not the
+  // headline (mirrors the team tell's winning-only rule, #564). `edges` is pre-ranked + guarded.
+  const beatingEdges = inputs.edges.filter((edge) => edge.delta > 0);
+  for (const edge of topSituationalEdges(beatingEdges, {
     limit: situationalCap,
     perDimension: 1
   })) {
