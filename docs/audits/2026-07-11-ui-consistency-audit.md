@@ -42,8 +42,22 @@ pattern vocabulary, and the same jobs were compared across screens.
 >   (Tabs-vs-chips boundary, feedback ladder, ember positive spec + Known exceptions,
 >   canonical focus ring, pattern-vocabulary rows).
 >
-> Remaining steps (1, 2, 4, 6, 8–14) are unstarted. As findings become tracked issues, link
-> them here.
+> **Tracked issues (filed 2026-07-12).** The systemic backlog is now on GitHub:
+>
+> - **Wave 0 (hard-constraint clearers + the never-rendered warning):** #540 reduced-motion
+>   (S2, step 1) · #541 focus-ring standardization (S3, step 7) · #542 render picks
+>   `saveError` (S4, HIGH).
+> - **Wave 1 (systemic mediums):** #543 elevation + motion tokens (S1, step 2) · #544
+>   stale/error resilience (S5, step 4) · #545 feedback primitive + Toaster (S4, step 6) ·
+>   #546 finish `ChipRadiogroup` + delete dead controls (S7, steps 3+5) · #547 P13
+>   accent/status cleanup (S6, step 10) · #548 flash modals → Dialog (S8).
+>
+> **Not yet filed** — steps 9 (type-ramp + page-gutter migration), 11 (admin pass), 12 (demo
+> snapshot refresh — use the `refresh-demo-snapshot` skill), 13 (guard hardening, S9), 14
+> (LOW backlog), **and the per-surface HIGHs** that sit outside the systemic buckets: staged
+> picks lost on reload (`/picks` P9), the expired-reset-link dead end, `FeedbackWidget`
+> discarding typed text on dismiss, the `auth/error` dev-copy page, and admin File-to-GitHub
+> double-filing. These want their own issues before implementation.
 
 ## Executive summary
 
