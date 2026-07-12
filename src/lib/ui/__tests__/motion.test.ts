@@ -10,10 +10,11 @@ describe('lockMotionMs', () => {
     expect(lockMotionMs(true)).toBe(0);
   });
 
-  it('keeps the routine lock understated (well under half a second)', () => {
-    // Guards the "quieter than the All-In signature moment" intent (ADR-0023):
-    // if this ever creeps up to a celebratory length, this test should fail.
-    expect(LOCK_MOTION_MS).toBeGreaterThan(0);
-    expect(LOCK_MOTION_MS).toBeLessThanOrEqual(200);
+  it('stays snapped to the --duration-base motion token', () => {
+    // The routine lock rides the design-system motion ramp, not a bespoke number
+    // (design-system.md §Motion / ADR-0029): --duration-base is 200ms. Keeping this
+    // pinned also guards the "quieter than the All-In signature moment" intent
+    // (ADR-0023) — a creep onto --duration-slow/-deliberate should fail here.
+    expect(LOCK_MOTION_MS).toBe(200);
   });
 });

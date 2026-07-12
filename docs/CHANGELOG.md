@@ -46,6 +46,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## 2026-07-12
+
+- **#543** Elevation + motion tokens wired into the vendored bases — floating surfaces now
+  read their shadow from the `shadow-elevation-{card,popover,overlay}` tiers instead of raw
+  `shadow-sm/md/lg` (was ~0 adoption), fixing a dropdown sub-menu that sat louder than the
+  modal, and the picks lock duration is snapped to the `--duration-base` motion token.
+  Presentation-only. files: `ui/{card,dialog,sheet,dropdown-menu}` · `ui/motion.ts` · ADR-0029
+
 ## 2026-07-11
 
 - **PR #553** /stats explorer cut persists across a year change — the "Every split" situational
