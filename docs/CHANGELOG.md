@@ -46,6 +46,16 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v1.7)** and
 > the `ROADMAP.md` "Shipped" section; this log is not backfilled past that.
 
+## Release squashing
+
+The one exception to "never restructure": the `cut-release` skill collapses the
+date-headed entries covering the window since the previous release tag into a single
+`## v<version> — YYYY-MM-DD` heading, condensing each to one line while keeping every
+`#NNN` / `PR #NNN` reference intact (the governance-freshness gate greps for them).
+This only happens at release-cut time and only for that release's window — entries
+from prior releases are never touched, and `finish-pr` still adds one normal dated
+entry per PR the rest of the time.
+
 ## 2026-07-12
 
 - **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
