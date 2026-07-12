@@ -46,6 +46,18 @@ instead of re-tuning three. Primitive sizes (`text-xs…text-9xl`) remain Tailwi
 | `text-title`   | card / section heading                     |
 | `text-eyebrow` | all-caps section kicker (carries tracking) |
 
+The slot map — one answer per recurring slot, so nobody re-tunes:
+
+| Slot                   | Reach for                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| page title (`h1`)      | `text-3xl font-bold tracking-tight` + muted subline (tokenization candidate)                                                |
+| card / section heading | `text-title`                                                                                                                |
+| all-caps kicker        | `text-eyebrow` — never a hand-rolled `text-[10px]`/`text-[11px]` `uppercase tracking-*` (that's this token by another name) |
+| big numeral            | `text-stat` — not `text-2xl`/`text-3xl font-bold`                                                                           |
+
+Arbitrary sizes below `text-xs` are off the ramp; if a label can't work at `text-xs`,
+that's a layout problem, not a font-size problem.
+
 ### Spacing
 
 Named rhythm on Tailwind's `--spacing-*` namespace — `p-gutter`, `gap-section`, etc.
@@ -64,6 +76,15 @@ one-off local spacing.
 `shadow-elevation-{card,popover,overlay}` — theme-responsive shadows that separate each
 stacked surface tier from the one below. See [Elevation layering](#elevation-layering).
 
+Reach for the token by the surface's tier, never a raw `shadow-sm/md/lg/xl`: a raised
+`Card` → `shadow-elevation-card`; a dropdown / popover / floating panel →
+`shadow-elevation-popover`; a dialog / sheet / modal overlay →
+`shadow-elevation-overlay`. Wire this into the vendored bases (`ui/card`, `ui/dialog`,
+`ui/sheet`, `ui/dropdown-menu`) once so every consumer inherits the right tier — a raw
+shadow at a call site is the smell that a floating surface skipped the token. (A heavier
+raw shadow on a lighter tier — e.g. a dropdown sub-menu louder than a modal — is exactly
+the inversion the token prevents.)
+
 ### Motion
 
 Semantic durations and app easings. Kept short on purpose: locking is high-frequency,
@@ -79,6 +100,17 @@ so the theatrical budget stays with the All-In moment (ADR-0023).
 Durations have no Tailwind utility namespace — consume them via
 `duration-[var(--duration-base)]`, inline styles, or the `$lib/ui/motion` helper (the
 picks lock/unlock micro-interaction). Easings generate `ease-standard` / `ease-emphasized`.
+Animation is off the ramp only when it's a raw `duration-150`/hardcoded-ms value; those
+are the migration targets. `$lib/ui/motion` is a sanctioned consumer of this ramp (not a
+parallel system) — its constant should equal a `--duration-*` value, and its comment
+should point here rather than claim no repo-wide motion system exists.
+
+**Reduced motion is not opt-in.** Every animation must collapse under
+`prefers-reduced-motion: reduce`. Rather than guard each site, a single global rule in
+`src/app.css` zeroes animation/transition durations under that media query, so the
+vendored layer and any new animation comply by default; a JS-driven interaction (the
+picks flow) collapses its own timing in addition. Ambient/looping animations
+(a progress bar, a pulse skeleton) are the ones that most need this — check them first.
 
 ## Selection-tier system (picks card)
 
@@ -109,6 +141,29 @@ Surfaces stack `background → card → popover`, and the shadow tier tracks tha
 In the dark theme the three surfaces share a hue, so **shadow (not lightness) is what
 reads the layering** — hence deeper, blacker dark shadows. Every elevation token carries
 a light value too, so the future light theme flips without touching call sites.
+
+## Focus ring
+
+One recipe for every interactive surface, so keyboard focus reads the same everywhere:
+
+```
+focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50
+```
+
+This is the vendored shadcn default (`button`, `input`, `tabs`, `toggle`,
+`radio-group`, …) — hand-written controls (chips, native `<select>`s, icon buttons)
+should match it rather than invent a variant. Rules that keep it consistent:
+
+- **`focus-visible:`, never `focus:`** — a pointer tap must not paint a ring.
+- **`--ring`, not `--primary`** — the ring is a focus affordance, not the selected
+  state; don't retune its colour or width per component.
+- **Never `outline-none` without a replacement** — removing the ring with nothing in its
+  place leaves keyboard users with no focus indicator at all (a hard-constraint fail).
+- A styled radiogroup (chips) is still a real radiogroup: focus the group, arrow between
+  options (roving tabindex), and show the ring on the focused option.
+
+The global `* { outline-ring/50 }` base in `src/app.css` is the floor for anything that
+slips through; call sites should still declare the ring explicitly.
 
 ## What stays untokenized (allowlisted)
 
