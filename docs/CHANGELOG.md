@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#546** Finish ChipRadiogroup adoption + delete dead vendored controls — one control now
+  owns "switch a cut": the feedback widget's kind picker uses the shared `ChipRadiogroup`
+  (roving tabindex + arrow keys + canonical focus ring) instead of a hand-rolled radiogroup, and
+  the leaderboard folds its "All-time" tab into the season dropdown as a pinned scope option
+  (leaving Standings/Weekly as the two page-level Tabs the guide sanctions). The now-unused
+  `ui/accordion`, `ui/navigation-menu`, and `ui/radio-group` vendored components are deleted.
+  routes: `/leaderboard` · `FeedbackWidget.svelte` · ADR-0030
+
 - **#545** One announced feedback primitive + Toaster config — the hand-rolled, unannounced
   status banners across group/admin/auth collapse into one `FormNote` (icon + semantic colour +
   `role="status"`/`alert`), auth sign-in/up/reset errors now render inline, the password-reset
