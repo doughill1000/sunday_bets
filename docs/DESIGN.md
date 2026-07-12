@@ -206,10 +206,11 @@ accent. `--ember` is reserved for live/urgent/signature moments (principle 5's s
 Ember's sanctioned moments — a positive spec, so under-spend is as visible as leakage:
 **Lock in** (the primary commitment), an **All-In** declaration, **live/urgent** game
 states, and the **Wrapped champion reveal** (to be built — the season's one celebration
-peak, reduced-motion-guarded). Routine data fills use `--primary` (the CoverMeter's
-ember gradient is drift to re-base, not an exception). One recorded exception: the
-public demo's single "Start your league" CTA — the marketing surface's one conversion
-verb. Anything new earns its place via a design study and a new entry in this list.
+peak, reduced-motion-guarded). Routine data fills use `--primary` (the CoverMeter fill
+is `--primary`, re-based from its earlier ember gradient — #547). One recorded
+exception: the public demo's single "Start your league" CTA — the marketing surface's
+one conversion verb. Anything new earns its place via a design study and a new entry in
+this list.
 
 _Why:_ if the accent also means "good", the user can't tell branding from signal.
 

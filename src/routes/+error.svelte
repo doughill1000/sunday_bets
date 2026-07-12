@@ -43,7 +43,7 @@
   class="flex min-h-[60svh] flex-col items-center justify-center px-4 text-center"
   data-testid="error-page"
 >
-  <p class="text-sm font-semibold uppercase tracking-widest text-ember">Error {status}</p>
+  <p class="text-sm font-semibold uppercase tracking-widest text-destructive">Error {status}</p>
   <h1 class="mt-3 text-3xl font-bold text-foreground sm:text-4xl">{headline}</h1>
   <p class="mt-3 max-w-md text-muted-foreground">{body}</p>
   {#if showDetail}
