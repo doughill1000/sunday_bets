@@ -9,8 +9,10 @@
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
   import YourEdge from '$lib/components/stats/YourEdge.svelte';
+  import SignatureTendencies from '$lib/components/stats/SignatureTendencies.svelte';
   import SituationalExplorer from '$lib/components/stats/SituationalExplorer.svelte';
   import StatAccuracyList from '$lib/components/stats/StatAccuracyList.svelte';
+  import TeamBook from '$lib/components/stats/TeamBook.svelte';
   import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
   import {
     Card,
@@ -21,13 +23,14 @@
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import {
-    consensusTendency,
     formatAccuracy,
     headToHeadForUser,
     lineSideTendency,
     seasonScopeOptions,
+    signatureTendencies,
+    situationalEdges,
     situationalExplorer,
-    streakTendency
+    teamBookStandouts
   } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
 
@@ -71,7 +74,10 @@
     situational: [],
     leagueSituationalBaseline: [],
     situationalSeason: [],
-    leagueSituationalBaselineSeason: []
+    leagueSituationalBaselineSeason: [],
+    teamBook: [],
+    teamBookAllTime: [],
+    lineSideAllTime: []
   };
 
   // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the
@@ -91,7 +97,7 @@
     hasH2H: boolean
   ): BreakdownOption[] {
     return [
-      ...(hasTeam ? [{ value: 'team' as const, label: 'Team' }] : []),
+      ...(hasTeam ? [{ value: 'team' as const, label: 'Team book' }] : []),
       ...(hasWeight ? [{ value: 'weight' as const, label: 'Weight' }] : []),
       ...(hasTrend ? [{ value: 'trend' as const, label: 'Trend' }] : []),
       ...(hasH2H ? [{ value: 'h2h' as const, label: 'H2H' }] : [])
@@ -195,17 +201,15 @@
     return decided > 0 ? selected.wins / decided : null;
   });
 
-  // Previously-latent personal cuts (#502): favorite/underdog lean, win streak, and consensus
-  // behavior for the selected player + season. Each is sample-guarded, so it renders as a compact
-  // tile only when there are enough placed picks to be meaningful.
+  // Favorite/underdog lean for the selected player, at both scopes (#564): the season lean feeds
+  // the season signature strip, the career lean (pooled across seasons) the career one. Each is
+  // sample-guarded by lineSideTendency and collapses a within-10-points mix to 'balanced'.
   const lineSide = $derived(
     lineSideTendency(data.lineSide.find((r) => r.user_id === selectedUserId))
   );
-  const streak = $derived(streakTendency(data.streaks.find((r) => r.user_id === selectedUserId)));
-  const consensus = $derived(
-    consensusTendency(data.consensusStats.find((r) => r.user_id === selectedUserId))
+  const careerLineSide = $derived(
+    lineSideTendency(data.lineSideAllTime.find((r) => r.user_id === selectedUserId))
   );
-  const hasTendencies = $derived(Boolean(lineSide || streak || consensus));
 
   // Career situational splits for the selected player, fed to the "Your edge" panel (#502).
   const selectedSituational = $derived(
@@ -223,25 +227,35 @@
     situationalExplorer(selectedSituationalSeason, data.leagueSituationalBaselineSeason)
   );
 
-  // Nulls sort last regardless; otherwise highest cover first.
-  function compareCoverDesc(a: number | null, b: number | null) {
-    if (a == null && b == null) return 0;
-    if (a == null) return 1;
-    if (b == null) return -1;
-    return b - a;
-  }
+  // Team book (#564): the selected player's two-sided (ride/fade) records, season + career. The
+  // raw rows gate the "Team book" breakdown chip; teamBookStandouts reduces them to the standouts
+  // shown, and also feeds the signature strip's most-notable ride/fade tell.
+  const seasonTeamBookRows = $derived(data.teamBook.filter((r) => r.user_id === selectedUserId));
+  const careerTeamBookRows = $derived(
+    data.teamBookAllTime.filter((r) => r.user_id === selectedUserId)
+  );
+  const seasonTeamBook = $derived(teamBookStandouts(seasonTeamBookRows));
+  const careerTeamBook = $derived(teamBookStandouts(careerTeamBookRows));
+
+  // Signature tendencies (#564): the plain-language strip, career-first and scope-aware. It ranks
+  // the strongest already-computed cuts — situational edges, the fav/dog lean, and the team book —
+  // for the current scope. The career strip leads with career samples; the season strip re-scopes.
+  const careerSignature = $derived(
+    signatureTendencies({
+      edges: situationalEdges(selectedSituational, data.leagueSituationalBaseline),
+      lineSide: careerLineSide,
+      teamBook: careerTeamBook
+    })
+  );
+  const seasonSignature = $derived(
+    signatureTendencies({
+      edges: situationalEdges(selectedSituationalSeason, data.leagueSituationalBaselineSeason),
+      lineSide,
+      teamBook: seasonTeamBook
+    })
+  );
 
   const trendRows = $derived(data.trend.filter((r) => r.user_id === selectedUserId));
-  const teamRows = $derived(
-    data.teamAccuracy
-      .filter((r) => r.user_id === selectedUserId)
-      .toSorted(
-        (a, b) =>
-          compareCoverDesc(a.accuracy, b.accuracy) ||
-          b.decisions - a.decisions ||
-          a.team_short_name.localeCompare(b.team_short_name)
-      )
-  );
   const weightRows = $derived(
     data.weightAccuracy
       .filter((r) => r.user_id === selectedUserId)
@@ -249,18 +263,6 @@
   );
 
   // Normalized rows for the shared meter list.
-  const teamAccuracyRows = $derived(
-    teamRows.map((r) => ({
-      key: r.team_id,
-      label: r.team_short_name,
-      title: r.team_name,
-      wins: r.wins,
-      losses: r.losses,
-      pushes: r.pushes,
-      accuracy: r.accuracy,
-      points: r.points
-    }))
-  );
   const weightAccuracyRows = $derived(
     weightRows.map((r) => ({
       key: r.weight,
@@ -279,7 +281,7 @@
   );
   const seasonBreakdownOptions = $derived(
     breakdownOptions(
-      teamAccuracyRows.length > 0,
+      seasonTeamBookRows.length > 0,
       weightAccuracyRows.length > 0,
       trendRows.length > 0,
       seasonH2H.length > 0
@@ -289,7 +291,7 @@
     activeBreakdown(seasonBreakdownCut, seasonBreakdownOptions)
   );
 
-  // All-time row derivations (allTimeTeamRows / allTimeWeightRows / careerH2H) live inside the
+  // All-time row derivations (allTimeWeightRows / careerH2H) live inside the
   // {#await data.allTimeDetail} block below, since that data streams in asynchronously.
 </script>
 
@@ -432,6 +434,15 @@
 
     {#if selectedCareer}
       {#if scope === 'career'}
+        <!-- Signature strip leads the scoped content (#564): the career-first, plain-language tells
+             ranked over the situational edges, fav/dog lean, and the team book. -->
+        <SignatureTendencies
+          tells={careerSignature}
+          scopeLabel="Career"
+          isYou={isSelectedYou}
+          displayName={selectedDisplayName}
+        />
+
         <!-- Career: headline all-time totals, then the situational explorer (#514). The edge hero
              already leads above the scope line. -->
         <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
@@ -456,27 +467,9 @@
             </CardHeader>
           </Card>
         {:then detail}
-          {@const allTimeTeamRows = detail.allTimeTeamAccuracy
-            .filter((r) => r.user_id === selectedUserId)
-            .toSorted(
-              (a, b) =>
-                compareCoverDesc(a.accuracy, b.accuracy) ||
-                b.decisions - a.decisions ||
-                a.team_short_name.localeCompare(b.team_short_name)
-            )}
           {@const allTimeWeightRows = detail.allTimeWeightAccuracy
             .filter((r) => r.user_id === selectedUserId)
             .toSorted((a, b) => WEIGHT_ORDER.indexOf(a.weight) - WEIGHT_ORDER.indexOf(b.weight))}
-          {@const allTimeTeamAccuracyRows = allTimeTeamRows.map((r) => ({
-            key: r.team_id,
-            label: r.team_short_name,
-            title: r.team_name,
-            wins: r.wins,
-            losses: r.losses,
-            pushes: r.pushes,
-            accuracy: r.accuracy,
-            points: r.points
-          }))}
           {@const allTimeWeightAccuracyRows = allTimeWeightRows.map((r) => ({
             key: r.weight,
             label: weightLabel(r.weight),
@@ -491,7 +484,7 @@
             ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
             : []}
           {@const careerBreakdownOptions = breakdownOptions(
-            allTimeTeamAccuracyRows.length > 0,
+            careerTeamBookRows.length > 0,
             allTimeWeightAccuracyRows.length > 0,
             false,
             careerH2H.length > 0
@@ -500,7 +493,7 @@
             careerBreakdownCut,
             careerBreakdownOptions
           )}
-          {#if allTimeTeamAccuracyRows.length > 0 || allTimeWeightAccuracyRows.length > 0 || careerH2H.length > 0}
+          {#if careerTeamBookRows.length > 0 || allTimeWeightAccuracyRows.length > 0 || careerH2H.length > 0}
             <Card data-testid="stats-breakdowns">
               <CardHeader>
                 <CardTitle>Breakdowns</CardTitle>
@@ -524,9 +517,14 @@
                 >
                   {#if activeCareerBreakdown === 'team'}
                     <p class="mb-3 text-sm text-muted-foreground">
-                      All-time results grouped by the team backed.
+                      All-time standouts — the teams {isSelectedYou ? 'you' : selectedDisplayName} most
+                      ride and most fade.
                     </p>
-                    <StatAccuracyList rows={allTimeTeamAccuracyRows} />
+                    <TeamBook
+                      standouts={careerTeamBook}
+                      isYou={isSelectedYou}
+                      displayName={selectedDisplayName}
+                    />
                   {:else if activeCareerBreakdown === 'weight'}
                     <p class="mb-3 text-sm text-muted-foreground">
                       All-time confidence-level results, including each All-In.
@@ -602,55 +600,14 @@
             </CardContent>
           </Card>
 
-          {#if hasTendencies}
-            <Card>
-              <CardHeader>
-                <CardTitle>Tendencies</CardTitle>
-                <CardDescription>
-                  How {isSelectedYou ? 'you' : selectedDisplayName} played the board in {data.seasonYear}.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                  {#if lineSide}
-                    <div>
-                      <dt class="text-xs font-medium text-muted-foreground">
-                        Favorite vs underdog
-                      </dt>
-                      <dd class="mt-1 text-2xl font-bold">
-                        {formatAccuracy(lineSide.favoritePct)}
-                        <span class="text-sm font-normal text-muted-foreground">favorites</span>
-                      </dd>
-                      <p class="text-xs text-muted-foreground">
-                        {formatAccuracy(lineSide.underdogPct)} underdogs · {lineSide.lean ===
-                        'balanced'
-                          ? 'balanced mix'
-                          : `leans ${lineSide.lean}`}
-                      </p>
-                    </div>
-                  {/if}
-                  {#if streak}
-                    <div>
-                      <dt class="text-xs font-medium text-muted-foreground">Win streak</dt>
-                      <dd class="mt-1 text-2xl font-bold tabular-nums">{streak.current}</dd>
-                      <p class="text-xs text-muted-foreground">current · best {streak.best}</p>
-                    </div>
-                  {/if}
-                  {#if consensus}
-                    <div>
-                      <dt class="text-xs font-medium text-muted-foreground">Against the crowd</dt>
-                      <dd class="mt-1 text-2xl font-bold">
-                        {formatAccuracy(consensus.contrarianPct)}
-                      </dd>
-                      <p class="text-xs text-muted-foreground">
-                        {consensus.contrarianWins}/{consensus.contrarianPicks} contrarian picks won
-                      </p>
-                    </div>
-                  {/if}
-                </dl>
-              </CardContent>
-            </Card>
-          {/if}
+          <!-- Signature strip (#564): the season-scoped tells, superseding the old season-only
+               "Tendencies" tile card with a plain-language, career-consistent strip. -->
+          <SignatureTendencies
+            tells={seasonSignature}
+            scopeLabel={String(data.seasonYear)}
+            isYou={isSelectedYou}
+            displayName={selectedDisplayName}
+          />
 
           <!-- Every split (#514): the season-scoped situational explorer. -->
           <SituationalExplorer
@@ -664,7 +621,7 @@
 
           <!-- Team/weight/trend/H2H tables share the same one-tap chip selector as Every split
                (#538). -->
-          {#if teamAccuracyRows.length > 0 || weightAccuracyRows.length > 0 || trendRows.length > 0 || seasonH2H.length > 0}
+          {#if seasonTeamBookRows.length > 0 || weightAccuracyRows.length > 0 || trendRows.length > 0 || seasonH2H.length > 0}
             <Card data-testid="stats-breakdowns">
               <CardHeader>
                 <CardTitle>Breakdowns</CardTitle>
@@ -689,9 +646,15 @@
                   {#if activeSeasonBreakdown === 'team'}
                     <p class="mb-3 text-sm text-muted-foreground">
                       {possessive}
-                      {data.seasonYear} results grouped by the team backed.
+                      {data.seasonYear} standouts — the teams {isSelectedYou
+                        ? 'you'
+                        : selectedDisplayName} most ride and most fade.
                     </p>
-                    <StatAccuracyList rows={teamAccuracyRows} />
+                    <TeamBook
+                      standouts={seasonTeamBook}
+                      isYou={isSelectedYou}
+                      displayName={selectedDisplayName}
+                    />
                   {:else if activeSeasonBreakdown === 'weight'}
                     <p class="mb-3 text-sm text-muted-foreground">
                       {possessive}
