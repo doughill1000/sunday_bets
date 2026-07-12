@@ -9,6 +9,13 @@ For planned work, also read `docs/WORKFLOW.md`, the assigned GitHub Issue, and e
 linked or governing ADR before editing. Do not maintain a separate copy of repository
 rules here; that would allow the two agent workflows to drift.
 
+**For any user-facing UI work, `docs/DESIGN.md` is the governing design guide**
+(ratified by ADR-0030; token vocabulary in `docs/agent-context/design-system.md`,
+ADR-0029). Read it before building or reviewing a screen. Its "Hard constraints"
+checklist is a pass/fail merge gate (mirrored in the PR template), and when a PR
+changes a screen the guide names as canonical, update the guide's references in the
+same PR.
+
 The natural-language issue-creation triggers in `AGENTS.md` apply to Claude
 unchanged. Push branches, open PRs, and file issues without asking; never merge —
 landing code is the human's call (see `AGENTS.md` "Delivery workflow").
