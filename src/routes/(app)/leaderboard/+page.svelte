@@ -82,7 +82,14 @@
   let activeTab = $state<'standings' | 'weekly'>(pageData.view);
   let scope = $state<'season' | 'alltime'>('season');
 
-  const scopeOptions = $derived(seasonScopeOptions(data.availableSeasons));
+  // Fold the currently-displayed season into the option set so the dropdown can always
+  // represent `scopeValue`. `resolveSeasonYear` can land on a season that has no standings
+  // yet — a brand-new/pre-grading season (empty `availableSeasons` → the active season year),
+  // or an out-of-range `?season=` — and `availableSeasons` is derived from graded standings
+  // only (`group_season_years`), so that season is absent from it. Without this the <select>
+  // value would match no <option>, silently blanking the control to `''` while the subtitle
+  // still reads "<year> season." (this empty value is what tripped the all-time e2e spec).
+  const scopeOptions = $derived(seasonScopeOptions([...data.availableSeasons, data.seasonYear]));
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.seasonYear));
 
   const SELECT_CLASS =
