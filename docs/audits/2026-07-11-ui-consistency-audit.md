@@ -21,6 +21,30 @@ pattern vocabulary, and the same jobs were compared across screens.
 - **This is a log, not a fix pass.** Nothing was changed. A suggested remediation order
   is at the end.
 
+> **Remediation status — updated 2026-07-12.** This report is a point-in-time snapshot at
+> `ea0986d`; its findings are left as written. Progress against the
+> [remediation order](#suggested-remediation-order) is tracked here so the log stays honest
+> without rewriting the snapshot:
+>
+> - ✅ **Step 3 (partial) — `/stats` nested accordion flattened** (#538 / #539). The "No
+>   disclosure nested inside a disclosure" scorecard **FAIL** is cleared; the breakdowns now
+>   switch cuts with the chip radiogroup. `ui/accordion` is now at **0 consumers** (deletable
+>   alongside `ui/navigation-menu` and `ui/radio-group`).
+> - ✅ **Step 5 (partial) — `<ChipRadiogroup>` extracted** (#538 / #539), consumed by the
+>   situational explorer and both `/stats` breakdown groups; the Tabs-vs-chips rule is
+>   recorded in DESIGN.md. Still open: migrating the leaderboard/group/wrapped Tabs and the
+>   degraded `FeedbackWidget` copy onto it.
+> - ✅ **Step 7 (partial) — focus ring:** the extracted `ChipRadiogroup` was aligned to the
+>   canonical `focus-visible:ring-[3px] ring-ring/50` recipe (now documented in
+>   design-system.md). The other ~14 hand-written focus sites (native selects, avatar
+>   buttons, dialog/sheet close) remain.
+> - ✅ **Governance / docs:** ADR-0030 marked **Accepted**; DESIGN.md amended from this audit
+>   (Tabs-vs-chips boundary, feedback ladder, ember positive spec + Known exceptions,
+>   canonical focus ring, pattern-vocabulary rows).
+>
+> Remaining steps (1, 2, 4, 6, 8–14) are unstarted. As findings become tracked issues, link
+> them here.
+
 ## Executive summary
 
 The app's **interaction design is largely healthy** — the guide's flagship patterns are
