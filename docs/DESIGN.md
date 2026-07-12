@@ -274,22 +274,38 @@ drift, imports don't.
 
 ### Worked example — chip radiogroup
 
-1. **Job.** Select exactly one view or cut of the _same_ underlying content.
-2. **Use when.** The options are peers, labels are short, and switching is immediate (no
-   navigation, no consequential write).
+1. **Job.** Select exactly one **peer view within one analytical surface and context** —
+   the peers may be cuts of one dataset _or_ different renderings of the same subject
+   (Team · Weight · Trend · H2H all describe one player's picks). "Same content" is the
+   context, not the chart type.
+2. **Use when.** The options are peers, labels are short, switching is immediate (no
+   navigation, no consequential write), and the user does **not** need to see more than one
+   panel at once.
 3. **Don't use when.** The choices navigate to distinct destinations, trigger a
-   consequential action, or can't fit a readable mobile row without a deliberate overflow
-   treatment — reach for tabs, a menu, or buttons instead.
+   consequential action, need **simultaneous comparison** (keep the panels visible, or use
+   independent disclosures, instead), or can't fit a readable mobile row without a
+   deliberate overflow treatment — reach for tabs, a menu, or buttons instead.
 4. **Anatomy.** A labelled group; one chip per option; exactly one selected; an optional
    scope caption ("follows Career").
 5. **States.** Selected (brass fill) · unselected (outline) · focus-visible ring · disabled
-   (flat/muted, never dimmed brass) · the panel it drives updates in place.
+   (flat/muted, never dimmed brass) · the panel it drives updates in place. **Dynamic
+   option sets** (scope changes which cuts exist — e.g. Career vs Season): keep the current
+   selection if it's still available, else fall back to a deliberate default; at all times
+   exactly one _available_ radio has `aria-checked="true"` and the roving `tabindex="0"`.
 6. **Mobile behaviour.** Prefer wrapping when it stays scannable; use contained horizontal
-   scroll only when wrapping would imply false grouping or blow up height. Never let the row
-   clip the page.
+   scroll only when wrapping would imply false grouping or blow up height, and give a
+   scrollable row a visible continuation cue (an edge fade). Never let the row clip the
+   page; wide panel content owns its own overflow independently of the chip row. The
+   initial selection is a deliberate design decision, not whatever array order yields.
 7. **Accessibility contract.** `role="radiogroup"` with real `radio` children, one selected
-   value, arrow-key + Home/End keyboard operation, an accessible group name.
-8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529).
+   value, arrow-key + Home/End keyboard operation, an accessible group name; selecting a
+   chip does not move focus into the panel. **When two chip groups share a page** (as
+   `/stats` will once #538 lands): each has a distinct visible heading and accessible name,
+   every control/panel `id` is unique (a shared component must take an id prefix — the
+   current `SituationalExplorer` hard-codes `stats-cut-tab-*`, which would collide), and the
+   active panel's accessible name derives from the selected cut.
+8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529);
+   `/stats` "Breakdowns" (#538, once landed).
 9. **Known exceptions.** None. (Page-level Tabs are **not** an exception — they own a
    different job; see principle 2's boundary.)
 
