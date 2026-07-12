@@ -48,7 +48,7 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
-- **PR #NNN** Release v3.3.0 — version bump only, no runtime change.
+- **PR #569** Release v3.3.0 — version bump only, no runtime change.
 
 - **#564** Tendencies on /stats — a tendency layer that says _what kind of bettor_ you are. A
   two-sided **team book** adds the fade side accuracy-by-team never had (your ATS record backing
