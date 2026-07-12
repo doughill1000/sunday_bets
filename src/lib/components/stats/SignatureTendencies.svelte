@@ -86,7 +86,7 @@
         sentence: `${subjectCap} ${verb('keep')} ${fading ? 'fading' : 'riding'} ${tell.teamShort}`,
         stat: `${tell.wins}-${tell.losses}`,
         statTone: fading ? 'sky' : 'gold',
-        sub: `${fading ? 'most-faded' : 'most-backed'} · ${formatAccuracy(tell.cover)} ${
+        sub: `${fading ? 'best fade' : 'best ride'} · ${formatAccuracy(tell.cover)} ${
           fading ? 'against them' : 'cover'
         }`
       };

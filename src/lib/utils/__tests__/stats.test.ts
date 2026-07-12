@@ -592,6 +592,27 @@ describe('signature tendencies (#564)', () => {
     expect(tells).toEqual([]);
   });
 
+  it('never surfaces a situational cut where the player trails the market (beat-only)', () => {
+    // Player covers 30% in primetime vs a .47 market line -> -0.17: a real weakness. The signature
+    // strip is strengths-only (mirroring the team tell), so it must not headline; the two-sided
+    // Every-split explorer owns "where you trail".
+    const trailing = situationalEdges([split('primetime', 'primetime', 30, 70)], league);
+    expect(trailing[0].delta).toBeLessThan(0);
+
+    // Alone, the trailing cut yields an honest empty state rather than a negative headline.
+    expect(
+      signatureTendencies({ edges: trailing, lineSide: null, teamBook: { ride: [], fade: [] } })
+    ).toEqual([]);
+
+    // Alongside a winning ride, only the strength surfaces — the weakness is still dropped.
+    const withRide = signatureTendencies({
+      edges: trailing,
+      lineSide: null,
+      teamBook: teamBookStandouts([teamBookEntry('backed', 'SF', 9, 2)])
+    });
+    expect(withRide.map((t) => t.kind)).toEqual(['team']);
+  });
+
   it('caps the situational cuts and never repeats a dimension', () => {
     const spreadLeague = [
       baseline('spread', '1-3', 0.5),
