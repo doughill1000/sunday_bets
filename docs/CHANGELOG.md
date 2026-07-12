@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#544** Stale/error resilience on the cached read screens — a failed background refetch now
+  keeps the last-good screen (the point of the client cache) instead of swapping to a
+  "Couldn't load" card; a single shell-level offline/stale pill flags the staleness and error
+  cards carry a real Retry. Also gives the /stats streamed career detail an error state and keeps
+  the sticky context bar through a season switch. routes: `/leaderboard` · `/league` · `/stats` ·
+  `NetworkStatusPill.svelte` · ADR-0017
+
 - **#543** Elevation + motion tokens wired into the vendored bases — floating surfaces now
   read their shadow from the `shadow-elevation-{card,popover,overlay}` tiers instead of raw
   `shadow-sm/md/lg` (was ~0 adoption), fixing a dropdown sub-menu that sat louder than the

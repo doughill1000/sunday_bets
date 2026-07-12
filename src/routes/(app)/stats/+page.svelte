@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
-  import { createQuery } from '@tanstack/svelte-query';
+  import { goto, invalidateAll } from '$app/navigation';
+  import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
   import { fetchStats } from '$lib/query/fetchers';
   import type { StatsCachePayload } from '$lib/query/types';
@@ -19,6 +19,7 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
   import {
     consensusTendency,
     formatAccuracy,
@@ -42,7 +43,13 @@
   const statsQuery = createQuery(() => ({
     queryKey: queryKeys.stats(pageData.groupId, pageData.seasonYear),
     queryFn: () => fetchStats(fetch, pageData.groupId, pageData.seasonYear),
-    initialData: pageData.initialStats
+    initialData: pageData.initialStats,
+    // A season switch re-keys this query, and client-side navigation ships no `initialData`, so
+    // without this the new key would go `isPending` and blank the whole layout — including the
+    // sticky context bar the user just touched — to skeletons. `keepPreviousData` holds the prior
+    // season's data (with `isPlaceholderData`) until the new season loads, so the scope bar and
+    // hero stay put and only the figures swap (audit S5, ADR-0017).
+    placeholderData: keepPreviousData
   }));
 
   // Empty shape so the per-player/season derivations below stay valid while the query is
@@ -289,14 +296,18 @@
   </div>
 {/snippet}
 
-{#snippet errorState()}
+{#snippet errorState(retry: () => void)}
+  <!-- Hard failure only (error with no cached data). A background-refetch failure that still has
+       last-good data keeps rendering the stats + context bar; the shell stale pill flags it
+       (audit S5). Retry refetches this query rather than telling the user to reload the page. -->
   <Card class="border-dashed">
     <CardHeader>
       <CardTitle>Couldn't load stats</CardTitle>
-      <CardDescription>
-        Something went wrong fetching your stats. Refresh the page to try again.
-      </CardDescription>
+      <CardDescription>Something went wrong fetching your stats.</CardDescription>
     </CardHeader>
+    <CardContent>
+      <Button variant="outline" size="sm" onclick={retry}>Retry</Button>
+    </CardContent>
   </Card>
 {/snippet}
 
@@ -342,8 +353,8 @@
 
   {#if statsQuery.isPending}
     {@render loadingState()}
-  {:else if statsQuery.isError}
-    {@render errorState()}
+  {:else if statsQuery.isError && !statsQuery.data}
+    {@render errorState(() => statsQuery.refetch())}
   {:else if data.allTimeTotals.length === 0}
     <Card class="border-dashed">
       <CardHeader>
@@ -521,6 +532,21 @@
               </CardContent>
             </Card>
           {/if}
+        {:catch}
+          <!-- The career detail is a streamed (un-awaited) promise from the server load; on
+               rejection it used to leave a permanent fake "Loading…" card (audit S5). Show a real
+               error state instead. It's not a `createQuery`, so retry re-runs the page load
+               (`invalidateAll`) to build a fresh promise. -->
+          <Card class="border-dashed" data-testid="stats-alltime-detail-error">
+            <CardHeader>
+              <CardTitle>Couldn't load all-time accuracy</CardTitle>
+              <CardDescription>The career breakdowns didn't load.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" size="sm" onclick={() => void invalidateAll()}>Retry</Button
+              >
+            </CardContent>
+          </Card>
         {/await}
       {:else}
         <!-- Season: snapshot + tendencies, then the season-scoped explorer (#514). The career edge
