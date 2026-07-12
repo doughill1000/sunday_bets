@@ -107,3 +107,13 @@ Harmful / costs:
   grouping (also noted in ADR-0010's follow-up).
 - Revisit toward Changesets / release-please if release cadence rises enough that
   manual `cut-release` becomes friction.
+
+## History
+
+- **2026-07-11 — one-time skip of `v3.1.0`.** The `v3.0.0` release (Hotshot rebrand)
+  absorbed the entire `v3.1` launch milestone, so `v3.1.0` was never tagged. The next
+  release (the `v3.2` milestone) was cut as **`v3.2.0`** rather than the mechanical
+  `bump(3.0.0, minor)` = `3.1.0`, to keep the repo's tag == milestone-name invariant and
+  avoid a `v3.1.0` tag that would misleadingly contain the redesign instead of the
+  already-shipped launch features. A deliberate deviation from Decision §3, not a
+  precedent — the default remains `bump(base, level)`.

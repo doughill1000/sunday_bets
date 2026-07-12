@@ -48,6 +48,11 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #551** v3.2.0 release — the /stats and /league redesign: situational deep-dive
+  explorer, "Your edge" career hero, merged Teams/Trends scope with slice chips, and the
+  design-system token families that back it. Milestone v3.2. Version skips v3.1.0: the v3.1
+  launch milestone shipped inside the v3.0.0 rebrand release, so tags realign to the
+  milestone name here. issues: #514 · #517 · #518 · #525 · #529 · #538 · ADR-0015/0029/0030
 - **#538** /stats breakdown chips — career and season breakdowns now switch Team, Weight,
   Trend, and H2H cuts through one accessible chip selector instead of a nested accordion, making
   every panel reachable in one tap without mobile clipping. route: `/stats` · ADR-0030
