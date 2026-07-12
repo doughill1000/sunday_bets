@@ -1,21 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-// Primary navigation: five first-class tabs (Picks · Leaderboard · Group · Stats ·
-// League). The desktop inline nav and the mobile bottom tab bar render the same five
-// destinations. Order clusters the social tabs (Leaderboard, Group) ahead of the
-// analytics tabs (Stats, League). (League — league-wide team ATS trends — was added by
-// #406; League Honors still lives on /group and is gone from /stats.)
+// Primary navigation after the #561 IA merge: four first-class tabs — Picks · League · Stats ·
+// Teams. The desktop inline nav and the mobile bottom tab bar render the same four destinations.
+// League is the merged Leaderboard + Group home (standings, the season race, honors, and a
+// Members & manage subpage at /league/manage); Teams is the former "League" market ATS page,
+// renamed so the user's own league owns the "League" name.
 
 const TABS = [
   { href: '/picks', name: 'Picks' },
-  { href: '/leaderboard', name: 'Leaderboard' },
-  { href: '/group', name: 'Group' },
+  { href: '/league', name: 'League' },
   { href: '/stats', name: 'Stats' },
-  { href: '/league', name: 'League' }
+  { href: '/teams', name: 'Teams' }
 ] as const;
 
 test(
-  'desktop nav exposes all five tabs and each navigates',
+  'desktop nav exposes all four tabs and each navigates',
   { tag: '@smoke' },
   async ({ page }) => {
     await page.goto('/picks');
@@ -33,7 +32,7 @@ test(
   }
 );
 
-test('mobile bottom tab bar exposes all five tabs', async ({ page }) => {
+test('mobile bottom tab bar exposes all four tabs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/picks');
 
@@ -44,16 +43,41 @@ test('mobile bottom tab bar exposes all five tabs', async ({ page }) => {
   }
 });
 
-test('League Honors lives on /group, not /stats', async ({ page }) => {
-  // Moved off Stats by #305 — the card must no longer mount there.
+test('League tab stays active on both the home and its manage subpage', async ({ page }) => {
+  const league = () =>
+    page.getByTestId('primary-nav').getByRole('link', { name: 'League', exact: true });
+
+  await page.goto('/league');
+  await expect(league()).toHaveAttribute('aria-current', 'page');
+
+  await page.goto('/league/manage');
+  await expect(league()).toHaveAttribute('aria-current', 'page');
+});
+
+test('legacy routes redirect to the League home and manage subpage', async ({ page }) => {
+  // The standalone Leaderboard and Group tabs became the League home and its Members & manage
+  // subpage (#561); their old paths permanently forward (hooks 308).
+  await page.goto('/leaderboard');
+  await expect(page).toHaveURL(/\/league$/);
+
+  await page.goto('/group');
+  await expect(page).toHaveURL(/\/league\/manage$/);
+});
+
+test('League honors live on /league, not /stats or /league/manage', async ({ page }) => {
+  // Off Stats since #305, and off the manage subpage after #561 relocated the honors case to the
+  // League home. The card only renders once a season has a champion or awarded badges, so on
+  // /league assert the destination loads (the Members & manage entry) rather than the
+  // data-dependent card itself.
   await page.goto('/stats');
   await expect(page.getByRole('heading', { name: 'Stats & history' })).toBeVisible();
   await expect(page.getByTestId('league-honors')).toHaveCount(0);
 
-  // The Group tab is the new home. The honors card only renders once a season has
-  // a champion or awarded badges, so assert the destination loads rather than the
-  // (data-dependent) card itself.
-  await page.goto('/group');
-  await expect(page).toHaveURL(/\/group$/);
+  await page.goto('/league/manage');
+  await expect(page).toHaveURL(/\/league\/manage$/);
   await expect(page.getByRole('list', { name: 'Group members' })).toBeVisible();
+  await expect(page.getByTestId('league-honors')).toHaveCount(0);
+
+  await page.goto('/league');
+  await expect(page.getByTestId('manage-entry')).toBeVisible();
 });

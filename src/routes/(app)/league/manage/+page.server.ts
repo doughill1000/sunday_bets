@@ -1,5 +1,5 @@
-// src/routes/(app)/group/+page.server.ts
-// Group management page — commissioner-only controls + season metadata.
+// src/routes/(app)/league/manage/+page.server.ts
+// Members & manage subpage (#561, formerly /group) — commissioner-only controls + season metadata.
 //
 // The shareable data (group name, members, league honors, identity badges) now comes from
 // the client `createQuery` keyed by `(groupId, season)` so a revisit renders from cache and

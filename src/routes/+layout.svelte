@@ -57,14 +57,15 @@
     });
   });
 
-  // Show a section skeleton only when *entering* Stats/Group from another section —
-  // not on intra-section navigations (e.g. season switches via goto), which would
-  // otherwise blank the current page to a skeleton on every filter change.
+  // Show a section skeleton only when *entering* Stats or the Members & manage subpage from
+  // another section — not on intra-section navigations (e.g. season switches via goto), which
+  // would otherwise blank the current page to a skeleton on every filter change. The League home
+  // (/league) is deliberately absent: it renders instantly from its client cache (ADR-0017).
   const enteringSection = $derived.by(() => {
     const to = navigating?.to?.url.pathname;
     const from = navigating?.from?.url.pathname;
     if (!to) return null;
-    for (const section of ['/stats', '/group'] as const) {
+    for (const section of ['/stats', '/league/manage'] as const) {
       if (to.startsWith(section) && !from?.startsWith(section)) return section;
     }
     return null;
@@ -168,8 +169,8 @@
         <EngagementBanner {user} />
         {#if enteringSection === '/stats'}
           {@render statsSkeleton()}
-        {:else if enteringSection === '/group'}
-          {@render groupSkeleton()}
+        {:else if enteringSection === '/league/manage'}
+          {@render manageSkeleton()}
         {:else}
           {@render children()}
         {/if}
@@ -213,7 +214,7 @@
   </section>
 {/snippet}
 
-{#snippet groupSkeleton()}
+{#snippet manageSkeleton()}
   <section class="mx-auto max-w-2xl space-y-6 p-4" aria-hidden="true">
     <div class="h-8 w-56 animate-pulse rounded bg-muted" />
     <div class="h-64 w-full animate-pulse rounded-xl bg-muted" />

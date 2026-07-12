@@ -1,13 +1,14 @@
 <script lang="ts">
   // Demo-only top chrome (#460): a "DEMO" wordmark + the mirrored surface nav (Picks →
-  // Leaderboard → Wrapped → Recap, the "here's how you play → here's what it builds to" arc) +
+  // League → Wrapped → Recap, the "here's how you play → here's what it builds to" arc) +
   // a persistent sign-up CTA. Replaces the authenticated AppHeader for the /demo route group.
+  // The League tab keeps the /demo/leaderboard route but mirrors the app's #561 label rename.
   import { page } from '$app/state';
   import DemoSignupCta from './DemoSignupCta.svelte';
 
   const links = [
     { href: '/demo', label: 'Picks', exact: true },
-    { href: '/demo/leaderboard', label: 'Leaderboard', exact: false },
+    { href: '/demo/leaderboard', label: 'League', exact: false },
     { href: '/demo/wrapped', label: 'Wrapped', exact: false },
     { href: '/demo/recap', label: 'Recap', exact: false }
   ];

@@ -5,14 +5,15 @@
   import GroupSwitcher from '$lib/components/app-header/GroupSwitcher.svelte';
   import { openFeedback } from '$lib/feedback/store';
 
-  // Wrapped is intentionally absent here: it is a seasonal moment surfaced via the
-  // Leaderboard CTA + Group honors link, not a permanent nav destination (see BottomTabBar).
+  // Four first-class tabs after the #561 IA merge (see BottomTabBar): League is the merged
+  // Leaderboard+Group home (with a Members & manage subpage at /league/manage), and Teams is the
+  // former "League" market ATS page renamed. Wrapped is intentionally absent: it is a seasonal
+  // moment surfaced via the League home CTA + honors card link, not a permanent nav destination.
   const navLinks = [
     { href: '/picks', label: 'Picks' },
-    { href: '/leaderboard', label: 'Leaderboard' },
-    { href: '/group', label: 'Group' },
+    { href: '/league', label: 'League' },
     { href: '/stats', label: 'Stats' },
-    { href: '/league', label: 'League' }
+    { href: '/teams', label: 'Teams' }
   ];
 
   interface Membership {

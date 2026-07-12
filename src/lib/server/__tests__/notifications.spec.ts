@@ -129,7 +129,7 @@ describe('sendResultsRecap', () => {
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Your Week 5 results',
       body: '1-1 · +2 points this week. Tap for standings.',
-      url: '/leaderboard',
+      url: '/league',
       tag: 'results-recap-week-5'
     });
     expect(db.insertedLogs).toEqual([

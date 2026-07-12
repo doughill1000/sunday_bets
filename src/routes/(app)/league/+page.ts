@@ -1,22 +1,30 @@
 import { browser } from '$app/environment';
 import type { PageLoad } from './$types';
-import { fetchLeague, fetchLeagueSlate } from '$lib/query/fetchers';
-import type { LeagueCachePayload, LeagueSlatePayload } from '$lib/query/types';
+import { fetchLeaderboard, fetchAllTimeLeaderboard, fetchGroup } from '$lib/query/fetchers';
+import type {
+  LeaderboardCachePayload,
+  AllTimeLeaderboardPayload,
+  GroupCachePayload
+} from '$lib/query/types';
 
 export const load: PageLoad = async ({ data, fetch }) => {
-  // On the server (initial request, reused for hydration), prefetch the cacheable payloads so
-  // first paint has data with no flash; handed to the components as `initialData`. On
-  // client-side navigation this is skipped — each `createQuery` serves the cache instantly and
-  // revalidates in the background (ADR-0017). The slate is keyed on the *current* season (the
-  // upcoming week's season), independent of the season the tables below are showing.
-  let initialLeague: LeagueCachePayload | undefined;
-  let initialSlate: LeagueSlatePayload | undefined;
+  // Server-side (initial request — reused for hydration): prefetch the shareable standings, the
+  // season-independent All-time totals (#376), and the group payload (#561: its honors, badges and
+  // members feed the League-home honors case) so first paint has data with no flash; handed to the
+  // component as `initialData`. Skipped on client-side navigation so navigation is never blocked —
+  // each `createQuery` serves the cache instantly and revalidates in the background (ADR-0017). The
+  // group payload is keyed on the same resolved season, so the League home and /league/manage share
+  // one cache entry. The Weekly breakdown is not prefetched here; it stays on the server `load`.
+  let initialLeaderboard: LeaderboardCachePayload | undefined;
+  let initialAllTime: AllTimeLeaderboardPayload | undefined;
+  let initialGroup: GroupCachePayload | undefined;
   if (!browser) {
-    [initialLeague, initialSlate] = await Promise.all([
-      fetchLeague(fetch, data.seasonYear),
-      fetchLeagueSlate(fetch, data.currentSeasonYear)
+    [initialLeaderboard, initialAllTime, initialGroup] = await Promise.all([
+      fetchLeaderboard(fetch, data.groupId, data.seasonYear),
+      fetchAllTimeLeaderboard(fetch, data.groupId),
+      fetchGroup(fetch, data.groupId, data.seasonYear)
     ]);
   }
 
-  return { ...data, initialLeague, initialSlate };
+  return { ...data, initialLeaderboard, initialAllTime, initialGroup };
 };

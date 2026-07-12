@@ -11,6 +11,18 @@ import { getAuthContext } from '$lib/server/auth-context-cache';
 import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
 
+// Route-move redirects for the #561 IA merge: the standalone Leaderboard and Group tabs became
+// the one League home and its Members & manage subpage. Runs before auth so an old deep link
+// forwards regardless of session, and preserves the query string (e.g. ?season=, ?view=weekly)
+// so bookmarked/shared URLs land on the same content. 308 keeps the method and marks the move
+// permanent. The old route directories no longer exist, so without this these paths would 404.
+const legacyRouteRedirects: Handle = async ({ event, resolve }) => {
+  const { pathname, search } = event.url;
+  if (pathname === '/leaderboard') throw redirect(308, `/league${search}`);
+  if (pathname === '/group') throw redirect(308, `/league/manage${search}`);
+  return resolve(event);
+};
+
 const supabase: Handle = async ({ event, resolve }) => {
   /**
    * Creates a Supabase client specific to this server request.
@@ -185,5 +197,9 @@ const injectSession: Handle = async ({ event, resolve }) => {
   return resolve(event);
 };
 
-export const handle: Handle = sequence(Sentry.sentryHandle(), sequence(supabase, injectSession));
+export const handle: Handle = sequence(
+  Sentry.sentryHandle(),
+  legacyRouteRedirects,
+  sequence(supabase, injectSession)
+);
 export const handleError = Sentry.handleErrorWithSentry();

@@ -10,7 +10,8 @@
 
   const tabs = [
     { href: '/demo', label: 'Picks', exact: true, Icon: ListChecks },
-    { href: '/demo/leaderboard', label: 'Leaderboard', exact: false, Icon: Trophy },
+    // Keeps the /demo/leaderboard route but mirrors the app's #561 "Leaderboard" → "League" rename.
+    { href: '/demo/leaderboard', label: 'League', exact: false, Icon: Trophy },
     { href: '/demo/wrapped', label: 'Wrapped', exact: false, Icon: Sparkles },
     { href: '/demo/recap', label: 'Recap', exact: false, Icon: Newspaper }
   ];

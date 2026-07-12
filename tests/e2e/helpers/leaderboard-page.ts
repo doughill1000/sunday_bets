@@ -1,12 +1,13 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 /**
- * Page object for the leaderboard (`/leaderboard`).
+ * Page object for the League home standings (`/league`, the merged Leaderboard+Group tab, #561).
  *
- * Every locator the leaderboard spec depends on lives here, addressed by the
- * stable `data-testid` anchors baked into the leaderboard route (see the testid
- * convention in `docs/agent-context/testing.md`). Tab labels and table headers
- * are UI copy, so the spec keys off testids instead of role/text — a heading or
+ * Every locator the standings specs depend on lives here, addressed by the stable `data-testid`
+ * anchors baked into the route (see the testid convention in `docs/agent-context/testing.md`).
+ * Those anchors keep their `leaderboard-` prefix even though the route is now `/league` — the
+ * content is still the leaderboard, so the anchors stay put across the rename. Tab labels and
+ * table headers are UI copy, so the spec keys off testids instead of role/text — a heading or
  * column-label change should not require touching the spec.
  */
 
@@ -14,9 +15,9 @@ export function leaderboardPage(page: Page) {
   const api = {
     page,
 
-    /** Navigate to the leaderboard and wait for the heading to render. */
+    /** Navigate to the League home and wait for the standings heading to render. */
     async goto() {
-      await page.goto('/leaderboard');
+      await page.goto('/league');
       await expect(api.heading()).toBeVisible();
       // Dismiss the AI recap flash modal if it auto-opened (localStorage is empty
       // in a fresh e2e context, so the "seen" guard doesn't fire). The modal is a

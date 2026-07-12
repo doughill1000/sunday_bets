@@ -375,7 +375,7 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
     await sendToUser(user.id, {
       title: `Your Week ${week.week_number} results`,
       body: formatRecapBody(tally),
-      url: '/leaderboard',
+      url: '/league',
       tag: `results-recap-week-${weekId}`
     });
     await logNotification({

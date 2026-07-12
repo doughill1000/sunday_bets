@@ -12,7 +12,6 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
-  import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import FormNote from '$lib/components/FormNote.svelte';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -351,22 +350,11 @@
   </Card>
 {/snippet}
 
-<!-- League tab (default): everything every member sees — honors, the roster, and
-   the personal Roast-me / Leave controls. Commissioners reach the config cards via
-   the Manage tab (manageView); non-commissioners never see a tab bar, so this is
-   simply their whole page. -->
-{#snippet leagueView()}
-  <!-- League honors (#305): champions, the trophy case, the wooden spoon, and
-       identity badges. Visible to every member — the Group tab is now their home. -->
-  <LeagueHonors
-    honors={data.honors}
-    badges={data.badges}
-    members={data.members}
-    currentUserId={data.currentUserId}
-    seasons={data.availableSeasons}
-    selectedSeason={data.badgeSeasonYear}
-  />
-
+<!-- Members view (default): the roster plus the personal Roast-me / Leave controls that every
+   member sees. Honors moved to the League home (#561), so this subpage is roster + settings, not
+   the league's trophy case. Commissioners reach the config cards via the Manage tab (manageView);
+   non-commissioners never see a tab bar, so this is simply their whole page. -->
+{#snippet membersView()}
   <!-- Members list -->
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
@@ -505,8 +493,9 @@
 {/snippet}
 
 <!-- Manage tab (commissioner-only): the four group-config cards. Surfaced only under
-   the Manage tab so regular members land on the League tab, not a settings wall; the
-   tab label itself conveys "commissioner controls", so no separate heading is needed. -->
+   the Manage tab so regular members land on the Members tab, not a settings wall; the
+   tab label itself conveys "commissioner controls", so no separate heading is needed.
+   This is the durable home the v3.3 commissioner set (#454/#457/#458) slots into. -->
 {#snippet manageView()}
   <!-- Group name / rename -->
   <Card class="p-6">
@@ -807,25 +796,37 @@
   </Card>
 {/snippet}
 
+<svelte:head>
+  <title>Members & manage | Hotshot</title>
+</svelte:head>
+
 <section class="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
   {#if groupQuery.isPending}
     {@render loadingState()}
   {:else if groupQuery.isError}
     {@render errorState()}
   {:else}
-    <h1 class="text-2xl font-bold">{data.group.name}</h1>
+    <div>
+      <a
+        href="/league"
+        class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        data-testid="manage-back">← League</a
+      >
+      <h1 class="mt-1 text-2xl font-bold">{data.group.name}</h1>
+      <p class="text-sm text-muted-foreground">Members & league settings</p>
+    </div>
 
     {#if data.isCommissioner}
-      <Tabs value="league" class="w-full space-y-6">
+      <Tabs value="members" class="w-full space-y-6">
         <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-          <TabsTrigger value="league" class={ACTIVE_TAB_TRIGGER_CLASS}>League</TabsTrigger>
+          <TabsTrigger value="members" class={ACTIVE_TAB_TRIGGER_CLASS}>Members</TabsTrigger>
           <TabsTrigger value="manage" class={ACTIVE_TAB_TRIGGER_CLASS}>Manage</TabsTrigger>
         </TabsList>
-        <TabsContent value="league" class="space-y-6">{@render leagueView()}</TabsContent>
+        <TabsContent value="members" class="space-y-6">{@render membersView()}</TabsContent>
         <TabsContent value="manage" class="space-y-6">{@render manageView()}</TabsContent>
       </Tabs>
     {:else}
-      {@render leagueView()}
+      {@render membersView()}
     {/if}
   {/if}
 </section>
