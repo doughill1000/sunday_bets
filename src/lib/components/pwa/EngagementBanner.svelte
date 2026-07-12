@@ -81,7 +81,7 @@
        bottom-20/sm:bottom-4 mirrors the clearance <main> already reserves (pb-20 sm:pb-4)
        for the mobile BottomTabBar. -->
   <div class="container fixed inset-x-0 bottom-20 z-30 mx-auto px-4 sm:bottom-4">
-    <Card class="border-primary/20 bg-primary/5 shadow-lg">
+    <Card class="border-primary/20 bg-primary/5 shadow-elevation-popover">
       <CardContent class="flex items-start gap-3 p-4">
         {#if step === 'install-ios'}
           <Smartphone class="mt-0.5 size-5 shrink-0 text-primary" />

@@ -97,7 +97,7 @@
 
 {#snippet standingsLoading()}
   <!-- Cache miss (no SSR initialData, nothing cached yet): skeleton while the query loads. -->
-  <Card class="shadow-sm">
+  <Card>
     <CardContent class="space-y-3 p-6" aria-hidden="true">
       {#each [0, 1, 2, 3, 4, 5] as i (i)}
         <div class="h-8 w-full animate-pulse rounded bg-muted"></div>
@@ -176,7 +176,7 @@
           </CardHeader>
         </Card>
       {:else}
-        <Card class="overflow-x-auto shadow-sm">
+        <Card class="overflow-x-auto">
           <CardHeader>
             <CardTitle>{data.seasonYear} standings</CardTitle>
           </CardHeader>
@@ -291,7 +291,7 @@
           </CardHeader>
         </Card>
       {:else}
-        <Card class="overflow-x-auto shadow-sm">
+        <Card class="overflow-x-auto">
           <CardHeader>
             <CardTitle>All-time standings</CardTitle>
           </CardHeader>

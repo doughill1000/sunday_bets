@@ -67,7 +67,7 @@
   }
 </script>
 
-<Card class="shadow-sm">
+<Card>
   <CardHeader class="pb-2">
     <CardTitle class="text-base font-semibold">
       {game.away} @ {game.home}

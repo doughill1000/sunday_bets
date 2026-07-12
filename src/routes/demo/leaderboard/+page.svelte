@@ -27,7 +27,7 @@
     </TabsList>
 
     <TabsContent value="standings">
-      <Card class="overflow-x-auto shadow-sm">
+      <Card class="overflow-x-auto">
         <CardHeader>
           <CardTitle>{data.completedSeasonYear} standings</CardTitle>
         </CardHeader>
@@ -43,7 +43,7 @@
     </TabsContent>
 
     <TabsContent value="alltime">
-      <Card class="overflow-x-auto shadow-sm">
+      <Card class="overflow-x-auto">
         <CardHeader>
           <CardTitle>All-time standings</CardTitle>
         </CardHeader>
