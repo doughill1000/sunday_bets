@@ -48,6 +48,13 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
+  `app.css` now collapses every animation and transition under reduced-motion, so the
+  vendored dialog/sheet/dropdown enter-exit, the nav progress bar, the pulse skeletons,
+  and the avatar hover comply by default instead of each needing a hand-written guard.
+  The JS-driven picks lock keeps collapsing its own timing on top. file: `app.css` ·
+  ADR-0029/0030
+
 - **#547** Accent/status/signature (P13) cleanup — brass and ember come off the good/bad and
   routine-furniture axes so the accent reads as branding, not signal. A new `success` Badge variant
   carries "covered/hot/won" (was brass) on the league game log, hot/cold streaks, and the demo
