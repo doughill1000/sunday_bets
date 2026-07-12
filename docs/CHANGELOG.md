@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#564** Tendencies on /stats — a tendency layer that says _what kind of bettor_ you are. A
+  two-sided **team book** adds the fade side accuracy-by-team never had (your ATS record backing
+  each team _and_ betting against it, standouts only), superseding the backed-only "Team" breakdown
+  chip; and a career-first, scope-aware **signature strip** replaces the season-only Tendencies card,
+  reading your strongest already-computed cuts back as plain sentences ("you keep fading DAL", "you
+  lean underdog", "you beat the market in primetime"). views: `stats_team_book` ·
+  `stats_team_book_alltime` · components: `TeamBook.svelte` · `SignatureTendencies.svelte` · extends
+  #502/#514 · ADR-0013/0011/0002 (no new ADR)
+
 - **#561** One League home — the standalone Leaderboard and Group tabs merge into a single League
   tab (bottom nav 5→4: Picks · League · Stats · Teams), and the NFL market page renames to Teams so
   the user's own league owns the name. `/league` now leads with a season race chart (every member's

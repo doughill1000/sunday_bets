@@ -11,7 +11,10 @@ import {
   getSituationalSplits,
   getLeagueSituationalBaseline,
   getSituationalSplitsSeason,
-  getLeagueSituationalBaselineSeason
+  getLeagueSituationalBaselineSeason,
+  getTeamBook,
+  getTeamBookAllTime,
+  getLineSideAllTime
 } from '$lib/server/db/queries/stats';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { isDropWorstWeekEnabled, type DropWorstWeekRules } from '$lib/domain/scoring';
@@ -31,7 +34,10 @@ export async function getStatsCachePayload(
     situational,
     leagueSituationalBaseline,
     situationalSeason,
-    leagueSituationalBaselineSeason
+    leagueSituationalBaselineSeason,
+    teamBook,
+    teamBookAllTime,
+    lineSideAllTime
   ] = await Promise.all([
     getAllTimeTotals(groupId),
     getStatsForSeason(seasonYear, groupId),
@@ -43,7 +49,13 @@ export async function getStatsCachePayload(
     // Season-grain (#514): the situational explorer's season lens joins the same way for the
     // season in view. The query re-keys on season, so these follow the scope dropdown.
     getSituationalSplitsSeason(seasonYear, groupId),
-    getLeagueSituationalBaselineSeason(seasonYear)
+    getLeagueSituationalBaselineSeason(seasonYear),
+    // Team book (#564): season + career two-sided (backed/faded) records; both eager because the
+    // signature strip leads the page and reads the career book above the streamed detail. Career
+    // fav/dog lean is pooled from the season line-side rows for the same career-first signature.
+    getTeamBook(seasonYear, groupId),
+    getTeamBookAllTime(groupId),
+    getLineSideAllTime(groupId)
   ]);
 
   // Group-level (cross-season) flag for the Career "Standings points" caption (ADR-0018).
@@ -58,6 +70,9 @@ export async function getStatsCachePayload(
     leagueSituationalBaseline,
     situationalSeason,
     leagueSituationalBaselineSeason,
+    teamBook,
+    teamBookAllTime,
+    lineSideAllTime,
     ...stats
   };
 }

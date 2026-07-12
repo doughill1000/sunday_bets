@@ -47,6 +47,28 @@ export type WeightAccuracyEntry = {
   accuracy: number | null;
 };
 
+/** Which half of the team book a row belongs to: `backed` = the player picked this team to
+ *  cover; `faded` = the player picked its opponent (bet against this team). */
+export type TeamBookSide = 'backed' | 'faded';
+
+/** One row of the two-sided team book (#564): a player's ATS record backing OR fading a given
+ *  team, at season or career grain. `accuracy` is wins/(wins+losses) — on a `faded` row that is
+ *  the cover rate AGAINST the team. Mirrors {@link TeamAccuracyEntry} plus the `side` axis. */
+export type TeamBookEntry = {
+  user_id: string;
+  display_name: string;
+  side: TeamBookSide;
+  team_id: number;
+  team_name: string;
+  team_short_name: string;
+  decisions: number;
+  wins: number;
+  losses: number;
+  pushes: number;
+  points: number;
+  accuracy: number | null;
+};
+
 export type HeadToHeadEntry = {
   user_id: string;
   display_name: string;

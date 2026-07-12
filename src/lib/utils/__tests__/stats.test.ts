@@ -8,9 +8,13 @@ import {
   headToHeadForUser,
   lineSideTendency,
   seasonScopeOptions,
+  signatureTendencies,
+  SIGNATURE_LEAN_MIN_SAMPLE,
   situationalEdges,
   situationalExplorer,
   streakTendency,
+  TEAM_BOOK_MIN_SAMPLE,
+  teamBookStandouts,
   TENDENCY_MIN_SAMPLE,
   topSituationalEdges
 } from '../stats';
@@ -21,7 +25,9 @@ import type {
   LineSideStatsEntry,
   SeasonTrendEntry,
   SituationalSplitEntry,
-  StreakStatsEntry
+  StreakStatsEntry,
+  TeamBookEntry,
+  TeamBookSide
 } from '$lib/types/server/stats';
 
 const trendRow = (
@@ -456,5 +462,166 @@ describe('situational explorer (#514)', () => {
 
   it('returns nothing when the player has no situational picks', () => {
     expect(situationalExplorer([], league)).toEqual([]);
+  });
+});
+
+const teamBookEntry = (
+  side: TeamBookSide,
+  teamShort: string,
+  wins: number,
+  losses: number,
+  over: Partial<TeamBookEntry> = {}
+): TeamBookEntry => ({
+  user_id: 'a',
+  display_name: 'Alex',
+  side,
+  team_id: [...teamShort].reduce((sum, ch) => sum + ch.charCodeAt(0), 0),
+  team_name: `${teamShort} Team`,
+  team_short_name: teamShort,
+  decisions: wins + losses,
+  wins,
+  losses,
+  pushes: 0,
+  points: wins - losses,
+  accuracy: wins + losses > 0 ? wins / (wins + losses) : null,
+  ...over
+});
+
+describe('team book standouts (#564)', () => {
+  const entries = [
+    teamBookEntry('backed', 'SF', 9, 2), // decided 11, cover .818
+    teamBookEntry('backed', 'KC', 7, 3), // decided 10, cover .70
+    teamBookEntry('backed', 'BUF', 2, 1), // decided 3 < 5 -> guarded out
+    teamBookEntry('faded', 'DAL', 8, 1), // decided 9, cover .889
+    teamBookEntry('faded', 'NYJ', 3, 6), // decided 9, cover .333
+    teamBookEntry('faded', 'LV', 4, 0) // decided 4 < 5 -> guarded out
+  ];
+
+  it('splits into ride/fade, guards thin teams, ranks most-ridden/faded first', () => {
+    const { ride, fade } = teamBookStandouts(entries);
+    // Ride = backed side, by decided volume (SF 11 > KC 10); BUF (3 decided) is guarded out.
+    expect(ride.map((t) => t.teamShort)).toEqual(['SF', 'KC']);
+    // Fade = faded side; DAL and NYJ tie on volume (9), so cover breaks the tie (.889 > .333);
+    // LV (4 decided) is guarded out.
+    expect(fade.map((t) => t.teamShort)).toEqual(['DAL', 'NYJ']);
+    expect(ride[0]).toMatchObject({ side: 'backed', wins: 9, losses: 2, decided: 11 });
+    expect(ride[0].cover).toBeCloseTo(9 / 11, 4);
+    expect(fade[0]).toMatchObject({ side: 'faded', teamShort: 'DAL' });
+    expect(fade[0].cover).toBeCloseTo(8 / 9, 4);
+  });
+
+  it('honors the sample guard and the limit', () => {
+    // Exactly at the guard passes; one below is dropped.
+    const atGuard = teamBookStandouts([teamBookEntry('backed', 'SF', 3, 2)]); // decided 5
+    expect(atGuard.ride).toHaveLength(1);
+    const belowGuard = teamBookStandouts([teamBookEntry('backed', 'SF', 2, 2)]); // decided 4
+    expect(belowGuard.ride).toHaveLength(0);
+    expect(TEAM_BOOK_MIN_SAMPLE).toBe(5);
+
+    const capped = teamBookStandouts(entries, { limit: 1 });
+    expect(capped.ride.map((t) => t.teamShort)).toEqual(['SF']);
+    expect(capped.fade.map((t) => t.teamShort)).toEqual(['DAL']);
+  });
+});
+
+describe('signature tendencies (#564)', () => {
+  const league = [baseline('primetime', 'primetime', 0.47)];
+  // Player covers 58% in primetime vs a 47% market line -> +0.11 edge, 100 decided (clears guard).
+  const edges = situationalEdges([split('primetime', 'primetime', 58, 42)], league);
+  const teamBook = teamBookStandouts([
+    teamBookEntry('backed', 'SF', 9, 2), // cover .818
+    teamBookEntry('faded', 'DAL', 8, 1), // cover .889 (the most-notable ride/fade)
+    teamBookEntry('faded', 'NYJ', 3, 6) // cover .333 -> below .500, never a signature tell
+  ]);
+
+  it('ranks a team tell, a lean, and a situational cut — strongest first, career-consistent', () => {
+    const lineSide = lineSideTendency(
+      lineSideEntry({ decisions: 100, chalk_picks: 39, dog_picks: 61 })
+    );
+    const tells = signatureTendencies({ edges, lineSide, teamBook });
+
+    // DAL fade (|.889 - .5| = .389) outranks the underdog lean and the primetime edge (both .11);
+    // at the .11 tie, the lean sorts ahead of the situational cut (kind priority).
+    expect(tells.map((t) => t.kind)).toEqual(['team', 'lean', 'situational']);
+    const [team, lean, sit] = tells;
+    expect(team).toMatchObject({
+      kind: 'team',
+      side: 'faded',
+      teamShort: 'DAL',
+      wins: 8,
+      losses: 1
+    });
+    if (team.kind === 'team') expect(team.cover).toBeCloseTo(8 / 9, 4);
+    expect(lean).toMatchObject({ kind: 'lean', lean: 'underdogs' });
+    if (lean.kind === 'lean') expect(lean.leanPct).toBeCloseTo(0.61, 4);
+    expect(sit).toMatchObject({ kind: 'situational', dimension: 'primetime' });
+    if (sit.kind === 'situational') expect(sit.delta).toBeCloseTo(0.11, 4);
+  });
+
+  it('omits the lean tell when the mix is balanced or the sample is thin', () => {
+    const balanced = lineSideTendency(
+      lineSideEntry({ decisions: 100, chalk_picks: 50, dog_picks: 50 })
+    );
+    expect(
+      signatureTendencies({ edges: [], lineSide: balanced, teamBook: { ride: [], fade: [] } })
+    ).toEqual([]);
+
+    // Clearly leaning, but below the signature lean sample guard.
+    const thin = lineSideTendency(
+      lineSideEntry({
+        decisions: SIGNATURE_LEAN_MIN_SAMPLE - 1,
+        chalk_picks: 1,
+        dog_picks: SIGNATURE_LEAN_MIN_SAMPLE - 2
+      })
+    );
+    expect(
+      signatureTendencies({ edges: [], lineSide: thin, teamBook: { ride: [], fade: [] } })
+    ).toEqual([]);
+  });
+
+  it('never anchors a team tell on a losing side', () => {
+    const losingOnly = teamBookStandouts([
+      teamBookEntry('faded', 'NYJ', 3, 6), // .333
+      teamBookEntry('backed', 'CHI', 4, 8) // .333
+    ]);
+    const tells = signatureTendencies({
+      edges: [],
+      lineSide: null,
+      teamBook: losingOnly
+    });
+    expect(tells).toEqual([]);
+  });
+
+  it('caps the situational cuts and never repeats a dimension', () => {
+    const spreadLeague = [
+      baseline('spread', '1-3', 0.5),
+      baseline('spread', '3.5-6.5', 0.5),
+      baseline('home_away', 'home', 0.5)
+    ];
+    const manyEdges = situationalEdges(
+      [
+        split('spread', '1-3', 30, 10), // +.25
+        split('spread', '3.5-6.5', 28, 12), // +.20 (same dimension -> dropped)
+        split('home_away', 'home', 26, 14) // +.15
+      ],
+      spreadLeague
+    );
+    const tells = signatureTendencies({
+      edges: manyEdges,
+      lineSide: null,
+      teamBook: { ride: [], fade: [] }
+    });
+    // At most two situational tells, one per dimension: the top spread + home_away, not two spreads.
+    expect(tells).toHaveLength(2);
+    expect(tells.every((t) => t.kind === 'situational')).toBe(true);
+    const situationalDims = tells.flatMap((t) => (t.kind === 'situational' ? [t.dimension] : []));
+    expect(situationalDims).toEqual(['spread', 'home_away']);
+    expect(new Set(situationalDims).size).toBe(situationalDims.length);
+  });
+
+  it('returns nothing when every feeder is empty or thin (honest empty state)', () => {
+    expect(
+      signatureTendencies({ edges: [], lineSide: null, teamBook: { ride: [], fade: [] } })
+    ).toEqual([]);
   });
 });

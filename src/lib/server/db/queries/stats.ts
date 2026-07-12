@@ -15,10 +15,14 @@ import type {
   StreakStatsEntry,
   SeasonStats,
   TeamAccuracyEntry,
+  TeamBookEntry,
+  TeamBookSide,
   WeightAccuracyEntry
 } from '$lib/types/server/stats';
 
 type TeamAccuracyRow = Tables<'stats_accuracy_by_team'>;
+type TeamBookRow = Tables<'stats_team_book'>;
+type TeamBookAllTimeRow = Tables<'stats_team_book_alltime'>;
 type WeightAccuracyRow = Tables<'stats_accuracy_by_weight'>;
 type HeadToHeadRow = Tables<'stats_head_to_head'>;
 type AllTimeHeadToHeadRow = Tables<'stats_head_to_head_alltime'>;
@@ -68,6 +72,80 @@ function toTeamAccuracy(row: TeamAccuracyRow): TeamAccuracyEntry | null {
     points: row.points,
     accuracy: row.accuracy
   };
+}
+
+function toTeamBook(row: TeamBookRow | TeamBookAllTimeRow): TeamBookEntry | null {
+  if (
+    row.user_id == null ||
+    row.display_name == null ||
+    row.side == null ||
+    row.team_id == null ||
+    row.team_name == null ||
+    row.team_short_name == null ||
+    row.decisions == null ||
+    row.wins == null ||
+    row.losses == null ||
+    row.pushes == null ||
+    row.points == null
+  ) {
+    return null;
+  }
+  return {
+    user_id: row.user_id,
+    display_name: row.display_name,
+    side: row.side as TeamBookSide,
+    team_id: row.team_id,
+    team_name: row.team_name,
+    team_short_name: row.team_short_name,
+    decisions: row.decisions,
+    wins: row.wins,
+    losses: row.losses,
+    pushes: row.pushes,
+    points: row.points,
+    accuracy: row.accuracy
+  };
+}
+
+/**
+ * Two-sided team book for one season (#564): each team's backed + faded ATS record for every
+ * player in the group. Season-grained (filtered by `season_year`), the season lens of the team
+ * book; the page filters to the selected player client-side, as the other per-user cuts do.
+ */
+export async function getTeamBook(seasonYear: number, groupId: string): Promise<TeamBookEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_team_book')
+    .select('*')
+    .eq('season_year', seasonYear)
+    .eq('group_id', groupId)
+    .order('display_name')
+    .order('side')
+    .order('team_short_name');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toTeamBook(row);
+    return entry ? [entry] : [];
+  });
+}
+
+/**
+ * Career-grain two-sided team book (#564) — all seasons pooled, the all-time sibling of
+ * {@link getTeamBook}. Career-first: the signature strip + standouts lead the page, and a fade
+ * record only has enough sample to trust once seasons are pooled. Season-independent (like
+ * {@link getAllTimeTotals}), so it takes only a group id.
+ */
+export async function getTeamBookAllTime(groupId: string): Promise<TeamBookEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_team_book_alltime')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('display_name')
+    .order('side')
+    .order('team_short_name');
+  if (error) throw error;
+  return (data ?? []).flatMap((row) => {
+    const entry = toTeamBook(row);
+    return entry ? [entry] : [];
+  });
 }
 
 function toWeightAccuracy(row: WeightAccuracyRow): WeightAccuracyEntry | null {
@@ -198,6 +276,46 @@ function toLineSide(row: LineSideRow): LineSideStatsEntry | null {
     chalk_picks: row.chalk_picks,
     dog_picks: row.dog_picks
   };
+}
+
+/**
+ * Career favorite-vs-underdog lean per player (#564): the season-grained stats_accuracy_by_line_side
+ * rows summed across every season, so the career-first signature strip can state a player's lean
+ * over their whole history. No new matview — the chalk/dog/decision counts are additive, so pooling
+ * the existing per-season rows in the read model is exact. Season-independent, so it takes only a
+ * group id and the page filters to the selected player client-side.
+ */
+export async function getLineSideAllTime(groupId: string): Promise<LineSideStatsEntry[]> {
+  const { data, error } = await supabaseService
+    .from('stats_accuracy_by_line_side')
+    .select('user_id, display_name, decisions, chalk_picks, dog_picks')
+    .eq('group_id', groupId);
+  if (error) throw error;
+
+  const byUser = new Map<string, LineSideStatsEntry>();
+  for (const row of data ?? []) {
+    if (
+      row.user_id == null ||
+      row.display_name == null ||
+      row.decisions == null ||
+      row.chalk_picks == null ||
+      row.dog_picks == null
+    ) {
+      continue;
+    }
+    const acc = byUser.get(row.user_id) ?? {
+      user_id: row.user_id,
+      display_name: row.display_name,
+      decisions: 0,
+      chalk_picks: 0,
+      dog_picks: 0
+    };
+    acc.decisions += row.decisions;
+    acc.chalk_picks += row.chalk_picks;
+    acc.dog_picks += row.dog_picks;
+    byUser.set(row.user_id, acc);
+  }
+  return [...byUser.values()];
 }
 
 function toStreak(row: StreakRow): StreakStatsEntry | null {
