@@ -25,15 +25,29 @@ Semantic color tokens are defined in `src/app.css` and consumed as Tailwind util
 (`bg-card`, `text-primary`, `border-border`) or `var(--primary)` in raw CSS. The dark
 palette is the live one; `:root` holds light placeholders for the future light theme.
 
-| Reach for…            | Token                                      |
-| --------------------- | ------------------------------------------ |
-| gold / brass accent   | `--primary` (`text-primary`, `bg-primary`) |
-| spark / live / urgent | `--ember` (reserved marquee accent)        |
-| win / positive        | `--success`                                |
-| loss / negative       | `--destructive`                            |
-| caution / push        | `--warning`                                |
-| muted neutral         | `--muted-foreground`                       |
-| surfaces              | `--background` → `--card` → `--popover`    |
+| Reach for…                     | Token                                                      |
+| ------------------------------ | ---------------------------------------------------------- |
+| gold / brass **fill**          | `--primary` (`bg-primary`, carries a dark label)           |
+| gold / brass **text / border** | `--primary-ink` (`text-primary-ink`, `border-primary-ink`) |
+| spark / live / urgent          | `--ember` (reserved marquee accent)                        |
+| win / positive                 | `--success`                                                |
+| loss / negative                | `--destructive`                                            |
+| caution / push                 | `--warning`                                                |
+| muted neutral                  | `--muted-foreground`                                       |
+| surfaces                       | `--background` → `--card` → `--popover`                    |
+
+**The accent has two roles: a fill and an ink.** `--primary` is the brass _fill_ — it
+always carries a dark label (`--primary-foreground`), so it can stay bright in every
+theme. `--primary-ink` is the same brass used _as_ content — a gold label, an eyebrow, a
+selected-weight outline — sitting on a normal surface. The distinction matters because
+bright brass as text/border clears AA on charcoal but **fails it on a light ground**, so
+the ink needs a darker brass there while the fill doesn't. Splitting the token now (both
+themes carry `--primary-ink`; on dark it aliases `--primary`) is what lets a gold-as-text
+call site survive the light-theme flip (#532) without a per-site override. Reach for
+`text-primary-ink` for gold text/borders and `bg-primary` for a gold fill; don't use
+`text-primary` for a gold label. Migrating existing `text-primary` text/border call sites
+to `text-primary-ink` lands with the light theme (#532) — on dark the two are identical,
+so there's no visual change until the light values diverge.
 
 ### Typography
 
