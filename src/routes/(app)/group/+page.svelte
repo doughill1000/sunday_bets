@@ -13,6 +13,7 @@
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import FormNote from '$lib/components/FormNote.svelte';
 
   let { data: pageData }: { data: PageData } = $props();
 
@@ -431,13 +432,7 @@
       </ul>
 
       {#if memberMsg}
-        <div
-          class="mt-3 rounded-xl border p-3 text-sm"
-          class:border-success={memberMsg.kind === 'success'}
-          class:border-destructive={memberMsg.kind === 'error'}
-        >
-          {memberMsg.text}
-        </div>
+        <FormNote kind={memberMsg.kind} text={memberMsg.text} class="mt-3" />
       {/if}
     </CardContent>
   </Card>
@@ -469,13 +464,7 @@
       </div>
 
       {#if optOutMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={optOutMsg.kind === 'success'}
-          class:border-destructive={optOutMsg.kind === 'error'}
-        >
-          {optOutMsg.text}
-        </div>
+        <FormNote kind={optOutMsg.kind} text={optOutMsg.text} />
       {/if}
     </CardContent>
   </Card>
@@ -509,13 +498,7 @@
       {/if}
 
       {#if leaveMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={leaveMsg.kind === 'success'}
-          class:border-destructive={leaveMsg.kind === 'error'}
-        >
-          {leaveMsg.text}
-        </div>
+        <FormNote kind={leaveMsg.kind} text={leaveMsg.text} />
       {/if}
     </CardContent>
   </Card>
@@ -588,13 +571,7 @@
       {/if}
 
       {#if renameMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={renameMsg.kind === 'success'}
-          class:border-destructive={renameMsg.kind === 'error'}
-        >
-          {renameMsg.text}
-        </div>
+        <FormNote kind={renameMsg.kind} text={renameMsg.text} />
       {/if}
     </CardContent>
   </Card>
@@ -626,13 +603,7 @@
       {/if}
 
       {#if mintMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={mintMsg.kind === 'success'}
-          class:border-destructive={mintMsg.kind === 'error'}
-        >
-          {mintMsg.text}
-        </div>
+        <FormNote kind={mintMsg.kind} text={mintMsg.text} />
       {/if}
 
       {#if data.invites.length > 0}
@@ -764,13 +735,7 @@
       </form>
 
       {#if configMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={configMsg.kind === 'success'}
-          class:border-destructive={configMsg.kind === 'error'}
-        >
-          {configMsg.text}
-        </div>
+        <FormNote kind={configMsg.kind} text={configMsg.text} />
       {/if}
     </CardContent>
   </Card>
@@ -836,13 +801,7 @@
       </form>
 
       {#if recapSettingsMsg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={recapSettingsMsg.kind === 'success'}
-          class:border-destructive={recapSettingsMsg.kind === 'error'}
-        >
-          {recapSettingsMsg.text}
-        </div>
+        <FormNote kind={recapSettingsMsg.kind} text={recapSettingsMsg.text} />
       {/if}
     </CardContent>
   </Card>

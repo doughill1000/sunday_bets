@@ -87,6 +87,11 @@ export function authPage(page: Page) {
       return page.getByTestId('reset-submit');
     },
 
+    /** The confirmation heading shown after a successful password update. */
+    resetSuccessTitle(): Locator {
+      return page.getByTestId('reset-success-title');
+    },
+
     // --- assertions ---
 
     /** Assert the auth card title text matches the expected mode heading. */

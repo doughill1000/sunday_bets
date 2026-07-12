@@ -6,6 +6,7 @@
   import TestNotificationCard from '$lib/components/admin/TestNotificationCard.svelte';
   import AddMemberCard from '$lib/components/admin/AddMemberCard.svelte';
   import GameplaySettingsCard from '$lib/components/admin/GameplaySettingsCard.svelte';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import {
     Table,
@@ -67,14 +68,7 @@
   />
 
   {#if msg}
-    <div
-      class="mt-2 rounded-xl border p-3 text-sm"
-      class:border-success={msg.kind === 'success'}
-      class:border-warning={msg.kind === 'warn'}
-      class:border-destructive={msg.kind === 'error'}
-    >
-      {msg.text}
-    </div>
+    <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-2" />
   {/if}
 
   <Card class="p-6">
