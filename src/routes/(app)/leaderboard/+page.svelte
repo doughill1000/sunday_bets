@@ -12,6 +12,7 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
+  import { Button } from '$lib/components/ui/button';
   import {
     Table,
     TableBody,
@@ -106,14 +107,18 @@
   </Card>
 {/snippet}
 
-{#snippet standingsError()}
+{#snippet standingsError(retry: () => void)}
+  <!-- Only shown on a *hard* failure (error with no cached data); a background-refetch failure
+       that still has last-good data keeps rendering the table, and the shell stale pill flags it
+       (audit S5). Retry refetches this query rather than telling the user to reload the page. -->
   <Card class="border-dashed">
     <CardHeader>
       <CardTitle>Couldn't load standings</CardTitle>
-      <CardDescription>
-        Something went wrong fetching the standings. Refresh the page to try again.
-      </CardDescription>
+      <CardDescription>Something went wrong fetching the standings.</CardDescription>
     </CardHeader>
+    <CardContent>
+      <Button variant="outline" size="sm" onclick={retry}>Retry</Button>
+    </CardContent>
   </Card>
 {/snippet}
 
@@ -164,8 +169,8 @@
     <TabsContent value="standings" data-testid="standings-panel">
       {#if leaderboardQuery.isPending}
         {@render standingsLoading()}
-      {:else if leaderboardQuery.isError}
-        {@render standingsError()}
+      {:else if leaderboardQuery.isError && !leaderboardQuery.data}
+        {@render standingsError(() => leaderboardQuery.refetch())}
       {:else if data.totals.length === 0}
         <Card class="border-dashed" data-testid="standings-empty">
           <CardHeader>
@@ -279,8 +284,8 @@
     <TabsContent value="alltime" data-testid="alltime-panel">
       {#if allTimeQuery.isPending}
         {@render standingsLoading()}
-      {:else if allTimeQuery.isError}
-        {@render standingsError()}
+      {:else if allTimeQuery.isError && !allTimeQuery.data}
+        {@render standingsError(() => allTimeQuery.refetch())}
       {:else if allTime.totals.length === 0}
         <Card class="border-dashed" data-testid="alltime-empty">
           <CardHeader>

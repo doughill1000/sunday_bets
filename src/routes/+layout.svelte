@@ -3,6 +3,7 @@
   import AppHeader from '$lib/components/app-header/AppHeader.svelte';
   import BottomTabBar from '$lib/components/app-header/BottomTabBar.svelte';
   import NavProgress from '$lib/components/app-header/NavProgress.svelte';
+  import NetworkStatusPill from '$lib/components/app-header/NetworkStatusPill.svelte';
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
   import RecapFlash from '$lib/components/recap/RecapFlash.svelte';
@@ -176,6 +177,10 @@
 
       {#if user}
         <BottomTabBar />
+        <!-- Offline/stale indicator for the cached read screens (audit S5, ADR-0017): a single
+             shell-level pill so every surface inherits it. Inside the QueryClientProvider (the
+             whole shell is), so it can read the query cache. -->
+        <NetworkStatusPill />
         <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
         <FeedbackWidget {groupId} />
         {#await data.latestRecap then recap}

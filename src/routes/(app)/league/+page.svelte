@@ -694,12 +694,17 @@
     {#if scope === 'pooled'}
       {#if trendsQuery.isPending}
         {@render loadingState()}
-      {:else if trendsQuery.isError}
+      {:else if trendsQuery.isError && !trendsQuery.data}
+        <!-- Hard failure only (error with no cached data). A failed background refetch that still
+             has data keeps rendering the cuts; the shell stale pill flags it (audit S5). -->
         <Card class="border-dashed">
           <CardHeader>
             <CardTitle>Couldn't load pooled trends</CardTitle>
-            <CardDescription>Pick a single season above, or refresh to try again.</CardDescription>
+            <CardDescription>Pick a single season above, or retry.</CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button variant="outline" size="sm" onclick={() => trendsQuery.refetch()}>Retry</Button>
+          </CardContent>
         </Card>
       {:else if !pooled || pooled.totalGames === 0}
         <Card class="border-dashed">
@@ -734,14 +739,15 @@
       {/if}
     {:else if leagueQuery.isPending}
       {@render loadingState()}
-    {:else if leagueQuery.isError}
+    {:else if leagueQuery.isError && !leagueQuery.data}
       <Card class="border-dashed">
         <CardHeader>
           <CardTitle>Couldn't load league ATS records</CardTitle>
-          <CardDescription
-            >Something went wrong fetching the data. Refresh to try again.</CardDescription
-          >
+          <CardDescription>Something went wrong fetching the data.</CardDescription>
         </CardHeader>
+        <CardContent>
+          <Button variant="outline" size="sm" onclick={() => leagueQuery.refetch()}>Retry</Button>
+        </CardContent>
       </Card>
     {:else if league.totalGames === 0}
       <Card class="border-dashed">
