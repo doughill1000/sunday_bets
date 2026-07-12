@@ -69,8 +69,9 @@ scrolling page, it's chips; if it changes what the entire page is, it's Tabs. Ne
 on one screen for sibling jobs.
 
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
-_Example:_ the `/stats` bottom breakdowns used an accordion for the same job the chip row
-directly above them already did.
+_Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the
+situational explorer directly above them — #538 replaced an accordion that had been doing
+that one job a second way (and extracted the shared `ChipRadiogroup` in the process).
 
 ### 3. Progressive disclosure, at most one level deep
 
@@ -79,8 +80,10 @@ disclosure — a drawer-in-a-drawer means two taps to reach content and reads as
 accident, not a design.
 
 _Why:_ each extra tap buries content and each nesting level compounds it.
-_Example:_ `/stats` "More breakdowns" (outer drawer) → "Accuracy by team" (inner drawer)
-→ a 14-row list: two taps before anything renders.
+_Example:_ the picks page collapses committed picks behind a single "_N_ committed picks"
+disclosure — one tap, one level. The `/stats` breakdowns once nested "Accuracy by team"
+inside a "More breakdowns" drawer (two taps before anything rendered); #538 flattened that
+to a chip radiogroup, so no drawer-in-a-drawer ships today.
 
 ### 4. Answer first, archive last
 
@@ -246,19 +249,19 @@ Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens
 catalogs the **composed patterns** — the atoms already in the app, and when to reach for
 each. (Component homes live under `src/lib/components/`.)
 
-| Job                               | Pattern                                            | Seen in                           |
-| --------------------------------- | -------------------------------------------------- | --------------------------------- |
-| Switch between cuts of one data   | Chip radiogroup                                    | `/stats` Every split, `/league`   |
-| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/leaderboard`, `/wrapped`        |
-| Reveal secondary detail           | Single disclosure (one level)                      | `/stats` breakdown                |
-| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists      |
-| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/league`   |
-| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar              |
-| Group related content             | `Card` + header/description                        | everywhere                        |
-| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted) |
-| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                 |
-| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/group`, `/league`, `/stats`     |
-| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)            |
+| Job                               | Pattern                                            | Seen in                                      |
+| --------------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/league` |
+| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/leaderboard`, `/wrapped`                   |
+| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                      |
+| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                 |
+| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/league`              |
+| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
+| Group related content             | `Card` + header/description                        | everywhere                                   |
+| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)            |
+| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
+| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/group`, `/league`, `/stats`                |
+| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
 
 Prefer these before inventing a new control. If a screen genuinely needs a pattern not
 listed here, that is the signal to run a `design-study` and add it. As each pattern is next
@@ -299,13 +302,15 @@ drift, imports don't.
    initial selection is a deliberate design decision, not whatever array order yields.
 7. **Accessibility contract.** `role="radiogroup"` with real `radio` children, one selected
    value, arrow-key + Home/End keyboard operation, an accessible group name; selecting a
-   chip does not move focus into the panel. **When two chip groups share a page** (as
-   `/stats` will once #538 lands): each has a distinct visible heading and accessible name,
-   every control/panel `id` is unique (a shared component must take an id prefix — the
-   current `SituationalExplorer` hard-codes `stats-cut-tab-*`, which would collide), and the
-   active panel's accessible name derives from the selected cut.
+   chip does not move focus into the panel. **When several chip groups share a page** (as on
+   `/stats`, which runs three — the situational explorer plus the career and season
+   breakdowns): each has a distinct visible heading and accessible name, and every
+   control/panel `id` is unique. The shared `ChipRadiogroup` takes an `idPrefix` prop for
+   exactly this reason — the three groups pass `stats-cut-tab`, `career-breakdown`, and
+   `season-breakdown`, so their radio `id`s never collide. The active panel's accessible
+   name derives from the selected cut.
 8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529);
-   `/stats` "Breakdowns" (#538, once landed).
+   `/stats` "Breakdowns" (career + season, #538).
 9. **Known exceptions.** None. (Page-level Tabs are **not** an exception — they own a
    different job; see principle 2's boundary.)
 
