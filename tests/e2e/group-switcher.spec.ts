@@ -84,7 +84,7 @@ test.describe('Group switcher', () => {
       await expect(page.getByTestId('group-switcher-trigger')).toContainText(SECOND_GROUP_NAME);
     });
 
-    test('leaderboard reflects the active group after a switch', async ({ page }) => {
+    test('league home reflects the active group after a switch', async ({ page }) => {
       await page.goto('/picks');
 
       const trigger = await openSwitcher(page);
@@ -95,9 +95,9 @@ test.describe('Group switcher', () => {
       // Wait for the switch to land before navigating away.
       await expect(trigger).toContainText(SECOND_GROUP_NAME);
 
-      // Navigate to leaderboard — should load without error and show group-B data.
-      await page.goto('/leaderboard');
-      await expect(page).toHaveURL(/\/leaderboard/);
+      // Navigate to the League home — should load without error and show group-B data.
+      await page.goto('/league');
+      await expect(page).toHaveURL(/\/league/);
       // Confirm no error redirect (no-group redirect would send to /auth/error).
       await expect(page).not.toHaveURL(/auth\/error/);
     });

@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#561** One League home — the standalone Leaderboard and Group tabs merge into a single League
+  tab (bottom nav 5→4: Picks · League · Stats · Teams), and the NFL market page renames to Teams so
+  the user's own league owns the name. `/league` now leads with a season race chart (every member's
+  cumulative points by week, the current user emphasised) above standings that carry rank-movement
+  arrows and the honors case; roster, roast-me, leave, and commissioner controls move to a
+  `/league/manage` subpage — the durable home for the v3.3 commissioner set. routes: `/league` ·
+  `/league/manage` · `/teams` · redirects `/leaderboard`→`/league`, `/group`→`/league/manage` ·
+  `SeasonRaceChart.svelte` · `leaderboardTrend.ts` · `docs/DESIGN.md` · ADR-0030
+
 - **#547** Accent/status/signature (P13) cleanup — brass and ember come off the good/bad and
   routine-furniture axes so the accent reads as branding, not signal. A new `success` Badge variant
   carries "covered/hot/won" (was brass) on the league game log, hot/cold streaks, and the demo

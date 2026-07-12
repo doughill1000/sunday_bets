@@ -74,10 +74,7 @@ test('a hard leaderboard failure shows a retryable error card', async ({ page })
         : route.continue()
   );
 
-  await page
-    .getByTestId('primary-nav')
-    .getByRole('link', { name: 'Leaderboard', exact: true })
-    .click();
+  await page.getByTestId('primary-nav').getByRole('link', { name: 'League', exact: true }).click();
 
   // No cached data + a failed fetch → the error card with a Retry button (not "refresh the page").
   const standings = page.getByTestId('standings-panel');
