@@ -50,7 +50,10 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   automatically on open, ready, reopen, or push. **Merging does not ship**; production deploys
   only on a single deliberate manual dispatch (ADR-0010), which reads `package.json`
   `"version"` to tag the release (see `docs/WORKFLOW.md` §"Cutting a release").
-- **Confirm before any GitHub write** (push, PR, issue, gist) — per your user-level agent instructions.
+- **Push, open PRs, and file issues without asking; never merge — landing code is
+  the human's call.** Other GitHub mutations (closing or commenting on PRs/issues,
+  gists, repo create/delete) still need confirmation — per your user-level agent
+  instructions.
 - **Database changes** use the hash-ledger flow (full steps in README): edit
   `supabase/src/**`, run `pnpm db:migration --name=describe_the_change`, then commit
   the source change, the migration, and the ledger **together**. **Never** edit
@@ -91,11 +94,9 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
 - Treat requests to "create/open/file an issue," "create a feature," "create a
   feature issue," or "add this to the backlog" as issue-authoring requests when no
   implementation behavior is requested. Read the matching `.github/ISSUE_TEMPLATE/`,
-  inspect enough repository context to fill it accurately, evaluate the ADR
-  requirement, and show the completed title/body and target repository before writing
-  to GitHub. Create it only after explicit approval of that draft (or an explicit
-  instruction to skip the preview), report the issue URL, and do not implement it
-  unless implementation was also requested.
+  inspect enough repository context to fill it accurately, and evaluate the ADR
+  requirement. Create the issue directly — no draft-approval gate — then report the
+  issue URL, and do not implement it unless implementation was also requested.
 - Treat requests to "implement," "build," or "add" a feature as code work. Planned
   code work still requires a Ready issue; create and approve the issue first when one
   does not exist.
@@ -122,7 +123,8 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   generated-type, shared auth/RLS, dependency-lockfile, and CI changes unless an
   explicit integration order exists.
 - Pull requests close their issue, link relevant ADRs, and list verification that
-  actually ran. Confirm before every GitHub write.
+  actually ran. Push the branch and open the PR without asking; do not merge —
+  landing code is the human's call.
 - **Shipping a marketing-worthy surface? Refresh the public demo snapshot.** The
   unauthenticated `/demo` route serves a frozen, generated fixture
   (`src/lib/server/demo/demo-snapshot.json`, #460 / ADR-0026). The CI drift-guard catches

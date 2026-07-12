@@ -9,8 +9,9 @@ For planned work, also read `docs/WORKFLOW.md`, the assigned GitHub Issue, and e
 linked or governing ADR before editing. Do not maintain a separate copy of repository
 rules here; that would allow the two agent workflows to drift.
 
-The natural-language issue-creation triggers and draft-before-write approval gate in
-`AGENTS.md` apply to Claude unchanged.
+The natural-language issue-creation triggers in `AGENTS.md` apply to Claude
+unchanged. Push branches, open PRs, and file issues without asking; never merge —
+landing code is the human's call (see `AGENTS.md` "Delivery workflow").
 
 > **TEMPORARY — app not in active use (as of 2026-06-26).** There are no live users
 > right now, so DB migrations and updates (including against prod) need not coordinate

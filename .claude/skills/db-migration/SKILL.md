@@ -35,7 +35,7 @@ agent-facing rules in `docs/agent-context/database.md` and `AGENTS.md`
    `npx supabase test db` (pgTAP) and `pnpm test:integration`
    (both need Docker + local Supabase; check `npx supabase status`).
 7. **Commit the source change, the generated migration, and the ledger together** in
-   one atomic commit. (Confirm before any push — see `AGENTS.md`.)
+   one atomic commit. (Pushing is pre-authorized — see `AGENTS.md`.)
 
 ## Never
 

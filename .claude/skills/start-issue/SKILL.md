@@ -58,7 +58,8 @@ pre-authorized per that section and per `finish-pr` step 6).
 - **Serialize** work touching the migration ledger, generated types, or shared
   auth/RLS unless an explicit integration order exists.
 - Never run two agents in the same worktree; never clean another agent's worktree.
-- **Confirm before any GitHub write.**
+- **Push and open PRs without asking (pre-authorized); never merge — landing code is
+  Doug's call.**
 
 ## See also
 

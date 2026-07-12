@@ -11,9 +11,11 @@ answers "is vX done?", this skill performs the release: compute the version, bum
 `docs/WORKFLOW.md` §"Cutting a release" and §"Versioning"; policy:
 `docs/adr/0015-versioning-and-release-policy.md`; deploy gating: ADR-0010.
 
-**Every GitHub/deploy write in this skill is confirmed with Doug first** (per the
-user-level "confirm before any GitHub write" rule). Run `gh` from PowerShell, not Bash
-(see `AGENTS.md`).
+**Opening the release PR is pre-authorized** (like any PR). **The milestone close and
+the production-deploy dispatch are confirmed with Doug first** — they sit outside the
+pre-authorized push/PR/issue set (see user `CLAUDE.md` §"GitHub Access"). **Never merge
+the release PR yourself — landing code is Doug's call.** Run `gh` from PowerShell, not
+Bash (see `AGENTS.md`).
 
 ## Steps
 
