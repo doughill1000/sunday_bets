@@ -148,7 +148,14 @@
   // season-scoped query re-keys (ADR-0017). Because a full navigation re-mounts nothing, the
   // scope is set before `goto` so it survives the reload as 'season'.
   let scope = $state<'season' | 'career'>('season');
-  const scopeOptions = $derived(seasonScopeOptions(data.availableSeasons));
+  // Fold the currently-displayed season into the option set so the dropdown can always
+  // represent `scopeValue`. `resolveSeasonYear` can land on a season with no settled picks
+  // yet — a brand-new/pre-grading season (empty `availableSeasons` → the active season year),
+  // or an out-of-range `?season=` — and `availableSeasons` is derived from graded standings
+  // only (`group_season_years`), so that season is absent from it. Without this the <select>
+  // value would match no <option>, silently blanking the control to `''` while the empty
+  // state still reads "No settled picks for <year>." (mirrors the /leaderboard scope fix).
+  const scopeOptions = $derived(seasonScopeOptions([...data.availableSeasons, data.seasonYear]));
   const scopeValue = $derived(scope === 'career' ? 'career' : String(data.seasonYear));
 
   function onScopeChange(e: Event) {
