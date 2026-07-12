@@ -1,6 +1,6 @@
 # ADR-0030: Mobile-first design principles
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-11
 - Issue: No issue — approved plan (design-philosophy direction approved by Doug 2026-07-11)
 - Supersedes: None
