@@ -4,6 +4,7 @@
   import { queryKeys } from '$lib/query/keys';
   import { fetchStats } from '$lib/query/fetchers';
   import type { StatsCachePayload } from '$lib/query/types';
+  import type { SituationalDimension } from '$lib/types/server/stats';
   import type { PageData } from './$types';
   import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
@@ -101,6 +102,14 @@
 
   let careerBreakdownCut = $state<BreakdownCut>('team');
   let seasonBreakdownCut = $state<BreakdownCut>('team');
+
+  // The situational-explorer cut lives here (not inside SituationalExplorer) for the same reason as
+  // the breakdown cuts above: a season change re-keys the stats query, unmounting the explorer to a
+  // skeleton and remounting it when the new season loads. Page-level state survives that round-trip
+  // so the chosen cut sticks; component-internal state would reset to the first cut each time. One
+  // value is shared by both explorers — only one (career xor season) is ever mounted — so the cut
+  // also carries across a scope switch (#514).
+  let explorerCut = $state<SituationalDimension | null>(null);
 
   const SELECT_CLASS =
     'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
@@ -415,6 +424,8 @@
           scopeLabel="Career"
           isYou={isSelectedYou}
           displayName={selectedDisplayName}
+          value={explorerCut}
+          onchange={(dimension) => (explorerCut = dimension)}
         />
 
         <!-- Team/weight/H2H tables share the same one-tap chip selector as Every split (#538),
@@ -614,6 +625,8 @@
             scopeLabel={String(data.seasonYear)}
             isYou={isSelectedYou}
             displayName={selectedDisplayName}
+            value={explorerCut}
+            onchange={(dimension) => (explorerCut = dimension)}
           />
 
           <!-- Team/weight/trend/H2H tables share the same one-tap chip selector as Every split

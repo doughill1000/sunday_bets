@@ -22,7 +22,9 @@
     dimensions,
     scopeLabel,
     isYou,
-    displayName
+    displayName,
+    value,
+    onchange
   }: {
     /** Explorer dimensions for the selected player + scope, already computed by situationalExplorer. */
     dimensions: ExplorerDimension[];
@@ -30,18 +32,23 @@
     scopeLabel: string;
     isYou: boolean;
     displayName: string;
+    /** The selected cut, owned by the page so the choice survives a season change (see below). */
+    value: SituationalDimension | null;
+    /** Fired when the user picks a cut; the page persists it as page-level state. */
+    onchange: (dimension: SituationalDimension) => void;
   } = $props();
 
   const subject = $derived(isYou ? 'you' : displayName);
 
-  // Active dimension: the user's chip choice, falling back to the first available cut so no $effect
-  // is needed to reset when the scope changes the available set (same pattern as /league).
-  let selectedDimension = $state<SituationalDimension | null>(null);
+  // Active dimension: the caller's chip choice, falling back to the first available cut so no
+  // $effect is needed to reset when the scope changes the available set (same pattern as /league).
+  // The choice itself is a *controlled* prop, held on the page rather than as $state here: a season
+  // change re-keys the stats query, which unmounts this card to a skeleton and remounts it once the
+  // new season loads — page-level state survives that round-trip, component-internal state would
+  // reset to the first cut every time (#514).
   const availableIds = $derived(dimensions.map((d) => d.dimension));
   const activeId = $derived(
-    selectedDimension && availableIds.includes(selectedDimension)
-      ? selectedDimension
-      : (availableIds[0] ?? null)
+    value && availableIds.includes(value) ? value : (availableIds[0] ?? null)
   );
   const active = $derived(dimensions.find((d) => d.dimension === activeId) ?? null);
   const chipOptions = $derived(
@@ -84,7 +91,7 @@
         value={activeId ?? ''}
         ariaLabel="Situational cut"
         idPrefix="stats-cut-tab"
-        onchange={(value) => (selectedDimension = value as SituationalDimension)}
+        onchange={(v) => onchange(v as SituationalDimension)}
       />
 
       <div

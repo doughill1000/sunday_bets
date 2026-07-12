@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #553** /stats explorer cut persists across a year change — the "Every split" situational
+  cut now sticks when you switch season or Career instead of snapping back to the first cut. Its
+  selection was lifted to the page so it survives the stats-query re-key that briefly remounts the
+  card. route: `/stats` · component: `SituationalExplorer.svelte`
 - **PR #551** v3.2.0 release — the /stats and /league redesign: situational deep-dive
   explorer, "Your edge" career hero, merged Teams/Trends scope with slice chips, and the
   design-system token families that back it. Milestone v3.2. Version skips v3.1.0: the v3.1
