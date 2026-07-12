@@ -10,6 +10,7 @@
   import YourEdge from '$lib/components/stats/YourEdge.svelte';
   import SituationalExplorer from '$lib/components/stats/SituationalExplorer.svelte';
   import StatAccuracyList from '$lib/components/stats/StatAccuracyList.svelte';
+  import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
   import {
     Card,
     CardContent,
@@ -17,12 +18,6 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
-  import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger
-  } from '$lib/components/ui/accordion';
   import {
     consensusTendency,
     formatAccuracy,
@@ -77,6 +72,35 @@
 
   // Light → All-In, so the highlighted All-In row sorts last.
   const WEIGHT_ORDER = ['L', 'M', 'H', 'A'];
+
+  type BreakdownCut = 'team' | 'weight' | 'trend' | 'h2h';
+  type BreakdownOption = { value: BreakdownCut; label: string };
+
+  function breakdownOptions(
+    hasTeam: boolean,
+    hasWeight: boolean,
+    hasTrend: boolean,
+    hasH2H: boolean
+  ): BreakdownOption[] {
+    return [
+      ...(hasTeam ? [{ value: 'team' as const, label: 'Team' }] : []),
+      ...(hasWeight ? [{ value: 'weight' as const, label: 'Weight' }] : []),
+      ...(hasTrend ? [{ value: 'trend' as const, label: 'Trend' }] : []),
+      ...(hasH2H ? [{ value: 'h2h' as const, label: 'H2H' }] : [])
+    ];
+  }
+
+  function activeBreakdown(
+    selectedCut: BreakdownCut,
+    options: BreakdownOption[]
+  ): BreakdownCut | null {
+    return options.some((option) => option.value === selectedCut)
+      ? selectedCut
+      : (options[0]?.value ?? null);
+  }
+
+  let careerBreakdownCut = $state<BreakdownCut>('team');
+  let seasonBreakdownCut = $state<BreakdownCut>('team');
 
   const SELECT_CLASS =
     'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring';
@@ -230,26 +254,17 @@
   const seasonH2H = $derived(
     selectedUserId ? headToHeadForUser(data.headToHead, selectedUserId) : []
   );
-
-  // Cheap glances for the collapsed disclosure rows, so a section reads without opening it.
-  const teamMeta = $derived(
-    teamAccuracyRows.length > 0
-      ? `${teamAccuracyRows[0].label} ${formatAccuracy(teamAccuracyRows[0].accuracy)}`
-      : ''
+  const seasonBreakdownOptions = $derived(
+    breakdownOptions(
+      teamAccuracyRows.length > 0,
+      weightAccuracyRows.length > 0,
+      trendRows.length > 0,
+      seasonH2H.length > 0
+    )
   );
-  const weightMeta = $derived.by(() => {
-    const allIn = weightRows.find((r) => r.weight === 'A');
-    return allIn ? `All-In ${allIn.wins}-${allIn.losses}-${allIn.pushes}` : '';
-  });
-  const trendMeta = $derived.by(() => {
-    const last = trendRows.at(-1);
-    if (!last) return '';
-    return `${last.cumulative_points >= 0 ? '+' : ''}${last.cumulative_points} pts`;
-  });
-
-  function rivalMeta(n: number) {
-    return `${n} rival${n === 1 ? '' : 's'}`;
-  }
+  const activeSeasonBreakdown = $derived(
+    activeBreakdown(seasonBreakdownCut, seasonBreakdownOptions)
+  );
 
   // All-time row derivations (allTimeTeamRows / allTimeWeightRows / careerH2H) live inside the
   // {#await data.allTimeDetail} block below, since that data streams in asynchronously.
@@ -278,15 +293,6 @@
 
 {#snippet wlp(wins: number, losses: number, pushes: number)}
   <span class="tabular-nums text-white">{wins}-{losses}-{pushes}</span>
-{/snippet}
-
-{#snippet discTrigger(title: string, meta: string)}
-  <span class="flex w-full items-center justify-between gap-3">
-    <span>{title}</span>
-    {#if meta}
-      <span class="text-xs font-normal tabular-nums text-muted-foreground">{meta}</span>
-    {/if}
-  </span>
 {/snippet}
 
 {#snippet h2hGrid(rows: ReturnType<typeof headToHeadForUser>, span: string)}
@@ -411,7 +417,7 @@
           displayName={selectedDisplayName}
         />
 
-        <!-- Legacy team/weight/H2H tables fold into one "More breakdowns" disclosure (#514),
+        <!-- Team/weight/H2H tables share the same one-tap chip selector as Every split (#538),
              streamed off the critical path. -->
         {#await data.allTimeDetail}
           <Card class="border-dashed">
@@ -455,59 +461,54 @@
           {@const careerH2H = selectedUserId
             ? headToHeadForUser(detail.allTimeHeadToHead, selectedUserId)
             : []}
+          {@const careerBreakdownOptions = breakdownOptions(
+            allTimeTeamAccuracyRows.length > 0,
+            allTimeWeightAccuracyRows.length > 0,
+            false,
+            careerH2H.length > 0
+          )}
+          {@const activeCareerBreakdown = activeBreakdown(
+            careerBreakdownCut,
+            careerBreakdownOptions
+          )}
           {#if allTimeTeamAccuracyRows.length > 0 || allTimeWeightAccuracyRows.length > 0 || careerH2H.length > 0}
-            <Accordion type="multiple" class="rounded-xl border">
-              <AccordionItem value="more-breakdowns" class="px-4">
-                <AccordionTrigger>
-                  {@render discTrigger('More breakdowns', 'team · weight · H2H')}
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Accordion type="multiple" class="-mx-4 border-t">
-                    {#if allTimeTeamAccuracyRows.length > 0}
-                      <AccordionItem value="career-team" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger(
-                            'Accuracy by team',
-                            `${allTimeTeamAccuracyRows[0].label} ${formatAccuracy(allTimeTeamAccuracyRows[0].accuracy)}`
-                          )}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p class="mb-3 text-sm text-muted-foreground">
-                            All-time results grouped by the team backed.
-                          </p>
-                          <StatAccuracyList rows={allTimeTeamAccuracyRows} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
+            <Card data-testid="stats-breakdowns">
+              <CardHeader>
+                <CardTitle>Breakdowns</CardTitle>
+                <CardDescription>Career results from one cut at a time.</CardDescription>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <ChipRadiogroup
+                  options={careerBreakdownOptions}
+                  value={activeCareerBreakdown ?? ''}
+                  ariaLabel="Career breakdown"
+                  idPrefix="career-breakdown"
+                  onchange={(value) => (careerBreakdownCut = value as BreakdownCut)}
+                />
 
-                    {#if allTimeWeightAccuracyRows.length > 0}
-                      <AccordionItem value="career-weight" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Accuracy by weight', '')}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p class="mb-3 text-sm text-muted-foreground">
-                            All-time confidence-level results, including each All-In.
-                          </p>
-                          <StatAccuracyList rows={allTimeWeightAccuracyRows} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
-
-                    {#if careerH2H.length > 0}
-                      <AccordionItem value="career-h2h" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Head to head', rivalMeta(careerH2H.length))}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          {@render h2hGrid(careerH2H, 'all-time')}
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
-                  </Accordion>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                <div
+                  role="region"
+                  aria-label="{careerBreakdownOptions.find(
+                    (option) => option.value === activeCareerBreakdown
+                  )?.label} breakdown"
+                  data-testid="stats-breakdown-panel"
+                >
+                  {#if activeCareerBreakdown === 'team'}
+                    <p class="mb-3 text-sm text-muted-foreground">
+                      All-time results grouped by the team backed.
+                    </p>
+                    <StatAccuracyList rows={allTimeTeamAccuracyRows} />
+                  {:else if activeCareerBreakdown === 'weight'}
+                    <p class="mb-3 text-sm text-muted-foreground">
+                      All-time confidence-level results, including each All-In.
+                    </p>
+                    <StatAccuracyList rows={allTimeWeightAccuracyRows} />
+                  {:else if activeCareerBreakdown === 'h2h'}
+                    {@render h2hGrid(careerH2H, 'all-time')}
+                  {/if}
+                </div>
+              </CardContent>
+            </Card>
           {/if}
         {/await}
       {:else}
@@ -615,74 +616,53 @@
             displayName={selectedDisplayName}
           />
 
-          <!-- Legacy team/weight/trend/H2H tables fold into one "More breakdowns" disclosure
-               (#514; the density pass began in #518). -->
+          <!-- Team/weight/trend/H2H tables share the same one-tap chip selector as Every split
+               (#538). -->
           {#if teamAccuracyRows.length > 0 || weightAccuracyRows.length > 0 || trendRows.length > 0 || seasonH2H.length > 0}
-            <Accordion type="multiple" class="rounded-xl border">
-              <AccordionItem value="more-breakdowns" class="px-4">
-                <AccordionTrigger>
-                  {@render discTrigger('More breakdowns', 'team · weight · trend · H2H')}
-                </AccordionTrigger>
-                <AccordionContent>
-                  <Accordion type="multiple" class="-mx-4 border-t">
-                    {#if teamAccuracyRows.length > 0}
-                      <AccordionItem value="team" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Accuracy by team', teamMeta)}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p class="mb-3 text-sm text-muted-foreground">
-                            {possessive}
-                            {data.seasonYear} results grouped by the team backed.
-                          </p>
-                          <StatAccuracyList rows={teamAccuracyRows} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
+            <Card data-testid="stats-breakdowns">
+              <CardHeader>
+                <CardTitle>Breakdowns</CardTitle>
+                <CardDescription>{data.seasonYear} results from one cut at a time.</CardDescription>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <ChipRadiogroup
+                  options={seasonBreakdownOptions}
+                  value={activeSeasonBreakdown ?? ''}
+                  ariaLabel="Season breakdown"
+                  idPrefix="season-breakdown"
+                  onchange={(value) => (seasonBreakdownCut = value as BreakdownCut)}
+                />
 
-                    {#if weightAccuracyRows.length > 0}
-                      <AccordionItem value="weight" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Accuracy by weight', weightMeta)}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p class="mb-3 text-sm text-muted-foreground">
-                            {possessive}
-                            {data.seasonYear} confidence-level results, including each All-In.
-                          </p>
-                          <StatAccuracyList rows={weightAccuracyRows} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
-
-                    {#if trendRows.length > 0}
-                      <AccordionItem value="trend" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Season trend', trendMeta)}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <p class="mb-3 text-sm text-muted-foreground">
-                            {possessive} cumulative points after each completed week.
-                          </p>
-                          <SeasonTrendChart rows={trendRows} showLegend={false} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
-
-                    {#if seasonH2H.length > 0}
-                      <AccordionItem value="h2h" class="px-4">
-                        <AccordionTrigger>
-                          {@render discTrigger('Head to head', rivalMeta(seasonH2H.length))}
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          {@render h2hGrid(seasonH2H, 'this season')}
-                        </AccordionContent>
-                      </AccordionItem>
-                    {/if}
-                  </Accordion>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                <div
+                  role="region"
+                  aria-label="{seasonBreakdownOptions.find(
+                    (option) => option.value === activeSeasonBreakdown
+                  )?.label} breakdown"
+                  data-testid="stats-breakdown-panel"
+                >
+                  {#if activeSeasonBreakdown === 'team'}
+                    <p class="mb-3 text-sm text-muted-foreground">
+                      {possessive}
+                      {data.seasonYear} results grouped by the team backed.
+                    </p>
+                    <StatAccuracyList rows={teamAccuracyRows} />
+                  {:else if activeSeasonBreakdown === 'weight'}
+                    <p class="mb-3 text-sm text-muted-foreground">
+                      {possessive}
+                      {data.seasonYear} confidence-level results, including each All-In.
+                    </p>
+                    <StatAccuracyList rows={weightAccuracyRows} />
+                  {:else if activeSeasonBreakdown === 'trend'}
+                    <p class="mb-3 text-sm text-muted-foreground">
+                      {possessive} cumulative points after each completed week.
+                    </p>
+                    <SeasonTrendChart rows={trendRows} showLegend={false} />
+                  {:else if activeSeasonBreakdown === 'h2h'}
+                    {@render h2hGrid(seasonH2H, 'this season')}
+                  {/if}
+                </div>
+              </CardContent>
+            </Card>
           {/if}
         {:else}
           <Card class="border-dashed">

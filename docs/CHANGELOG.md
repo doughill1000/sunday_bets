@@ -48,6 +48,9 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **#538** /stats breakdown chips — career and season breakdowns now switch Team, Weight,
+  Trend, and H2H cuts through one accessible chip selector instead of a nested accordion, making
+  every panel reachable in one tap without mobile clipping. route: `/stats` · ADR-0030
 - **PR #537** Brand-color lint guard is cross-platform — `check-brand-colors.ts` normalizes
   the scanned path to POSIX separators before its `HEX_ALLOWLIST` compare, so the allowlist
   matches on Windows (it built backslash paths and silently missed, failing `pnpm lint`

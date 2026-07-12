@@ -16,6 +16,7 @@
   import { EXPLORER_MIN_SAMPLE, formatAccuracy } from '$lib/utils/stats';
   import type { ExplorerBucket, ExplorerDimension } from '$lib/utils/stats';
   import type { SituationalDimension } from '$lib/types/server/stats';
+  import ChipRadiogroup from './ChipRadiogroup.svelte';
 
   let {
     dimensions,
@@ -43,34 +44,9 @@
       : (availableIds[0] ?? null)
   );
   const active = $derived(dimensions.find((d) => d.dimension === activeId) ?? null);
-
-  // APG tabs keyboard model: arrows/Home/End move selection and focus across the chip row.
-  function onKeydown(event: KeyboardEvent) {
-    if (activeId == null) return;
-    const idx = availableIds.indexOf(activeId);
-    let next = idx;
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        next = (idx + 1) % availableIds.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        next = (idx - 1 + availableIds.length) % availableIds.length;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = availableIds.length - 1;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    selectedDimension = availableIds[next];
-    document.getElementById(`stats-cut-tab-${selectedDimension}`)?.focus();
-  }
+  const chipOptions = $derived(
+    dimensions.map((dimension) => ({ value: dimension.dimension, label: dimension.label }))
+  );
 
   // Fixed, honest scale: a 15-percentage-point edge fills the half-track, so small edges look small
   // (never auto-stretched to fill the axis). Clamped so a rare large edge can't overflow.
@@ -103,30 +79,13 @@
     {:else}
       <!-- A radiogroup, not a tablist: "pick one cut to view" is a radio choice, and the detail
            region below is what it drives (matches the /league Trends chip selector). -->
-      <div
-        role="radiogroup"
-        aria-label="Situational cut"
-        class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-      >
-        {#each dimensions as dim (dim.dimension)}
-          {@const selected = activeId === dim.dimension}
-          <button
-            type="button"
-            role="radio"
-            id="stats-cut-tab-{dim.dimension}"
-            aria-checked={selected}
-            tabindex={selected ? 0 : -1}
-            data-testid="stats-cut-chip"
-            class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
-              ? 'border-primary bg-primary text-primary-foreground'
-              : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
-            onclick={() => (selectedDimension = dim.dimension)}
-            onkeydown={onKeydown}
-          >
-            {dim.label}
-          </button>
-        {/each}
-      </div>
+      <ChipRadiogroup
+        options={chipOptions}
+        value={activeId ?? ''}
+        ariaLabel="Situational cut"
+        idPrefix="stats-cut-tab"
+        onchange={(value) => (selectedDimension = value as SituationalDimension)}
+      />
 
       <div
         id="stats-cut-panel"
