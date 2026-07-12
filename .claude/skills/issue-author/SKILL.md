@@ -1,6 +1,6 @@
 ---
 name: issue-author
-description: Author a GitHub issue from a natural-language request — when Doug asks to create/open/file an issue, create a feature/feature issue, or add something to the backlog with no implementation requested. Pick the template, fill it from repo context, run the ADR trigger test, offer a design study for non-trivial UI features, draft for approval, then create.
+description: Author a GitHub issue from a natural-language request — when Doug asks to create/open/file an issue, create a feature/feature issue, or add something to the backlog with no implementation requested. Pick the template, fill it from repo context, run the ADR trigger test, offer a design study for non-trivial UI features, then create it directly (issue creation is pre-authorized — no draft-approval gate).
 ---
 
 # Author an issue
@@ -37,9 +37,10 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
    order; an ADR link / governing ADR / credible reason none is needed; likely paths
    and shared-or-generated ownership called out; a target milestone and `semver:` label
    (plus a design-study link if one was produced).
-6. **Present the completed title + body + the target milestone + `semver:` label + the
-   exact target repo** and wait for explicit approval before writing. A direct "skip the
-   preview and create it" counts as approval.
+6. **Finalize** the title, body, target milestone, `semver:` label, and the exact
+   target repo. Issue creation is **pre-authorized** (see user `CLAUDE.md`
+   §"GitHub Access") — do **not** present a draft or wait for approval; proceed
+   straight to creating it.
 7. Create via `gh` (apply the milestone and `semver:` label on creation) and report the
    issue URL. For **complex, multi-decision** work, offer to run `scope-issue` next (an
    interview that settles essential vs nice-to-have and splits off follow-ups) before any

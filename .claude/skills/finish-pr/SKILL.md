@@ -1,6 +1,6 @@
 ---
 name: finish-pr
-description: Wrap a feature branch into a pull request — run the test gate, draft the PR with Closes #NNN, the ADR link, and the verification that actually ran, confirm before the GitHub write, then clean up the worktree. Use when finishing an issue and opening its PR.
+description: Wrap a feature branch into a pull request — run the test gate, draft the PR with Closes #NNN, the ADR link, and the verification that actually ran, push and open the PR (pre-authorized — no confirmation), then clean up the worktree. Use when finishing an issue and opening its PR.
 ---
 
 # Finish & open the PR
