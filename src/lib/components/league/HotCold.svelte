@@ -38,7 +38,7 @@
       {#each teams as team (team.teamId)}
         <li class="flex items-center justify-between gap-2 text-sm">
           <span class="flex items-center gap-2">
-            <Badge variant={tone === 'hot' ? 'default' : 'destructive'} class="tabular-nums">
+            <Badge variant={tone === 'hot' ? 'success' : 'destructive'} class="tabular-nums">
               {formatStreak(team)}
             </Badge>
             <span class="font-medium" title={team.teamName}>{team.teamShortName}</span>

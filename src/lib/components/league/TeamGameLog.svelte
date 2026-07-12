@@ -41,7 +41,7 @@
   const opponentName = (id: number) => teamNamesById.get(id) ?? `#${id}`;
 
   const RESULT_LABEL = { win: 'Cover', loss: 'No cover', push: 'Push' } as const;
-  const RESULT_VARIANT = { win: 'default', loss: 'destructive', push: 'secondary' } as const;
+  const RESULT_VARIANT = { win: 'success', loss: 'destructive', push: 'secondary' } as const;
 </script>
 
 <div class="space-y-3">

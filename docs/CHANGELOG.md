@@ -48,6 +48,14 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#547** Accent/status/signature (P13) cleanup — brass and ember come off the good/bad and
+  routine-furniture axes so the accent reads as branding, not signal. A new `success` Badge variant
+  carries "covered/hot/won" (was brass) on the league game log, hot/cold streaks, and the demo
+  board; the committed-pick "Locked" indicator adopts the same `secondary` Badge as GameCard instead
+  of brass text; the 404 kicker moves onto the destructive axis; and the CoverMeter fill re-bases off
+  its ember gradient onto `--primary`. routes: `/league` · `/picks` · 404 · `ui/badge` ·
+  `CoverMeter.svelte` · `docs/DESIGN.md` · ADR-0027/0030
+
 - **#546** Finish ChipRadiogroup adoption + delete dead vendored controls — one control now
   owns "switch a cut": the feedback widget's kind picker uses the shared `ChipRadiogroup`
   (roving tabindex + arrow keys + canonical focus ring) instead of a hand-rolled radiogroup, and

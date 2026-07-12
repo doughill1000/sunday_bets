@@ -13,6 +13,7 @@
   import CommentsSection from './CommentsSection.svelte';
   import type { GroupPickEntry } from '$lib/types/picks';
   import RevealedGroupPicks from './RevealedGroupPicks.svelte';
+  import { Badge } from '$lib/components/ui/badge';
 
   type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
 
@@ -133,11 +134,8 @@
               {#if started}
                 <span class="text-xs text-muted-foreground">⏱ Kicked off</span>
               {:else}
-                <span
-                  class="text-xs text-primary"
-                  in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}
-                >
-                  🔒 Locked
+                <span in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}>
+                  <Badge variant="secondary">🔒 Locked</Badge>
                 </span>
                 <button
                   class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted"

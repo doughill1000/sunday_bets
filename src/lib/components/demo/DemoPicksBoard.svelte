@@ -135,7 +135,7 @@
               {#if outcome}
                 <Badge
                   variant={outcome.tone === 'win'
-                    ? 'default'
+                    ? 'success'
                     : outcome.tone === 'loss'
                       ? 'destructive'
                       : 'secondary'}
