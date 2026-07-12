@@ -7,8 +7,8 @@ test('authenticated player can open the stats experience', { tag: '@smoke' }, as
   await expect(page.getByRole('heading', { name: 'Stats & history' })).toBeVisible();
 
   // Either the consolidated context bar rendered (data loaded) or the empty state. The
-  // accuracy tables + trend now sit behind progressive disclosure (#518), so we assert on
-  // the always-present control bar rather than a demoted, collapsed section.
+  // data-dependent breakdown cuts now share one chip selector (#538), so this smoke test
+  // anchors on the always-present control bar rather than a particular seeded panel.
   const contextBar = page.getByTestId('stats-context-bar');
   const emptyState = page.getByText('No settled picks yet');
   await expect(contextBar.or(emptyState)).toBeVisible();
