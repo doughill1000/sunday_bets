@@ -48,6 +48,10 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-11
 
+- **PR #553** /stats explorer cut persists across a year change — the "Every split" situational
+  cut now sticks when you switch season or Career instead of snapping back to the first cut. Its
+  selection was lifted to the page so it survives the stats-query re-key that briefly remounts the
+  card. route: `/stats` · component: `SituationalExplorer.svelte`
 - **PR #552** /league season picker sticks on scroll — the page-level season/scope bar now
   pins under the app header while the cuts below scroll, matching the /stats scope line so both
   redesigned pages behave the same. Presentation-only. route: `/league`
