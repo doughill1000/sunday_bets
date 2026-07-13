@@ -8,8 +8,10 @@
 import { render } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
 import { getDemoSnapshot } from '../snapshot';
+import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
 import DemoPicksBoard from '$lib/components/demo/DemoPicksBoard.svelte';
 import DemoStandingsTable from '$lib/components/demo/DemoStandingsTable.svelte';
+import WeeklyLiveBoard from '$lib/components/leaderboard/WeeklyLiveBoard.svelte';
 import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
 import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
 import WrappedStory from '$lib/components/wrapped/WrappedStory.svelte';
@@ -55,12 +57,72 @@ describe('demo snapshot fixture', () => {
   });
 });
 
+// #585: the frozen live week must demonstrate every live sweat state without a real game window.
+describe('frozen live-week sweat states (#585)', () => {
+  const games = snapshot.liveWeek.games;
+
+  /** The persona's live cover verdict on a game, via the same mirror the picks board uses. */
+  function personaVerdict(g: (typeof games)[number]): CoverVerdict | null {
+    if (!g.personaPick || !g.liveScore) return null;
+    const pickedTeamId = g.personaPick.side === 'home' ? g.homeTeamId : g.awayTeamId;
+    return (
+      liveCoverState({
+        homeScore: g.liveScore.homeScore,
+        awayScore: g.liveScore.awayScore,
+        homeTeamId: g.homeTeamId,
+        awayTeamId: g.awayTeamId,
+        pickedTeamId,
+        lockedSpreadTeamId: g.spreadTeamId,
+        lockedSpreadValue: g.spreadValue
+      })?.verdict ?? null
+    );
+  }
+
+  it('carries in-progress games with live scores and a Final — unofficial game', () => {
+    expect(games.some((g) => g.status === 'in_progress' && g.liveScore != null)).toBe(true);
+    expect(
+      games.some((g) => g.status === 'final_unofficial' && g.liveScore?.status === 'final')
+    ).toBe(true);
+  });
+
+  it("demonstrates covering, not covering, and push on the persona's own cards", () => {
+    const verdicts = new Set(games.map(personaVerdict).filter((v): v is CoverVerdict => v != null));
+    expect(verdicts.has('covering')).toBe(true);
+    expect(verdicts.has('not_covering')).toBe(true);
+    expect(verdicts.has('push')).toBe(true);
+  });
+
+  it('reveals group picks for the per-member cover dots', () => {
+    expect(games.some((g) => g.groupPicks.length > 0)).toBe(true);
+  });
+
+  it('carries provisional live standings with the persona flagged as "you"', () => {
+    expect(snapshot.liveWeek.standings.length).toBeGreaterThan(0);
+    const me = snapshot.liveWeek.standings.find((s) => s.userId === snapshot.persona.userId);
+    expect(me?.isYou).toBe(true);
+  });
+});
+
 describe('demo surfaces render against the fixture', () => {
-  it('picks screen (the verb)', () => {
-    const { getByText } = render(DemoPicksBoard, {
-      props: { liveWeek: snapshot.liveWeek, personaName: snapshot.persona.displayName }
+  it('picks screen (the verb + live sweat)', () => {
+    const { getByText, getByTestId, getAllByTestId } = render(DemoPicksBoard, {
+      props: {
+        liveWeek: snapshot.liveWeek,
+        personaName: snapshot.persona.displayName,
+        personaUserId: snapshot.persona.userId
+      }
     });
     expect(getByText(`Week ${snapshot.liveWeek.weekNumber} picks`)).toBeInTheDocument();
+    // The frozen live week renders the sweat surfaces (week-so-far + the live cards).
+    expect(getByTestId('demo-week-so-far')).toBeInTheDocument();
+    expect(getAllByTestId('demo-live-game').length).toBeGreaterThan(0);
+  });
+
+  it('weekly provisional live board (#584 surface)', () => {
+    const { getByTestId } = render(WeeklyLiveBoard, {
+      props: { standings: snapshot.liveWeek.standings, live: true, stale: false }
+    });
+    expect(getByTestId('weekly-live-board')).toBeInTheDocument();
   });
 
   it('season standings', () => {

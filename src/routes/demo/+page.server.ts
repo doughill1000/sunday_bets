@@ -5,5 +5,9 @@ import { getDemoSnapshot } from '$lib/server/demo/snapshot';
 
 export const load: PageServerLoad = () => {
   const snapshot = getDemoSnapshot();
-  return { liveWeek: snapshot.liveWeek, personaName: snapshot.persona.displayName };
+  return {
+    liveWeek: snapshot.liveWeek,
+    personaName: snapshot.persona.displayName,
+    personaUserId: snapshot.persona.userId
+  };
 };
