@@ -32,7 +32,11 @@ export const queryKeys = {
     ['league', 'team', teamId, seasonYear] as const,
   // Pooled "Last N seasons" market-cut trends (epic #424). Season-independent — it spans the
   // recent seasons — so it takes no season arg. Under the 'league' root (public, shareable).
-  leagueTrends: () => ['league', 'trends'] as const
+  leagueTrends: () => ['league', 'trends'] as const,
+  // Live Sunday sweat scores (#386). Its own root, deliberately NOT in SHAREABLE_QUERY_ROOTS,
+  // so this ephemeral live data is never persisted to IndexedDB. Group-independent (identical
+  // for everyone), so it takes no args — one cache entry, one shared poll.
+  liveScores: () => ['live-scores'] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any
