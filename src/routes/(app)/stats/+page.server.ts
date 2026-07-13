@@ -7,7 +7,7 @@ import { tracePageLoad, traceDbQuery } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
   const { groupId } = event.locals;
-  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+  if (!groupId) throw redirect(303, '/join');
 
   return tracePageLoad('stats', () => loadStats(event, groupId));
 };
