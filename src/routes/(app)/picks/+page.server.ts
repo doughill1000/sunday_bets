@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getActiveWeekGames } from '$lib/server/db/queries/getActiveWeekGames';
+import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
@@ -10,6 +10,7 @@ import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclaration
 import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
 import { getLeagueSituational } from '$lib/server/db/queries/league';
 import type { LeagueSituationalRecord } from '$lib/types/server/league';
+import type { PickGame } from '$lib/types/games';
 import { getGameplaySettings } from '$lib/server/admin';
 import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
@@ -24,6 +25,34 @@ async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise
     .limit(1)
     .maybeSingle();
   return data?.week_number === weekNumber;
+}
+
+// Comments/reactions for started games only (RLS also enforces this gate). Two
+// batched queries (one per table) instead of a per-game N+1. Depends only on the
+// games, so the caller chains it off the games promise to overlap the other
+// per-week reads rather than running it as a second serial wave.
+async function loadSocial(
+  event: Parameters<PageServerLoad>[0],
+  groupId: string,
+  games: PickGame[]
+) {
+  const now = Date.now();
+  const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
+
+  const [commentsByGame, reactionsByGame] = await Promise.all([
+    getCommentsForGames(event, groupId, startedGameIds),
+    getReactionsForGames(event, groupId, startedGameIds)
+  ]);
+
+  return Object.fromEntries(
+    startedGameIds.map((gameId) => [
+      gameId,
+      {
+        comments: commentsByGame.get(gameId) ?? [],
+        reactions: reactionsByGame.get(gameId) ?? []
+      }
+    ])
+  );
 }
 
 export const load: PageServerLoad = async (event) => {
@@ -48,14 +77,10 @@ async function loadPicks(
   // Rides the cached users profile, so it's read straight off locals — no extra query.
   const showTrends = event.locals.userProfile?.showTeamTrends ?? true;
 
-  const displayNameResult = userId
-    ? await event.locals.supabase
-        .from('users')
-        .select('display_name')
-        .eq('id', userId)
-        .maybeSingle()
-    : null;
-  const currentUserDisplayName = displayNameResult?.data?.display_name ?? null;
+  // Display name also rides the ADR-0014-cached users profile (hooks.server.ts) —
+  // no extra round-trip. Empty string (no name set) collapses to null to preserve
+  // the previous query's contract.
+  const currentUserDisplayName = event.locals.userProfile?.displayName || null;
 
   const week = await findActiveWeek();
   if (!week)
@@ -76,6 +101,15 @@ async function loadPicks(
       showTrends
     };
 
+  // Games resolve as their own promise: everything week-scoped needs `week.id`, and
+  // the social fetch needs the resolved games. Chaining social off the games promise
+  // lets it overlap the other per-week reads in a single Promise.all wave instead of
+  // running as a second serial round-trip after them. (We already have `week` from
+  // findActiveWeek, so read games directly rather than re-resolving the week via
+  // getActiveWeekGames.)
+  const gamesPromise = getGamesWithActiveLines(week.id);
+  const socialPromise = gamesPromise.then((games) => loadSocial(event, groupId, games));
+
   const [
     games,
     picks,
@@ -84,9 +118,10 @@ async function loadPicks(
     pickStatusBoard,
     gameplay,
     lastWeek,
-    situational
+    situational,
+    social
   ] = await Promise.all([
-    getActiveWeekGames(),
+    gamesPromise,
     getMyPicks(event, week.id, groupId),
     getGroupPicks(event, week.id, groupId),
     getAllInDeclarations(event, week.id, groupId),
@@ -96,27 +131,9 @@ async function loadPicks(
     // Season-scoped, group-independent; only fetched when the nugget is enabled.
     showTrends
       ? event.locals.getCurrentSeasonYear().then((year) => getLeagueSituational(year))
-      : Promise.resolve<LeagueSituationalRecord[]>([])
+      : Promise.resolve<LeagueSituationalRecord[]>([]),
+    socialPromise
   ]);
-
-  // Load comments and reactions for started games only (RLS also enforces this gate).
-  // Two batched queries (one per table) instead of a per-game N+1.
-  const now = Date.now();
-  const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
-
-  const [commentsByGame, reactionsByGame] = await Promise.all([
-    getCommentsForGames(event, groupId, startedGameIds),
-    getReactionsForGames(event, groupId, startedGameIds)
-  ]);
-  const social = Object.fromEntries(
-    startedGameIds.map((gameId) => [
-      gameId,
-      {
-        comments: commentsByGame.get(gameId) ?? [],
-        reactions: reactionsByGame.get(gameId) ?? []
-      }
-    ])
-  );
 
   return {
     week,
