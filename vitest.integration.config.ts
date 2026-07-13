@@ -13,7 +13,10 @@ export default defineConfig({
     fileParallelism: false,
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['src/**/__tests__/**', 'src/lib/components/ui/**'], // Exclude unit tests & ui components
-    setupFiles: ['./tests/setup.ts', 'dotenv/config'], // This loads .env variables
+    // ./tests/integration/setup.ts strips AI_GATEWAY_* so the recap/wrapped/badge
+    // fallback suites stay hermetic (and don't burn gateway credit) when a dev's
+    // .env.local carries gateway creds — see that file for the full rationale.
+    setupFiles: ['./tests/setup.ts', 'dotenv/config', './tests/integration/setup.ts'], // This loads .env variables
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage/integration',
