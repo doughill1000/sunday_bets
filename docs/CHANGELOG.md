@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #583** Reorder `/league` Standings and de-clutter the table — the standings
+  table now leads with "The race" chart below it (was race-first), and each player's
+  W-L-P record moves from its own column onto a muted line under the name so long names
+  stop clipping the Total column at 390px. Presentational; e2e testids unchanged.
+  route: `/league` · ADR-0030
 - **PR #581** Make the `/league` season dropdown sticky — the season/All-time picker
   lived in the page-title row and scrolled away with the heading; it now sits in its own
   sticky scope bar under the app header, matching the `/stats` and `/market` season

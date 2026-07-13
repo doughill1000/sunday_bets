@@ -259,15 +259,10 @@
           <TableRow>
             <TableHead class="w-12 text-center">#</TableHead>
             <TableHead>Player</TableHead>
-            <!-- Mobile: W-L-P collapse into one compact "Rec" cell and Miss is dropped so
-                 the Total column (the ranking key) always stays on-screen at 390px. The
-                 full per-stat breakdown returns from `sm` up. Rank movement rides inside the
-                 existing "#" cell rather than adding a column, so the mobile budget is unchanged. -->
-            <TableHead class="text-right sm:hidden">Rec</TableHead>
-            <TableHead class="hidden text-right sm:table-cell">W</TableHead>
-            <TableHead class="hidden text-right sm:table-cell">L</TableHead>
-            <TableHead class="hidden text-right sm:table-cell">P</TableHead>
-            <TableHead class="hidden text-right sm:table-cell">Miss</TableHead>
+            <!-- Record (W-L-P) rides on a muted line under each name rather than its own column,
+                 so long names keep the full column width and never push the Total column off-screen
+                 at 390px. Rank movement rides inside the existing "#" cell rather than adding a
+                 column. -->
             <TableHead class="text-right">Total</TableHead>
           </TableRow>
         </TableHeader>
@@ -291,9 +286,10 @@
                   {/if}
                 </div>
               </TableCell>
-              <!-- max-w-0 makes this the flexible column: with the table's w-full it
-                   absorbs the leftover width instead of expanding to the (nowrap) name,
-                   and the inner truncate keeps a long name from pushing Total off-screen. -->
+              <!-- max-w-0 makes this the flexible column: with the table's w-full it absorbs the
+                   leftover width instead of expanding to the (nowrap) name, and the inner truncate
+                   keeps a long name from pushing Total off-screen. The record (W-L-P) sits on a
+                   muted second line under the name so it stays visible without its own column. -->
               <TableCell class="max-w-0">
                 <div class="flex min-w-0 items-center gap-2">
                   <UserAvatar
@@ -302,16 +298,14 @@
                     size="xs"
                     champion={isChampion}
                   />
-                  <span class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</span>
+                  <div class="min-w-0 leading-tight">
+                    <div class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</div>
+                    <div class="text-xs font-normal tabular-nums text-muted-foreground">
+                      {r.wins}-{r.losses}-{r.pushes}
+                    </div>
+                  </div>
                 </div>
               </TableCell>
-              <TableCell class="whitespace-nowrap text-right tabular-nums sm:hidden"
-                >{r.wins}-{r.losses}-{r.pushes}</TableCell
-              >
-              <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.wins}</TableCell>
-              <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.losses}</TableCell>
-              <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.pushes}</TableCell>
-              <TableCell class="hidden text-right tabular-nums sm:table-cell">{r.missed}</TableCell>
               <TableCell class="text-right font-semibold tabular-nums">{r.total_points}</TableCell>
             </TableRow>
           {/each}
@@ -436,9 +430,19 @@
         </Card>
       {:else}
         <div class="space-y-6">
-          <!-- The season race leads the Standings view (#561): every member's cumulative points by
-               week, the current user emphasised. Shown only once a week is graded (season scope
-               only — the trend is season-scoped), so a pre-grading season shows the table alone. -->
+          <!-- Standings lead the view: the ranked table answers "where do I stand" first, then
+               "The race" tells the story below it. The table is always present; the race renders
+               only once a week is graded (season scope only — the trend is season-scoped), so a
+               pre-grading season shows the table alone. -->
+          {@render standingsTableCard(
+            data.totals,
+            `${data.seasonYear} standings`,
+            data.dropActive,
+            "Total drops each player's lowest week. W-L-P count every week.",
+            'standings-table',
+            championUserId,
+            movements
+          )}
           {#if hasGradedWeek(pageData.trend ?? [])}
             <Card data-testid="season-race">
               <CardHeader>
@@ -452,15 +456,6 @@
               </CardContent>
             </Card>
           {/if}
-          {@render standingsTableCard(
-            data.totals,
-            `${data.seasonYear} standings`,
-            data.dropActive,
-            "Total drops each player's lowest week. W-L-P count every week.",
-            'standings-table',
-            championUserId,
-            movements
-          )}
         </div>
       {/if}
     </TabsContent>
