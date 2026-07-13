@@ -148,14 +148,17 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
   skill (`pnpm demo:snapshot`) so the demo keeps selling the current product. The snapshot is
   fully fictional and a build artifact — never derived from a real league, never written to
   production tables.
-- **Record shipped work in `docs/CHANGELOG.md` as part of the PR** (a required
-  `finish-pr` step): one terse, newest-first entry per merged PR — keyed by issue
-  number, or by PR number (`PR #NNN`) when the PR closes no issue, so chores, skills,
-  and infra stay visible. Because it rides inside the PR it lands in `master` exactly
-  when the code does and cannot drift. To decide whether something is **already done**,
-  read that file first (then `gh` for anything newer) — do not reverse-engineer
-  completion from source. GitHub (closed issues, merged PRs, Releases) stays
-  authoritative.
+- **Record shipped work as a `docs/changelog.d/` fragment as part of the PR** (a required
+  `finish-pr` step): one terse entry per merged PR in a uniquely-named fragment file —
+  keyed by issue number, or by PR number (`PR #NNN`) when the PR closes no issue, so
+  chores, skills, and infra stay visible. Because it rides inside the PR it lands in
+  `master` exactly when the code does and cannot drift; unique filenames mean concurrent
+  same-day PRs never collide (which editing the shared top of `docs/CHANGELOG.md` used to
+  cause). `cut-release` assembles the fragments into `docs/CHANGELOG.md` at release time.
+  To decide whether something is **already done**, read `docs/CHANGELOG.md` plus the
+  unreleased `docs/changelog.d/` fragments first (then `gh` for anything newer) — do not
+  reverse-engineer completion from source. GitHub (closed issues, merged PRs, Releases)
+  stays authoritative.
 - **Version impact is label-driven (ADR-0015) — do not bump `package.json` in feature
   PRs.** `issue-author` assigns a `semver:patch|minor|major` label + target milestone;
   `finish-pr` inherits them onto the PR; the `cut-release` skill computes the release

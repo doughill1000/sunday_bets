@@ -31,10 +31,11 @@ prerequisite ships; once that lands in `docs/CHANGELOG.md` (or the gating ADR re
      when `head -5 docs/adr/0007-*.md` shows `Status: Accepted`.
    - **A milestone/epic condition** — e.g. "After multi-group is live (v2.0)". Satisfied
      when the track's issues (#147–#151 for v2.0 self-service groups) are all shipped.
-3. **Check each gate against shipped truth.** `docs/CHANGELOG.md` is the authoritative
-   shipped-to-`master` log (one entry per merged issue/PR). An issue number present there
-   = shipped. For ADR gates, read the ADR's `Status:` line. Do not infer "shipped" from
-   source code or a bumped `package.json`.
+3. **Check each gate against shipped truth.** `docs/CHANGELOG.md` plus the unreleased
+   `docs/changelog.d/` fragments are the authoritative shipped-to-`master` log (one entry
+   per merged issue/PR; entries ride in a fragment until `cut-release` assembles them). An
+   issue number present in either = shipped. For ADR gates, read the ADR's `Status:` line.
+   Do not infer "shipped" from source code or a bumped `package.json`.
 4. **Sort into unblock vs keep — and respect "research/deferred".** A blocked issue
    whose gate is **shipped code/an Accepted ADR** is an unblock. A blocked issue whose
    "blocker" is really an unmade **design decision** (research-stage items: "capture now,
@@ -55,7 +56,8 @@ prerequisite ships; once that lands in `docs/CHANGELOG.md` (or the gating ADR re
 
 - In PowerShell, fetch `--json` and use `ConvertFrom-Json` — `--jq` strings with spaces
   get split and fail. Run `gh` via PowerShell, not Bash (see `AGENTS.md`).
-- **Shipped = in `docs/CHANGELOG.md`; ADR-gated = `Status: Accepted` in `docs/adr/`.**
+- **Shipped = in `docs/CHANGELOG.md` or a `docs/changelog.d/` fragment; ADR-gated =
+  `Status: Accepted` in `docs/adr/`.**
   Never infer completion from code or a version bump.
 - **Confirm before any write.** `CLAUDE.md` requires explicit approval for GitHub
   mutations and the classifier enforces it. If denied, stop and surface — let Doug decide.
