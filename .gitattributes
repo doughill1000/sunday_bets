@@ -4,3 +4,8 @@
 # cut-release squash — and note it helps local merges only: GitHub's mergeability check
 # and merge button ignore .gitattributes merge drivers. See docs/changelog.d/README.md.
 docs/CHANGELOG.md merge=union
+
+# computeRatings.ts once held a raw U+0000 byte (a Map-key separator) that made git treat
+# it as binary; it is now an escaped literal. Force text diffing so this fairness-critical
+# fold (ADR-0032) always reviews as a normal diff, including against the pre-fix base blob.
+src/lib/server/rating/computeRatings.ts diff
