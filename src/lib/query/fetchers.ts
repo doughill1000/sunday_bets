@@ -11,7 +11,8 @@ import type {
   LeagueCachePayload,
   LeagueSlatePayload,
   LeagueTeamGameLogPayload,
-  LeagueTrendsPayload
+  LeagueTrendsPayload,
+  RecapCachePayload
 } from './types';
 import type { LiveScoresPayload } from '$lib/live/types';
 
@@ -111,4 +112,16 @@ export async function fetchLeagueTeamGameLog(
   const res = await fetchFn(`/api/league/team?teamId=${teamId}&season=${seasonYear}`);
   if (!res.ok) throw new Error(`Failed to load team game log (${res.status})`);
   return res.json() as Promise<LeagueTeamGameLogPayload>;
+}
+
+export async function fetchRecap(
+  fetchFn: FetchFn,
+  groupId: string,
+  seasonYear: number
+): Promise<RecapCachePayload> {
+  const res = await fetchFn(
+    `/api/recap?groupId=${encodeURIComponent(groupId)}&season=${seasonYear}`
+  );
+  if (!res.ok) throw new Error(`Failed to load recap (${res.status})`);
+  return res.json() as Promise<RecapCachePayload>;
 }

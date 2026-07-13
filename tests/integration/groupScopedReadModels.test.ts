@@ -2,9 +2,9 @@
  * groupScopedReadModels.test.ts
  *
  * Integration tests for the read-model composers that back the `/api/{stats,group,
- * leaderboard}` cache routes (ADR-0017). These are the data layer the new routes return
- * after the membership guard passes, so they must enforce the SAME per-group isolation as
- * the page loads they mirror — a member only ever sees their own group's rows.
+ * leaderboard,recap}` cache routes (ADR-0017, ADR-0033). These are the data layer the new
+ * routes return after the membership guard passes, so they must enforce the SAME per-group
+ * isolation as the page loads they mirror — a member only ever sees their own group's rows.
  *
  * The composers reuse the existing query functions (no new SQL); these tests assert the
  * composed payloads stay group-scoped, mirroring groupIsolation.test.ts one level up.
@@ -20,6 +20,7 @@ import { seedTwoGroupSettlements, type TwoGroupSettlementsResult } from './fixtu
 import { getStatsCachePayload } from '$lib/server/readModels/statsCache';
 import { getLeaderboardStandingsPayload } from '$lib/server/readModels/leaderboardCache';
 import { getGroupCachePayload } from '$lib/server/readModels/groupCache';
+import { getRecapCachePayload } from '$lib/server/readModels/recapCache';
 
 const admin = createServiceClient();
 
@@ -104,5 +105,69 @@ describe('getGroupCachePayload — per-group isolation', () => {
     expect(memberIds).toContain(fx.sharedUserId);
     expect(memberIds).toContain(fx.exclusiveUserBId);
     expect(memberIds).not.toContain(fx.exclusiveUserAId);
+  });
+});
+
+describe('getRecapCachePayload — per-group isolation', () => {
+  // Distinct, recognizable prose per group so a leak is obvious rather than needing a
+  // deep-equality diff. Idempotent upsert on (group_id, season_year, week_number) — the
+  // fixture's own week (10) — so re-running this suite never accumulates rows.
+  beforeAll(async () => {
+    const { error } = await admin.from('ai_recaps').upsert(
+      [
+        {
+          group_id: fx.groupAId,
+          season_year: fx.seasonYear,
+          week_number: 10,
+          prose: 'GROUP A ONLY recap prose',
+          facts: {},
+          is_fallback: false,
+          model: null,
+          prompt_tokens: null,
+          completion_tokens: null
+        },
+        {
+          group_id: fx.groupBId,
+          season_year: fx.seasonYear,
+          week_number: 10,
+          prose: 'GROUP B ONLY recap prose',
+          facts: {},
+          is_fallback: false,
+          model: null,
+          prompt_tokens: null,
+          completion_tokens: null
+        }
+      ],
+      { onConflict: 'group_id,season_year,week_number' }
+    );
+    if (error) throw new Error(`getRecapCachePayload fixture: upsert ai_recaps: ${error.message}`);
+  });
+
+  it('group A payload contains only group A recap prose and award holders', async () => {
+    const payload = await getRecapCachePayload(fx.groupAId, fx.seasonYear);
+
+    expect(payload.recaps).toHaveLength(1);
+    expect(payload.recaps[0].prose).toBe('GROUP A ONLY recap prose');
+
+    const week = payload.weeklyAwards.weeks.find((w) => w.week_number === 10);
+    expect(week).toBeDefined();
+    const holderIds = week!.awards.map((a) => a.holder.user_id);
+    expect(holderIds).not.toContain(fx.exclusiveUserBId);
+    const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
+    expect(shelfIds).not.toContain(fx.exclusiveUserBId);
+  });
+
+  it('group B payload contains only group B recap prose and award holders', async () => {
+    const payload = await getRecapCachePayload(fx.groupBId, fx.seasonYear);
+
+    expect(payload.recaps).toHaveLength(1);
+    expect(payload.recaps[0].prose).toBe('GROUP B ONLY recap prose');
+
+    const week = payload.weeklyAwards.weeks.find((w) => w.week_number === 10);
+    expect(week).toBeDefined();
+    const holderIds = week!.awards.map((a) => a.holder.user_id);
+    expect(holderIds).not.toContain(fx.exclusiveUserAId);
+    const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
+    expect(shelfIds).not.toContain(fx.exclusiveUserAId);
   });
 });

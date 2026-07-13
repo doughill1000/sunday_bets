@@ -23,6 +23,8 @@ import type {
   LeagueTeamGameLog,
   LeagueTrends
 } from '$lib/types/server/league';
+import type { RecapRow } from '$lib/server/db/queries/recaps';
+import type { SeasonWeeklyAwards } from '$lib/types/server/weeklyAwards';
 
 /** Eager, season-scoped Stats payload cached under `['stats', groupId, season]`. */
 export type StatsCachePayload = SeasonStats & {
@@ -146,3 +148,14 @@ export type LeagueTrendsPayload = LeagueTrends;
  * the rest of the league surface, so it is freely shareable/persistable (ADR-0017).
  */
 export type LeagueTeamGameLogPayload = LeagueTeamGameLog;
+
+/**
+ * Shareable Recap payload cached under `['recap', groupId, season]` (ADR-0033, issue
+ * #602): the recent AI recap prose plus the season's weekly-hardware awards/shelf. Both
+ * halves are group_id + season_year filtered with no per-role branching, so — unlike
+ * Wrapped's viewer-scoped half — the whole payload is freely shareable/persistable.
+ */
+export type RecapCachePayload = {
+  recaps: RecapRow[];
+  weeklyAwards: SeasonWeeklyAwards;
+};
