@@ -58,6 +58,12 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #572** Agent-instructions skills sweep — give new agent sessions a map of the
+  `.claude/skills/` delivery pipeline + standalone utilities (`CLAUDE.md` "Skills"),
+  and surface previously-undocumented workflows in `AGENTS.md`: the Hotshot naming
+  rule, the `docs/DESIGN.md` merge gate, the in-app feedback boundary, and an
+  Operations & observability section pointing at `docs/observability`/`runbooks`/`audits`.
+  files: `CLAUDE.md` · `AGENTS.md` · ADR-0027/0028/0029/0030
 - **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
   `app.css` now collapses every animation and transition under reduced-motion, so the
   vendored dialog/sheet/dropdown enter-exit, the nav progress bar, the pulse skeletons,
