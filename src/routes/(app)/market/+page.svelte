@@ -15,7 +15,6 @@
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
   import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
-  import Quadrants from '$lib/components/league/Quadrants.svelte';
   import Primetime from '$lib/components/league/Primetime.svelte';
   import Divisional from '$lib/components/league/Divisional.svelte';
   import MarketBends from '$lib/components/league/MarketBends.svelte';
@@ -568,8 +567,6 @@
       {@render favoritesPanel()}
     {:else if activeSlice === 'spread'}
       <SpreadBuckets buckets={activeTrends.spreadBuckets} />
-    {:else if activeSlice === 'quadrants'}
-      <Quadrants quadrants={activeTrends.quadrants} homeAway={activeTrends.homeAway} />
     {:else if activeSlice === 'primetime'}
       <Primetime slots={activeTrends.primetime} />
     {:else if activeSlice === 'divisional'}

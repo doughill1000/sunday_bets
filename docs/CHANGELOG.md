@@ -76,6 +76,11 @@ entry per PR the rest of the time.
   triple-shown situational edge. routes: `/stats` · new `StatsHero.svelte` /
   `SignatureTells.svelte` · removed `YourEdge.svelte` / `CareerSummary.svelte` /
   `SignatureTendencies.svelte` · `docs/DESIGN.md` · ADR-0018 / ADR-0030
+- **PR #576** Remove the /league "Quadrants" chip — the dedicated home/road ×
+  favorite/underdog grid was a low-value slice, so it's dropped from the "Slice by"
+  row. The underlying `league_ats_quadrants` data is untouched (still feeds the
+  always-on MarketBends synthesis lead and the Favorites derivation). files:
+  `lib/utils/leagueSlices.ts` · `routes/(app)/teams/+page.svelte`
 - **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
   co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
   Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
