@@ -64,6 +64,12 @@ entry per PR the rest of the time.
   and the avatar hover comply by default instead of each needing a hand-written guard.
   The JS-driven picks lock keeps collapsing its own timing on top. file: `app.css` ·
   ADR-0029/0030
+- **PR #570** `cut-release` backfills governance drift + squashes changelog window —
+  the skill now runs the governance-freshness gate locally before computing the
+  version (backfilling any missing changelog entries / stale ADR statuses it flags),
+  and collapses the release's changelog window into one heading at cut time. Skill +
+  doc change only.
+
 - **PR #569** Release v3.3.0 — version bump only, no runtime change.
 
 - **#564** Tendencies on /stats — a tendency layer that says _what kind of bettor_ you are. A
