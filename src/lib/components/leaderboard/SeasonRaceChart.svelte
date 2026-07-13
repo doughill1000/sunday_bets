@@ -8,9 +8,11 @@
   // pattern, DESIGN principle 2): one player is highlighted at a time — their line is the brand
   // line drawn on top and labelled at its finish, the rest are muted context. It defaults to the
   // current user, so it opens on "your race" but lets you interrogate any rival's trajectory.
+  import type { ComponentProps } from 'svelte';
   import { LineChart } from 'layerchart';
   import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
   import { buildTrendSeries } from '$lib/utils/stats';
+  import { dismissTooltipOnScroll } from '$lib/utils/chartTooltip';
   import type { SeasonTrendEntry } from '$lib/types/server/stats';
 
   interface Props {
@@ -79,6 +81,10 @@
   // layerchart's axis labels rely on a `fill-surface-content` class our Tailwind build doesn't
   // generate (it skips node_modules), so set the fill directly (matching SeasonTrendChart).
   const tickLabelProps = { fill: 'var(--muted-foreground)' };
+
+  // Bound so `dismissTooltipOnScroll` can hide the tooltip when an iOS/Android scroll gesture
+  // cancels the pointer that opened it (otherwise the popover freezes on screen — see the action).
+  let chartContext = $state<ComponentProps<typeof LineChart>['context']>();
 </script>
 
 {#if chartSeries.length > 0}
@@ -101,8 +107,10 @@
       role="img"
       aria-label="The season race: cumulative points by week for each player, with the selected player highlighted"
       data-testid="season-race-chart"
+      use:dismissTooltipOnScroll={() => chartContext}
     >
       <LineChart
+        bind:context={chartContext}
         x="week_number"
         y="cumulative_points"
         series={chartSeries}
