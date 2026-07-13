@@ -18,6 +18,29 @@ import { describe, test, expect, beforeAll, afterAll, vi } from 'vitest';
 // only member used in the server chain is captureException. Mirrors push.spec.ts.
 vi.mock('@sentry/sveltekit', () => ({ captureException: () => undefined }));
 
+// syncSchedule() performs up to ~22 sequential live ESPN scoreboard fetches
+// (4 preseason + 18 regular-season weeks). This suite only asserts the admin
+// auth boundary for /api/admin/sync-schedule, so the real sync must never run:
+// over a slow CI network those serial fetches blow past vitest's 5s per-test
+// timeout and flake the admin case (observed in run 29274579929). Stub it to
+// resolve fast; keep targetNFLYear — also imported by the handler — real via
+// importOriginal. The sibling sync-odds handler makes a single bounded active-
+// week fetch that fast-fails on the placeholder key, so it needs no stub.
+vi.mock('$lib/server/scheduleSync', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('$lib/server/scheduleSync')>();
+  return {
+    ...actual,
+    syncSchedule: vi.fn(async (year?: number) => ({
+      ok: true,
+      year: year ?? actual.targetNFLYear(),
+      weeksProcessed: 0,
+      gamesUpserted: 0,
+      gamesSkipped: 0,
+      weeksFailed: 0
+    }))
+  };
+});
+
 import { createServiceClient } from './_auth';
 import {
   TEST_USERS,
