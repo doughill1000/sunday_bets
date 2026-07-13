@@ -22,10 +22,16 @@ decision this guide details is ratified in
   divergence must name the **user, task, and viewport** that justify it. "What specific
   desktop task requires this to differ?" is a fair review question. The one surface where
   desktop earns real attention is **admin**, operated on a laptop.
-- **Dark-only.** The app ships a single dark theme (charcoal `--background` + brass-gold
-  `--primary` + warm cream `--foreground`, with an ember `--ember` accent — see
-  [ADR-0027](adr/0027-rebrand-sunday-bets-to-hotshot.md)). The light `:root` tokens are
-  placeholders for a future theme; don't design light-mode variants today.
+- **Two themes, dark by default.** The app ships a dark theme (charcoal `--background` +
+  brass-gold `--primary` + warm cream `--foreground`, ember `--ember` accent — see
+  [ADR-0027](adr/0027-rebrand-sunday-bets-to-hotshot.md)) and a light **Parchment** theme
+  (warm paper ground, brass as co-lead), chosen per user in Settings and stored on
+  `users.theme_pref` (#532); dark is the default for unauthenticated/unset visitors. Design
+  for **both** — every colour and elevation token carries a maintained value in each theme
+  (`.dark` and `:root` in `src/app.css`), so a new surface must read correctly under either.
+  The accent splits into a **fill** (`--primary`, keeps a dark label) and an **ink**
+  (`--primary-ink`, darker on light to clear AA): reach for `text-primary-ink` for a gold
+  label/border, never `text-primary`.
 - **Token-driven** — every colour, and semantic type/spacing/elevation/motion, comes from
   the vocabulary in [`design-system.md`](agent-context/design-system.md), not a raw value.
   That layer owns the "what"; this guide owns the "how it's arranged".
@@ -331,9 +337,10 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
 - [ ] Consequential actions give immediate feedback **and** a durable confirmation (a toast
       is never the sole signal); in-flight controls keep their active style — pending ≠
       unavailable.
-- [ ] Muted/body text clears AA; interactive controls have visible focus using the
-      canonical ring recipe (design-system.md), semantic roles, and keyboard operation (a
-      chip group is a real radiogroup).
+- [ ] Muted/body text clears AA **in both themes** (gold text/borders use `--primary-ink`,
+      not `--primary`); interactive controls have visible focus using the canonical ring
+      recipe (design-system.md), semantic roles, and keyboard operation (a chip group is a
+      real radiogroup).
 - [ ] Motion respects `prefers-reduced-motion` and uses the motion tokens.
 
 ## How to check your work

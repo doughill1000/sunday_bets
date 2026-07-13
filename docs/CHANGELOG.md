@@ -58,6 +58,14 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
+  co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
+  Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
+  flashes (`system` is narrowed by a blocking `prefers-color-scheme` script). Gold text/borders
+  migrate to a darker `--primary-ink` so they clear AA on the light ground; the picks selection
+  ladder and elevations gain light values. files: `app.css` · `app.html` · `lib/theme.ts` ·
+  `hooks.server.ts` · `api/profile` · `settings/+page.svelte` · schema `0231_theme_pref` ·
+  `docs/DESIGN.md` · `docs/agent-context/design-system.md` · ADR-0029
 - **PR #574** Hermetic AI-gateway integration tests — the recap/wrapped/badge
   fallback suites now force the no-gateway condition instead of inheriting it from a
   dev's `.env.local`, so they stay deterministic and stop silently burning AI Gateway

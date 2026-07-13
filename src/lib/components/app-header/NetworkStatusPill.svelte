@@ -80,7 +80,7 @@
         <button
           type="button"
           data-testid="network-status-retry"
-          class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 font-medium text-primary hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
+          class="ml-1 inline-flex items-center rounded-full px-2 py-0.5 font-medium text-primary-ink hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
           onclick={retry}
           disabled={retrying}
         >

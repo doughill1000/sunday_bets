@@ -884,5 +884,10 @@
     "hash": "f991989d3bb0fb42b982d71e245a71b65776a6b9049d79f834f04dc820452052",
     "migration": "20260712211230_stats_team_book.sql",
     "migrationHash": "ace81cd666c2dc16a007b2ede2d2c26cd51a22e90743e5b038b118d97321a44a"
+  },
+  "schemas/0231_theme_pref.sql": {
+    "hash": "a962564281b0e18115d2d25cba353c41cc752a75abee4fb3fa59ec93514ca9c7",
+    "migration": "20260712235932_theme_pref.sql",
+    "migrationHash": "ef51aa02a3f3073bb869698a1b3d79bd56e618552acddfd7b2f9eac703d1637e"
   }
 }

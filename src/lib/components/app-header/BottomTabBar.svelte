@@ -30,7 +30,7 @@
     <a
       {href}
       class="flex flex-1 flex-col items-center gap-1 px-2 py-3.5 text-[11px] font-medium transition-colors
-        {active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
+        {active ? 'text-primary-ink' : 'text-muted-foreground hover:text-foreground'}"
       aria-current={active ? 'page' : undefined}
     >
       <Icon class="size-6" />

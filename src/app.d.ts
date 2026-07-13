@@ -2,6 +2,7 @@
 
 import type { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/supabase'; // import generated types
+import type { ThemeMode } from '$lib/theme';
 
 declare global {
   namespace App {
@@ -17,6 +18,9 @@ declare global {
         guideSeenAt: string | null;
         /** Per-user toggle for the pick-card ATS trend nugget (issue #406). Default true. */
         showTeamTrends: boolean;
+        /** Per-user theme preference (issue #532): 'dark' | 'light' | 'system'.
+         *  Defaults to dark when the column is unset/invalid (DEFAULT_THEME_MODE). */
+        themePref: ThemeMode;
       } | null;
       groupId: string | null;
       /** All active group memberships for the authenticated user (empty for guests). */

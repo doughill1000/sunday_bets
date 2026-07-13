@@ -72,7 +72,7 @@
 
             <div
               class="text-right font-mono text-xs tabular-nums {bend.side === 'fav'
-                ? 'text-primary'
+                ? 'text-primary-ink'
                 : 'text-chart-2'}"
             >
               {pct1(bend.coverPct)}

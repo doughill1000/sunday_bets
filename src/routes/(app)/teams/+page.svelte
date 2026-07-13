@@ -670,7 +670,7 @@
               tabindex={selected ? 0 : -1}
               data-testid="league-slice-chip"
               class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
-                ? 'border-primary bg-primary text-primary-foreground'
+                ? 'border-primary-ink bg-primary text-primary-foreground'
                 : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
               onclick={() => (selectedSlice = slice)}
               onkeydown={onSliceKeydown}

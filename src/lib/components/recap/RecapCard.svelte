@@ -16,7 +16,7 @@
 <Card class="border-border/50 bg-card">
   <CardHeader class="pb-2">
     <CardTitle class="flex items-center gap-2 text-base font-semibold">
-      <Sparkles class="h-4 w-4 text-primary shrink-0" />
+      <Sparkles class="h-4 w-4 text-primary-ink shrink-0" />
       {weekLabel}
       {#if compact}
         <button
