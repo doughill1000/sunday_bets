@@ -32,7 +32,7 @@
     <CardHeader>
       <CardTitle>Primetime vs. daytime</CardTitle>
       <CardDescription>
-        How often the spread favorite covers by kickoff slot, league-wide.
+        How often the spread favorite covers by kickoff slot, NFL-wide.
       </CardDescription>
     </CardHeader>
     <CardContent>

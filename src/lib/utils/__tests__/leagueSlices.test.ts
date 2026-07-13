@@ -52,7 +52,6 @@ describe('availableSituationalSlices', () => {
     expect(availableSituationalSlices(cuts)).toEqual([
       'favorites',
       'spread',
-      'quadrants',
       'primetime',
       'divisional'
     ]);

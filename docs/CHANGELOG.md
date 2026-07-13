@@ -58,6 +58,18 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #579** Rename the NFL-market tab "Teams" → "Market" and reserve "League" for the
+  user's group — the word was overloaded (a user's pool is their "league", and so is the
+  NFL), so the two are split: League = the group, Market = the NFL side. Route `/teams` →
+  `/market` (308 redirect), nav labels, and the `/stats` + `/market` diverging-bar baseline
+  relabelled "league" → "market"; the naming rule is codified in the design guide. Internal
+  `league` plumbing (`/api/league`, `league_ats_*`) is intentionally left for a later
+  refactor. routes: `/market` (was `/teams`) · `docs/DESIGN.md` · ADR-0030
+- **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
+  (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
+  all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
+  `pointercancel`. files: `lib/utils/chartTooltip.ts` · `SeasonTrendChart.svelte` (/stats) ·
+  `SeasonRaceChart.svelte` (/league)
 - **#567** Consolidate the `/stats` top into one scope-aware hero — the three stacked
   preamble cards (Your edge + career/season snapshot + signature strip) collapse into a
   single hero pairing the headline number line (Record · ATS% · Decisions) with the
@@ -72,6 +84,11 @@ entry per PR the rest of the time.
   hardcoded white text color left over from the dark-only era, making it invisible on
   the light theme. Now inherits the surrounding Card's foreground token instead. file:
   `routes/(app)/stats/+page.svelte`
+- **PR #576** Remove the /league "Quadrants" chip — the dedicated home/road ×
+  favorite/underdog grid was a low-value slice, so it's dropped from the "Slice by"
+  row. The underlying `league_ats_quadrants` data is untouched (still feeds the
+  always-on MarketBends synthesis lead and the Favorites derivation). files:
+  `lib/utils/leagueSlices.ts` · `routes/(app)/teams/+page.svelte`
 - **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
   co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
   Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
