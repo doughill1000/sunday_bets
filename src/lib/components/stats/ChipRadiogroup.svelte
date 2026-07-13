@@ -4,13 +4,17 @@
     value,
     ariaLabel,
     idPrefix,
-    onchange
+    onchange,
+    testid
   }: {
     options: ReadonlyArray<{ value: string; label: string }>;
     value: string;
     ariaLabel: string;
     idPrefix: string;
     onchange: (value: string) => void;
+    // Optional per-chip `data-testid`, so a caller with an existing e2e contract (the /market
+    // "Slice by" row's `league-slice-chip`) keeps its hook. Omitted callers emit no attribute.
+    testid?: string;
   } = $props();
 
   function onKeydown(event: KeyboardEvent) {
@@ -53,6 +57,7 @@
       id="{idPrefix}-{option.value}"
       aria-checked={selected}
       tabindex={selected ? 0 : -1}
+      data-testid={testid}
       class="rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none {selected
         ? 'border-primary-ink bg-primary text-primary-foreground'
         : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"

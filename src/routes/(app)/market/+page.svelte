@@ -18,6 +18,7 @@
   import Primetime from '$lib/components/league/Primetime.svelte';
   import Divisional from '$lib/components/league/Divisional.svelte';
   import MarketBends from '$lib/components/league/MarketBends.svelte';
+  import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
   import CoverMeter from '$lib/components/CoverMeter.svelte';
   import { topMarketBends } from '$lib/utils/leagueBends';
   import {
@@ -223,54 +224,13 @@
   let selectedSlice = $state<LeagueSlice | null>(null);
   const activeSlice = $derived(resolveLeagueSlice(selectedSlice, availableSlices));
 
-  // APG roving-tabindex model: arrows/Home/End move selection and focus across the chip row
-  // (matching the #517 cut chips). A single-choice view selector, so role="radiogroup".
-  function onSliceKeydown(event: KeyboardEvent) {
-    const idx = availableSlices.indexOf(activeSlice);
-    if (idx === -1) return;
-    let next = idx;
-    switch (event.key) {
-      case 'ArrowRight':
-      case 'ArrowDown':
-        next = (idx + 1) % availableSlices.length;
-        break;
-      case 'ArrowLeft':
-      case 'ArrowUp':
-        next = (idx - 1 + availableSlices.length) % availableSlices.length;
-        break;
-      case 'Home':
-        next = 0;
-        break;
-      case 'End':
-        next = availableSlices.length - 1;
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-    selectedSlice = availableSlices[next];
-    document.getElementById(`league-slice-tab-${selectedSlice}`)?.focus();
-  }
-
-  // Honest chip overflow (#529): the "Slice by" strip scrolls horizontally at 390px, so a
-  // right-edge fade appears only while there is un-scrolled content to the right — a visible cue
-  // that a cut is hidden, never a silent clip. Re-measured on scroll, on element resize, and when
-  // the slice set changes.
-  let sliceScroller = $state<HTMLDivElement | null>(null);
-  let sliceOverflow = $state(false);
-  function measureSliceOverflow() {
-    const el = sliceScroller;
-    sliceOverflow = el ? el.scrollWidth - el.clientWidth - Math.ceil(el.scrollLeft) > 1 : false;
-  }
-  $effect(() => {
-    const el = sliceScroller;
-    if (!el) return;
-    void availableSlices; // re-measure when the chip set changes
-    measureSliceOverflow();
-    const observer = new ResizeObserver(measureSliceOverflow);
-    observer.observe(el);
-    return () => observer.disconnect();
-  });
+  // Chip options for the shared `<ChipRadiogroup>` (the {value,label} shape it renders). The
+  // roving-tabindex/arrow-key contract and layout now live in that one component — this page no
+  // longer hand-rolls the keyboard model or an overflow-fade scroller (it wraps instead, so every
+  // cut stays visible at 390px). The value round-trips as a `LeagueSlice`.
+  const sliceOptions = $derived(
+    availableSlices.map((slice) => ({ value: slice, label: LEAGUE_SLICE_LABEL[slice] }))
+  );
 
   // Human "2022–2024" (or "2024") range for the pooled caption, from the seasons actually pooled.
   const pooledRangeLabel = $derived.by(() => {
@@ -640,49 +600,23 @@
 
   <div class="space-y-4">
     <!-- "Slice by" (#529): one chip row replacing the Teams|Trends tab bar. "By team" is the
-         default lens; the situational cuts follow (only those with data for the active scope). A
-         single-choice view selector (role="radiogroup" + roving tabindex/arrow keys, matching the
-         #517 cut chips); the detail region below is what it drives. The strip scrolls at 390px
-         with a right-edge fade cue so no cut is silently clipped. -->
+         default lens; the situational cuts follow (only those with data for the active scope). The
+         shared <ChipRadiogroup> is the single-choice view selector (role="radiogroup" + roving
+         tabindex/arrow keys) that drives the detail region below — matching the /stats breakdown
+         chips instead of this page's former hand-rolled copy. It wraps at 390px, so every cut stays
+         visible. `league-slice-tab-{slice}` ids (which the detail region is labelled by) and the
+         `league-slice-chip` testid are preserved via idPrefix/testid. -->
     <div class="space-y-2">
-      <span
-        id="league-slice-label"
-        class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Slice by</span
+      <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Slice by</span
       >
-      <div class="relative">
-        <div
-          bind:this={sliceScroller}
-          onscroll={measureSliceOverflow}
-          role="radiogroup"
-          aria-labelledby="league-slice-label"
-          class="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        >
-          {#each availableSlices as slice (slice)}
-            {@const selected = activeSlice === slice}
-            <button
-              type="button"
-              role="radio"
-              id="league-slice-tab-{slice}"
-              aria-checked={selected}
-              tabindex={selected ? 0 : -1}
-              data-testid="league-slice-chip"
-              class="shrink-0 rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected
-                ? 'border-primary-ink bg-primary text-primary-foreground'
-                : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
-              onclick={() => (selectedSlice = slice)}
-              onkeydown={onSliceKeydown}
-            >
-              {LEAGUE_SLICE_LABEL[slice]}
-            </button>
-          {/each}
-        </div>
-        {#if sliceOverflow}
-          <div
-            class="pointer-events-none absolute inset-y-0 right-0 w-10 rounded-r-lg bg-gradient-to-l from-background to-transparent"
-            aria-hidden="true"
-          ></div>
-        {/if}
-      </div>
+      <ChipRadiogroup
+        options={sliceOptions}
+        value={activeSlice}
+        ariaLabel="Slice by"
+        idPrefix="league-slice-tab"
+        testid="league-slice-chip"
+        onchange={(value) => (selectedSlice = value as LeagueSlice)}
+      />
     </div>
 
     <!-- One detail region for the active slice: the by-team roster or a single situational cut,

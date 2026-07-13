@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #582** Adopt the shared `ChipRadiogroup` for the `/market` "Slice by" chips — the
+  row hand-rolled its own radiogroup (keyboard model + horizontal-scroll/edge-fade); it now
+  uses the same component as `/stats` and wraps at 390px so every cut stays visible. Clears
+  the last chip-radiogroup hand-copy flagged by the 2026-07-11 UI-consistency audit (S7).
+  files: `ChipRadiogroup.svelte` · `/market` · ADR-0030
 - **PR #583** Reorder `/league` Standings and de-clutter the table — the standings
   table now leads with "The race" chart below it (was race-first), and each player's
   W-L-P record moves from its own column onto a muted line under the name so long names
