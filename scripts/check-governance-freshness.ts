@@ -36,7 +36,11 @@ import path from 'node:path';
 const REPO_ROOT = process.cwd();
 const ADR_DIR = path.join(REPO_ROOT, 'docs', 'adr');
 const CHANGELOG_PATH = path.join(REPO_ROOT, 'docs', 'CHANGELOG.md');
-const CHANGELOG_ENFORCEMENT_SINCE = process.env.GOVERNANCE_CHANGELOG_SINCE ?? '2026-07-02';
+// A bare 'YYYY-MM-DD' is treated as that day's start (UTC); pass a full ISO timestamp
+// when the boundary needs to fall between two PRs merged on the same calendar day (as
+// it did for the 2026-07-12 changelog squash — see docs/CHANGELOG.md's history note).
+const CHANGELOG_ENFORCEMENT_SINCE =
+  process.env.GOVERNANCE_CHANGELOG_SINCE ?? '2026-07-12T23:50:00Z';
 const BOT_LOGINS = new Set(['dependabot[bot]', 'github-actions[bot]']);
 
 type GitHubIssue = {
@@ -132,7 +136,11 @@ function changelogReferencesAny(changelog: string, numbers: number[]): boolean {
 
 async function checkChangelogFreshness(): Promise<string[]> {
   const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
-  const since = new Date(`${CHANGELOG_ENFORCEMENT_SINCE}T00:00:00Z`);
+  const since = new Date(
+    CHANGELOG_ENFORCEMENT_SINCE.includes('T')
+      ? CHANGELOG_ENFORCEMENT_SINCE
+      : `${CHANGELOG_ENFORCEMENT_SINCE}T00:00:00Z`
+  );
 
   const prs = await githubApi<GitHubPullRequest[]>(
     `/repos/${githubRepo()}/pulls?state=closed&base=master&sort=updated&direction=desc&per_page=100`

@@ -2170,6 +2170,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      stats_team_book: {
+        Row: {
+          accuracy: number | null;
+          decisions: number | null;
+          display_name: string | null;
+          group_id: string | null;
+          losses: number | null;
+          points: number | null;
+          pushes: number | null;
+          season_year: number | null;
+          side: string | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_short_name: string | null;
+          user_id: string | null;
+          wins: number | null;
+        };
+        Relationships: [];
+      };
+      stats_team_book_alltime: {
+        Row: {
+          accuracy: number | null;
+          decisions: number | null;
+          display_name: string | null;
+          group_id: string | null;
+          losses: number | null;
+          points: number | null;
+          pushes: number | null;
+          side: string | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_short_name: string | null;
+          user_id: string | null;
+          wins: number | null;
+        };
+        Relationships: [];
+      };
       ui_games: {
         Row: {
           away: string | null;

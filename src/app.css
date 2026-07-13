@@ -252,6 +252,27 @@
   }
 }
 
+/* Reduced motion (ADR-0030 hard constraint; ADR-0029 §Motion): one global fallback so
+   every animation/transition collapses under `prefers-reduced-motion: reduce` — the
+   vendored tw-animate-css dialog/sheet/dropdown enter/exit, the NavProgress keyframe,
+   the `animate-pulse` skeletons, and the avatar hover scale — without hand-guarding
+   each site. `0.01ms` (not 0) keeps `animationend`/`transitionend` firing so components
+   that unmount on exit still do; capping iteration-count stops looping animations after
+   one imperceptible pass. The JS-driven picks lock/unlock collapses its own timing in
+   addition (see `$lib/ui/motion`, which references this rule). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    animation-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Team + weight buttons are one "input tier": they share a calm charcoal raised surface with
    a cream label (brand palette, not per-team colors — cleaner than the old muddy gradient).
    Selection follows a strict system so nothing fights the Lock in CTA: cream = information,

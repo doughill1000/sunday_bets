@@ -42,6 +42,12 @@ describe('getStatsCachePayload — per-group isolation', () => {
     expect(teamIds).not.toContain(fx.exclusiveUserBId);
     const allTimeIds = payload.allTimeTotals.map((r) => r.user_id);
     expect(allTimeIds).not.toContain(fx.exclusiveUserBId);
+    // Team book (#564), season + career, stays group-scoped like every other per-user cut.
+    const teamBookIds = [...new Set(payload.teamBook.map((r) => r.user_id))];
+    expect(teamBookIds).toContain(fx.exclusiveUserAId);
+    expect(teamBookIds).not.toContain(fx.exclusiveUserBId);
+    const teamBookAllTimeIds = [...new Set(payload.teamBookAllTime.map((r) => r.user_id))];
+    expect(teamBookAllTimeIds).not.toContain(fx.exclusiveUserBId);
     expect(payload.seasonYear).toBe(fx.seasonYear);
   });
 

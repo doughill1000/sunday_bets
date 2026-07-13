@@ -20,6 +20,38 @@ The natural-language issue-creation triggers in `AGENTS.md` apply to Claude
 unchanged. Push branches, open PRs, and file issues without asking; never merge —
 landing code is the human's call (see `AGENTS.md` "Delivery workflow").
 
+## Skills
+
+Claude Code sessions in this repo have skills that automate the `docs/WORKFLOW.md`
+delivery process — **prefer invoking the skill over hand-rolling its steps.** Each
+skill already loads the context packs and ADRs its stage needs; the authoritative
+detail lives in each `.claude/skills/<name>/SKILL.md`, so this is a map, not a spec.
+(Skills are Claude-only; Codex follows the same workflow manually.)
+
+**Delivery pipeline** — one issue → one branch → one PR:
+
+| Stage                             | Skill               | When                                                    |
+| --------------------------------- | ------------------- | ------------------------------------------------------- |
+| Explore a UI change visually      | `design-study`      | "mock this up", "design study for #NNN"                 |
+| Decide if a decision needs an ADR | `new-adr`           | security / data-model / cross-cutting / fairness change |
+| Create an issue                   | `issue-author`      | "file an issue", "add to the backlog"                   |
+| Scope an existing issue           | `scope-issue`       | "scope #NNN", "interview me about #NNN"                 |
+| Implement a Ready issue           | `start-issue`       | worktree → build → auto-hands-off to `finish-pr`        |
+| Make a schema change              | `db-migration`      | editing `supabase/src/**`                               |
+| Choose the pre-PR checks          | `test-gate`         | before raising a PR                                     |
+| Open the PR                       | `finish-pr`         | changelog entry + push + PR                             |
+| Review a DB diff                  | `db-pr-review`      | reviewing anything under `supabase/`                    |
+| Land an open PR                   | `land-pr`           | "land PR #NNN" (checks CI once, then confirm-merge)     |
+| Check a release is done           | `release-status`    | "is vX done?" (read-only)                               |
+| Cut the release                   | `cut-release`       | "cut vX", "ship the release"                            |
+| Clear stale `blocked` labels      | `reconcile-blocked` | "unblock what's ready"                                  |
+
+**Standalone utilities** (not tied to one issue): `ci-triage` (diagnose a red check) ·
+`dependabot-sweep` (clear dependency PRs) · `cleanup-worktrees` (remove merged
+worktrees) · `pattern-audit` (grade repo patterns → `docs/audits/`) · `season-ops`
+(prod cron / odds-quota / matview health) · `refresh-demo-snapshot` (regenerate the
+`/demo` fixture).
+
 > **TEMPORARY — app not in active use (as of 2026-06-26).** There are no live users
 > right now, so DB migrations and updates (including against prod) need not coordinate
 > around live traffic or downtime — disruptive or destructive changes are acceptable on
