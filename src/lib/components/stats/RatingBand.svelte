@@ -38,10 +38,13 @@
     rating != null ? meterPct(rating) : (decisions / MIN_QUALIFIED_DECISIONS) * 100
   );
 
-  // Tier pill loudness: the two sharp tiers earn the brass fill; Solid a quiet raised chip; Square
-  // and Unrated a plain outline (Unrated dashed, to read as "not yet a verdict").
+  // Tier pill loudness, a four-step ladder mirroring the tiers: Hotshot (the namesake apex) earns the
+  // brass fill plus an ink ring so winning the top tier stands apart; Sharp the plain brass fill;
+  // Solid a quiet raised chip; Square and Unrated a plain outline (Unrated dashed, to read as "not
+  // yet a verdict").
   function tierPillClass(t: RatingTier): string {
-    if (t === 'shark' || t === 'sharp') return 'bg-primary text-primary-foreground';
+    if (t === 'hotshot') return 'bg-primary text-primary-foreground ring-2 ring-primary-ink/50';
+    if (t === 'sharp') return 'bg-primary text-primary-foreground';
     if (t === 'solid') return 'border border-border bg-muted text-foreground';
     return 'border border-border text-muted-foreground';
   }
@@ -60,7 +63,7 @@
     {#if rated && tier}
       <span
         class="rounded-full px-2 py-0.5 text-eyebrow {tierPillClass(tier)}"
-        data-testid="rating-tier">{tierLabel(tier)}</span
+        data-testid="rating-tier">{tier === 'hotshot' ? '★ ' : ''}{tierLabel(tier)}</span
       >
     {:else}
       <span
