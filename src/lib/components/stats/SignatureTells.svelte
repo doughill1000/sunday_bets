@@ -1,16 +1,10 @@
 <script lang="ts">
-  // Signature tendencies strip (issue #564): reads the player's strongest already-computed cuts
-  // back to them as plain sentences — "You keep fading DAL", "You lean underdog", "You beat the
-  // market in primetime". The pure `signatureTendencies` util decides WHICH tells and their rank;
-  // this component only writes the English (subject conjugation, sentence per kind). Career-first
-  // and scope-aware: the page feeds career or season tells and passes the matching scope label.
-  import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle
-  } from '$lib/components/ui/card';
+  // Signature tells list (issue #564, extracted for #567): reads the player's strongest
+  // already-computed cuts back to them as plain sentences — "You keep fading DAL", "You lean
+  // underdog", "You beat the market in primetime". The pure `signatureTendencies` util decides
+  // WHICH tells and their rank; this component only writes the English (subject conjugation,
+  // sentence per kind). It carries no Card/header of its own — `StatsHero` owns the framing and
+  // the scope label — so the tells fold into the one scope-aware hero without nesting cards.
   import { formatAccuracy } from '$lib/utils/stats';
   import type { SignatureTell } from '$lib/utils/stats';
   import type { SituationalDimension } from '$lib/types/server/stats';
@@ -18,14 +12,11 @@
   let {
     tells,
     isYou,
-    displayName,
-    scopeLabel
+    displayName
   }: {
     tells: SignatureTell[];
     isYou: boolean;
     displayName: string;
-    /** Human scope label the strip follows, e.g. "Career" or "2025". */
-    scopeLabel: string;
   } = $props();
 
   const subjectCap = $derived(isYou ? 'You' : displayName);
@@ -114,46 +105,34 @@
   }
 </script>
 
-<Card data-testid="stats-signature">
-  <CardHeader>
-    <div class="flex items-center justify-between gap-3">
-      <CardTitle>{possessive} signature</CardTitle>
-      <span class="shrink-0 font-mono text-xs text-muted-foreground">{scopeLabel}</span>
-    </div>
-    <CardDescription>The habits that show up most in how {subject} play the board.</CardDescription>
-  </CardHeader>
-  <CardContent>
-    {#if tells.length === 0}
-      <p class="text-sm text-muted-foreground">
-        {possessive} signature emerges as {isYou ? 'you build' : `${displayName} builds`} up more history
-        — a team, lean, or situational edge shows here once it clears its sample guard.
-      </p>
-    {:else}
-      <ul class="space-y-2.5">
-        {#each tells as tell (tellKey(tell))}
-          {@const view = describe(tell)}
-          <li class="grid grid-cols-[1.4rem_1fr_auto] items-center gap-x-2.5 gap-y-0.5">
-            <span
-              class="row-span-2 grid h-6 w-6 place-items-center rounded-md text-[0.7rem] font-extrabold {TONE_CLASS[
-                view.tone
-              ]}"
-              aria-hidden="true"
-            >
-              {view.glyph}
-            </span>
-            <span class="text-sm font-semibold tracking-tight">{view.sentence}</span>
-            <span
-              class="text-right font-mono text-sm font-bold tabular-nums {STAT_TONE_CLASS[
-                view.statTone
-              ]}"
-            >
-              {view.stat}
-            </span>
-            <span class="col-span-2 font-mono text-[0.65rem] text-muted-foreground">{view.sub}</span
-            >
-          </li>
-        {/each}
-      </ul>
-    {/if}
-  </CardContent>
-</Card>
+{#if tells.length === 0}
+  <p class="text-sm text-muted-foreground">
+    {possessive} signature emerges as {isYou ? 'you build' : `${displayName} builds`} up more history
+    — a team, lean, or situational edge shows here once it clears its sample guard.
+  </p>
+{:else}
+  <ul class="space-y-2.5">
+    {#each tells as tell (tellKey(tell))}
+      {@const view = describe(tell)}
+      <li class="grid grid-cols-[1.4rem_1fr_auto] items-center gap-x-2.5 gap-y-0.5">
+        <span
+          class="row-span-2 grid h-6 w-6 place-items-center rounded-md text-[0.7rem] font-extrabold {TONE_CLASS[
+            view.tone
+          ]}"
+          aria-hidden="true"
+        >
+          {view.glyph}
+        </span>
+        <span class="text-sm font-semibold tracking-tight">{view.sentence}</span>
+        <span
+          class="text-right font-mono text-sm font-bold tabular-nums {STAT_TONE_CLASS[
+            view.statTone
+          ]}"
+        >
+          {view.stat}
+        </span>
+        <span class="col-span-2 font-mono text-[0.65rem] text-muted-foreground">{view.sub}</span>
+      </li>
+    {/each}
+  </ul>
+{/if}
