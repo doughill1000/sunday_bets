@@ -1,6 +1,6 @@
 <script lang="ts">
   // /league divisional module (issue #427, meter treatment #517): favorite ATS cover rate for
-  // divisional vs non-divisional matchups, league-wide. Reads the pre-shaped LeagueDivisionalSplit
+  // divisional vs non-divisional matchups, NFL-wide. Reads the pre-shaped LeagueDivisionalSplit
   // rows from the single /league payload (games with an unknown division are excluded upstream in
   // league_ats_divisional); cover math lives in coverPct, never here, and is drawn as a meter with
   // a 50% baseline tick beneath each figure. A thin bucket carries an n= caveat.
@@ -33,7 +33,7 @@
     <CardHeader>
       <CardTitle>Divisional vs. non-divisional</CardTitle>
       <CardDescription>
-        How often the spread favorite covers by matchup type, league-wide.
+        How often the spread favorite covers by matchup type, NFL-wide.
       </CardDescription>
     </CardHeader>
     <CardContent>

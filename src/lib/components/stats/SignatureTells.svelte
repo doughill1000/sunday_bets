@@ -100,7 +100,7 @@
       sentence: `${subjectCap} ${verb(beating ? 'beat' : 'trail')} the market ${lowerFirst(tell.label)}`,
       stat: deltaLabel(tell.delta),
       statTone: beating ? 'success' : 'destructive',
-      sub: `${subject} ${formatAccuracy(tell.accuracy)} vs league ${formatAccuracy(tell.leagueAccuracy)}`
+      sub: `${subject} ${formatAccuracy(tell.accuracy)} vs market ${formatAccuracy(tell.leagueAccuracy)}`
     };
   }
 </script>

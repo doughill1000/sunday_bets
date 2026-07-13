@@ -2,7 +2,7 @@
   // "Every split" situational explorer (issue #514): the browsable counterpart to the career
   // "Your edge" hero. A chip nav walks the four dimensions one at a time (APG radiogroup, mirroring
   // the /league Trends selector), and the active dimension lays out EVERY bucket as a bar diverging
-  // from the league line — right + green = beat the market, left + red = trail. Career or any
+  // from the market line — right + green = beat the market, left + red = trail. Career or any
   // season, driven by the scope dropdown above it; thin cuts dim to a "needs N more" state instead
   // of plotting noise. The layout + guard live in the pure `situationalExplorer` transform; this
   // component only draws it.
@@ -104,7 +104,7 @@
         <div
           class="flex justify-between font-mono text-[0.6rem] tracking-wide text-muted-foreground uppercase"
         >
-          <span>◂ trail</span><span>league</span><span>beat ▸</span>
+          <span>◂ trail</span><span>market</span><span>beat ▸</span>
         </div>
 
         <ul class="space-y-3">
@@ -125,7 +125,7 @@
                 {/if}
               </div>
 
-              <!-- Diverging track: centre line is the league cover rate; the bar grows from it. -->
+              <!-- Diverging track: centre line is the market cover rate; the bar grows from it. -->
               <div
                 class="relative h-4 rounded-[5px]"
                 style="background: linear-gradient(90deg, color-mix(in oklab, var(--destructive) 9%, transparent), transparent 48%, transparent 52%, color-mix(in oklab, var(--success) 9%, transparent));"
@@ -153,7 +153,7 @@
                 {:else if b.isThin}
                   you {formatAccuracy(b.accuracy)} · {record(b)} · no market line
                 {:else}
-                  you {formatAccuracy(b.accuracy)} · league {formatAccuracy(b.leagueAccuracy)} · {record(
+                  you {formatAccuracy(b.accuracy)} · market {formatAccuracy(b.leagueAccuracy)} · {record(
                     b
                   )}
                 {/if}

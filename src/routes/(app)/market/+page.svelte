@@ -405,7 +405,7 @@
   </div>
 {/snippet}
 
-<!-- "By team" slice: browse league ATS by team — hot/cold streaks then the sortable team list
+<!-- "By team" slice: browse NFL ATS by team — hot/cold streaks then the sortable team list
      with its per-team game-log drill-down. Rendered as a disclosure list (not a <table>): the
      drill-down is a normal block <div>, so the game-log table inside it can scroll on its own
      `overflow-x-auto` instead of blowing the whole list out horizontally (which a <table> nested
@@ -496,7 +496,7 @@
   <Card data-testid="league-fav-dog">
     <CardHeader>
       <CardTitle>Favorites vs. underdogs</CardTitle>
-      <CardDescription>How often the spread favorite covers, league-wide.</CardDescription>
+      <CardDescription>How often the spread favorite covers, NFL-wide.</CardDescription>
     </CardHeader>
     <CardContent class="space-y-6">
       <div class="sm:max-w-md">
@@ -579,16 +579,16 @@
 {/snippet}
 
 <svelte:head>
-  <title>Teams | Hotshot</title>
+  <title>Market | Hotshot</title>
 </svelte:head>
 
-<section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="teams-heading">
+<section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="market-heading">
   <div>
-    <h1 id="teams-heading" data-testid="teams-heading" class="text-3xl font-bold tracking-tight">
-      Teams
+    <h1 id="market-heading" data-testid="market-heading" class="text-3xl font-bold tracking-tight">
+      Market
     </h1>
     <p class="mt-1 text-muted-foreground">
-      League-wide performance against the spread — the same for everyone.
+      How the NFL market moves against the spread — the same for everyone.
     </p>
   </div>
 
@@ -742,7 +742,7 @@
     {:else if leagueQuery.isError && !leagueQuery.data}
       <Card class="border-dashed">
         <CardHeader>
-          <CardTitle>Couldn't load league ATS records</CardTitle>
+          <CardTitle>Couldn't load market records</CardTitle>
           <CardDescription>Something went wrong fetching the data.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -754,7 +754,7 @@
         <CardHeader>
           <CardTitle>No graded games for {pageData.seasonYear} yet</CardTitle>
           <CardDescription>
-            League ATS records appear once games are graded. Try a different season, or the pooled
+            Market ATS records appear once games are graded. Try a different season, or the pooled
             “Last 5” window above.
           </CardDescription>
         </CardHeader>

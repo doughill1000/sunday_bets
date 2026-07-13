@@ -1,5 +1,5 @@
 <script lang="ts">
-  // League-wide home/away × favorite/underdog cover rates for the /league market-cuts module
+  // NFL-wide home/away × favorite/underdog cover rates for the /market situational-cuts module
   // (issue #426, meter treatment #517). Reads the four pre-aggregated league_ats_quadrants rows
   // off the single league payload; cover % comes from the shared `coverPct` helper (never
   // recomputed here) and is drawn as a meter with a 50% baseline tick beneath each figure.

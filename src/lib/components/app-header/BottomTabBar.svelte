@@ -7,15 +7,17 @@
 
   // Four first-class tabs after the #561 IA merge: Picks, League (the merged Leaderboard+Group
   // home — standings, the season race, honors, and the Members & manage subpage), Stats, and
-  // Teams (the former "League" market ATS page, renamed so the user's own league owns the name).
-  // Wrapped is a seasonal moment, not a year-round destination — it has no content until a season
-  // finalises, so rather than burn a permanent tab it is surfaced via the League home CTA
-  // (WrappedPromo) and the honors card's Wrapped link when one exists.
+  // Market (the NFL-wide ATS surface — the same for everyone). "Market" is deliberately never
+  // called "League": League = the user's own group, Market = the NFL side, so the word never
+  // collides (it was "Teams", which named only one of the tab's six slices). Wrapped is a seasonal
+  // moment, not a year-round destination — it has no content until a season finalises, so rather
+  // than burn a permanent tab it is surfaced via the League home CTA (WrappedPromo) and the honors
+  // card's Wrapped link when one exists.
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/league', label: 'League', Icon: Trophy },
     { href: '/stats', label: 'Stats', Icon: BarChart2 },
-    { href: '/teams', label: 'Teams', Icon: TrendingUp }
+    { href: '/market', label: 'Market', Icon: TrendingUp }
   ];
 </script>
 

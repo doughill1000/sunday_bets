@@ -6,14 +6,15 @@
   import { openFeedback } from '$lib/feedback/store';
 
   // Four first-class tabs after the #561 IA merge (see BottomTabBar): League is the merged
-  // Leaderboard+Group home (with a Members & manage subpage at /league/manage), and Teams is the
-  // former "League" market ATS page renamed. Wrapped is intentionally absent: it is a seasonal
+  // Leaderboard+Group home (with a Members & manage subpage at /league/manage), and Market is the
+  // NFL-wide ATS surface (renamed from "Teams" so the tab names the market concept and never
+  // collides with "League", the user's group). Wrapped is intentionally absent: it is a seasonal
   // moment surfaced via the League home CTA + honors card link, not a permanent nav destination.
   const navLinks = [
     { href: '/picks', label: 'Picks' },
     { href: '/league', label: 'League' },
     { href: '/stats', label: 'Stats' },
-    { href: '/teams', label: 'Teams' }
+    { href: '/market', label: 'Market' }
   ];
 
   interface Membership {
