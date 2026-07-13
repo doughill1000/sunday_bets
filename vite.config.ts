@@ -54,6 +54,10 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       manifest: {
+        // Stable app identity so installs/updates target the same app across manifest
+        // changes. Resolves to the origin root — equal to the previous implicit id
+        // (start_url), so existing installs are not orphaned.
+        id: '/',
         name: 'Hotshot',
         short_name: 'Hotshot',
         description: "NFL pick'em against the spread with friends — track your picks offline.",
@@ -63,6 +67,21 @@ export default defineConfig(({ mode }) => ({
         orientation: 'portrait-primary',
         background_color: '#1c1c1c',
         theme_color: '#1c1c1c',
+        // Long-press app-icon shortcuts (Android/Chromium) into the two most common tasks.
+        shortcuts: [
+          {
+            name: 'Make picks',
+            short_name: 'Picks',
+            url: '/picks',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
+          },
+          {
+            name: 'Standings',
+            short_name: 'League',
+            url: '/league',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' }]
+          }
+        ],
         icons: [
           { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },

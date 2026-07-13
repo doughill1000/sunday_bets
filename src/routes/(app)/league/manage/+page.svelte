@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { invalidateAll } from '$app/navigation';
   import { createQuery, useQueryClient } from '@tanstack/svelte-query';
   import { queryKeys, invalidationKeys } from '$lib/query/keys';
@@ -88,6 +89,15 @@
   let mintBusy = $state(false);
   let mintMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let newInviteCode = $state<string | null>(null);
+  // Web Share support is detected in onMount (client-only, post-hydration) to avoid an
+  // SSR/CSR mismatch — navigator is undefined during SSR. When present we show a native
+  // "Share" action; clipboard copy is the always-available fallback. `copiedCode` drives
+  // the brief "Copied" confirmation on whichever link was just copied.
+  let canShare = $state(false);
+  let copiedCode = $state<string | null>(null);
+  onMount(() => {
+    canShare = typeof navigator.share === 'function';
+  });
 
   // Revoke invite
   let revokeBusy = $state<string | null>(null); // invite id
@@ -272,9 +282,38 @@
     }
   }
 
+  function inviteUrl(code: string): string {
+    return `${window.location.origin}/join/${code}`;
+  }
+
   async function copyInviteLink(code: string) {
-    const url = `${window.location.origin}/join/${code}`;
-    await navigator.clipboard.writeText(url).catch(() => {});
+    try {
+      await navigator.clipboard.writeText(inviteUrl(code));
+      copiedCode = code;
+      setTimeout(() => {
+        if (copiedCode === code) copiedCode = null;
+      }, 2000);
+    } catch {
+      // Clipboard unavailable (e.g. an insecure context) — the link is shown on screen
+      // to copy by hand.
+    }
+  }
+
+  // Native share sheet (mobile) with clipboard copy as the fallback — handing a friend the
+  // invite link straight from the OS share sheet is the natural mobile flow.
+  async function shareInvite(code: string) {
+    const url = inviteUrl(code);
+    try {
+      await navigator.share({
+        title: 'Join my Hotshot league',
+        text: `Join my Hotshot league: ${url}`
+      });
+    } catch (err) {
+      // Dismissing the share sheet throws AbortError — treat as a no-op. Any other
+      // failure falls back to copying the link.
+      if (err instanceof Error && err.name === 'AbortError') return;
+      await copyInviteLink(code);
+    }
   }
 
   async function saveRecapSettings() {
@@ -580,12 +619,15 @@
       {#if newInviteCode}
         <div class="space-y-2 rounded-lg border p-3">
           <p class="text-sm font-medium">New invite link:</p>
+          <code class="block truncate rounded bg-muted px-2 py-1 text-sm">
+            {window?.location?.origin}/join/{newInviteCode}
+          </code>
           <div class="flex items-center gap-2">
-            <code class="flex-1 truncate rounded bg-muted px-2 py-1 text-sm">
-              {window?.location?.origin}/join/{newInviteCode}
-            </code>
+            {#if canShare}
+              <Button size="sm" onclick={() => void shareInvite(newInviteCode!)}>Share</Button>
+            {/if}
             <Button variant="outline" size="sm" onclick={() => void copyInviteLink(newInviteCode!)}>
-              Copy
+              {copiedCode === newInviteCode ? 'Copied' : 'Copy'}
             </Button>
           </div>
         </div>
@@ -614,13 +656,23 @@
                   </p>
                 </div>
                 <div class="flex shrink-0 gap-1">
+                  {#if canShare}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onclick={() => void shareInvite(invite.code)}
+                      aria-label="Share invite link for {invite.code}"
+                    >
+                      Share
+                    </Button>
+                  {/if}
                   <Button
                     variant="outline"
                     size="sm"
                     onclick={() => void copyInviteLink(invite.code)}
                     aria-label="Copy invite link for {invite.code}"
                   >
-                    Copy
+                    {copiedCode === invite.code ? 'Copied' : 'Copy'}
                   </Button>
                   <Button
                     variant="outline"

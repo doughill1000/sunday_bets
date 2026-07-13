@@ -128,8 +128,9 @@ contract that keeps later per-route PRs honest.
 
 - **#602** implements this route-by-route (superseding the original **#381**, closed
   NOT_PLANNED once the decision was split into this recorded ADR + a fresh ADR-governed
-  implementation issue): first the classification inventory artifact, then per-route
-  migrations, each with endpoint parity tests mirroring `groupIsolation.test.ts`.
+  implementation issue): first the classification inventory artifact
+  (`docs/client-query-inventory.md`), then per-route migrations, each with endpoint
+  parity tests mirroring `groupIsolation.test.ts`.
 - Sequence independently from **ADR-0031 / #588** (the auth hot-path change); together
   they deliver cache-first _and_ round-trip-free navigation.
 - Post-migration measurement: navigation to a migrated screen should render from cache
