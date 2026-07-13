@@ -1,0 +1,117 @@
+<script lang="ts">
+  // Cross-season credibility rating band (issue #361, ADR-0032). Leads the Career scope of the
+  // StatsHero: the one number that survives the season reset. Two states — a rated player (number +
+  // tier word + season-delta arrow + meter) and Unrated (hidden until qualified, ADR-0032 §5), shown
+  // as an explicit "N to go" progress, never a provisional number. Career-only: the season scope
+  // never renders this (a single season's reset-and-regress rating isn't a stable story).
+  //
+  // Pure presentation over already-derived values. All colour comes from semantic tokens so the band
+  // reads correctly under both themes (ADR-0027/0029) — no raw hex or Tailwind scale.
+  import {
+    RATING_PAR,
+    MIN_QUALIFIED_DECISIONS,
+    meterPct,
+    ratingTier,
+    tierLabel,
+    type PlayerRatingEntry,
+    type RatingTier
+  } from '$lib/domain/rating';
+
+  let {
+    entry,
+    rank
+  }: {
+    /** The selected player's rating row, or undefined when they have no row yet (Unrated, 0 done). */
+    entry: PlayerRatingEntry | undefined;
+    /** In-group rank among qualified players, or null while Unrated. */
+    rank: number | null;
+  } = $props();
+
+  const rating = $derived(entry?.rating ?? null);
+  const rated = $derived(rating != null);
+  const decisions = $derived(entry?.decisions ?? 0);
+  const toQualify = $derived(entry?.decisionsToQualify ?? MIN_QUALIFIED_DECISIONS - decisions);
+  const seasonDelta = $derived(entry?.seasonDelta ?? null);
+
+  const tier = $derived<RatingTier | null>(rating != null ? ratingTier(rating) : null);
+  const fillPct = $derived(
+    rating != null ? meterPct(rating) : (decisions / MIN_QUALIFIED_DECISIONS) * 100
+  );
+
+  // Tier pill loudness: the two sharp tiers earn the brass fill; Solid a quiet raised chip; Square
+  // and Unrated a plain outline (Unrated dashed, to read as "not yet a verdict").
+  function tierPillClass(t: RatingTier): string {
+    if (t === 'shark' || t === 'sharp') return 'bg-primary text-primary-foreground';
+    if (t === 'solid') return 'border border-border bg-muted text-foreground';
+    return 'border border-border text-muted-foreground';
+  }
+</script>
+
+<div
+  data-testid="rating-band"
+  class="rounded-xl border p-4 {rated
+    ? 'border-primary-ink/40 bg-primary/5'
+    : 'border-dashed border-border bg-muted/30'}"
+>
+  <div class="flex items-center justify-between gap-3">
+    <span class="text-eyebrow {rated ? 'text-primary-ink' : 'text-muted-foreground'}"
+      >Market credibility</span
+    >
+    {#if rated && tier}
+      <span
+        class="rounded-full px-2 py-0.5 text-eyebrow {tierPillClass(tier)}"
+        data-testid="rating-tier">{tierLabel(tier)}</span
+      >
+    {:else}
+      <span
+        class="rounded-full border border-dashed border-border px-2 py-0.5 text-eyebrow text-muted-foreground"
+        >Unrated</span
+      >
+    {/if}
+  </div>
+
+  {#if rated && rating != null}
+    <div class="mt-1.5 flex items-baseline gap-2">
+      <span class="text-stat tabular-nums" data-testid="rating-value">{rating}</span>
+      {#if seasonDelta != null && seasonDelta !== 0}
+        <span
+          class="text-sm font-semibold tabular-nums {seasonDelta > 0
+            ? 'text-success'
+            : 'text-destructive'}"
+          data-testid="rating-delta"
+        >
+          {seasonDelta > 0 ? '▲' : '▼'}{Math.abs(seasonDelta)}
+        </span>
+      {:else}
+        <span class="text-sm text-muted-foreground">▲0</span>
+      {/if}
+      {#if rank != null}
+        <span class="ml-auto font-mono text-xs text-muted-foreground">#{rank} in league</span>
+      {/if}
+    </div>
+  {:else}
+    <div class="mt-1.5 flex items-baseline gap-2">
+      <span class="text-stat text-muted-foreground">—</span>
+      <span class="text-sm text-muted-foreground">{toQualify} more to qualify</span>
+    </div>
+  {/if}
+
+  <!-- Meter: par sits at the midpoint for a rated player; for Unrated it fills toward the gate. -->
+  <div class="relative mt-2 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+    <div
+      class="absolute inset-y-0 left-0 rounded-full {rated ? 'bg-primary' : 'bg-muted-foreground'}"
+      style="width: {Math.max(0, Math.min(100, fillPct))}%"
+    ></div>
+    {#if rated}
+      <div class="absolute inset-y-0 left-1/2 w-px bg-foreground/30"></div>
+    {/if}
+  </div>
+
+  <p class="mt-1.5 text-xs text-muted-foreground">
+    {#if rated}
+      {RATING_PAR} = market par · carries across seasons
+    {:else}
+      {decisions} / {MIN_QUALIFIED_DECISIONS} settled decisions · a rating unlocks at {MIN_QUALIFIED_DECISIONS}
+    {/if}
+  </p>
+</div>

@@ -16,7 +16,7 @@ import { resolveSeasonYear } from '$lib/server/seasonDefault';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const { groupId, user } = locals;
-  if (!groupId || !user) throw redirect(303, '/auth/error?reason=no-group');
+  if (!groupId || !user) throw redirect(303, '/join');
 
   const [currentSeasonYear, availableSeasons, myMembershipResult] = await Promise.all([
     locals.getCurrentSeasonYear(),

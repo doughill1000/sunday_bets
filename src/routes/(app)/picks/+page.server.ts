@@ -60,7 +60,7 @@ export const load: PageServerLoad = async (event) => {
   const userId = session?.user.id ?? null;
 
   const { groupId, memberships } = event.locals;
-  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+  if (!groupId) throw redirect(303, '/join');
 
   return tracePageLoad('picks', () => loadPicks(event, groupId, userId, memberships));
 };

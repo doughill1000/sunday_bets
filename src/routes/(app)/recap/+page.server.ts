@@ -6,7 +6,7 @@ import { getSeasonWeeklyAwards } from '$lib/server/readModels/weeklyAwards';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const { groupId } = locals;
-  if (!groupId) throw redirect(303, '/auth/error?reason=no-group');
+  if (!groupId) throw redirect(303, '/join');
 
   const seasonYear = await getCurrentSeasonYear();
   const [recaps, weeklyAwards] = await Promise.all([
