@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #574** Hermetic AI-gateway integration tests — the recap/wrapped/badge
+  fallback suites now force the no-gateway condition instead of inheriting it from a
+  dev's `.env.local`, so they stay deterministic and stop silently burning AI Gateway
+  credit on local runs (CI was already gateway-less). file:
+  `tests/integration/setup.ts` · ADR-0008
 - **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
   `app.css` now collapses every animation and transition under reduced-motion, so the
   vendored dialog/sheet/dropdown enter-exit, the nav progress bar, the pulse skeletons,
