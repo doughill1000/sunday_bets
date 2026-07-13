@@ -69,6 +69,26 @@ export function selectLiveScores(
   return scores;
 }
 
+/**
+ * Cheap, DB-only check (no ESPN) for whether the active week has a game inside its live
+ * window. Drives the wayfinding default that opens /league on the Weekly tab during the live
+ * window (#584, Move 5). Degrades to `false` on any error so navigation never breaks.
+ */
+export async function isActiveWeekLive(now = Date.now()): Promise<boolean> {
+  try {
+    const week = await findActiveWeek();
+    if (!week) return false;
+    const { data: games, error } = await supabaseService
+      .from('games')
+      .select('commence_time')
+      .eq('week_id', week.id);
+    if (error) return false;
+    return (games ?? []).some((g) => isWithinLiveWindow(new Date(g.commence_time).getTime(), now));
+  } catch {
+    return false;
+  }
+}
+
 let memo: { at: number; payload: LiveScoresPayload } | null = null;
 
 /** Testing seam: drop the module memo between cases. */

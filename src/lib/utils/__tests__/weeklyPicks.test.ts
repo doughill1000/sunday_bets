@@ -13,6 +13,8 @@ function makeGame(overrides: Partial<GameInputRow> = {}): GameInputRow {
     id: GAME_ID,
     commence_time: '2025-01-05T18:00:00Z',
     final_scores: null,
+    home_team_id: 1,
+    away_team_id: 2,
     home: { short_name: 'KC' },
     away: { short_name: 'BUF' },
     ...overrides
@@ -133,6 +135,33 @@ describe('assembleWeeklyBreakdown', () => {
   it('returns one row per player per game', () => {
     const result = assembleWeeklyBreakdown([makeGame()], [], [], players, null);
     expect(result[0].picks).toHaveLength(2);
+  });
+
+  it('threads raw home/away team ids onto the game breakdown (#584)', () => {
+    const game = makeGame({ home_team_id: 10, away_team_id: 20 });
+    const result = assembleWeeklyBreakdown([game], [], [], players, null);
+    expect(result[0].homeTeamId).toBe(10);
+    expect(result[0].awayTeamId).toBe(20);
+  });
+
+  it('threads the frozen-at-lock cover inputs from the pick; null on a no-pick row (#584)', () => {
+    const pick = makePick({
+      userId: USER_A,
+      pickedTeamId: 1,
+      lockedSpreadValue: -2.5,
+      lockedSpreadTeamId: 1
+    });
+    const result = assembleWeeklyBreakdown([makeGame()], [pick], [], players, null);
+    const alice = result[0].picks.find((r) => r.userId === USER_A)!;
+    const bob = result[0].picks.find((r) => r.userId === USER_B)!;
+
+    expect(alice.pickedTeamId).toBe(1);
+    expect(alice.lockedSpreadValue).toBe(-2.5);
+    expect(alice.lockedSpreadTeamId).toBe(1);
+
+    expect(bob.pickedTeamId).toBeNull();
+    expect(bob.lockedSpreadValue).toBeNull();
+    expect(bob.lockedSpreadTeamId).toBeNull();
   });
 
   it('returns empty array when no games', () => {
