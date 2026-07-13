@@ -64,6 +64,14 @@ entry per PR the rest of the time.
   cutoff moves to match. Also flips `docs/adr/0029-design-system-token-architecture.md`
   to `Accepted` (its issue, #530, had closed without the status flip). file:
   `scripts/check-governance-freshness.ts` · ADR-0029
+- **PR #579** Rename the NFL-market tab "Teams" → "Market" and reserve "League" for the
+  user's group — the word was overloaded (a user's pool is their "league", and so is the
+  NFL), so the two are split: League = the group, Market = the NFL side. Route `/teams` →
+  `/market` (308 redirect), nav labels, and the `/stats` + `/market` diverging-bar baseline
+  relabelled "league" → "market"; the naming rule is codified in the design guide. Internal
+  `league` plumbing (`/api/league`, `league_ats_*`) is intentionally left for a later
+  refactor. routes: `/market` (was `/teams`) · `docs/DESIGN.md` · ADR-0030
+
 - **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
   (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
   all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
