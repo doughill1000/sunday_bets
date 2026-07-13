@@ -1388,6 +1388,48 @@ export type Database = {
           }
         ];
       };
+      group_pick_cover: {
+        Row: {
+          cover_margin: number | null;
+          display_name: string | null;
+          game_id: string | null;
+          group_id: string | null;
+          outcome: Database['public']['Enums']['pick_outcome'] | null;
+          season_year: number | null;
+          user_id: string | null;
+          week_number: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'ui_games';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       leaderboard_season_totals: {
         Row: {
           avatar_key: string | null;

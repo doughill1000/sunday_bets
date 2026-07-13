@@ -31,6 +31,9 @@ begin
   refresh materialized view concurrently public.stats_accuracy_by_team_alltime;
   refresh materialized view concurrently public.stats_accuracy_by_weight_alltime;
   refresh materialized view concurrently public.group_pick_consensus;
+  -- Per-pick cover margin for the weekly-hardware "Bad Beat of the Week" award (#387).
+  -- Same pick_settlement rows every other per-user stat is driven by, so this is its point.
+  refresh materialized view concurrently public.group_pick_cover;
   refresh materialized view concurrently public.stats_accuracy_by_line_side;
   refresh materialized view concurrently public.stats_pick_streaks;
   -- Per-user situational ATS base (#502): pick-grain classification (primetime / home-away /
@@ -50,5 +53,5 @@ end;
 $$;
 
 comment on function public.refresh_leaderboard_stats() is
-  'Refreshes the 16 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317/#406/#502/#564). '
+  'Refreshes the 17 leaderboard/stats materialized views CONCURRENTLY (issues #191/#280/#294/#296/#317/#387/#406/#502/#564). '
   'Called after each grading run by src/lib/server/grading.ts.';
