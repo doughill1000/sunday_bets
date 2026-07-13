@@ -32,7 +32,17 @@ const EspnStatusTypeSchema = z.object({
 
 const EspnCompetitionSchema = z.object({
   competitors: z.array(EspnCompetitorSchema).min(2),
-  status: z.object({ type: EspnStatusTypeSchema }).optional()
+  // `displayClock` ("12:47") and `period` (quarter) sit alongside `type` on the live
+  // scoreboard and drive the sweat board's clock (#386). Both are nullish — absent on
+  // scheduled/final games — and additive, so grading and schedule sync (which read only
+  // `type`, scores, and matchup) are unaffected.
+  status: z
+    .object({
+      type: EspnStatusTypeSchema,
+      displayClock: z.string().nullish(),
+      period: z.number().nullish()
+    })
+    .optional()
 });
 
 const EspnEventSchema = z.object({
@@ -63,6 +73,10 @@ export type EspnGame = {
   homeScore: number | null;
   awayScore: number | null;
   status: 'scheduled' | 'in_progress' | 'final' | 'postponed';
+  // Live game clock, present only while a game is in progress (#386): the ESPN display
+  // clock ("12:47") and quarter/period. Null on scheduled and final games.
+  displayClock: string | null;
+  period: number | null;
 };
 
 export type EspnWeekResult = {
@@ -190,6 +204,9 @@ export async function fetchEspnWeek(
 
     const statusType = competition.status?.type;
     const status = statusType ? mapStatus(statusType.state, statusType.completed) : 'scheduled';
+    // Surface the clock only for a game actually in progress, so a stale display value on a
+    // scheduled/final payload never reads as live.
+    const isLive = status === 'in_progress';
 
     games.push({
       scheduleGameId: event.id,
@@ -198,7 +215,9 @@ export async function fetchEspnWeek(
       awayTeamAbbr: normalizeAbbr(away.team.abbreviation),
       homeScore: parseScore(home.score),
       awayScore: parseScore(away.score),
-      status
+      status,
+      displayClock: isLive ? (competition.status?.displayClock ?? null) : null,
+      period: isLive ? (competition.status?.period ?? null) : null
     });
   }
 

@@ -327,6 +327,84 @@ describe('lib/server/schedule.ts', () => {
       expect(result.games[0].awayScore).toBeNull();
     });
 
+    it('surfaces the live clock and period only for an in-progress game (#386)', async () => {
+      mockFetch({
+        week: { number: 6 },
+        events: [
+          {
+            id: '401671863',
+            date: '2026-10-12T17:00Z',
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    score: '14',
+                    team: { abbreviation: 'PHI', displayName: 'Philadelphia Eagles' }
+                  },
+                  {
+                    homeAway: 'away',
+                    score: '10',
+                    team: { abbreviation: 'KC', displayName: 'Kansas City Chiefs' }
+                  }
+                ],
+                status: {
+                  displayClock: '12:47',
+                  period: 2,
+                  type: { state: 'in', completed: false }
+                }
+              }
+            ]
+          }
+        ]
+      });
+
+      const result = await fetchEspnWeek(2026, 6);
+      const [game] = result.games;
+      expect(game.status).toBe('in_progress');
+      expect(game.displayClock).toBe('12:47');
+      expect(game.period).toBe(2);
+    });
+
+    it('nulls the clock/period on a final game even if ESPN still carries them (#386)', async () => {
+      mockFetch({
+        week: { number: 6 },
+        events: [
+          {
+            id: '401671864',
+            date: '2026-10-12T17:00Z',
+            competitions: [
+              {
+                competitors: [
+                  {
+                    homeAway: 'home',
+                    score: '27',
+                    team: { abbreviation: 'PHI', displayName: 'Philadelphia Eagles' }
+                  },
+                  {
+                    homeAway: 'away',
+                    score: '20',
+                    team: { abbreviation: 'KC', displayName: 'Kansas City Chiefs' }
+                  }
+                ],
+                status: {
+                  displayClock: '0:00',
+                  period: 4,
+                  type: { state: 'post', completed: true }
+                }
+              }
+            ]
+          }
+        ]
+      });
+
+      const result = await fetchEspnWeek(2026, 6);
+      const [game] = result.games;
+      expect(game.status).toBe('final');
+      expect(game.displayClock).toBeNull();
+      expect(game.period).toBeNull();
+    });
+
     it('fails closed (EspnParseError) when the score field drifts to an unexpected shape', async () => {
       mockFetch({
         week: { number: 6 },

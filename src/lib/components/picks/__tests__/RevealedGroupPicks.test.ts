@@ -59,4 +59,68 @@ describe('RevealedGroupPicks', () => {
     const doug = screen.getByText('Doug (you)').closest('li');
     expect(doug?.textContent).toContain('M');
   });
+
+  // --- Live sweat board (#386) --------------------------------------------------------
+  const LIVE_GAME = {
+    id: 'g1',
+    home: 'PIT',
+    away: 'NYJ',
+    kickoff: '',
+    homeTeamId: 100,
+    awayTeamId: 200,
+    spreadTeamId: null,
+    spreadValue: null
+  } as unknown as import('$lib/types/games').PickGame;
+
+  function makeLivePicks(): GroupPickEntry[] {
+    return [
+      { userId: ME, displayName: 'Doug', avatarKey: null, gameId: 'g1', pickedSide: 'home', weight: 'M', pickedTeamShort: 'PIT', pickedTeamId: 100, lockedSpreadTeamId: null, lockedSpreadValue: null }, // prettier-ignore
+      { userId: 'hank', displayName: 'Hank', avatarKey: null, gameId: 'g1', pickedSide: 'away', weight: 'A', pickedTeamShort: 'NYJ', pickedTeamId: 200, lockedSpreadTeamId: null, lockedSpreadValue: null } // prettier-ignore
+    ];
+  }
+
+  const LIVE_SCORE = {
+    homeScore: 24,
+    awayScore: 20,
+    status: 'in_progress',
+    displayClock: '5:00',
+    period: 3
+  } as const;
+
+  it('renders a live cover dot per member coloured by verdict (#386)', () => {
+    render(RevealedGroupPicks, {
+      props: { picks: makeLivePicks(), myUserId: ME, game: LIVE_GAME, liveScore: LIVE_SCORE }
+    });
+
+    expect(screen.getAllByTestId('member-cover-dot')).toHaveLength(2);
+    // PIT (home) leads by 4 with no line → covering (success); NYJ (away) not covering.
+    const doug = screen.getByText('Doug (you)').closest('li');
+    const hank = screen.getByText(/Hank/).closest('li');
+    expect(doug?.querySelector('[data-testid="member-cover-dot"]')?.className).toContain(
+      'bg-success'
+    );
+    expect(hank?.querySelector('[data-testid="member-cover-dot"]')?.className).toContain(
+      'bg-destructive'
+    );
+  });
+
+  it('renders no cover dots without a live score', () => {
+    render(RevealedGroupPicks, {
+      props: { picks: makeLivePicks(), myUserId: ME, game: LIVE_GAME }
+    });
+    expect(screen.queryByTestId('member-cover-dot')).not.toBeInTheDocument();
+  });
+
+  it('suppresses cover dots while stale — stops asserting a live number', () => {
+    render(RevealedGroupPicks, {
+      props: {
+        picks: makeLivePicks(),
+        myUserId: ME,
+        game: LIVE_GAME,
+        liveScore: LIVE_SCORE,
+        liveStale: true
+      }
+    });
+    expect(screen.queryByTestId('member-cover-dot')).not.toBeInTheDocument();
+  });
 });
