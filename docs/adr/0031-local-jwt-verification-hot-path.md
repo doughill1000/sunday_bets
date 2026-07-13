@@ -1,6 +1,6 @@
 # ADR-0031: Local JWT verification on the request hot path
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-13
 - Issue: #588 (auth hot-path performance); related: #381
 - Supersedes: None
