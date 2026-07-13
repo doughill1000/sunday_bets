@@ -9,6 +9,8 @@ export const load: PageServerLoad = () => {
   return {
     persona: snapshot.persona,
     completedSeasonYear: snapshot.meta.completedSeasonYear,
+    liveWeekNumber: snapshot.liveWeek.weekNumber,
+    weeklyStandings: snapshot.liveWeek.standings,
     leaderboard: snapshot.leaderboard,
     allTime: snapshot.allTime,
     honors: snapshot.honors

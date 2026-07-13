@@ -5,4 +5,8 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<DemoPicksBoard liveWeek={data.liveWeek} personaName={data.personaName} />
+<DemoPicksBoard
+  liveWeek={data.liveWeek}
+  personaName={data.personaName}
+  personaUserId={data.personaUserId}
+/>

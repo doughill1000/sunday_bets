@@ -11,11 +11,19 @@ import type { TeamSide, WeightCode } from '$lib/types/domain';
 import type { LeaderboardCachePayload, AllTimeLeaderboardPayload } from '$lib/query/types';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
 import type { GroupMember } from '$lib/types/group';
+import type { GroupPickEntry } from '$lib/types/picks';
+import type { LiveScoreEntry } from '$lib/live/types';
+import type { WeeklyLiveStanding } from '$lib/types/leaderboard';
 import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
 import type { RecapRow } from '$lib/server/db/queries/recaps';
 
-/** How a demo live-week game reads for the frozen picks screen. */
-export type DemoGameStatus = 'open' | 'locked' | 'final';
+/**
+ * How a demo live-week game reads on the frozen picks screen. The demo bakes a mid-game
+ * Sunday (#585): `in_progress` games carry a live score + clock, `final_unofficial` is final
+ * on the feed but not yet graded (the state that yields to grading on the real surfaces), and
+ * `open` marks a game that hasn't kicked off (the "still to pick" affordance).
+ */
+export type DemoGameStatus = 'open' | 'in_progress' | 'final_unofficial';
 
 /** The persona's frozen pick on one live-week game (null = no pick made). */
 export type DemoPersonaPick = {
@@ -25,17 +33,34 @@ export type DemoPersonaPick = {
   locked: boolean;
 };
 
-/** One game on the frozen live-week picks screen: the slate row plus the persona's pick. */
+/**
+ * One game on the frozen live-week picks screen: the slate row, the persona's pick, the frozen
+ * live/unofficial score, and the revealed group picks. The live score is the stand-in the demo
+ * serves in place of `/api/live-scores` — the unauthenticated demo has no ESPN feed (#585) — and
+ * the group picks drive the per-member cover dots the same way the real `RevealedGroupPicks` does.
+ */
 export type DemoLiveGame = PickGame & {
   status: DemoGameStatus;
   personaPick: DemoPersonaPick | null;
-  finalScores: { home: number; away: number } | null;
+  /** Frozen live score for the sweat board; null on a not-started (`open`) game. */
+  liveScore: LiveScoreEntry | null;
+  /** Revealed member picks on this game (post-kickoff), for the group-cover dots. */
+  groupPicks: GroupPickEntry[];
 };
 
-/** The frozen "live" week powering the demo picks screen (the product's verb). */
+/**
+ * The frozen mid-game "live" week powering the demo picks screen (the product's verb) and the
+ * Weekly-tab provisional board (#585). Everything is a curated build artifact — there is no live
+ * feed behind the public demo, so the scores and standings are baked at generation time.
+ */
 export type DemoLiveWeek = {
   weekNumber: number;
   games: DemoLiveGame[];
+  /**
+   * Provisional live weekly standings for the whole group, pre-assembled through the real
+   * `assembleWeeklyLiveStandings` (#584) so the demo Weekly board reuses the shipped component.
+   */
+  standings: WeeklyLiveStanding[];
 };
 
 /** The designated "you" persona the visitor inhabits. */

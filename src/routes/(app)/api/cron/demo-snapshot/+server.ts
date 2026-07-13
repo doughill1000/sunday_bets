@@ -27,9 +27,20 @@ import { getRecentRecaps, upsertRecap, type RecapRow } from '$lib/server/db/quer
 import { buildRecapFacts } from '$lib/server/recap/facts';
 import { generateRecapProse } from '$lib/server/recap/voice';
 import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
+import {
+  assembleWeeklyBreakdown,
+  assembleWeeklyLiveStandings,
+  type GameInputRow
+} from '$lib/utils/weeklyPicks';
+import { favoriteSide } from '$lib/domain/spread';
 import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
-import type { DemoSnapshot, DemoLiveGame, DemoGameStatus } from '$lib/types/demo';
+import type { DemoSnapshot, DemoLiveGame, DemoLiveWeek, DemoGameStatus } from '$lib/types/demo';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
+import type { PickGame } from '$lib/types/games';
+import type { GroupMember } from '$lib/types/group';
+import type { GroupPickEntry } from '$lib/types/picks';
+import type { LiveScoreEntry } from '$lib/live/types';
+import type { LeaderboardPlayer } from '$lib/types/leaderboard';
 
 // The demo presents its frozen Wrapped prose as finished commentary, never the "AI unavailable"
 // fallback note — the prose is a curated demo artifact regardless of how it was produced. This
@@ -102,11 +113,86 @@ async function regenerateDemoRecaps(groupId: string, seasonYear: number): Promis
 // real standings so it self-adjusts to the seed rather than hard-coding a user id.
 const DEFAULT_GROUP_ID = '00000000-0000-4000-8000-000000000017'; // "Sunday Bets"
 
-/** Build the frozen live-week picks screen from the currently-active week + the persona's picks. */
-async function buildDemoLiveWeek(
-  groupId: string,
-  personaId: string
-): Promise<{ weekNumber: number; games: DemoLiveGame[] }> {
+// --- Frozen mid-game "live" week (#585) --------------------------------------------------------
+// The public demo has no ESPN feed, so we author a plausible Sunday over the active week's REAL
+// games: each in-play game gets a live score synthesized against its real spread (so the cover
+// verdicts are exact) plus authored member picks, and the persona's own card demonstrates all four
+// states — covering, not covering, push, and Final — unofficial. Display-only: nothing is graded,
+// and the provisional board is assembled through the same `assembleWeeklyLiveStandings` the shipped
+// Weekly board (#584) uses, so the demo stays honest.
+
+type LiveRole = {
+  status: 'in_progress' | 'final';
+  /** Points the FAVORITE is beating the number by (+ covering, − failing, 0 = exactly on it). */
+  favCushion: number;
+  displayClock: string | null;
+  period: number | null;
+  /** The underdog's points; the favorite's are derived from the cushion. */
+  dogBase: number;
+  /** The persona's weight on this game (she always rides the favorite), or null if she skipped it. */
+  personaWeight: WeightCode | null;
+};
+
+const DEMO_WEIGHT_CYCLE: WeightCode[] = ['L', 'M', 'H'];
+
+/** A game's favorite side from its frozen line, defaulting to home for a pick'em. */
+function favoredSide(g: PickGame): TeamSide {
+  return favoriteSide(g) ?? 'home';
+}
+
+/** Synthesize a box score in which the favorite beats the number by `role.favCushion`. */
+function synthesizeScore(g: PickGame, role: LiveRole): { home: number; away: number } {
+  const absSpread = Math.abs(g.spreadValue ?? 0);
+  const favMargin = Math.round(absSpread + role.favCushion); // favorite pts − underdog pts
+  const fav = Math.max(0, role.dogBase + favMargin);
+  return favoredSide(g) === 'home'
+    ? { home: fav, away: role.dogBase }
+    : { home: role.dogBase, away: fav };
+}
+
+/** A revealed member pick on the favorite (or underdog) side, shaped for the group-cover dots. */
+function toGroupPick(
+  g: PickGame,
+  member: LeaderboardPlayer,
+  onFavorite: boolean,
+  weight: WeightCode
+): GroupPickEntry {
+  const favSide = favoredSide(g);
+  const side: TeamSide = onFavorite ? favSide : favSide === 'home' ? 'away' : 'home';
+  return {
+    userId: member.id,
+    displayName: member.display_name,
+    avatarKey: member.avatar_key ?? null,
+    gameId: g.id,
+    pickedSide: side,
+    weight,
+    pickedTeamShort: side === 'home' ? g.home : g.away,
+    pickedTeamId: side === 'home' ? g.homeTeamId : g.awayTeamId,
+    lockedSpreadValue: g.spreadValue,
+    lockedSpreadTeamId: g.spreadTeamId
+  };
+}
+
+/** A non-persona member's pick on one game, or null for a deterministic "hasn't picked" gap. */
+function memberPickFor(
+  gameIdx: number,
+  memberIdx: number
+): { onFavorite: boolean; weight: WeightCode } | null {
+  if ((gameIdx * 5 + memberIdx * 3) % 7 === 0) return null; // a light, deterministic skip
+  return {
+    onFavorite: (gameIdx + memberIdx) % 3 !== 0, // ~2/3 ride the favorite
+    weight: DEMO_WEIGHT_CYCLE[(gameIdx + memberIdx) % DEMO_WEIGHT_CYCLE.length]
+  };
+}
+
+/**
+ * Build the frozen, mid-game "live" week (#585): resolve the active week's real slate, bake a
+ * curated Sunday over it (a late OPEN game for the pick affordance, in-progress games, and one
+ * Final — unofficial), and pre-assemble the provisional Weekly board through the shipped
+ * assembler. The persona always rides the favorite so her card reads covering / not covering /
+ * push / final in one glance.
+ */
+async function buildDemoLiveWeek(personaId: string, members: GroupMember[]): Promise<DemoLiveWeek> {
   const now = new Date().toISOString();
 
   // The active window (start <= now <= end); fall back to the latest started week.
@@ -128,49 +214,102 @@ async function buildDemoLiveWeek(
       .maybeSingle();
     week = fallback.data ?? null;
   }
-  if (!week) return { weekNumber: 0, games: [] };
+  if (!week) return { weekNumber: 0, games: [], standings: [] };
 
   const pickGames = await getGamesWithActiveLines(week.id);
-  const gameIds = pickGames.map((g) => g.id);
+  const weekNumber = week.week_number as number;
+  if (pickGames.length === 0) return { weekNumber, games: [], standings: [] };
 
-  const [{ data: gameRows }, { data: pickRows }] = await Promise.all([
-    supabaseService.from('games').select('id, status, final_scores').in('id', gameIds),
-    supabaseService
-      .from('picks')
-      .select('game_id, picked_team_id, weight')
-      .eq('group_id', groupId)
-      .eq('user_id', personaId)
-      .in('game_id', gameIds)
-  ]);
+  // Stable, deterministic member + game order so the fixture regenerates byte-identically.
+  const players: LeaderboardPlayer[] = [...members]
+    .sort((a, b) => a.userId.localeCompare(b.userId))
+    .map((m) => ({ id: m.userId, display_name: m.displayName, avatar_key: m.avatarKey }));
+  const sorted = [...pickGames].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
-  const finalById = new Map(
-    (gameRows ?? []).map((g) => [
-      g.id as string,
-      g.final_scores as { home: number; away: number } | null
-    ])
-  );
-  const pickById = new Map((pickRows ?? []).map((p) => [p.game_id as string, p]));
+  // The latest kickoff stays OPEN (the "still to pick" affordance) as long as we keep four in-play
+  // games for the four states; the push must land on an integer-spread game (a half-point line can
+  // never sit exactly on the number).
+  const isInteger = (g: PickGame) => {
+    const s = Math.abs(g.spreadValue ?? 0);
+    return s >= 1 && Number.isInteger(s);
+  };
+  const openGame = sorted.length > 4 ? sorted[sorted.length - 1] : null;
+  const inPlay = openGame ? sorted.slice(0, -1) : sorted;
+  const pushGame = inPlay.find(isInteger) ?? inPlay[0];
+  const finalGame =
+    inPlay.find((g) => g !== pushGame && isInteger(g)) ??
+    inPlay.find((g) => g !== pushGame) ??
+    pushGame;
+  const rest = inPlay.filter((g) => g !== pushGame && g !== finalGame);
+  const coveringGame = rest[0] ?? null;
+  const notCoveringGame = rest[1] ?? null;
 
-  const nowMs = Date.now();
-  const games: DemoLiveGame[] = pickGames.map((g) => {
-    const finalScores = finalById.get(g.id) ?? null;
-    const kickedOff = new Date(g.kickoff).getTime() <= nowMs;
-    const status: DemoGameStatus = finalScores ? 'final' : kickedOff ? 'locked' : 'open';
+  const roleFor = (g: PickGame): LiveRole => {
+    if (g === finalGame)
+      return { status: 'final', favCushion: 4, displayClock: null, period: null, dogBase: 20, personaWeight: 'A' }; // prettier-ignore
+    if (g === pushGame)
+      return { status: 'in_progress', favCushion: 0, displayClock: '2:03', period: 4, dogBase: 17, personaWeight: 'L' }; // prettier-ignore
+    if (g === coveringGame)
+      return { status: 'in_progress', favCushion: 3, displayClock: '5:42', period: 3, dogBase: 19, personaWeight: 'H' }; // prettier-ignore
+    if (g === notCoveringGame)
+      return { status: 'in_progress', favCushion: -3, displayClock: '9:15', period: 2, dogBase: 19, personaWeight: 'M' }; // prettier-ignore
+    return { status: 'in_progress', favCushion: 2, displayClock: '12:20', period: 1, dogBase: 20, personaWeight: 'M' }; // prettier-ignore
+  };
 
-    const pick = pickById.get(g.id);
-    const personaPick =
-      pick && pick.picked_team_id != null && pick.weight
-        ? {
-            side: (pick.picked_team_id === g.homeTeamId ? 'home' : 'away') as TeamSide,
-            weight: pick.weight as WeightCode,
-            locked: kickedOff
-          }
-        : null;
+  const games: DemoLiveGame[] = sorted.map((g, gameIdx) => {
+    if (g === openGame) {
+      return {
+        ...g,
+        status: 'open' as DemoGameStatus,
+        personaPick: null,
+        liveScore: null,
+        groupPicks: []
+      };
+    }
+    const role = roleFor(g);
+    const score = synthesizeScore(g, role);
+    const liveScore: LiveScoreEntry = {
+      homeScore: score.home,
+      awayScore: score.away,
+      status: role.status,
+      displayClock: role.status === 'in_progress' ? role.displayClock : null,
+      period: role.status === 'in_progress' ? role.period : null
+    };
 
-    return { ...g, status, personaPick, finalScores };
+    const groupPicks: GroupPickEntry[] = [];
+    players.forEach((m, memberIdx) => {
+      if (m.id === personaId) {
+        if (role.personaWeight) groupPicks.push(toGroupPick(g, m, true, role.personaWeight));
+        return;
+      }
+      const mp = memberPickFor(gameIdx, memberIdx);
+      if (mp) groupPicks.push(toGroupPick(g, m, mp.onFavorite, mp.weight));
+    });
+
+    const personaPick: DemoLiveGame['personaPick'] = role.personaWeight
+      ? { side: favoredSide(g), weight: role.personaWeight, locked: true }
+      : null;
+    const status: DemoGameStatus = role.status === 'final' ? 'final_unofficial' : 'in_progress';
+    return { ...g, status, personaPick, liveScore, groupPicks };
   });
 
-  return { weekNumber: week.week_number as number, games };
+  // Provisional Weekly board — assembled through the shipped #584 path (no graded settlements yet).
+  const gameInputRows: GameInputRow[] = sorted.map((g) => ({
+    id: g.id,
+    commence_time: g.kickoff,
+    final_scores: null,
+    home_team_id: g.homeTeamId,
+    away_team_id: g.awayTeamId,
+    home: { short_name: g.home },
+    away: { short_name: g.away }
+  }));
+  const allGroupPicks = games.flatMap((dg) => dg.groupPicks);
+  const liveScores: Record<string, LiveScoreEntry> = {};
+  for (const dg of games) if (dg.liveScore) liveScores[dg.id] = dg.liveScore;
+  const breakdown = assembleWeeklyBreakdown(gameInputRows, allGroupPicks, [], players, personaId);
+  const standings = assembleWeeklyLiveStandings(breakdown, liveScores);
+
+  return { weekNumber, games, standings };
 }
 
 async function assembleDemoSnapshot(params: {
@@ -207,7 +346,7 @@ async function assembleDemoSnapshot(params: {
   const [wrapped, recaps, liveWeek, personaRow] = await Promise.all([
     getSeasonWrapped(groupId, completedSeasonYear, personaId),
     getRecentRecaps(groupId, completedSeasonYear, 5),
-    buildDemoLiveWeek(groupId, personaId),
+    buildDemoLiveWeek(personaId, group.members),
     supabaseService
       .from('users')
       .select('display_name, avatar_key')
