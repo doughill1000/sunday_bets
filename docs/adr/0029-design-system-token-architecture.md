@@ -1,6 +1,6 @@
 # ADR-0029: Design-system token architecture
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-11
 - Issue: #530
 - Supersedes: None
