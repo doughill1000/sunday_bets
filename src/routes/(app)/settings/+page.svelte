@@ -90,6 +90,40 @@
       : { kind: 'error', text: 'Could not save avatar.' };
   }
 
+  // Roving-tabindex arrow nav for the avatar radiogroup, matching ChipRadiogroup's pattern.
+  function onAvatarKeydown(event: KeyboardEvent) {
+    const index = AVATAR_PRESETS.findIndex((p) => p.key === avatarKey);
+    if (AVATAR_PRESETS.length === 0) return;
+
+    let next = index;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = index < 0 ? 0 : (index + 1) % AVATAR_PRESETS.length;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next =
+          index < 0
+            ? AVATAR_PRESETS.length - 1
+            : (index - 1 + AVATAR_PRESETS.length) % AVATAR_PRESETS.length;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = AVATAR_PRESETS.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const nextKey = AVATAR_PRESETS[next].key;
+    void selectAvatar(nextKey);
+    document.getElementById(`avatar-${nextKey}`)?.focus();
+  }
+
   // Pick-card ATS trend nugget preference (issue #406). bind:checked updates the state before
   // onchange fires, so `showTeamTrends` already holds the new value here.
   let showTeamTrends = $state(data.userProfile?.showTeamTrends ?? true);
@@ -381,13 +415,19 @@
       </form>
 
       <div>
-        <p class="mb-2 text-sm text-muted-foreground">Choose an avatar</p>
-        <div class="flex flex-wrap gap-2">
-          {#each AVATAR_PRESETS as preset (preset.key)}
+        <p class="mb-2 text-sm text-muted-foreground" id="avatar-picker-label">Choose an avatar</p>
+        <div class="flex flex-wrap gap-2" role="radiogroup" aria-labelledby="avatar-picker-label">
+          {#each AVATAR_PRESETS as preset, i (preset.key)}
             <button
+              type="button"
+              id={`avatar-${preset.key}`}
+              role="radio"
+              aria-checked={avatarKey === preset.key}
+              tabindex={avatarKey === preset.key || (avatarKey === null && i === 0) ? 0 : -1}
               onclick={() => selectAvatar(preset.key)}
+              onkeydown={onAvatarKeydown}
               title={preset.key}
-              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus:outline-none"
+              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               class:ring-2={avatarKey === preset.key}
               class:ring-offset-2={avatarKey === preset.key}
               class:ring-foreground={avatarKey === preset.key}
@@ -398,9 +438,10 @@
           {/each}
           {#if avatarKey !== null}
             <button
+              type="button"
               onclick={() => selectAvatar(null)}
               title="Remove avatar"
-              class="flex size-10 items-center justify-center rounded-full border text-xs text-muted-foreground transition-transform hover:scale-110 focus:outline-none"
+              class="flex size-10 items-center justify-center rounded-full border text-xs text-muted-foreground transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               ✕
             </button>

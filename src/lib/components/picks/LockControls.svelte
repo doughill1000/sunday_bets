@@ -34,7 +34,7 @@
     <div class="flex justify-end">
       <button
         type="button"
-        class="rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
+        class="rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         data-testid="clear-pick"
         onclick={onClear}
       >
