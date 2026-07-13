@@ -55,7 +55,7 @@ Bash (see `AGENTS.md`).
      merged since `base`, including whatever step 2 just backfilled) and collapse them into
      one `## v<new> — YYYY-MM-DD` heading (today's date), directly under the "How entries
      are added" section. Condense each entry to a single line — `- **#NNN**/**PR #NNN**
-     short title — one clause` — dropping multi-line prose but **keeping every `#NNN` /
+short title — one clause` — dropping multi-line prose but **keeping every `#NNN` /
      `PR #NNN` reference intact**, since the governance-freshness gate greps the file for
      them. Entries from earlier releases are untouched — this only squashes the window
      being cut. Add the release-bump line itself (`**PR #NNN** Release v<new>`) at the top.
