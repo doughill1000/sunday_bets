@@ -8,7 +8,7 @@
 /** Read screens whose query data is shareable and therefore allowed to be persisted to
  * IndexedDB. Commissioner/invite data is never keyed under these roots, so it is
  * structurally excluded from persistence (ADR-0017 boundary 3). */
-export const SHAREABLE_QUERY_ROOTS = ['stats', 'group', 'leaderboard', 'league'] as const;
+export const SHAREABLE_QUERY_ROOTS = ['stats', 'group', 'leaderboard', 'league', 'recap'] as const;
 
 export const queryKeys = {
   stats: (groupId: string, seasonYear: number) => ['stats', groupId, seasonYear] as const,
@@ -36,7 +36,10 @@ export const queryKeys = {
   // Live Sunday sweat scores (#386). Its own root, deliberately NOT in SHAREABLE_QUERY_ROOTS,
   // so this ephemeral live data is never persisted to IndexedDB. Group-independent (identical
   // for everyone), so it takes no args — one cache entry, one shared poll.
-  liveScores: () => ['live-scores'] as const
+  liveScores: () => ['live-scores'] as const,
+  // Recap prose + weekly hardware/shelf (ADR-0033, issue #602). Shareable and group +
+  // season scoped, same shape as stats/group/leaderboard.
+  recap: (groupId: string, seasonYear: number) => ['recap', groupId, seasonYear] as const
 };
 
 /** Prefix keys for targeted post-mutation invalidation. `invalidateQueries` matches any
