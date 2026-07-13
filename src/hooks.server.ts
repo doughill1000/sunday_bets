@@ -8,6 +8,7 @@ import { supabaseService } from '$lib/supabase/service';
 import type { Database } from '$lib/types/supabase';
 import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-resolver';
 import { getAuthContext } from '$lib/server/auth-context-cache';
+import { resolveSafeSession } from '$lib/server/auth-session';
 import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
 import { DEFAULT_THEME_MODE, isThemeMode, themeClassFor, type ThemeMode } from '$lib/theme';
@@ -65,34 +66,18 @@ const supabase: Handle = async ({ event, resolve }) => {
 
   /**
    * Unlike `supabase.auth.getSession()`, which returns the session _without_
-   * validating the JWT, this function also calls `getUser()` to validate the
-   * JWT before returning the session.
+   * validating the JWT, this establishes `session`/`user` from a token whose
+   * signature + expiry have been verified LOCALLY via `getClaims()` — no
+   * `getUser()` auth-server round-trip on the happy path (ADR-0031, issue #588).
+   * See `resolveSafeSession` and docs/runbooks/auth-jwt-verification.md.
    *
-   * Memoized per request: the first call fires the getUser() network round-trip;
-   * subsequent calls (e.g. from the root layout load) return the same Promise,
-   * so getUser() is never called more than once per request.
+   * Memoized per request: the first call runs the verification; subsequent calls
+   * (e.g. from the root layout load) return the same Promise, so the work happens
+   * at most once per request.
    */
   let _sessionCache: ReturnType<(typeof event.locals)['safeGetSession']> | null = null;
   event.locals.safeGetSession = () =>
-    (_sessionCache ??= (async () => {
-      const {
-        data: { session }
-      } = await event.locals.supabase.auth.getSession();
-      if (!session) {
-        return { session: null, user: null };
-      }
-
-      const {
-        data: { user },
-        error
-      } = await event.locals.supabase.auth.getUser();
-      if (error) {
-        // JWT validation has failed
-        return { session: null, user: null };
-      }
-
-      return { session, user };
-    })());
+    (_sessionCache ??= resolveSafeSession(event.locals.supabase.auth));
 
   return resolve(event, {
     filterSerializedResponseHeaders(name) {
