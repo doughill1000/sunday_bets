@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #582** Adopt the shared `ChipRadiogroup` for the `/market` "Slice by" chips — the
+  row hand-rolled its own radiogroup (keyboard model + horizontal-scroll/edge-fade); it now
+  uses the same component as `/stats` and wraps at 390px so every cut stays visible. Clears
+  the last chip-radiogroup hand-copy flagged by the 2026-07-11 UI-consistency audit (S7).
+  files: `ChipRadiogroup.svelte` · `/market` · ADR-0030
 - **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
   2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
   live window now starts fresh; the governance-freshness gate's changelog-enforcement
