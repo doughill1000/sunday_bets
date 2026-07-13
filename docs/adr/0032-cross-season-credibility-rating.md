@@ -255,3 +255,13 @@ Implemented in `src/lib/server/rating/computeRatings.ts` (fold → aggregation) 
 `player_rating_inputs` view, the `player_ratings` table, its RLS / grants, and the Career
 surfacing are unchanged. A follow-up will add the offseason rebuild entrypoint + lifecycle
 wiring and a concurrent-rebuild guard.
+
+**5. Apex tier renamed Shark → Hotshot** (within §"Surfacing"'s "tuned in #361" allowance;
+supersedes the "Shark" label in §"Surfacing" and amendment §4). "Sharp" and "Square" are
+native betting terms, but "Shark" is borrowed from poker and near-homophonous with the tier
+just below it. The top band (≥ 1520) is renamed **Hotshot** after the app itself — a group's
+Hotshot is its sharpest bettor — so the apex reads as the branded win-state. Cutoffs are
+unchanged (Square < 1500 ≤ Solid < 1508 ≤ Sharp < 1520 ≤ Hotshot); only the label moved. The
+`/stats` Career band gives Hotshot a distinct pill (brass fill + ink ring + ★) one step
+louder than Sharp. Labels remain tunable constants in `src/lib/domain/rating.ts`, not
+ADR-frozen.

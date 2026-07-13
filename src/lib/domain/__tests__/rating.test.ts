@@ -35,14 +35,14 @@ describe('ratingTier', () => {
     expect(ratingTier(1519)).toBe('sharp');
   });
 
-  it('bands 1520 and above as Shark', () => {
-    expect(ratingTier(1520)).toBe('shark');
-    expect(ratingTier(1522)).toBe('shark');
-    expect(ratingTier(1550)).toBe('shark');
+  it('bands 1520 and above as Hotshot', () => {
+    expect(ratingTier(1520)).toBe('hotshot');
+    expect(ratingTier(1522)).toBe('hotshot');
+    expect(ratingTier(1550)).toBe('hotshot');
   });
 
   it('is total and monotonic across the boundaries', () => {
-    const order = { square: 0, solid: 1, sharp: 2, shark: 3 };
+    const order = { square: 0, solid: 1, sharp: 2, hotshot: 3 };
     let prev = -1;
     for (let r = 1400; r <= 1650; r += 1) {
       const rank = order[ratingTier(r)];
@@ -57,7 +57,7 @@ describe('tierLabel', () => {
     expect(tierLabel('square')).toBe('Square');
     expect(tierLabel('solid')).toBe('Solid');
     expect(tierLabel('sharp')).toBe('Sharp');
-    expect(tierLabel('shark')).toBe('Shark');
+    expect(tierLabel('hotshot')).toBe('Hotshot');
   });
 });
 
@@ -77,7 +77,7 @@ describe('meterPct', () => {
     expect(meterPct(1525)).toBe(75);
   });
 
-  it('reads 58% at the Sharp threshold (1508) and 70% at the Shark threshold (1520)', () => {
+  it('reads 58% at the Sharp threshold (1508) and 70% at the Hotshot threshold (1520)', () => {
     expect(meterPct(1508)).toBe(58);
     expect(meterPct(1520)).toBe(70);
   });

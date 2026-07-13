@@ -31,35 +31,36 @@ export const MIN_QUALIFIED_DECISIONS = 20;
  *  the meter barely moving; ±50 makes it read meaningfully across the real range of ratings. */
 const METER_HALF_WINDOW = 50;
 
-/** Qualitative credibility tiers, sharp→square. A deterministic banding of the numeric rating
- *  (ADR-0032 §"Surfacing"): betting vocabulary that makes the number legible at a glance. */
-export type RatingTier = 'square' | 'solid' | 'sharp' | 'shark';
+/** Qualitative credibility tiers, hotshot→square. A deterministic banding of the numeric rating
+ *  (ADR-0032 §"Surfacing"): betting vocabulary that makes the number legible at a glance. The apex
+ *  tier is the app's own name — a Hotshot is the group's sharpest bettor. */
+export type RatingTier = 'square' | 'solid' | 'sharp' | 'hotshot';
 
 /** Lower bound (inclusive) of each tier on the rating scale, tuned in #361 and recalibrated for
  *  the v2 scale. Chosen so par (~50% cover) reads Solid, a sustained ~51.5%+ cover rate reads
- *  Sharp, ~53.3%+ reads Shark, and anything below the market reads Square. */
+ *  Sharp, ~53.3%+ reads Hotshot, and anything below the market reads Square. */
 const TIER_MIN: Record<Exclude<RatingTier, 'square'>, number> = {
   solid: 1500,
   sharp: 1508,
-  shark: 1520
+  hotshot: 1520
 };
 
 const TIER_LABELS: Record<RatingTier, string> = {
   square: 'Square',
   solid: 'Solid',
   sharp: 'Sharp',
-  shark: 'Shark'
+  hotshot: 'Hotshot'
 };
 
 /** Band a numeric rating into its qualitative tier. Pure and total over the number line. */
 export function ratingTier(rating: number): RatingTier {
-  if (rating >= TIER_MIN.shark) return 'shark';
+  if (rating >= TIER_MIN.hotshot) return 'hotshot';
   if (rating >= TIER_MIN.sharp) return 'sharp';
   if (rating >= TIER_MIN.solid) return 'solid';
   return 'square';
 }
 
-/** The short display word for a tier ("Sharp", "Shark", …). */
+/** The short display word for a tier ("Sharp", "Hotshot", …). */
 export function tierLabel(tier: RatingTier): string {
   return TIER_LABELS[tier];
 }
