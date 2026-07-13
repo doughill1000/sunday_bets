@@ -63,6 +63,16 @@ entry per PR the rest of the time.
   uses the same component as `/stats` and wraps at 390px so every cut stays visible. Clears
   the last chip-radiogroup hand-copy flagged by the 2026-07-11 UI-consistency audit (S7).
   files: `ChipRadiogroup.svelte` · `/market` · ADR-0030
+- **PR #583** Reorder `/league` Standings and de-clutter the table — the standings
+  table now leads with "The race" chart below it (was race-first), and each player's
+  W-L-P record moves from its own column onto a muted line under the name so long names
+  stop clipping the Total column at 390px. Presentational; e2e testids unchanged.
+  route: `/league` · ADR-0030
+- **PR #581** Make the `/league` season dropdown sticky — the season/All-time picker
+  lived in the page-title row and scrolled away with the heading; it now sits in its own
+  sticky scope bar under the app header, matching the `/stats` and `/market` season
+  pickers, so it stays reachable as the race, standings, and honors scroll. Layout-only;
+  testids and scope behaviour unchanged. route: `/league`
 - **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
   2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
   live window now starts fresh; the governance-freshness gate's changelog-enforcement

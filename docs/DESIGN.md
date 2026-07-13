@@ -57,9 +57,9 @@ container; the page body never scrolls sideways.
 
 _Why:_ desktop-down design silently pushes the rightmost column off a phone screen.
 _Example:_ the standings "Total" column once clipped off the right edge at 390px; the League
-home standings (#561) keep it on-screen by collapsing W-L-P into one "Rec" cell on mobile (and
-carry rank movement inside the existing "#" cell rather than adding a column). The same class of
-clip drove the `/market` picker consolidation (#529).
+home standings keep it on-screen by dropping the record's own column and tucking W-L-P onto a
+muted line under each name, and by carrying rank movement inside the existing "#" cell rather
+than adding a column. The same class of clip drove the `/market` picker consolidation (#529).
 
 ### 2. One pattern per job
 
