@@ -58,6 +58,12 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
+  2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
+  live window now starts fresh; the governance-freshness gate's changelog-enforcement
+  cutoff moves to match. Also flips `docs/adr/0029-design-system-token-architecture.md`
+  to `Accepted` (its issue, #530, had closed without the status flip). file:
+  `scripts/check-governance-freshness.ts` · ADR-0029
 - **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
   (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
   all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
