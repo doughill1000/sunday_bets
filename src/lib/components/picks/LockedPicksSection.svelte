@@ -17,6 +17,7 @@
   import type { LiveScoreEntry } from '$lib/live/types';
   import RevealedGroupPicks from './RevealedGroupPicks.svelte';
   import { Badge } from '$lib/components/ui/badge';
+  import FormNote from '$lib/components/FormNote.svelte';
 
   type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
 
@@ -155,6 +156,9 @@
                 <p class="text-xs font-medium text-destructive" data-testid="committed-detail">
                   No pick recorded
                 </p>
+              {/if}
+              {#if entry?.saveError}
+                <FormNote kind="warning" text={entry.saveError} class="mt-1 px-2 py-1" />
               {/if}
             </div>
 
