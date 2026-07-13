@@ -75,5 +75,6 @@ current status.
 | [ADR-0028](0028-in-app-feedback-tool.md)                                    | In-app feedback capture — store-first model, admin-gated GitHub egress, public-repo privacy           |
 | [ADR-0029](0029-design-system-token-architecture.md)                        | Design-system token architecture — typography/spacing/elevation/motion tokens + raw-hex guard         |
 | [ADR-0030](0030-mobile-first-design-principles.md)                          | Mobile-first design principles — 390px canvas, one-pattern-per-job, disclosure depth (docs/DESIGN.md) |
+| [ADR-0031](0031-local-jwt-verification-hot-path.md)                         | Local JWT verification on the request hot path (replace per-navigation `getUser()`)                   |
 
-_The numbering is sequential; the next ADR is 0031._
+_The numbering is sequential; the next ADR is 0032._
