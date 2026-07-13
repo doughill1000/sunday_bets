@@ -30,6 +30,7 @@
     teamBookStandouts
   } from '$lib/utils/stats';
   import { weightLabel } from '$lib/domain/scoring';
+  import { ratingRank } from '$lib/domain/rating';
 
   let { data: pageData }: { data: PageData } = $props();
 
@@ -74,7 +75,8 @@
     leagueSituationalBaselineSeason: [],
     teamBook: [],
     teamBookAllTime: [],
-    lineSideAllTime: []
+    lineSideAllTime: [],
+    playerRatings: []
   };
 
   // `pageData` is spread last so its (reactive) season metadata wins for shared keys; the
@@ -203,6 +205,14 @@
     const decided = selectedCareer.wins + selectedCareer.losses;
     return decided > 0 ? selectedCareer.wins / decided : null;
   });
+
+  // Cross-season credibility rating for the selected player (#361), plus their in-group rank among
+  // qualified players. Career-only: passed to the Career hero, never the season one. A missing row
+  // (no settled decisions yet) renders as the Unrated state inside the band.
+  const selectedRating = $derived(data.playerRatings.find((r) => r.user_id === selectedUserId));
+  const selectedRatingRank = $derived(
+    selectedUserId ? ratingRank(data.playerRatings, selectedUserId) : null
+  );
 
   // Favorite/underdog lean for the selected player, at both scopes (#564): the season lean feeds
   // the season signature strip, the career lean (pooled across seasons) the career one. Each is
@@ -438,6 +448,7 @@
           atsAccuracy={careerAtsAccuracy}
           decisions={selectedCareer.decisions}
           tells={careerSignature}
+          rating={{ entry: selectedRating, rank: selectedRatingRank }}
         />
 
         <!-- Every split (#514): browse every ATS cut across the career, one dimension at a time. -->

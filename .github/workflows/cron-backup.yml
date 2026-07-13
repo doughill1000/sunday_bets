@@ -6,12 +6,16 @@
 # but that only fires on a manual release -- this scheduled job guarantees a recent
 # backup regardless of release cadence. Both share the composite action
 # .github/actions/backup-supabase-db so they dump identically. See ADR-0010.
+#
+# These dumps are PROVEN restorable -- restore + row-count drill and the season-start
+# cadence flip are documented in docs/runbooks/backup-restore-drill.md.
 name: 'Cron: Backup Prod DB'
 
 on:
   schedule:
     # Weekly, Monday 08:00 UTC. Flip to daily ('0 8 * * *') at NFL season start, when
-    # weekly picks make a day-level RPO worth the extra runs.
+    # weekly picks make a day-level RPO worth the extra runs. Procedure:
+    # docs/runbooks/backup-restore-drill.md#season-start-flip-the-backup-cadence-weekly--daily
     - cron: '0 8 * * 1'
   workflow_dispatch:
 

@@ -1,5 +1,6 @@
 import { supabaseService } from '$lib/supabase/service';
 import { getWeeklyCumulative } from '$lib/server/db/queries/leaderboard';
+import type { PlayerRatingEntry } from '$lib/domain/rating';
 import type { Tables } from '$lib/types/supabase';
 import type {
   AllTimeStats,
@@ -689,6 +690,28 @@ function toAllTimeWeightAccuracy(row: AllTimeWeightRow): AllTimeWeightAccuracyEn
     points: row.points,
     accuracy: row.accuracy
   };
+}
+
+/**
+ * Cross-season credibility ratings for every player in the group (#361, ADR-0032). One row per
+ * (group, user) from the service-role-only player_ratings read model; career-grain and
+ * season-independent (like {@link getAllTimeTotals}), so it takes only a group id and the Career
+ * hero picks the selected player + computes the in-group rank client-side. A player with no row is
+ * simply Unrated (0 decisions) on the surface. NULL `rating` IS the Unrated state (ADR-0032 §5).
+ */
+export async function getPlayerRatings(groupId: string): Promise<PlayerRatingEntry[]> {
+  const { data, error } = await supabaseService
+    .from('player_ratings')
+    .select('user_id, rating, decisions, decisions_to_qualify, season_delta')
+    .eq('group_id', groupId);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    user_id: row.user_id,
+    rating: row.rating,
+    decisions: row.decisions,
+    decisionsToQualify: row.decisions_to_qualify,
+    seasonDelta: row.season_delta
+  }));
 }
 
 /**

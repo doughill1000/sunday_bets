@@ -5,6 +5,7 @@ import { type OddsScore } from '$lib/types/oddsApi';
 import { fetchNFLScores } from '$lib/server/odds';
 import { fetchEspnWeek, type EspnGame } from '$lib/server/schedule';
 import { findTeamsByExternalKeys } from '$lib/server/db/queries/findTeamsByExternalKeys';
+import { rebuildPlayerRatings } from '$lib/server/rating/rebuild';
 
 /**
  * Refresh the materialized leaderboard/stats views after a grading run (issue #191).
@@ -27,6 +28,21 @@ export async function refreshLeaderboardStats(): Promise<void> {
       error.message
     );
   }
+}
+
+/**
+ * Rebuild the cross-season credibility read model after a grade (issue #361, ADR-0032).
+ *
+ * Runs right after the matview refresh, on the same best-effort contract: a rebuild failure is
+ * logged to Sentry (injected here — rebuild.ts stays free of the SvelteKit-only Sentry import so
+ * it can also run in node scripts) and never thrown, since the grade has already committed and the
+ * prior ratings self-heal on the next grade.
+ */
+async function rebuildRatings(): Promise<void> {
+  await rebuildPlayerRatings(supabaseService, {
+    onError: (err) =>
+      Sentry.captureException(err, { tags: { area: 'grading', step: 'rebuild_player_ratings' } })
+  });
 }
 
 /** Result summary shared by all three graders — powers the admin card's confirmation note. */
@@ -104,6 +120,7 @@ export async function gradeGame(
   const { error } = await supabaseService.rpc('grade_game', { p_game_id: gameId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
+  await rebuildRatings();
   const summary = await summarizeGrade([gameId]);
   return { ok: true, game_id: gameId, ...summary };
 }
@@ -120,6 +137,7 @@ export async function gradeWeek(
   const { error } = await supabaseService.rpc('grade_week', { p_week_id: weekId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
+  await rebuildRatings();
   const summary = await summarizeGrade(gameIds);
   return { ok: true, week_id: weekId, ...summary };
 }
@@ -136,6 +154,7 @@ export async function gradeSeason(
   const { error } = await supabaseService.rpc('grade_season', { p_season_id: seasonId });
   if (error) throw new Error(error.message);
   await refreshLeaderboardStats();
+  await rebuildRatings();
   const summary = await summarizeGrade(gameIds);
   return { ok: true, season_id: seasonId, ...summary };
 }
