@@ -324,7 +324,7 @@
 {/snippet}
 
 {#snippet wlp(wins: number, losses: number, pushes: number)}
-  <span class="tabular-nums text-white">{wins}-{losses}-{pushes}</span>
+  <span class="tabular-nums">{wins}-{losses}-{pushes}</span>
 {/snippet}
 
 {#snippet h2hGrid(rows: ReturnType<typeof headToHeadForUser>, span: string)}

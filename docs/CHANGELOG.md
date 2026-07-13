@@ -68,6 +68,10 @@ entry per PR the rest of the time.
   triple-shown situational edge. routes: `/stats` · new `StatsHero.svelte` /
   `SignatureTells.svelte` · removed `YourEdge.svelte` / `CareerSummary.svelte` /
   `SignatureTendencies.svelte` · `docs/DESIGN.md` · ADR-0018 / ADR-0030
+- **PR #578** Stats win-loss-push text fix — the `/stats` record snippet had a
+  hardcoded white text color left over from the dark-only era, making it invisible on
+  the light theme. Now inherits the surrounding Card's foreground token instead. file:
+  `routes/(app)/stats/+page.svelte`
 - **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
   co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
   Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
