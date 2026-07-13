@@ -9,8 +9,18 @@ Every server route and endpoint receives `event.locals` which carries:
 
 - `event.locals.supabase` — the per-request Supabase client (anon key + user cookie)
 - `event.locals.session` — the decoded JWT, or `null` if unauthenticated
-- `event.locals.user` — `session.user`, or `null`
+- `event.locals.user` — the user derived from the **locally verified** JWT claims, or `null`
 - `event.locals.isAdmin` — `true` when `users.role === 'admin'`
+
+`safeGetSession()` establishes `session`/`user` by verifying the access token's
+**signature + expiry locally** via `supabase.auth.getClaims()` — no per-request
+`getUser()` round-trip to the auth server on the happy path (**ADR-0031**, issue #588;
+implemented in `src/lib/server/auth-session.ts`). With asymmetric signing keys enabled
+it verifies against a cached JWKS; on a still-HS256 project it transparently falls back
+to `getUser()`. It stays fail-closed: a bad signature, expired token, or unresolvable
+`kid` yields `{ session: null, user: null }`. Operating the keys/TTL/rotation is
+`docs/runbooks/auth-jwt-verification.md`. RLS remains the real authorization regardless
+(Postgres re-validates the JWT on every user-scoped query).
 
 Do **not** use `localStorage` for session storage. The iOS standalone PWA relaunches
 in a fresh context that has no access to `localStorage`, which silently logs users out.
