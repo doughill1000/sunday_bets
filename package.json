@@ -32,6 +32,7 @@
     "users:provision:local": "tsx supabase/scripts/provision-users.ts --env=.env.local --file=supabase/scripts/users.json",
     "users:provision:dev": "tsx supabase/scripts/provision-users.ts --env=.env.staging --file=supabase/scripts/users.json",
     "users:provision:prod": "tsx supabase/scripts/provision-users.ts --env=.env.production --file=supabase/scripts/users.json",
+    "ratings:rebuild": "tsx scripts/rebuildRatings.ts",
     "dev": "vite dev --host",
     "lint": "prettier --check . && eslint . && tsx scripts/check-brand-colors.ts",
     "preview": "vite preview",

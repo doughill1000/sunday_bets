@@ -1,6 +1,6 @@
 // tests/integration/playerRatings.test.ts
 //
-// Exercises the credibility rating read model (issue #361, ADR-0032) end-to-end against local
+// Exercises the credibility rating read model (issue #361, ADR-0032 v2) end-to-end against local
 // Supabase: seed real settled picks, run the rebuild, and read public.player_ratings back — the
 // DB round-trip the pure fold's unit tests can't cover (view filtering → fold → upsert → read).
 //
@@ -164,7 +164,9 @@ beforeAll(async () => {
     });
   };
 
-  // Alice: all 25 games, mostly All-In/High on wins to give conviction weight something to bite.
+  // Alice: all 25 games. Weight is varied (A/H/M) across her picks — this predates the v2 rewrite
+  // (ADR-0032 v2 ignores conviction entirely) and is left as harmless variation in the fixture
+  // rather than rewritten to uniform weights.
   for (let i = 0; i < ALICE_GAMES; i++) {
     const outcome = outcomeFor(i);
     const weight = i % 5 === 0 ? 'A' : i % 3 === 0 ? 'H' : 'M';
@@ -199,8 +201,8 @@ afterAll(async () => {
   await deleteAuthUsers([ALICE_ID, BOB_ID]);
 });
 
-describe('player_ratings read model (#361, ADR-0032)', () => {
-  test('a player over the gate gets a real rating above par with a season delta', async () => {
+describe('player_ratings read model (#361, ADR-0032 v2)', () => {
+  test('a player over the gate gets a real rating above par; season delta is null (single season)', async () => {
     const { data, error } = await admin
       .from('player_ratings')
       .select('*')
@@ -211,8 +213,16 @@ describe('player_ratings read model (#361, ADR-0032)', () => {
     expect(data!.decisions).toBe(ALICE_GAMES);
     expect(data!.decisions_to_qualify).toBe(0);
     expect(data!.rating).not.toBeNull();
-    expect(data!.rating!).toBeGreaterThan(RATING_PAR); // ~73% cover ⇒ clearly above 1500
-    expect(data!.season_delta).not.toBeNull();
+    // v2: p = (16w + 0.5×3push + 20) / (25 + 40) = 37.5/65 ≈ 57.7% shrunk cover ⇒ rating ≈ 1554,
+    // comfortably above 1500 (hand-computed from the v2 formula). Not pinned to the exact integer
+    // here — that's computeRatings.test.ts's job — so this suite only re-verifies the DB round
+    // trip (view → fold → upsert → read), not the pure fold's math a second time.
+    expect(data!.rating!).toBeGreaterThan(RATING_PAR);
+    // v2's season delta compares the latest season against every PRIOR season combined
+    // (order-independently). This fixture seeds only one season (2087), so there is no prior
+    // season to compare against and the delta is null — unlike v1, where a qualified player
+    // always had a non-null delta (measured from a per-season soft-reset anchor that v2 removed).
+    expect(data!.season_delta).toBeNull();
   });
 
   test('a player under the gate stays Unrated with a decisions-to-go count', async () => {

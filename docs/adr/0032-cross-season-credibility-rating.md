@@ -4,6 +4,10 @@
 - Date: 2026-07-13
 - Issue: #361
 - Supersedes: None
+- **Amended 2026-07-13 (v2)** — the rating model changed to an order-independent,
+  conviction-**flat**, pick-time cover-rate, superseding the closing-line basis (§1),
+  conviction weighting (§2), the soft season reset (§4), and the sequential fold (§8).
+  See [Amendment history](#amendment-history).
 
 ## Context
 
@@ -195,4 +199,59 @@ ladder" on `/league` is a **Wave-2 follow-up**, out of this ADR and issue.
 
 ## Amendment history
 
-None.
+### 2026-07-13 — v2: conviction-flat, order-independent, pick-time cover-rate
+
+Accepted 2026-07-13, the same day as the original and before any public ladder shipped,
+after an empirical review of the v1 model against production data (#361 dry-run on prod).
+Two of the Decision's bounded invariants are deliberately **changed**; by the original's
+own test — _"the semantics … should stay fixed, or this becomes a different feature"_ —
+this is a documented change of semantics, not a constant retune. **Unchanged:** the
+1500-centered scale, the hidden-until-qualified gate (§5), per-`(group, user)` scope (§6),
+the deterministic / pure / never-AI-decided guarantee (§7), the third-number separation
+from standings (§9), and the rebuilt service-role read-model + self-heal architecture (§8).
+
+**1. Line basis — the player's locked pick-time line, not the closing line** (supersedes
+§1). Grading uses `locked_spread_value`, the spread locked at pick time (default `gamer`
+preset). No career data was ever graded against a closing line, and closing-line snapshots
+do not exist for recent seasons (2025: 16 games captured; 2026: 0), so §1's "closing line"
+described a basis the data cannot support. In a pick'em league this is also the _fairer_
+basis: a player can only be held to the number they were able to lock. Closing-line / CLV
+grading remains a possible future feature if reliable closing-line capture is ever built —
+it would be its own change.
+
+**2. Conviction is removed from the rating — every settled decision counts equally**
+(supersedes §2 and the "weighted by conviction" clause of Consequences). Production data
+showed conviction is _anti-informative_ here: cover% does not rise with conviction and the
+All-In bucket is the **worst** performer, not the best (league-wide ~36% vs a ~50%
+baseline; the heaviest All-In user is the coldest). Weighting by conviction therefore made
+the rating a worse skill estimate and partly a measure of All-In _usage_. Conviction keeps
+its full weight where it belongs — the standings `weight_points` ladder (L/M/H/A =
+1/3/5/10) — so the two numbers stay cleanly separated (standings reward called shots; the
+rating measures whether picks cover). Re-introducing a weight is revisitable if the league
+ever becomes calibrated (All-Ins covering > 50%).
+
+**3. Order-independent set aggregation replaces the sequential fold and soft season reset**
+(supersedes §4 and §8's "sequential chronological fold"). The rating is now a pure
+aggregate per `(group, user)`: shrink the career cover-rate toward market par (0.5) with a
+fixed pseudo-count prior (`RATING_PRIOR_STRENGTH`), then map onto the 1500 scale as the
+rating whose expected cover vs a fixed 1500 opponent equals that shrunk rate. This removes
+the v1 fold's order/recency dependence — the property that made a 20-20 record land
+anywhere from ~1470 to ~1530 depending only on arrival order, at odds with the ADR's "over
+the long run" intent. The season-delta arrow is **kept** but redefined order-independently:
+the career rating with vs. without the latest season's decisions (null when a player has
+only one season). The rating is now a set aggregation like every other stat, but stays in
+pure TS (not a matview) for the fairness / testability reasons §8 gives; the read-model and
+self-heal contract are unchanged.
+
+**4. Tier cutoffs recentered** (within §"Surfacing"'s "tuned in #361" allowance). Real
+cover-rate gaps over ~900 decisions in a ~50/50 market are small, so the honest v2 spread
+is compressed (~1488–1522 across the founding league) and the v1 cutoffs (Sharp ≥ 1540,
+Shark ≥ 1580) were unreachable. Recentered to Solid ≥ 1500, Sharp ≥ 1508 (~51.5% shrunk
+cover), Shark ≥ 1520 (~53.3%); the meter window is tightened to ±50. These stay tunable
+constants, not ADR-frozen.
+
+Implemented in `src/lib/server/rating/computeRatings.ts` (fold → aggregation) and
+`src/lib/domain/rating.ts` (tiers / meter) with rewritten unit tests; the
+`player_rating_inputs` view, the `player_ratings` table, its RLS / grants, and the Career
+surfacing are unchanged. A follow-up will add the offseason rebuild entrypoint + lifecycle
+wiring and a concurrent-rebuild guard.
