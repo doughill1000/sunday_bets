@@ -31,6 +31,13 @@
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Installed-app launch (iOS): drive a clean standalone launch. iOS ignores the
+         manifest's display/name, so these mirror it — full-screen chrome, a black status
+         bar matching the app's dark surface, and the home-screen title. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Hotshot" />
     <!-- Favicons -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" href="/favicon.ico" sizes="any" />

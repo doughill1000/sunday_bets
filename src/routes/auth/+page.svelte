@@ -16,11 +16,14 @@
   import { toast } from 'svelte-sonner';
   import FormNote from '$lib/components/FormNote.svelte';
   import MailCheck from '@lucide/svelte/icons/mail-check';
+  import Eye from '@lucide/svelte/icons/eye';
+  import EyeOff from '@lucide/svelte/icons/eye-off';
 
   type Mode = 'signin' | 'signup' | 'resetRequest';
 
   let email = $state('');
   let password = $state('');
+  let showPassword = $state(false);
   let mode: Mode = $state('signin');
   let submitting = $state(false);
   let signupSentEmail = $state<string | null>(null);
@@ -37,7 +40,7 @@
 
   const descriptions: Record<Mode, string> = {
     signin: 'Use your password or continue with Google.',
-    signup: 'Enter your email and choose a password.',
+    signup: 'Enter your email and password, or continue with Google.',
     resetRequest: 'Enter your email to receive a password reset link.'
   };
 
@@ -49,8 +52,11 @@
 
   function switchMode(next: Mode) {
     mode = next;
-    email = '';
+    // Keep the typed email across mode switches — re-typing it on a phone keyboard is
+    // the most common friction point when a new user flips signin ↔ signup. Password is
+    // cleared (different rules per mode) and the reveal toggle resets.
     password = '';
+    showPassword = false;
     signupSentEmail = null;
     formNote = null;
   }
@@ -200,15 +206,30 @@
                   Forgot password?
                 </button>
               </div>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                bind:value={password}
-                placeholder="••••••••"
-                autocomplete="current-password"
-              />
+              <div class="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  bind:value={password}
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  class="pr-10"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  onclick={() => (showPassword = !showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {#if showPassword}
+                    <EyeOff class="h-4 w-4" aria-hidden="true" />
+                  {:else}
+                    <Eye class="h-4 w-4" aria-hidden="true" />
+                  {/if}
+                </button>
+              </div>
             </div>
           {/if}
 
@@ -216,16 +237,31 @@
           {#if mode === 'signup'}
             <div class="grid gap-2">
               <Label for="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                required
-                minlength={8}
-                bind:value={password}
-                placeholder="••••••••"
-                autocomplete="new-password"
-              />
+              <div class="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minlength={8}
+                  bind:value={password}
+                  placeholder="••••••••"
+                  autocomplete="new-password"
+                  class="pr-10"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  onclick={() => (showPassword = !showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {#if showPassword}
+                    <EyeOff class="h-4 w-4" aria-hidden="true" />
+                  {:else}
+                    <Eye class="h-4 w-4" aria-hidden="true" />
+                  {/if}
+                </button>
+              </div>
               <p class="text-xs text-muted-foreground">At least 8 characters.</p>
             </div>
           {/if}
@@ -241,7 +277,7 @@
         </form>
       </CardContent>
 
-      {#if mode === 'signin'}
+      {#if mode === 'signin' || mode === 'signup'}
         <CardContent class="pt-0">
           <div class="relative my-4 flex items-center">
             <div class="flex-1 border-t border-border/60"></div>
