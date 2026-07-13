@@ -138,7 +138,7 @@
                   <Badge variant="secondary">🔒 Locked</Badge>
                 </span>
                 <button
-                  class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted"
+                  class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   data-testid="unlock-pick"
                   onclick={() => onEdit(g)}
                 >

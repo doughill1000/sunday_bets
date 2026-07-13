@@ -21,7 +21,7 @@
 
 {#if seasons.length > 1}
   <select
-    class="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+    class="rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     value={String(selected)}
     {onchange}
     aria-label="Select season"
