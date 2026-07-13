@@ -8,15 +8,13 @@
 import type { MarketBendCuts } from '$lib/utils/leagueBends';
 
 /** One lens on the league ATS dataset: the by-team roster, or a situational cut. */
-export type LeagueSlice =
-  'teams' | 'favorites' | 'spread' | 'quadrants' | 'primetime' | 'divisional';
+export type LeagueSlice = 'teams' | 'favorites' | 'spread' | 'primetime' | 'divisional';
 
 /** Chip labels — compact so the row scrolls cleanly at 390px. */
 export const LEAGUE_SLICE_LABEL: Record<LeagueSlice, string> = {
   teams: 'By team',
   favorites: 'Favorites',
   spread: 'Spread',
-  quadrants: 'Quadrants',
   primetime: 'Primetime',
   divisional: 'Divisional'
 };
@@ -26,7 +24,6 @@ export const LEAGUE_SLICE_ORDER: LeagueSlice[] = [
   'teams',
   'favorites',
   'spread',
-  'quadrants',
   'primetime',
   'divisional'
 ];
@@ -49,8 +46,6 @@ export function availableSituationalSlices(cuts: SituationalSliceCuts): LeagueSl
         return cuts.favDog.games > 0;
       case 'spread':
         return cuts.spreadBuckets.length > 0;
-      case 'quadrants':
-        return cuts.quadrants.length > 0;
       case 'primetime':
         return cuts.primetime.length > 0;
       case 'divisional':
