@@ -1,19 +1,22 @@
 // Cross-season credibility rating — shared, client-safe presentation layer (issue #361,
-// ADR-0032). This module owns the constants and pure display helpers that BOTH the server
+// ADR-0032 v2). This module owns the constants and pure display helpers that BOTH the server
 // fold ($lib/server/rating/computeRatings.ts, which imports RATING_PAR / MIN_QUALIFIED_DECISIONS
 // from here so the qualification gate has one source) and the client surfaces (the /stats Career
 // hero, a future /league ladder) agree on.
 //
-// The rating math itself — the sequential ELO-style fold — lives server-side in
-// $lib/server/rating/. Here we keep only what a browser may safely see: the 1500 par line, the
-// qualification threshold, the qualitative tier banding, the meter mapping, and the ranking.
+// The rating math itself — an order-independent, conviction-flat, shrunk career cover-rate mapped
+// onto the 1500/ELO scale — lives server-side in $lib/server/rating/. Here we keep only what a
+// browser may safely see: the 1500 par line, the qualification threshold, the qualitative tier
+// banding, the meter mapping, and the ranking.
 //
-// Semantics are fixed by ADR-0032 ("beat the closing line, weighted by conviction"); the numeric
-// constants below are the tuned-in-#361 knobs the ADR leaves open and can be retuned without a new
-// ADR if they read unfairly in practice.
+// Semantics are fixed by ADR-0032 (beat the spread you actually locked your pick against, every
+// decision weighted the same regardless of conviction); the numeric constants below are the
+// tuned-in-#361 knobs the ADR leaves open and can be retuned without a new ADR if they read
+// unfairly in practice.
 
-/** Market par on the ELO-comparable scale. A rating of 1500 means "even with the closing line";
- *  higher beats the spread over time, lower trails it. Shared with the server fold's start value. */
+/** Market par on the ELO-comparable scale. A rating of 1500 means even with the market — the
+ *  spread a player actually locked their pick against; higher beats it over time, lower trails it.
+ *  Shared with the server fold's shrinkage-prior center. */
 export const RATING_PAR = 1500;
 
 /** Settled career decisions required before a rating is shown at all (ADR-0032 §5,
@@ -22,21 +25,23 @@ export const RATING_PAR = 1500;
 export const MIN_QUALIFIED_DECISIONS = 20;
 
 /** Half-width of the meter window, in rating points: RATING_PAR ± this maps to the meter's 0–100%.
- *  1500 sits at the midpoint; 1650 fills it, 1350 empties it. Presentation only. */
-const METER_HALF_WINDOW = 150;
+ *  1500 sits at the midpoint; 1550 fills it, 1450 empties it. Presentation only. Tightened from the
+ *  v1 window (±150) to ±50 in v2: the honest v2 spread is only ~±35 points (conviction-flat
+ *  shrinkage pulls much harder toward par than the old sequential fold did), so a ±150 window left
+ *  the meter barely moving; ±50 makes it read meaningfully across the real range of ratings. */
+const METER_HALF_WINDOW = 50;
 
 /** Qualitative credibility tiers, sharp→square. A deterministic banding of the numeric rating
  *  (ADR-0032 §"Surfacing"): betting vocabulary that makes the number legible at a glance. */
 export type RatingTier = 'square' | 'solid' | 'sharp' | 'shark';
 
-/** Lower bound (inclusive) of each tier on the rating scale, tuned in #361 within ADR bounds.
- *  Chosen so par (~50% cover) reads Solid, a sustained ~57%+ reads Sharp, ~64%+ reads Shark, and
- *  anything below the market reads Square — reconciling with the design study's illustrative
- *  1533 Solid / 1554 Sharp / 1602 Shark. */
+/** Lower bound (inclusive) of each tier on the rating scale, tuned in #361 and recalibrated for
+ *  the v2 scale. Chosen so par (~50% cover) reads Solid, a sustained ~51.5%+ cover rate reads
+ *  Sharp, ~53.3%+ reads Shark, and anything below the market reads Square. */
 const TIER_MIN: Record<Exclude<RatingTier, 'square'>, number> = {
   solid: 1500,
-  sharp: 1540,
-  shark: 1580
+  sharp: 1508,
+  shark: 1520
 };
 
 const TIER_LABELS: Record<RatingTier, string> = {
@@ -77,8 +82,8 @@ export type PlayerRatingEntry = {
   decisions: number;
   /** Settled decisions still needed to qualify; 0 once rated. */
   decisionsToQualify: number;
-  /** Movement during the current (latest) season after its soft reset — the "this season" arrow.
-   *  Null while Unrated. */
+  /** How much the current (latest) season's decisions moved the career rating — the "this season"
+   *  arrow. Null while Unrated, or when every settled decision is from a single season. */
   seasonDelta: number | null;
 };
 

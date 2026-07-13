@@ -23,21 +23,22 @@ describe('ratingTier', () => {
     expect(ratingTier(1400)).toBe('square');
   });
 
-  it('bands par and just above as Solid (reconciles with the study 1533 Solid)', () => {
+  it('bands par up to (but not including) 1508 as Solid', () => {
     expect(ratingTier(RATING_PAR)).toBe('solid');
-    expect(ratingTier(1533)).toBe('solid');
-    expect(ratingTier(1539)).toBe('solid');
+    expect(ratingTier(1503)).toBe('solid');
+    expect(ratingTier(1507)).toBe('solid');
   });
 
-  it('bands a sustained edge as Sharp (study 1554 Sharp)', () => {
-    expect(ratingTier(1540)).toBe('sharp');
-    expect(ratingTier(1554)).toBe('sharp');
-    expect(ratingTier(1579)).toBe('sharp');
+  it('bands 1508 up to (but not including) 1520 as Sharp', () => {
+    expect(ratingTier(1508)).toBe('sharp');
+    expect(ratingTier(1513)).toBe('sharp');
+    expect(ratingTier(1519)).toBe('sharp');
   });
 
-  it('bands the top as Shark (study 1602 Shark)', () => {
-    expect(ratingTier(1580)).toBe('shark');
-    expect(ratingTier(1602)).toBe('shark');
+  it('bands 1520 and above as Shark', () => {
+    expect(ratingTier(1520)).toBe('shark');
+    expect(ratingTier(1522)).toBe('shark');
+    expect(ratingTier(1550)).toBe('shark');
   });
 
   it('is total and monotonic across the boundaries', () => {
@@ -65,23 +66,28 @@ describe('meterPct', () => {
     expect(meterPct(RATING_PAR)).toBe(50);
   });
 
-  it('clamps to [0, 100] outside the ±150 window', () => {
+  it('clamps to [0, 100] outside the new, tighter ±50 window', () => {
     expect(meterPct(1200)).toBe(0);
     expect(meterPct(1900)).toBe(100);
-    expect(meterPct(1650)).toBe(100);
-    expect(meterPct(1350)).toBe(0);
+    expect(meterPct(1550)).toBe(100);
+    expect(meterPct(1450)).toBe(0);
   });
 
-  it('reads ~68% at the study exemplar 1554', () => {
-    expect(Math.round(meterPct(1554))).toBe(68);
+  it('reads 75% at 1525, a comfortable edge inside the ±50 window', () => {
+    expect(meterPct(1525)).toBe(75);
+  });
+
+  it('reads 58% at the Sharp threshold (1508) and 70% at the Shark threshold (1520)', () => {
+    expect(meterPct(1508)).toBe(58);
+    expect(meterPct(1520)).toBe(70);
   });
 });
 
 describe('ratingRank', () => {
   const entries: PlayerRatingEntry[] = [
-    entry('marcus', 1602),
-    entry('you', 1554),
-    entry('colin', 1533),
+    entry('marcus', 1522),
+    entry('you', 1513),
+    entry('colin', 1503),
     entry('rey', null) // unrated
   ];
 
@@ -101,9 +107,9 @@ describe('ratingRank', () => {
 
   it('shares a rank on ties and does not count unrated players', () => {
     const tied: PlayerRatingEntry[] = [
-      entry('a', 1560),
-      entry('b', 1560),
-      entry('c', 1540),
+      entry('a', 1512),
+      entry('b', 1512),
+      entry('c', 1505),
       entry('d', null)
     ];
     expect(ratingRank(tied, 'a')).toBe(1);
