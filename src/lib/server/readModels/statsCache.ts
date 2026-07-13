@@ -14,7 +14,8 @@ import {
   getLeagueSituationalBaselineSeason,
   getTeamBook,
   getTeamBookAllTime,
-  getLineSideAllTime
+  getLineSideAllTime,
+  getPlayerRatings
 } from '$lib/server/db/queries/stats';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { isDropWorstWeekEnabled, type DropWorstWeekRules } from '$lib/domain/scoring';
@@ -37,7 +38,8 @@ export async function getStatsCachePayload(
     leagueSituationalBaselineSeason,
     teamBook,
     teamBookAllTime,
-    lineSideAllTime
+    lineSideAllTime,
+    playerRatings
   ] = await Promise.all([
     getAllTimeTotals(groupId),
     getStatsForSeason(seasonYear, groupId),
@@ -55,7 +57,9 @@ export async function getStatsCachePayload(
     // fav/dog lean is pooled from the season line-side rows for the same career-first signature.
     getTeamBook(seasonYear, groupId),
     getTeamBookAllTime(groupId),
-    getLineSideAllTime(groupId)
+    getLineSideAllTime(groupId),
+    // Cross-season credibility ratings (#361): career-grain, leads the Career hero.
+    getPlayerRatings(groupId)
   ]);
 
   // Group-level (cross-season) flag for the Career "Standings points" caption (ADR-0018).
@@ -73,6 +77,7 @@ export async function getStatsCachePayload(
     teamBook,
     teamBookAllTime,
     lineSideAllTime,
+    playerRatings,
     ...stats
   };
 }

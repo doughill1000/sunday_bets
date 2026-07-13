@@ -13,6 +13,7 @@ import type {
   LeagueSituationalBaselineEntry,
   TeamBookEntry
 } from '$lib/types/server/stats';
+import type { PlayerRatingEntry } from '$lib/domain/rating';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
@@ -55,6 +56,10 @@ export type StatsCachePayload = SeasonStats & {
   /** Career favorite-vs-underdog lean per player (#564): season line-side rows pooled across every
    *  season, so the career-first signature strip can state a lean the season-only lineSide can't. */
   lineSideAllTime: LineSideStatsEntry[];
+  /** Cross-season credibility ratings per player (#361, ADR-0032). Career-grain and
+   *  season-independent (like allTimeTotals), carried eagerly so the Career hero's rating band —
+   *  which leads the hero — renders on first paint. A null `rating` is the Unrated state. */
+  playerRatings: PlayerRatingEntry[];
 };
 
 /**

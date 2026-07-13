@@ -207,6 +207,13 @@ export type Database = {
             foreignKeyName: 'comments_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'comments_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -371,6 +378,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'game_lines_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {
@@ -685,6 +699,13 @@ export type Database = {
             foreignKeyName: 'notification_log_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'notification_log_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -788,6 +809,13 @@ export type Database = {
             foreignKeyName: 'pick_settlement_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -866,6 +894,13 @@ export type Database = {
             foreignKeyName: 'picks_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -891,6 +926,36 @@ export type Database = {
             referencedColumns: ['id'];
           }
         ];
+      };
+      player_ratings: {
+        Row: {
+          computed_at: string;
+          decisions: number;
+          decisions_to_qualify: number;
+          group_id: string;
+          rating: number | null;
+          season_delta: number | null;
+          user_id: string;
+        };
+        Insert: {
+          computed_at?: string;
+          decisions?: number;
+          decisions_to_qualify?: number;
+          group_id: string;
+          rating?: number | null;
+          season_delta?: number | null;
+          user_id: string;
+        };
+        Update: {
+          computed_at?: string;
+          decisions?: number;
+          decisions_to_qualify?: number;
+          group_id?: string;
+          rating?: number | null;
+          season_delta?: number | null;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       push_subscriptions: {
         Row: {
@@ -971,6 +1036,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'reactions_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {
@@ -1067,6 +1139,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: true;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'results_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: true;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {
@@ -1369,6 +1448,13 @@ export type Database = {
             foreignKeyName: 'pick_settlement_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -1412,6 +1498,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {
@@ -1725,6 +1818,13 @@ export type Database = {
             foreignKeyName: 'picks_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -1788,6 +1888,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {
@@ -1862,6 +1969,13 @@ export type Database = {
             foreignKeyName: 'picks_game_id_fkey';
             columns: ['game_id'];
             isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'picks_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
             referencedRelation: 'ui_games';
             referencedColumns: ['id'];
           },
@@ -1884,6 +1998,26 @@ export type Database = {
             columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      player_rating_inputs: {
+        Row: {
+          commence_time: string | null;
+          game_id: string | null;
+          group_id: string | null;
+          outcome: Database['public']['Enums']['pick_outcome'] | null;
+          season_year: number | null;
+          user_id: string | null;
+          weight: Database['public']['Enums']['weight_enum'] | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pick_settlement_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
             referencedColumns: ['id'];
           }
         ];
@@ -2163,6 +2297,13 @@ export type Database = {
             columns: ['game_id'];
             isOneToOne: false;
             referencedRelation: 'league_ats_base';
+            referencedColumns: ['game_id'];
+          },
+          {
+            foreignKeyName: 'pick_settlement_game_id_fkey';
+            columns: ['game_id'];
+            isOneToOne: false;
+            referencedRelation: 'player_rating_inputs';
             referencedColumns: ['game_id'];
           },
           {

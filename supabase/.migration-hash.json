@@ -894,5 +894,20 @@
     "hash": "a12591f2aa147bd5a69876266470beaae796e0ae32f748d82f2be14daafcecc1",
     "migration": "20260713163311_group_pick_cover_matview.sql",
     "migrationHash": "d271e194b1b4524cb50a7608cb7e8b9d9c2e39483d70603851449e33e4232e29"
+  },
+  "schemas/0232_player_ratings.sql": {
+    "hash": "f6d16434865416a5f29ef2bc10d87ceea4056b35cd62bc8781cfe50ca1884488",
+    "migration": "20260713173834_player_ratings_credibility.sql",
+    "migrationHash": "922a422fc63b532b791995b8161f361d74ea47d1b8b5c477c17ba08bbd25f73e"
+  },
+  "views/player_rating_inputs.sql": {
+    "hash": "6b7851f793a420c2f124b67524ba3995c3dca716d25f6e5ffc5bc8059ab3bd0d",
+    "migration": "20260713173834_player_ratings_credibility.sql",
+    "migrationHash": "922a422fc63b532b791995b8161f361d74ea47d1b8b5c477c17ba08bbd25f73e"
+  },
+  "grants/player_ratings_grants.sql": {
+    "hash": "6faa4619c465f78722d71a2973ad989453763b92118aad632491da3c0f4c44ad",
+    "migration": "20260713173834_player_ratings_credibility.sql",
+    "migrationHash": "922a422fc63b532b791995b8161f361d74ea47d1b8b5c477c17ba08bbd25f73e"
   }
 }

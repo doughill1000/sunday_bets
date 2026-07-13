@@ -41,8 +41,15 @@ vi.mock('$lib/server/db/queries/findTeamsByExternalKeys', () => ({
 // Silence Sentry so the non-fatal refresh-failure path doesn't emit real events.
 vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 
+// The credibility-rating rebuild (#361) runs after each grade; stub it so this suite stays focused
+// on grading itself. Its own math/IO are covered by the rating fold + integration tests.
+vi.mock('$lib/server/rating/rebuild', () => ({
+  rebuildPlayerRatings: vi.fn().mockResolvedValue(undefined)
+}));
+
 // AFTER mocks defined, import functions under test
 import { gradeGame, gradeWeek, gradeSeason } from '$lib/server/grading';
+import { rebuildPlayerRatings } from '$lib/server/rating/rebuild';
 
 // Two target games in the same week (2024, week 1) with distinct matchup identities.
 // Their ESPN abbreviations (external_key) map through teamsImpl to the team ids below.
@@ -164,6 +171,7 @@ beforeEach(() => {
     { id: 4, external_key: 'KEYAS1' }
   ]);
   (Sentry.captureException as unknown as Mock).mockClear();
+  (rebuildPlayerRatings as unknown as Mock).mockClear();
 });
 
 describe('grading service', () => {
@@ -181,6 +189,11 @@ describe('grading service', () => {
   it('gradeGame refreshes the leaderboard/stats matviews after grading', async () => {
     await gradeGame('g1');
     expect(rpc).toHaveBeenCalledWith('refresh_leaderboard_stats');
+  });
+
+  it('gradeGame rebuilds the credibility ratings after grading (#361)', async () => {
+    await gradeGame('g1');
+    expect(rebuildPlayerRatings).toHaveBeenCalled();
   });
 
   it('gradeGame still returns ok when the matview refresh fails (non-fatal)', async () => {
