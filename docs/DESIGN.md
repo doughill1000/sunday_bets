@@ -98,9 +98,11 @@ tables down behind disclosure. But don't over-rotate: burying the archive under 
 near-identical synthesis card is its own failure (see principle 2's example).
 
 _Why:_ a phone shows one thing at a time; the first thing should be the point.
-_Example:_ `/stats` leads with "Your edge" (the top situational cuts) before the
-per-team/per-weight tables — the intent behind the #518 density pass and #514 "Every
-split".
+_Example:_ `/stats` leads with one scope-aware hero — the headline number line (record ·
+ATS% · decisions) paired with the signature tells — before the "Every split" explorer and
+the per-team/per-weight tables. #567 folded three stacked preamble cards into that single
+hero, the fix for the over-rotation this principle warns against; the #518 density pass and
+#514 "Every split" set the direction.
 
 ### 5. Encode state in form, not just text
 

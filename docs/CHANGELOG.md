@@ -63,6 +63,16 @@ entry per PR the rest of the time.
   all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
   `pointercancel`. files: `lib/utils/chartTooltip.ts` · `SeasonTrendChart.svelte` (/stats) ·
   `SeasonRaceChart.svelte` (/league)
+- **#567** Consolidate the `/stats` top into one scope-aware hero — the three stacked
+  preamble cards (Your edge + career/season snapshot + signature strip) collapse into a
+  single hero pairing the headline number line (Record · ATS% · Decisions) with the
+  signature tells, and both halves re-scope with the season/Career dropdown. The scope bar
+  is now the first element under the page title (no card floats above it), the redundant
+  "you vs. the market" edge card is retired, and the last "Standings points" tile leaves
+  `/stats` (standings stay on Leaderboard). Less scrolling to the explorer at 390px, no
+  triple-shown situational edge. routes: `/stats` · new `StatsHero.svelte` /
+  `SignatureTells.svelte` · removed `YourEdge.svelte` / `CareerSummary.svelte` /
+  `SignatureTendencies.svelte` · `docs/DESIGN.md` · ADR-0018 / ADR-0030
 - **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
   co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
   Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never

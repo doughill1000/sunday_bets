@@ -6,10 +6,8 @@
   import type { StatsCachePayload } from '$lib/query/types';
   import type { SituationalDimension } from '$lib/types/server/stats';
   import type { PageData } from './$types';
-  import CareerSummary from '$lib/components/stats/CareerSummary.svelte';
+  import StatsHero from '$lib/components/stats/StatsHero.svelte';
   import SeasonTrendChart from '$lib/components/stats/SeasonTrendChart.svelte';
-  import YourEdge from '$lib/components/stats/YourEdge.svelte';
-  import SignatureTendencies from '$lib/components/stats/SignatureTendencies.svelte';
   import SituationalExplorer from '$lib/components/stats/SituationalExplorer.svelte';
   import StatAccuracyList from '$lib/components/stats/StatAccuracyList.svelte';
   import TeamBook from '$lib/components/stats/TeamBook.svelte';
@@ -23,7 +21,6 @@
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import {
-    formatAccuracy,
     headToHeadForUser,
     lineSideTendency,
     seasonScopeOptions,
@@ -187,7 +184,6 @@
     data.allTimeTotals.find((t) => t.user_id === selectedUserId) ?? null
   );
   const isSelectedYou = $derived(selectedUserId === data.currentUserId);
-  const isCareerYou = $derived(selectedUserId === data.currentUserId);
   const selectedDisplayName = $derived(
     selected?.display_name ?? selectedCareer?.display_name ?? ''
   );
@@ -199,6 +195,13 @@
     if (!selected) return null;
     const decided = selected.wins + selected.losses;
     return decided > 0 ? selected.wins / decided : null;
+  });
+
+  // Career cover rate for the hero's number line — the all-time counterpart to `atsAccuracy`.
+  const careerAtsAccuracy = $derived.by(() => {
+    if (!selectedCareer) return null;
+    const decided = selectedCareer.wins + selectedCareer.losses;
+    return decided > 0 ? selectedCareer.wins / decided : null;
   });
 
   // Favorite/underdog lean for the selected player, at both scopes (#564): the season lean feeds
@@ -374,23 +377,11 @@
       </CardHeader>
     </Card>
   {:else}
-    {#if selectedCareer}
-      <!-- Edge hero leads the page (#514): the career synthesis sits ABOVE the scope line so the
-           season dropdown never floats over a card it doesn't drive. The edge stays career by
-           design — one season of any single cut is too thin to trust — with the #502 sample gate
-           and empty state unchanged. -->
-      <YourEdge
-        splits={selectedSituational}
-        baseline={data.leagueSituationalBaseline}
-        isYou={isSelectedYou}
-        displayName={selectedDisplayName}
-      />
-    {/if}
-
-    <!-- Scope line: the one context bar (#518) — player + season/scope — now sits BELOW the edge
-         hero and governs only the explorer + breakdowns beneath it (#514). Sticky under the app
-         header so the picker never scrolls away; the season selector absorbs Career as a pinned
-         option, so scope is one control that scales as seasons accumulate. -->
+    <!-- Scope line: the one context bar (#518) — player + season/scope — is the first element
+         below the page title and governs the whole scoped stack beneath it: hero, explorer, and
+         breakdowns (#567). No card floats above it; Career and season both lead with the hero.
+         Sticky under the app header so the picker never scrolls away; the season selector absorbs
+         Career as a pinned option, so scope is one control that scales as seasons accumulate. -->
     <div
       data-testid="stats-context-bar"
       class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
@@ -434,18 +425,20 @@
 
     {#if selectedCareer}
       {#if scope === 'career'}
-        <!-- Signature strip leads the scoped content (#564): the career-first, plain-language tells
-             ranked over the situational edges, fav/dog lean, and the team book. -->
-        <SignatureTendencies
-          tells={careerSignature}
-          scopeLabel="Career"
+        <!-- One scope-aware hero leads the scoped content (#567): the all-time number line
+             (Record · ATS% · Decisions) paired with the career-first signature tells. -->
+        <StatsHero
           isYou={isSelectedYou}
           displayName={selectedDisplayName}
+          scopeLabel="Career"
+          wins={selectedCareer.wins}
+          losses={selectedCareer.losses}
+          pushes={selectedCareer.pushes}
+          missed={selectedCareer.missed}
+          atsAccuracy={careerAtsAccuracy}
+          decisions={selectedCareer.decisions}
+          tells={careerSignature}
         />
-
-        <!-- Career: headline all-time totals, then the situational explorer (#514). The edge hero
-             already leads above the scope line. -->
-        <CareerSummary entry={selectedCareer} isYou={isCareerYou} dropActive={data.dropActive} />
 
         <!-- Every split (#514): browse every ATS cut across the career, one dimension at a time. -->
         <SituationalExplorer
@@ -554,8 +547,8 @@
           </Card>
         {/await}
       {:else}
-        <!-- Season: snapshot + tendencies, then the season-scoped explorer (#514). The career edge
-             hero already leads above the scope line and does not re-scope by season (by design). -->
+        <!-- Season: the same scope-aware hero, re-scoped to the selected season, then the
+             season-scoped explorer (#567). Both halves of the hero follow the dropdown. -->
         {#if data.totals.length === 0}
           <Card class="border-dashed">
             <CardHeader>
@@ -564,49 +557,19 @@
             </CardHeader>
           </Card>
         {:else if selected}
-          <!-- Compact season snapshot — the player + season already live in the context bar. -->
-          <Card>
-            <CardHeader class="pb-2">
-              <CardTitle class="text-base font-semibold">
-                {subjectLabel} · {data.seasonYear} season
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <!-- Analytics only: standings score + rank live on the Leaderboard now (ADR-0018).
-                 These tiles describe actual performance, always raw. -->
-              <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <dt class="text-xs font-medium text-muted-foreground">Record (W-L-P)</dt>
-                  <dd class="text-2xl font-bold">
-                    {@render wlp(selected.wins, selected.losses, selected.pushes)}
-                  </dd>
-                  {#if selected.missed > 0}
-                    <p class="text-xs text-muted-foreground">{selected.missed} missed</p>
-                  {/if}
-                </div>
-                <div>
-                  <dt class="text-xs font-medium text-muted-foreground">ATS accuracy</dt>
-                  <dd class="text-2xl font-bold">{formatAccuracy(atsAccuracy)}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs font-medium text-muted-foreground">Decisions</dt>
-                  <dd class="text-2xl font-bold">{selected.decisions}</dd>
-                </div>
-                <div>
-                  <dt class="text-xs font-medium text-muted-foreground">Missed</dt>
-                  <dd class="text-2xl font-bold">{selected.missed}</dd>
-                </div>
-              </dl>
-            </CardContent>
-          </Card>
-
-          <!-- Signature strip (#564): the season-scoped tells, superseding the old season-only
-               "Tendencies" tile card with a plain-language, career-consistent strip. -->
-          <SignatureTendencies
-            tells={seasonSignature}
-            scopeLabel={String(data.seasonYear)}
+          <!-- One scope-aware hero (#567): the season number line paired with the season-scoped
+               signature tells. Player + season already live in the context bar above. -->
+          <StatsHero
             isYou={isSelectedYou}
             displayName={selectedDisplayName}
+            scopeLabel={String(data.seasonYear)}
+            wins={selected.wins}
+            losses={selected.losses}
+            pushes={selected.pushes}
+            missed={selected.missed}
+            {atsAccuracy}
+            decisions={selected.decisions}
+            tells={seasonSignature}
           />
 
           <!-- Every split (#514): the season-scoped situational explorer. -->
