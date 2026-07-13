@@ -3,6 +3,10 @@
   import { flip } from 'svelte/animate';
   import { scale } from 'svelte/transition';
   import { prefersReducedMotion } from 'svelte/motion';
+  import { createQuery } from '@tanstack/svelte-query';
+  import { queryKeys } from '$lib/query/keys';
+  import { fetchLiveScores } from '$lib/query/fetchers';
+  import { LIVE_POLL_MS, STALE_THRESHOLD_MS, isWithinLiveWindow } from '$lib/live/config';
   import { lockMotionMs } from '$lib/ui/motion';
   import { providePicksStore } from '$lib/stores/picks';
   import { favoriteSide } from '$lib/domain/spread';
@@ -135,6 +139,36 @@
   // means the 1s `now` ticker can't restart an in-flight transition — only real
   // membership changes move a card.
   const motionMs = $derived(lockMotionMs(prefersReducedMotion.current));
+
+  // --- Live Sunday sweat board (#386) -------------------------------------------------
+  // Poll the self-gated pass-through only while a game is in its live window, and only when
+  // the tab is visible (TanStack pauses `refetchInterval` on a backgrounded tab by default);
+  // `refetchOnWindowFocus` fires one immediate refetch on refocus. Display-only — grading is
+  // untouched. `['live-scores']` is not a shareable root, so it's never persisted.
+  const liveWindowActive = $derived(games.some((g) => isWithinLiveWindow(kickoffMs(g), now)));
+
+  const liveQuery = createQuery(() => ({
+    queryKey: queryKeys.liveScores(),
+    queryFn: () => fetchLiveScores(fetch),
+    enabled: liveWindowActive,
+    refetchInterval: LIVE_POLL_MS,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    gcTime: 60_000
+  }));
+
+  const liveScores = $derived(liveQuery.data?.scores ?? {});
+  const liveFetchedAt = $derived(liveQuery.data?.fetchedAt ?? null);
+
+  // Stale once the honest data age crosses the threshold, or on an errored/never-arrived
+  // fetch while a game is live — the board stops asserting a number and shows
+  // "Stale · reconnecting". Recomputes on the 1s `now` tick, so the freshness caption is live.
+  const liveStale = $derived.by(() => {
+    if (!liveWindowActive) return false;
+    if (liveQuery.isError) return true;
+    if (!liveFetchedAt) return true;
+    return now - new Date(liveFetchedAt).getTime() > STALE_THRESHOLD_MS;
+  });
 </script>
 
 <h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
@@ -163,7 +197,14 @@
     {/if}
   </Alert>
 {:else}
-  <PicksSummaryBar {games} {now} />
+  <PicksSummaryBar
+    {games}
+    {now}
+    {liveScores}
+    {liveFetchedAt}
+    {liveStale}
+    liveActive={liveWindowActive}
+  />
 
   <PicksStatusBoard board={liveStatusBoard} myUserId={userId} />
 
@@ -215,6 +256,8 @@
     {now}
     {social}
     {groupPicks}
+    {liveScores}
+    {liveStale}
     {userId}
     {currentUserDisplayName}
   />

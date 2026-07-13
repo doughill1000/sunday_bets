@@ -10,7 +10,9 @@ export async function getGroupPicks(
 ): Promise<GroupPickEntry[]> {
   const { data, error } = await event.locals.supabase
     .from('picks_group_view')
-    .select('user_id, display_name, avatar_key, game_id, picked_side, weight, picked_team_short')
+    .select(
+      'user_id, display_name, avatar_key, game_id, picked_side, weight, picked_team_short, picked_team_id, locked_spread_value, locked_spread_team_id'
+    )
     .eq('week_id', weekId)
     .eq('group_id', groupId);
 
@@ -23,6 +25,10 @@ export async function getGroupPicks(
     gameId: r.game_id as string,
     pickedSide: r.picked_side as GroupPickEntry['pickedSide'],
     weight: r.weight as GroupPickEntry['weight'],
-    pickedTeamShort: r.picked_team_short as string | null
+    pickedTeamShort: r.picked_team_short as string | null,
+    // Frozen line + picked team, for the live cover dot (#386).
+    pickedTeamId: r.picked_team_id as number | null,
+    lockedSpreadValue: r.locked_spread_value as number | null,
+    lockedSpreadTeamId: r.locked_spread_team_id as number | null
   }));
 }

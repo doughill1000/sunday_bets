@@ -42,6 +42,13 @@ export type GroupPickEntry = {
   pickedSide: TeamSide | null;
   weight: WeightCode | null;
   pickedTeamShort: string | null;
+  // Frozen-at-lock fields that drive the live sweat board's per-member cover dot (#386).
+  // Optional because the All-In-declaration projection (a pre-kickoff RPC) reuses this shape
+  // but has no need for — and does not select — them; they are always present from
+  // getGroupPicks, whose view already carries all three columns.
+  pickedTeamId?: number | null;
+  lockedSpreadValue?: number | null;
+  lockedSpreadTeamId?: number | null;
 };
 
 /**

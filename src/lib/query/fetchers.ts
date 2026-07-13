@@ -13,8 +13,18 @@ import type {
   LeagueTeamGameLogPayload,
   LeagueTrendsPayload
 } from './types';
+import type { LiveScoresPayload } from '$lib/live/types';
 
 type FetchFn = typeof fetch;
+
+/** Live Sunday sweat scores (#386). Not a shareable root — deliberately never persisted to
+ *  IndexedDB (it's ephemeral, display-only live data), so a cold relaunch never serves a
+ *  stale board. Polled on a short interval only while a game is in its live window. */
+export async function fetchLiveScores(fetchFn: FetchFn): Promise<LiveScoresPayload> {
+  const res = await fetchFn('/api/live-scores');
+  if (!res.ok) throw new Error(`Failed to load live scores (${res.status})`);
+  return res.json() as Promise<LiveScoresPayload>;
+}
 
 export async function fetchStats(
   fetchFn: FetchFn,
