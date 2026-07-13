@@ -68,87 +68,33 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
-## 2026-07-12
+## v3.4.0 — 2026-07-13
 
-- **PR #582** Adopt the shared `ChipRadiogroup` for the `/market` "Slice by" chips — the
-  row hand-rolled its own radiogroup (keyboard model + horizontal-scroll/edge-fade); it now
-  uses the same component as `/stats` and wraps at 390px so every cut stays visible. Clears
-  the last chip-radiogroup hand-copy flagged by the 2026-07-11 UI-consistency audit (S7).
-  files: `ChipRadiogroup.svelte` · `/market` · ADR-0030
-- **PR #583** Reorder `/league` Standings and de-clutter the table — the standings
-  table now leads with "The race" chart below it (was race-first), and each player's
-  W-L-P record moves from its own column onto a muted line under the name so long names
-  stop clipping the Total column at 390px. Presentational; e2e testids unchanged.
-  route: `/league` · ADR-0030
-- **PR #581** Make the `/league` season dropdown sticky — the season/All-time picker
-  lived in the page-title row and scrolled away with the heading; it now sits in its own
-  sticky scope bar under the app header, matching the `/stats` and `/market` season
-  pickers, so it stays reachable as the race, standings, and honors scroll. Layout-only;
-  testids and scope behaviour unchanged. route: `/league`
-- **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
-  2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
-  live window now starts fresh; the governance-freshness gate's changelog-enforcement
-  cutoff moves to match. Also flips `docs/adr/0029-design-system-token-architecture.md`
-  to `Accepted` (its issue, #530, had closed without the status flip). file:
-  `scripts/check-governance-freshness.ts` · ADR-0029
-- **PR #579** Rename the NFL-market tab "Teams" → "Market" and reserve "League" for the
-  user's group — the word was overloaded (a user's pool is their "league", and so is the
-  NFL), so the two are split: League = the group, Market = the NFL side. Route `/teams` →
-  `/market` (308 redirect), nav labels, and the `/stats` + `/market` diverging-bar baseline
-  relabelled "league" → "market"; the naming rule is codified in the design guide. Internal
-  `league` plumbing (`/api/league`, `league_ats_*`) is intentionally left for a later
-  refactor. routes: `/market` (was `/teams`) · `docs/DESIGN.md` · ADR-0030
-- **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
-  (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
-  all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
-  `pointercancel`. files: `lib/utils/chartTooltip.ts` · `SeasonTrendChart.svelte` (/stats) ·
-  `SeasonRaceChart.svelte` (/league)
-- **#567** Consolidate the `/stats` top into one scope-aware hero — the three stacked
-  preamble cards (Your edge + career/season snapshot + signature strip) collapse into a
-  single hero pairing the headline number line (Record · ATS% · Decisions) with the
-  signature tells, and both halves re-scope with the season/Career dropdown. The scope bar
-  is now the first element under the page title (no card floats above it), the redundant
-  "you vs. the market" edge card is retired, and the last "Standings points" tile leaves
-  `/stats` (standings stay on Leaderboard). Less scrolling to the explorer at 390px, no
-  triple-shown situational edge. routes: `/stats` · new `StatsHero.svelte` /
-  `SignatureTells.svelte` · removed `YourEdge.svelte` / `CareerSummary.svelte` /
-  `SignatureTendencies.svelte` · `docs/DESIGN.md` · ADR-0018 / ADR-0030
-- **PR #578** Stats win-loss-push text fix — the `/stats` record snippet had a
-  hardcoded white text color left over from the dark-only era, making it invisible on
-  the light theme. Now inherits the surrounding Card's foreground token instead. file:
-  `routes/(app)/stats/+page.svelte`
-- **PR #576** Remove the /league "Quadrants" chip — the dedicated home/road ×
-  favorite/underdog grid was a low-value slice, so it's dropped from the "Slice by"
-  row. The underlying `league_ats_quadrants` data is untouched (still feeds the
-  always-on MarketBends synthesis lead and the Favorites derivation). files:
-  `lib/utils/leagueSlices.ts` · `routes/(app)/teams/+page.svelte`
-- **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
-  co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
-  Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
-  flashes (`system` is narrowed by a blocking `prefers-color-scheme` script). Gold text/borders
-  migrate to a darker `--primary-ink` so they clear AA on the light ground; the picks selection
-  ladder and elevations gain light values. files: `app.css` · `app.html` · `lib/theme.ts` ·
-  `hooks.server.ts` · `api/profile` · `settings/+page.svelte` · schema `0231_theme_pref` ·
-  `docs/DESIGN.md` · `docs/agent-context/design-system.md` · ADR-0029
-- **PR #574** Hermetic AI-gateway integration tests — the recap/wrapped/badge
-  fallback suites now force the no-gateway condition instead of inheriting it from a
-  dev's `.env.local`, so they stay deterministic and stop silently burning AI Gateway
-  credit on local runs (CI was already gateway-less). file:
-  `tests/integration/setup.ts` · ADR-0008
-- **PR #572** Agent-instructions skills sweep — give new agent sessions a map of the
-  `.claude/skills/` delivery pipeline + standalone utilities (`CLAUDE.md` "Skills"),
-  and surface previously-undocumented workflows in `AGENTS.md`: the Hotshot naming
-  rule, the `docs/DESIGN.md` merge gate, the in-app feedback boundary, and an
-  Operations & observability section pointing at `docs/observability`/`runbooks`/`audits`.
-  files: `CLAUDE.md` · `AGENTS.md` · ADR-0027/0028/0029/0030
-- **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
-  `app.css` now collapses every animation and transition under reduced-motion, so the
-  vendored dialog/sheet/dropdown enter-exit, the nav progress bar, the pulse skeletons,
-  and the avatar hover comply by default instead of each needing a hand-written guard.
-  The JS-driven picks lock keeps collapsing its own timing on top. file: `app.css` ·
-  ADR-0029/0030
-- **PR #570** `cut-release` backfills governance drift + squashes changelog window —
-  the skill now runs the governance-freshness gate locally before computing the
-  version (backfilling any missing changelog entries / stale ADR statuses it flags),
-  and collapses the release's changelog window into one heading at cut time. Skill +
-  doc change only.
+- **PR #601** Release v3.4.0.
+- **#585** Demo live sweat board — bakes a frozen mid-game week into `/demo` so the picks sweat and Weekly-tab provisional standings render on demand. ADR-0026.
+- **#584** Live sweat board on the `/league` Weekly tab — ranked live week-so-far board + per-game cover verdicts, `/league` opens on Weekly during a live window.
+- **#588** Verify the session JWT locally on the auth hot path — cryptographic JWKS check replaces the per-request auth-server round-trip. ADR-0031.
+- **PR #596** Mark ADR-0032 (cross-season credibility rating) Accepted, clearing the gate on #361's implementation.
+- **#542** Render the picks partial-apply saveError as a durable, screen-reader-announced note. `FormNote`.
+- **PR #594** Add ADR-0033 (client-query data loading) — decision to classify page loads as client TanStack Query vs. server-only, generalizing ADR-0017 app-wide; implementation tracked in #381.
+- **PR #593** Mark ADR-0031 (local JWT verification) Accepted, clearing the gate on #588.
+- **PR #592** Speed up the `/picks` page load — drop a redundant display-name query, dedupe the active-week resolve, overlap the comments/reactions fetch.
+- **#541** Focus-ring standardization + avatar-picker `radiogroup`/roving-tabindex semantics (audit S3). ADR-0029.
+- **#386** Live Sunday sweat board — in-game scores + per-pick cover state + week-so-far projection on `/picks`, display-only, no cron/DB change.
+- **PR #589** Add ADR-0031 (local JWT verification on the auth hot path) — decision doc; implementation tracked in #588.
+- **#586** Changelog entries move to per-PR fragments under `docs/changelog.d/`; `cut-release` assembles them at release time.
+- **PR #583** Reorder `/league` Standings — table leads over the race chart, W-L-P record moves under the name to stop Total-column clipping at 390px. ADR-0030.
+- **PR #582** Adopt shared `ChipRadiogroup` for the `/market` "Slice by" chips (closes the last hand-rolled radiogroup, audit S7).
+- **PR #581** Make the `/league` season dropdown sticky, matching `/stats`/`/market`.
+- **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 (already covered by tagged Releases); also flips ADR-0029 to Accepted.
+- **PR #579** Rename the NFL-market tab "Teams" → "Market", reserve "League" for the user's group (308 redirect). ADR-0030.
+- **PR #577** Fix frozen chart tooltip on touch-scroll (`pointercancel` vs `pointerleave`) on `/stats` and `/league`.
+- **#567** Consolidate the `/stats` top into one scope-aware hero (`StatsHero` + `SignatureTells`), retiring `YourEdge`/`CareerSummary`. ADR-0018/0030.
+- **PR #578** Fix `/stats` win-loss-push text invisible on the light theme (hardcoded dark-only color).
+- **PR #576** Remove the `/league` "Quadrants" chip from the Slice-by row (low-value slice; underlying data untouched).
+- **#532** Light theme — real "Parchment" palette + per-user dark/light/system toggle (`users.theme_pref`, SSR no-flash). ADR-0029.
+- **PR #574** Hermetic AI-gateway integration tests — recap/wrapped/badge fallback suites force no-gateway instead of inheriting `.env.local`. ADR-0008.
+- **PR #572** Agent-instructions skills sweep — map the `.claude/skills/` delivery pipeline into `CLAUDE.md`/`AGENTS.md`.
+- **#540** Global `prefers-reduced-motion` fallback (audit S2) in `app.css`. ADR-0029/0030.
+- **PR #570** `cut-release` backfills governance drift + squashes the changelog window at cut time.
+- **PR #580** Backfill PR #571's missing changelog entry.

@@ -1,6 +1,6 @@
 # ADR-0033: Client-query data loading — move page-load reads behind `+server.ts`
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-13
 - Issue: #381
 - Supersedes: None
