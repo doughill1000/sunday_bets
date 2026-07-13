@@ -77,5 +77,6 @@ current status.
 | [ADR-0030](0030-mobile-first-design-principles.md)                          | Mobile-first design principles — 390px canvas, one-pattern-per-job, disclosure depth (docs/DESIGN.md)       |
 | [ADR-0031](0031-local-jwt-verification-hot-path.md)                         | Local JWT verification on the request hot path (replace per-navigation `getUser()`)                         |
 | [ADR-0032](0032-cross-season-credibility-rating.md)                         | Cross-season credibility rating — vs-Market, conviction-weighted, soft season reset, hidden-until-qualified |
+| [ADR-0033](0033-client-query-data-loading.md)                               | Client-query data loading — move page-load reads behind `+server.ts` (SPA-shell + API consolidation)        |
 
-_The numbering is sequential; the next ADR is 0033._
+_The numbering is sequential; the next ADR is 0034._
