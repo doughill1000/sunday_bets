@@ -71,7 +71,6 @@ entry per PR the rest of the time.
   relabelled "league" → "market"; the naming rule is codified in the design guide. Internal
   `league` plumbing (`/api/league`, `league_ats_*`) is intentionally left for a later
   refactor. routes: `/market` (was `/teams`) · `docs/DESIGN.md` · ADR-0030
-
 - **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
   (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
   all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
@@ -87,6 +86,10 @@ entry per PR the rest of the time.
   triple-shown situational edge. routes: `/stats` · new `StatsHero.svelte` /
   `SignatureTells.svelte` · removed `YourEdge.svelte` / `CareerSummary.svelte` /
   `SignatureTendencies.svelte` · `docs/DESIGN.md` · ADR-0018 / ADR-0030
+- **PR #578** Stats win-loss-push text fix — the `/stats` record snippet had a
+  hardcoded white text color left over from the dark-only era, making it invisible on
+  the light theme. Now inherits the surrounding Card's foreground token instead. file:
+  `routes/(app)/stats/+page.svelte`
 - **PR #576** Remove the /league "Quadrants" chip — the dedicated home/road ×
   favorite/underdog grid was a low-value slice, so it's dropped from the "Slice by"
   row. The underlying `league_ats_quadrants` data is untouched (still feeds the
