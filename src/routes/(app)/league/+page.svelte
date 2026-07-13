@@ -330,26 +330,37 @@
      `leaderboard-` prefix as stable e2e anchors — the content is still the leaderboard, now the
      spine of one "who's winning our league" scroll (race → standings → honors → manage). -->
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1
-        id="leaderboard-heading"
-        data-testid="leaderboard-heading"
-        class="text-3xl font-bold tracking-tight"
-      >
-        League
-      </h1>
-      <p class="mt-1 text-muted-foreground" data-testid="leaderboard-subtitle">
-        {scope === 'alltime' ? 'All-time · every season combined.' : `${data.seasonYear} season.`}
-      </p>
-    </div>
-    <!-- One time-window control: seasons + a pinned "All-time" option (#518/#529), replacing
-         the old split of a season dropdown plus a separate All-time tab. -->
+  <div>
+    <h1
+      id="leaderboard-heading"
+      data-testid="leaderboard-heading"
+      class="text-3xl font-bold tracking-tight"
+    >
+      League
+    </h1>
+    <p class="mt-1 text-muted-foreground" data-testid="leaderboard-subtitle">
+      {scope === 'alltime' ? 'All-time · every season combined.' : `${data.seasonYear} season.`}
+    </p>
+  </div>
+
+  <!-- One time-window control: seasons + a pinned "All-time" option (#518/#529), replacing the
+       old split of a season dropdown plus a separate All-time tab. Sticky under the app header
+       (matching the /stats and /market scope lines) so the season picker never scrolls away as
+       the race, standings, and honors below get long; full-bleed with a blurred bottom border so
+       it reads as an extension of the header. -->
+  <div
+    data-testid="leaderboard-scope-bar"
+    class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
+  >
+    <span
+      id="leaderboard-scope-label"
+      class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+    >
     <select
       class={SELECT_CLASS}
       value={scopeValue}
       onchange={onScopeChange}
-      aria-label="Select season or All-time"
+      aria-labelledby="leaderboard-scope-label"
       data-testid="leaderboard-scope"
     >
       {#if scopeOptions.latest !== null}

@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #581** Make the `/league` season dropdown sticky — the season/All-time picker
+  lived in the page-title row and scrolled away with the heading; it now sits in its own
+  sticky scope bar under the app header, matching the `/stats` and `/market` season
+  pickers, so it stays reachable as the race, standings, and honors scroll. Layout-only;
+  testids and scope behaviour unchanged. route: `/league`
 - **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
   2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
   live window now starts fresh; the governance-freshness gate's changelog-enforcement
