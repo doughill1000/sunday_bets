@@ -11,6 +11,8 @@ export async function getGamesForWeeksWithScores(weekIds: number[]) {
       week_id,
       commence_time,
       final_scores,
+      home_team_id,
+      away_team_id,
       home:home_team_id(short_name),
       away:away_team_id(short_name)
     `

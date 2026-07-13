@@ -3,6 +3,7 @@ import type { PageServerLoad } from './$types';
 import { getAvailableSeasons, getWeeklyCumulative } from '$lib/server/db/queries/leaderboard';
 import { getWrappedSeasons } from '$lib/server/db/queries/seasonWrapped';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
+import { isActiveWeekLive } from '$lib/server/liveScores';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
 
@@ -14,20 +15,27 @@ export const load: PageServerLoad = async (event) => {
 };
 
 async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: string) {
-  const view = event.url.searchParams.get('view') ?? 'standings';
+  const viewParam = event.url.searchParams.get('view');
+  const seasonParam = event.url.searchParams.get('season');
   const weekParam = event.url.searchParams.get('week');
 
-  const [currentSeasonYear, availableSeasons, wrappedSeasons] = await Promise.all([
-    event.locals.getCurrentSeasonYear(),
-    getAvailableSeasons(groupId),
-    getWrappedSeasons(groupId)
-  ]);
+  // Wayfinding (#584, Move 5): a bare `/league` visit opens on the Weekly tab while a game is
+  // in its live window, and on Standings the rest of the week. An explicit `?view=` or a past
+  // `?season=` is always honoured, so the check only runs (and only costs a query) on a bare
+  // visit. Parallelised with the standing load so it adds no latency.
+  const wantLiveDefault = viewParam == null && seasonParam == null;
 
-  const seasonYear = resolveSeasonYear(
-    event.url.searchParams.get('season'),
-    availableSeasons,
-    currentSeasonYear
-  );
+  const [currentSeasonYear, availableSeasons, wrappedSeasons, liveDefaultWeekly] =
+    await Promise.all([
+      event.locals.getCurrentSeasonYear(),
+      getAvailableSeasons(groupId),
+      getWrappedSeasons(groupId),
+      wantLiveDefault ? isActiveWeekLive() : Promise.resolve(false)
+    ]);
+
+  const view = viewParam ?? (liveDefaultWeekly ? 'weekly' : 'standings');
+
+  const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
 
   // The most-recent completed season that has a generated Wrapped drives the seasonal CTA
   // (WrappedPromo). null when no Wrapped exists yet (in-season / before backfill). The promo
