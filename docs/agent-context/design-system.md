@@ -49,7 +49,7 @@ call site survive the light-theme flip (#532) without a per-site override. Reach
 `text-primary-ink` for gold text/borders and `bg-primary` for a gold fill; don't use
 `text-primary` for a gold label. The existing `text-primary`/`border-primary` text/border
 call sites were migrated to `text-primary-ink` with the light theme (#532): on dark the two
-are identical (ink aliases `--primary`), while on light the ink darkens to `#8a6210` to
+are identical (ink aliases `--primary`), while on light the ink darkens to `#856010` to
 clear AA where bright brass would fail as text/border.
 
 ### Typography

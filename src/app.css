@@ -23,8 +23,10 @@
      eyebrow), as opposed to --primary the fill. Brass #cf9a2f clears WCAG AA as a fill
      (it carries a dark label) but FAILS it as text/border on this light ground, so the
      ink darkens here while the fill stays bright. Dark keeps ink == --primary; only the
-     light theme needs the split. See docs/agent-context/design-system.md (fill vs ink). */
-  --primary-ink: #8a6210;
+     light theme needs the split. See docs/agent-context/design-system.md (fill vs ink).
+     #856010 (a touch below the study's ~#8a6210) clears AA on the page background too,
+     not only on cards, so a gold label on the bare ground stays legible. */
+  --primary-ink: #856010;
   --ember: #d2691e; /* spark accent — Lock in, the single loudest block */
   --secondary: #f0e5cf;
   --secondary-foreground: #2a2318;
@@ -66,7 +68,7 @@
   --selected-team-border: #c69324;
   --selected-weight-bg: rgba(207, 154, 47, 0.16);
   --selected-weight-border: #c69324;
-  --selected-weight-text: #8a6210;
+  --selected-weight-text: #856010;
   --lock-bg: #d2691e;
   --lock-text: #fff6e9;
   --lock-disabled-bg: #ece1cb;
