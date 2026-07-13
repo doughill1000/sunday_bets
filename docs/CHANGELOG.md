@@ -58,6 +58,11 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #577** Fix frozen chart tooltip on touch-scroll — iOS/Android fire `pointercancel`
+  (not `pointerleave`) when a scroll steals the touch that opened layerchart's tooltip, so the
+  all-scores popover stuck on screen. A shared `dismissTooltipOnScroll` action hides it on
+  `pointercancel`. files: `lib/utils/chartTooltip.ts` · `SeasonTrendChart.svelte` (/stats) ·
+  `SeasonRaceChart.svelte` (/league)
 - **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
   co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
   Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
