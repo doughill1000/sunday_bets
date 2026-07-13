@@ -46,6 +46,16 @@ Project `Done` column, and Releases remain the sources of truth — see
 > History before the first entry below lives in **GitHub Releases (v1.2–v3.3)**; this
 > log is not backfilled past that.
 
+## Release squashing
+
+The one exception to "never restructure": the `cut-release` skill collapses the
+date-headed entries covering the window since the previous release tag into a single
+`## v<version> — YYYY-MM-DD` heading, condensing each to one line while keeping every
+`#NNN` / `PR #NNN` reference intact (the governance-freshness gate greps for them).
+This only happens at release-cut time and only for that release's window — entries
+from prior releases are never touched, and `finish-pr` still adds one normal dated
+entry per PR the rest of the time.
+
 ## 2026-07-12
 
 - **#540** Global `prefers-reduced-motion` fallback (audit S2) — one media query in
@@ -54,3 +64,8 @@ Project `Done` column, and Releases remain the sources of truth — see
   and the avatar hover comply by default instead of each needing a hand-written guard.
   The JS-driven picks lock keeps collapsing its own timing on top. file: `app.css` ·
   ADR-0029/0030
+- **PR #570** `cut-release` backfills governance drift + squashes changelog window —
+  the skill now runs the governance-freshness gate locally before computing the
+  version (backfilling any missing changelog entries / stale ADR statuses it flags),
+  and collapses the release's changelog window into one heading at cut time. Skill +
+  doc change only.
