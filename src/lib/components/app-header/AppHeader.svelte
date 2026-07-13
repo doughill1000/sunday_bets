@@ -94,7 +94,7 @@
     <button
       type="button"
       data-testid="beta-tag"
-      class="mr-2 rounded-full border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase transition-colors hover:bg-primary/20"
+      class="mr-2 rounded-full border border-primary-ink/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-primary-ink uppercase transition-colors hover:bg-primary/20"
       title="Beta — spotting something off? Tell us."
       aria-label="Beta — send feedback"
       onclick={() => openFeedback()}

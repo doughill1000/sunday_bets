@@ -70,7 +70,7 @@
   >
     {#if signupSentEmail}
       <CardHeader class="items-center space-y-2 text-center">
-        <MailCheck class="h-10 w-10 text-primary" aria-hidden="true" />
+        <MailCheck class="h-10 w-10 text-primary-ink" aria-hidden="true" />
         <CardTitle class="text-3xl" data-testid="auth-check-email-title">Check your email</CardTitle
         >
         <CardDescription>

@@ -8,7 +8,7 @@
 
 <div class="mx-auto max-w-2xl space-y-4 px-4 py-6">
   <div class="flex items-center gap-2">
-    <Sparkles class="h-5 w-5 text-primary" />
+    <Sparkles class="h-5 w-5 text-primary-ink" />
     <h1 class="text-xl font-semibold">League Recaps</h1>
   </div>
 

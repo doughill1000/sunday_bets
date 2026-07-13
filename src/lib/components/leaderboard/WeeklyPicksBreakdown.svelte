@@ -97,7 +97,7 @@
             <span class="flex-1">{weekLabel(w)}</span>
             {#if selectedWeek?.weekNumber === w.weekNumber}
               <svg
-                class="ml-2 h-4 w-4 shrink-0 text-primary"
+                class="ml-2 h-4 w-4 shrink-0 text-primary-ink"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"

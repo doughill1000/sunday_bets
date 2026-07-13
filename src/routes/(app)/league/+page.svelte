@@ -489,7 +489,7 @@
     class="flex items-center gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-colors hover:bg-accent"
   >
     <span
-      class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+      class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink"
     >
       <Users class="size-5" aria-hidden="true" />
     </span>

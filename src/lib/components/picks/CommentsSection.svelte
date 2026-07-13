@@ -172,8 +172,8 @@
         class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm
                transition-colors
                {active
-          ? 'border-primary bg-primary/10 font-medium'
-          : 'border-border bg-muted/40 text-muted-foreground hover:border-primary/50'}"
+          ? 'border-primary-ink bg-primary/10 font-medium'
+          : 'border-border bg-muted/40 text-muted-foreground hover:border-primary-ink/50'}"
       >
         <span>{emoji}</span>
         {#if count > 0}

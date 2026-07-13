@@ -4,6 +4,7 @@ import { supabaseService } from '$lib/supabase/service';
 import { invalidateAuthContext } from '$lib/server/auth-context-cache';
 import { AVATAR_PRESETS } from '$lib/avatars';
 import { validateDisplayName } from '$lib/server/profile-validation';
+import { isThemeMode } from '$lib/theme';
 
 const VALID_KEYS = new Set(AVATAR_PRESETS.map((p) => p.key));
 
@@ -20,6 +21,7 @@ export const PUT: RequestHandler = async (event) => {
     avatar_key?: string | null;
     display_name?: string;
     show_team_trends?: boolean;
+    theme_pref?: string;
   } = {};
 
   if ('avatar_key' in raw) {
@@ -42,6 +44,14 @@ export const PUT: RequestHandler = async (event) => {
       return json({ ok: false, reason: 'Invalid show_team_trends' }, { status: 400 });
     }
     update.show_team_trends = value;
+  }
+
+  if ('theme_pref' in raw) {
+    const value = (raw as Record<string, unknown>).theme_pref;
+    if (!isThemeMode(value)) {
+      return json({ ok: false, reason: 'Invalid theme_pref' }, { status: 400 });
+    }
+    update.theme_pref = value;
   }
 
   if (Object.keys(update).length === 0) {

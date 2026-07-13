@@ -8,6 +8,7 @@
   import { Input } from '$lib/components/ui/input';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { AVATAR_PRESETS } from '$lib/avatars';
+  import { THEME_MODES, DEFAULT_THEME_MODE, applyThemeMode, type ThemeMode } from '$lib/theme';
 
   type PushClient = typeof import('$lib/push/client');
 
@@ -109,6 +110,38 @@
     }
     trendsMsg = { kind: 'success', text: 'Preference saved.' };
     // Refresh the cached profile so /picks reflects the change on next navigation.
+    await invalidateAll();
+  }
+
+  // Theme preference (issue #532). Applies the new theme to <html> immediately so the
+  // switch is instant, then persists to /api/profile and refreshes the cached profile.
+  const THEME_LABELS: Record<ThemeMode, string> = {
+    dark: 'Dark',
+    light: 'Light',
+    system: 'System'
+  };
+  let themePref = $state<ThemeMode>(data.userProfile?.themePref ?? DEFAULT_THEME_MODE);
+  let themeMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  async function selectTheme(mode: ThemeMode) {
+    if (mode === themePref) return;
+    const prev = themePref;
+    themePref = mode;
+    applyThemeMode(mode); // instant, ahead of the round-trip
+    themeMsg = null;
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme_pref: mode })
+    });
+    if (!res.ok) {
+      themePref = prev;
+      applyThemeMode(prev); // revert the live theme too
+      themeMsg = { kind: 'error', text: 'Could not save theme.' };
+      return;
+    }
+    themeMsg = { kind: 'success', text: 'Theme saved.' };
+    // Refresh the cached profile so the SSR class + toaster theme match on next load.
     await invalidateAll();
   }
 
@@ -450,6 +483,47 @@
             </div>
           {/if}
         </form>
+      {/if}
+    </CardContent>
+  </Card>
+
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Appearance</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <div>
+        <p class="font-medium">Theme</p>
+        <p class="text-sm text-muted-foreground">
+          Pick a light or dark look, or follow your device setting.
+        </p>
+      </div>
+
+      <div role="radiogroup" aria-label="Theme" class="flex gap-2">
+        {#each THEME_MODES as mode (mode)}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={themePref === mode}
+            onclick={() => selectTheme(mode)}
+            class="flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors {themePref ===
+            mode
+              ? 'border-primary-ink bg-primary text-primary-foreground'
+              : 'border-border hover:border-primary-ink'}"
+          >
+            {THEME_LABELS[mode]}
+          </button>
+        {/each}
+      </div>
+
+      {#if themeMsg}
+        <div
+          class="rounded-xl border p-3 text-sm"
+          class:border-success={themeMsg.kind === 'success'}
+          class:border-destructive={themeMsg.kind === 'error'}
+        >
+          {themeMsg.text}
+        </div>
       {/if}
     </CardContent>
   </Card>

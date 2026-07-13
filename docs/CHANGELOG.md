@@ -48,6 +48,15 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## 2026-07-12
 
+- **#532** Light theme — a real "Parchment" light palette (warm paper ground, brass as
+  co-lead) replaces the dead placeholder `:root`, with a per-user dark/light/system control in
+  Settings stored on `users.theme_pref` and resolved onto `<html>` at SSR so first paint never
+  flashes (`system` is narrowed by a blocking `prefers-color-scheme` script). Gold text/borders
+  migrate to a darker `--primary-ink` so they clear AA on the light ground; the picks selection
+  ladder and elevations gain light values. files: `app.css` · `app.html` · `lib/theme.ts` ·
+  `hooks.server.ts` · `api/profile` · `settings/+page.svelte` · schema `0231_theme_pref` ·
+  `docs/DESIGN.md` · `docs/agent-context/design-system.md` · ADR-0029
+
 - **#561** One League home — the standalone Leaderboard and Group tabs merge into a single League
   tab (bottom nav 5→4: Picks · League · Stats · Teams), and the NFL market page renames to Teams so
   the user's own league owns the name. `/league` now leads with a season race chart (every member's

@@ -113,7 +113,7 @@
         <!-- Trophy case: every completed season's champion, newest first -->
         <div class="space-y-2" data-testid="trophy-case">
           <p class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Trophy class="size-3.5 text-primary" aria-hidden="true" />
+            <Trophy class="size-3.5 text-primary-ink" aria-hidden="true" />
             Trophy case
           </p>
           <ul class="flex flex-wrap gap-2">
@@ -170,7 +170,7 @@
               {#if badges.length > 0}
                 {#if isSeasonComplete}
                   <span
-                    class="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                    class="rounded-full border border-primary-ink/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-ink"
                     data-testid="awards-crowned"
                   >
                     Crowned
@@ -230,9 +230,9 @@
         <a
           href={wrappedHref}
           data-testid="wrapped-honors-link"
-          class="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary/10"
+          class="flex items-center gap-2 rounded-lg border border-primary-ink/30 bg-primary/5 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-primary/10"
         >
-          <Gift class="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <Gift class="size-4 shrink-0 text-primary-ink" aria-hidden="true" />
           <span class="flex-1">See the full Season Wrapped</span>
           <ArrowRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </a>

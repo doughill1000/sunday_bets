@@ -81,10 +81,10 @@
        bottom-20/sm:bottom-4 mirrors the clearance <main> already reserves (pb-20 sm:pb-4)
        for the mobile BottomTabBar. -->
   <div class="container fixed inset-x-0 bottom-20 z-30 mx-auto px-4 sm:bottom-4">
-    <Card class="border-primary/20 bg-primary/5 shadow-elevation-popover">
+    <Card class="border-primary-ink/20 bg-primary/5 shadow-elevation-popover">
       <CardContent class="flex items-start gap-3 p-4">
         {#if step === 'install-ios'}
-          <Smartphone class="mt-0.5 size-5 shrink-0 text-primary" />
+          <Smartphone class="mt-0.5 size-5 shrink-0 text-primary-ink" />
           <div class="flex-1">
             <p class="text-sm font-medium">Add Hotshot to your Home Screen</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
@@ -105,7 +105,7 @@
             <X class="size-4" />
           </button>
         {:else if step === 'install-prompt'}
-          <Download class="mt-0.5 size-5 shrink-0 text-primary" />
+          <Download class="mt-0.5 size-5 shrink-0 text-primary-ink" />
           <div class="flex-1">
             <p class="text-sm font-medium">Install Hotshot</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
@@ -123,7 +123,7 @@
             </button>
           </div>
         {:else if step === 'install-fallback'}
-          <Download class="mt-0.5 size-5 shrink-0 text-primary" />
+          <Download class="mt-0.5 size-5 shrink-0 text-primary-ink" />
           <div class="flex-1">
             <p class="text-sm font-medium">Install Hotshot</p>
             <p class="mt-0.5 text-xs text-muted-foreground">
@@ -139,7 +139,7 @@
             <X class="size-4" />
           </button>
         {:else if step === 'notif-enable'}
-          <Bell class="mt-0.5 size-5 shrink-0 text-primary" />
+          <Bell class="mt-0.5 size-5 shrink-0 text-primary-ink" />
           <div class="flex-1">
             <p class="text-sm font-medium">Enable push notifications</p>
             <p class="mt-0.5 text-xs text-muted-foreground">

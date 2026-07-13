@@ -156,7 +156,7 @@
   <Card class="border-border/50 bg-card" data-testid="wrapped-blurb">
     <CardHeader class="pb-2">
       <CardTitle class="flex items-center gap-2 text-base font-semibold">
-        <Sparkles class="h-4 w-4 shrink-0 text-primary" />
+        <Sparkles class="h-4 w-4 shrink-0 text-primary-ink" />
         Season Recap
       </CardTitle>
     </CardHeader>

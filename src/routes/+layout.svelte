@@ -21,6 +21,7 @@
   } from '@tanstack/svelte-query-persist-client';
   import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
   import { getQueryClient, makePersistOptions } from '$lib/query/client';
+  import { DEFAULT_THEME_MODE, applyThemeMode, type ThemeMode } from '$lib/theme';
 
   let { children, data } = $props();
 
@@ -37,6 +38,20 @@
   const userProfile = $derived(data.userProfile ?? null);
   const memberships = $derived(data.memberships ?? []);
   const groupId = $derived(data.groupId ?? null);
+
+  // Resolved theme preference (#532). SSR (hooks.server.ts) + the app.html script set the
+  // correct <html> class for first paint; this keeps it in sync afterwards — a saved pref
+  // (surfaced here via invalidateAll) and, in `system` mode, the OS flipping at runtime.
+  const themeMode = $derived<ThemeMode>(userProfile?.themePref ?? DEFAULT_THEME_MODE);
+  $effect(() => {
+    const mode = themeMode;
+    applyThemeMode(mode);
+    if (mode !== 'system' || typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => applyThemeMode('system');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  });
 
   // Auth screens (/auth, /auth/reset, /auth/error) own the full viewport: their own
   // centered brand lockup is the only logo, so the app-shell chrome — the header (which
@@ -192,11 +207,13 @@
       {/if}
     {/if}
 
-    <!-- Global toast host. Pinned to dark (the app is dark-only, and the vendored Sonner
-         otherwise reads mode-watcher, which is never mounted here) and lifted above the
-         mobile bottom tab bar (pb-20 = 5rem) so a toast never covers primary nav right
-         after the user acts (audit S4). closeButton gives every toast a manual dismiss. -->
-    <Toaster theme="dark" closeButton mobileOffset={{ bottom: '5rem' }} />
+    <!-- Global toast host. Follows the resolved theme (#532) via an explicit `theme`
+         prop — the vendored Sonner otherwise reads mode-watcher, which is never mounted
+         here; passing the mode bypasses it and lets Sonner resolve `system` itself.
+         Lifted above the mobile bottom tab bar (pb-20 = 5rem) so a toast never covers
+         primary nav right after the user acts (audit S4). closeButton gives every toast a
+         manual dismiss. -->
+    <Toaster theme={themeMode} closeButton mobileOffset={{ bottom: '5rem' }} />
   </div>
 {/snippet}
 

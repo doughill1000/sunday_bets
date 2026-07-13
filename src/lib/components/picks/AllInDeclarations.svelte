@@ -82,7 +82,7 @@
                 <span class="text-muted-foreground">on</span>
                 <span class="font-semibold">{d.pickedTeamShort ?? '—'}</span>
                 <span
-                  class="rounded bg-primary/10 px-1 text-[10px] font-semibold uppercase leading-tight text-primary"
+                  class="rounded bg-primary/10 px-1 text-[10px] font-semibold uppercase leading-tight text-primary-ink"
                 >
                   All-In
                 </span>

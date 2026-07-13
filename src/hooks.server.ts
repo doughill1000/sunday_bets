@@ -10,6 +10,7 @@ import { ACTIVE_GROUP_COOKIE, resolveActiveGroupId } from '$lib/server/group-res
 import { getAuthContext } from '$lib/server/auth-context-cache';
 import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
+import { DEFAULT_THEME_MODE, isThemeMode, themeClassFor, type ThemeMode } from '$lib/theme';
 
 // Route-move redirects for the #561 IA merge: the standalone Leaderboard and Group tabs became
 // the one League home and its Members & manage subpage. Runs before auth so an old deep link
@@ -133,7 +134,9 @@ const injectSession: Handle = async ({ event, resolve }) => {
             traceDbQuery('auth-hook.users-profile', () =>
               supabaseService
                 .from('users')
-                .select('role, display_name, avatar_key, guide_seen_at, show_team_trends')
+                .select(
+                  'role, display_name, avatar_key, guide_seen_at, show_team_trends, theme_pref'
+                )
                 .eq('id', user.id)
                 .maybeSingle()
             ),
@@ -154,7 +157,10 @@ const injectSession: Handle = async ({ event, resolve }) => {
         displayName: profileResult.data.display_name ?? '',
         avatarKey: profileResult.data.avatar_key ?? null,
         guideSeenAt: profileResult.data.guide_seen_at ?? null,
-        showTeamTrends: profileResult.data.show_team_trends ?? true
+        showTeamTrends: profileResult.data.show_team_trends ?? true,
+        themePref: isThemeMode(profileResult.data.theme_pref)
+          ? profileResult.data.theme_pref
+          : DEFAULT_THEME_MODE
       };
     }
 
@@ -194,7 +200,17 @@ const injectSession: Handle = async ({ event, resolve }) => {
     );
   }
 
-  return resolve(event);
+  // Resolve the theme onto <html> at SSR so first paint matches the user's preference —
+  // no flash of the wrong theme (#532). dark/light resolve fully server-side; 'system'
+  // is left as class="dark" here and narrowed by the blocking <head> script in app.html.
+  // Unauthenticated/unset visitors default to dark (DEFAULT_THEME_MODE).
+  const themeMode: ThemeMode = event.locals.userProfile?.themePref ?? DEFAULT_THEME_MODE;
+  return resolve(event, {
+    transformPageChunk: ({ html }) =>
+      html
+        .replace('%hotshot.themeclass%', themeClassFor(themeMode))
+        .replace('%hotshot.thememode%', themeMode)
+  });
 };
 
 export const handle: Handle = sequence(

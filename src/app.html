@@ -1,11 +1,33 @@
 <!doctype html>
-<html lang="en" class="dark">
+<!-- class + data-theme-mode are filled per request by hooks.server.ts
+     (transformPageChunk) from the user's theme_pref: dark/light resolved server-side,
+     'system' left as class="dark" for the blocking script below to narrow. Defaults to
+     dark for unauthenticated/unset visitors, so first paint is never wrong (#532). -->
+<html lang="en" class="%hotshot.themeclass%" data-theme-mode="%hotshot.thememode%">
   <head>
     <meta charset="utf-8" />
     <title>HOTSHOT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- App is always dark; charcoal brand background (matches the app icon). -->
+    <!-- theme-color tracks the resolved theme (--background); synced by the script below. -->
     <meta name="theme-color" content="#1c1c1c" />
+    <script>
+      // Resolve the theme before first paint so there is no flash of the wrong theme.
+      // dark/light are already on <html class> from the server; only 'system' needs the
+      // client media query here. Then sync theme-color to whatever resolved.
+      (function () {
+        try {
+          var el = document.documentElement;
+          if (el.getAttribute('data-theme-mode') === 'system') {
+            el.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
+          }
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta)
+            meta.setAttribute('content', el.classList.contains('dark') ? '#1c1c1c' : '#f2e7d1');
+        } catch (e) {
+          /* keep the server-rendered class */
+        }
+      })();
+    </script>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest" />

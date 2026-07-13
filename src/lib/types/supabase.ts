@@ -1266,6 +1266,7 @@ export type Database = {
           notification_prefs: Json;
           role: string;
           show_team_trends: boolean;
+          theme_pref: string;
         };
         Insert: {
           avatar_key?: string | null;
@@ -1277,6 +1278,7 @@ export type Database = {
           notification_prefs?: Json;
           role?: string;
           show_team_trends?: boolean;
+          theme_pref?: string;
         };
         Update: {
           avatar_key?: string | null;
@@ -1288,6 +1290,7 @@ export type Database = {
           notification_prefs?: Json;
           role?: string;
           show_team_trends?: boolean;
+          theme_pref?: string;
         };
         Relationships: [];
       };

@@ -137,7 +137,7 @@
     </ToggleGroup>
 
     {#if pending?.kind === 'confirm'}
-      <div class="mt-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-xs">
+      <div class="mt-2 rounded-md border border-primary-ink/40 bg-primary/5 p-2 text-xs">
         <p class="mb-2 font-medium">Confirm All-In? That's 10 points riding on one game.</p>
         <div class="flex gap-2">
           <Button

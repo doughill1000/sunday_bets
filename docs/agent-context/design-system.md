@@ -22,8 +22,10 @@ layers on Tailwind's defaults — the primitive scales (`text-sm`, `p-4`, `font-
 ### Color (ADR-0027)
 
 Semantic color tokens are defined in `src/app.css` and consumed as Tailwind utilities
-(`bg-card`, `text-primary`, `border-border`) or `var(--primary)` in raw CSS. The dark
-palette is the live one; `:root` holds light placeholders for the future light theme.
+(`bg-card`, `text-primary`, `border-border`) or `var(--primary)` in raw CSS. Both themes
+are live: `.dark` is the dark palette and `:root` is the "Parchment" light theme (#532),
+chosen per user via `users.theme_pref`. Every token carries a maintained value in each, so
+a call site works under either theme.
 
 | Reach for…                     | Token                                                      |
 | ------------------------------ | ---------------------------------------------------------- |
@@ -45,9 +47,10 @@ the ink needs a darker brass there while the fill doesn't. Splitting the token n
 themes carry `--primary-ink`; on dark it aliases `--primary`) is what lets a gold-as-text
 call site survive the light-theme flip (#532) without a per-site override. Reach for
 `text-primary-ink` for gold text/borders and `bg-primary` for a gold fill; don't use
-`text-primary` for a gold label. Migrating existing `text-primary` text/border call sites
-to `text-primary-ink` lands with the light theme (#532) — on dark the two are identical,
-so there's no visual change until the light values diverge.
+`text-primary` for a gold label. The existing `text-primary`/`border-primary` text/border
+call sites were migrated to `text-primary-ink` with the light theme (#532): on dark the two
+are identical (ink aliases `--primary`), while on light the ink darkens to `#8a6210` to
+clear AA where bright brass would fail as text/border.
 
 ### Typography
 
@@ -153,8 +156,9 @@ Surfaces stack `background → card → popover`, and the shadow tier tracks tha
 - `shadow-elevation-overlay` — modal / sheet overlays, the topmost tier.
 
 In the dark theme the three surfaces share a hue, so **shadow (not lightness) is what
-reads the layering** — hence deeper, blacker dark shadows. Every elevation token carries
-a light value too, so the future light theme flips without touching call sites.
+reads the layering** — hence deeper, blacker dark shadows. On the Parchment light theme
+(#532) the surfaces differ in lightness, so the same tokens carry a warm-brown _whisper_
+shadow instead — the layering reads by lightness, not a black drop-shadow.
 
 ## Focus ring
 

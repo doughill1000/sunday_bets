@@ -54,7 +54,7 @@
       aria-checked={selected}
       tabindex={selected ? 0 : -1}
       class="rounded-full border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none {selected
-        ? 'border-primary bg-primary text-primary-foreground'
+        ? 'border-primary-ink bg-primary text-primary-foreground'
         : 'border-border bg-secondary text-muted-foreground hover:text-foreground'}"
       onclick={() => onchange(option.value)}
       onkeydown={onKeydown}

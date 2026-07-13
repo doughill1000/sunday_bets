@@ -874,5 +874,10 @@
     "hash": "fb310174d3fc4629cf813ca16277fd0c4c18406cd384b19c93146c932892ab92",
     "migration": "20260711184725_stats_situational_season_views.sql",
     "migrationHash": "10b7ab2803a654838a37fd00f3647b1325987974866e0e973c9921eda7eae628"
+  },
+  "schemas/0231_theme_pref.sql": {
+    "hash": "a962564281b0e18115d2d25cba353c41cc752a75abee4fb3fa59ec93514ca9c7",
+    "migration": "20260712235932_theme_pref.sql",
+    "migrationHash": "ef51aa02a3f3073bb869698a1b3d79bd56e618552acddfd7b2f9eac703d1637e"
   }
 }
