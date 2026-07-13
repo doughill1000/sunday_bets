@@ -121,7 +121,7 @@
           data-testid={`weight-item-${code}`}
           disabled={code === 'A' && allInBlocked}
           class="weight-btn flex-1 rounded-md px-2 py-[6px] leading-none transition
-                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+                 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50
                  disabled:pointer-events-none disabled:opacity-70"
         >
           <div class="flex flex-col items-center gap-1">
