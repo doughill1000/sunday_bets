@@ -14,7 +14,9 @@
   } from '$lib/components/ui/card';
   import { formatAccuracy } from '$lib/utils/stats';
   import type { SignatureTell } from '$lib/utils/stats';
+  import type { PlayerRatingEntry } from '$lib/domain/rating';
   import SignatureTells from './SignatureTells.svelte';
+  import RatingBand from './RatingBand.svelte';
 
   let {
     isYou,
@@ -26,7 +28,8 @@
     missed,
     atsAccuracy,
     decisions,
-    tells
+    tells,
+    rating
   }: {
     isYou: boolean;
     displayName: string;
@@ -41,6 +44,9 @@
     decisions: number;
     /** Ranked signature tells for the same scope (career or season). */
     tells: SignatureTell[];
+    /** Cross-season credibility rating (#361), shown only at Career scope — it leads the hero,
+     *  demoting Record / ATS% / Decisions to the receipts beneath it. Omitted at season scope. */
+    rating?: { entry: PlayerRatingEntry | undefined; rank: number | null };
   } = $props();
 
   const subjectCap = $derived(isYou ? 'You' : displayName);
@@ -59,6 +65,13 @@
     >
   </CardHeader>
   <CardContent class="space-y-5">
+    <!-- The credibility rating leads the Career hero (#361, ADR-0032): the one cross-season number,
+         with Record / ATS% / Decisions demoted to the supporting receipts below it. Career scope
+         only — the page omits this prop at season scope. -->
+    {#if rating}
+      <RatingBand entry={rating.entry} rank={rating.rank} />
+    {/if}
+
     <!-- Analytics only: standings score + rank live on the Leaderboard (ADR-0018). These tiles
          describe actual performance against the spread, always raw. -->
     <dl class="grid grid-cols-2 gap-4 sm:grid-cols-3">
