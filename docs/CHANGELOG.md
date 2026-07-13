@@ -58,6 +58,14 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #579** Rename the NFL-market tab "Teams" → "Market" and reserve "League" for the
+  user's group — the word was overloaded (a user's pool is their "league", and so is the
+  NFL), so the two are split: League = the group, Market = the NFL side. Route `/teams` →
+  `/market` (308 redirect), nav labels, and the `/stats` + `/market` diverging-bar baseline
+  relabelled "league" → "market"; the naming rule is codified in the design guide. Internal
+  `league` plumbing (`/api/league`, `league_ats_*`) is intentionally left for a later
+  refactor. routes: `/market` (was `/teams`) · `docs/DESIGN.md` · ADR-0030
+
 - **#567** Consolidate the `/stats` top into one scope-aware hero — the three stacked
   preamble cards (Your edge + career/season snapshot + signature strip) collapse into a
   single hero pairing the headline number line (Record · ATS% · Decisions) with the
