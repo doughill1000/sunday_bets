@@ -58,6 +58,12 @@ entry per PR the rest of the time.
 
 ## 2026-07-12
 
+- **PR #571** Squash `docs/CHANGELOG.md` history through v3.3 — every entry back to
+  2026-06-24 is already covered by a tagged, published GitHub Release, so this file's
+  live window now starts fresh; the governance-freshness gate's changelog-enforcement
+  cutoff moves to match. Also flips `docs/adr/0029-design-system-token-architecture.md`
+  to `Accepted` (its issue, #530, had closed without the status flip). file:
+  `scripts/check-governance-freshness.ts` · ADR-0029
 - **PR #579** Rename the NFL-market tab "Teams" → "Market" and reserve "League" for the
   user's group — the word was overloaded (a user's pool is their "league", and so is the
   NFL), so the two are split: League = the group, Market = the NFL side. Route `/teams` →
