@@ -1,6 +1,6 @@
 # ADR-0032: Cross-season credibility rating ("who knows ball")
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-13
 - Issue: #361
 - Supersedes: None
