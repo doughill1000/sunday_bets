@@ -197,7 +197,11 @@
              shell-level pill so every surface inherits it. Inside the QueryClientProvider (the
              whole shell is), so it can read the query cache. -->
         <NetworkStatusPill />
-        <WelcomeGuide guideSeenAt={userProfile?.guideSeenAt ?? null} {user} />
+        <WelcomeGuide
+          guideSeenAt={userProfile?.guideSeenAt ?? null}
+          displayName={userProfile?.displayName ?? ''}
+          {user}
+        />
         <FeedbackWidget {groupId} />
         {#await data.latestRecap then recap}
           {#await data.recapSeen then seen}
