@@ -12,15 +12,18 @@ import { getCurrentSeasonYear } from '$lib/server/db/queries/leaderboard';
 import { traceDbQuery, traceSpan } from '$lib/server/observability';
 import { DEFAULT_THEME_MODE, isThemeMode, themeClassFor, type ThemeMode } from '$lib/theme';
 
-// Route-move redirects for the #561 IA merge: the standalone Leaderboard and Group tabs became
-// the one League home and its Members & manage subpage. Runs before auth so an old deep link
-// forwards regardless of session, and preserves the query string (e.g. ?season=, ?view=weekly)
-// so bookmarked/shared URLs land on the same content. 308 keeps the method and marks the move
-// permanent. The old route directories no longer exist, so without this these paths would 404.
+// Route-move redirects for renamed tabs. #561 (IA merge): the standalone Leaderboard and Group
+// tabs became the one League home and its Members & manage subpage. Later: the NFL-wide ATS tab
+// moved /teams → /market (renamed so the tab names the market concept and never collides with
+// "League", the user's group). Runs before auth so an old deep link forwards regardless of
+// session, and preserves the query string (e.g. ?season=, ?view=weekly) so bookmarked/shared URLs
+// land on the same content. 308 keeps the method and marks the move permanent. The old route
+// directories no longer exist, so without this these paths would 404.
 const legacyRouteRedirects: Handle = async ({ event, resolve }) => {
   const { pathname, search } = event.url;
   if (pathname === '/leaderboard') throw redirect(308, `/league${search}`);
   if (pathname === '/group') throw redirect(308, `/league/manage${search}`);
+  if (pathname === '/teams') throw redirect(308, `/market${search}`);
   return resolve(event);
 };
 

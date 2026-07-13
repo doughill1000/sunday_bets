@@ -59,13 +59,13 @@ _Why:_ desktop-down design silently pushes the rightmost column off a phone scre
 _Example:_ the standings "Total" column once clipped off the right edge at 390px; the League
 home standings (#561) keep it on-screen by collapsing W-L-P into one "Rec" cell on mobile (and
 carry rank movement inside the existing "#" cell rather than adding a column). The same class of
-clip drove the `/teams` picker consolidation (#529).
+clip drove the `/market` picker consolidation (#529).
 
 ### 2. One pattern per job
 
 A given interaction should look the same everywhere it appears. To **switch between cuts
 of the same data, use the chip radiogroup** — the selector used by `/stats` "Every split"
-and `/teams` (the #529 slice explorer). Don't introduce a second control (tabs, an
+and `/market` (the #529 slice explorer). Don't introduce a second control (tabs, an
 accordion) for the same "show me one cut" job.
 
 The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
@@ -231,6 +231,18 @@ _Why:_ swagger is an asset until it makes the user decode the interface.
 _Example:_ good CTA "Lock in picks" + supporting line "The Commissioner has seen enough";
 weak CTA "Send it", weak error "The Commissioner fumbled" (say what broke and how to fix it).
 
+**One word, one referent — reserve "League" for the user's own group; call the NFL side
+"the market" / "the NFL" / "NFL-wide", never "league."** The term overloads badly: a
+player's pick pool is their "league" (fantasy idiom) _and_ the football league is a
+"league." So the group is **League** (the tab, the standings, "your league"); the NFL
+betting universe is **Market** (the `/market` tab) and its baseline is "the market line,"
+never "the league line." Internal identifiers may keep `league` (e.g. `league_ats_*`,
+`league-scope-select`) — this rule governs what the user reads, not the plumbing.
+
+_Why:_ two referents for one word makes a user read "vs league" on their own stats as "vs
+my group" when it means the NFL market. _Example:_ the `/market` tab (renamed from "Teams")
+and the `/stats` diverging-bar baseline both say **market**, not "league-wide"/"vs league".
+
 ### 15. Density follows the task
 
 Use compact layouts for comparison and repeated data; give decisions, onboarding, and
@@ -258,19 +270,19 @@ Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens
 catalogs the **composed patterns** — the atoms already in the app, and when to reach for
 each. (Component homes live under `src/lib/components/`.)
 
-| Job                               | Pattern                                            | Seen in                                     |
-| --------------------------------- | -------------------------------------------------- | ------------------------------------------- |
-| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/teams` |
-| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/league`, `/wrapped`                       |
-| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                     |
-| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                |
-| Compare a value to a baseline     | Diverging bar from the league line                 | `/stats` Every split, `/teams`              |
-| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                        |
-| Group related content             | `Card` + header/description                        | everywhere                                  |
-| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)           |
-| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                           |
-| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/teams`, `/stats`        |
-| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                      |
+| Job                               | Pattern                                            | Seen in                                      |
+| --------------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/market` |
+| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/league`, `/wrapped`                        |
+| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                      |
+| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                 |
+| Compare a value to a baseline     | Diverging bar from the market line                 | `/stats` Every split, `/market`              |
+| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
+| Group related content             | `Card` + header/description                        | everywhere                                   |
+| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)            |
+| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
+| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/market`, `/stats`        |
+| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
 
 Prefer these before inventing a new control. If a screen genuinely needs a pattern not
 listed here, that is the signal to run a `design-study` and add it. As each pattern is next
@@ -333,6 +345,8 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
 - [ ] Nothing clips horizontally at 390px; wide content scrolls in its own container.
 - [ ] No disclosure is nested inside another disclosure.
 - [ ] "Switch a cut" uses the chip radiogroup, not a second control.
+- [ ] User-facing copy never calls the NFL "league": **League** = the user's group; the NFL
+      side is "the market" / "NFL-wide" (internal identifiers may keep `league`).
 - [ ] Colours/type/spacing come from tokens (the brand-color guard passes).
 - [ ] The primary action is visually dominant; committed vs uncommitted state is unmistakable.
 - [ ] Loading / empty / error / stale states are designed and keep the layout's hierarchy.

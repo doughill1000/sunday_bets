@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
 
-// Primary navigation after the #561 IA merge: four first-class tabs — Picks · League · Stats ·
-// Teams. The desktop inline nav and the mobile bottom tab bar render the same four destinations.
-// League is the merged Leaderboard + Group home (standings, the season race, honors, and a
-// Members & manage subpage at /league/manage); Teams is the former "League" market ATS page,
-// renamed so the user's own league owns the "League" name.
+// Primary navigation: four first-class tabs — Picks · League · Stats · Market. The desktop inline
+// nav and the mobile bottom tab bar render the same four destinations. League is the merged
+// Leaderboard + Group home (standings, the season race, honors, and a Members & manage subpage at
+// /league/manage); Market is the NFL-wide ATS surface (renamed from "Teams" so the tab names the
+// market concept and never collides with "League", the user's group).
 
 const TABS = [
   { href: '/picks', name: 'Picks' },
   { href: '/league', name: 'League' },
   { href: '/stats', name: 'Stats' },
-  { href: '/teams', name: 'Teams' }
+  { href: '/market', name: 'Market' }
 ] as const;
 
 test(
