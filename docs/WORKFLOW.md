@@ -163,10 +163,13 @@ migration-ledger conflict by choosing one side wholesale.
 
 ## Pull request and merge
 
-1. Add a newest-first entry to [`docs/CHANGELOG.md`](CHANGELOG.md) on the branch so
-   shipped history merges atomically with the PR (it lands in `master` only when the
-   code does) — keyed by issue number, or by PR number (`PR #NNN`) when the PR closes
-   no issue — then open one PR and use `Closes #NNN` when there is a driving issue.
+1. Add the shipped-history entry as a fragment under
+   [`docs/changelog.d/`](changelog.d/README.md) on the branch (not by editing
+   `docs/CHANGELOG.md`), so it merges atomically with the PR (it lands in `master` only
+   when the code does) and concurrent same-day PRs never collide on the shared file —
+   keyed by issue number, or by PR number (`PR #NNN`) when the PR closes no issue — then
+   open one PR and use `Closes #NNN` when there is a driving issue. `cut-release`
+   assembles the fragments into `docs/CHANGELOG.md` at release time.
 2. Link the governing or proposed ADR and explain any deviation from it.
 3. Record commands that actually ran and explain skipped checks.
 4. Move the Project item to Review.

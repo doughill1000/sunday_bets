@@ -30,10 +30,10 @@ Bash (see `AGENTS.md`).
    $env:GITHUB_REPOSITORY = "doughill1000/sunday_bets"
    pnpm governance:check
    ```
-   - **Changelog gaps** (a merged PR/closed issue with no `docs/CHANGELOG.md` entry): add
-     the missing entry in the same terse pointer style `finish-pr` uses (`- **#NNN** ...`
-     or `- **PR #NNN** ...` for issue-less PRs), dated to the PR's actual merge date, not
-     today.
+   - **Changelog gaps** (a merged PR/closed issue with no entry in the changelog corpus —
+     `docs/CHANGELOG.md` or a `docs/changelog.d/` fragment): add the missing entry as a
+     fragment in the same terse pointer style `finish-pr` uses (`- **#NNN** ...` or
+     `- **PR #NNN** ...` for issue-less PRs); step 4 assembles it into the release block.
    - **Stale ADRs** (`Status: Proposed` whose linked issue is already closed): flip the
      ADR's `Status:` line to `Accepted` (or the correct terminal status).
    - Don't guess at content you can't verify from the PR/issue itself — read it first.
@@ -50,15 +50,18 @@ Bash (see `AGENTS.md`).
 4. **Open the release PR.** On a fresh branch off `origin/master`, set `package.json`
    `"version"` to `<new>` (this is the **only** place the version is bumped — `finish-pr`
    never bumps it). Title `chore(release): v<new>`.
-   - **Squash this release's changelog window.** Find every `## YYYY-MM-DD` date heading
-     in `docs/CHANGELOG.md` dated on/after the previous release tag's date (i.e. everything
-     merged since `base`, including whatever step 2 just backfilled) and collapse them into
-     one `## v<new> — YYYY-MM-DD` heading (today's date), directly under the "How entries
-     are added" section. Condense each entry to a single line — `- **#NNN**/**PR #NNN**
-short title — one clause` — dropping multi-line prose but **keeping every `#NNN` /
-     `PR #NNN` reference intact**, since the governance-freshness gate greps the file for
-     them. Entries from earlier releases are untouched — this only squashes the window
-     being cut. Add the release-bump line itself (`**PR #NNN** Release v<new>`) at the top.
+   - **Assemble this release's changelog window.** The window's entries live as
+     fragments in `docs/changelog.d/` (everything merged since `base`, including whatever
+     step 2 just backfilled) — plus any leftover `## YYYY-MM-DD` date headings still in
+     `docs/CHANGELOG.md` from before the fragments migration. Collapse them all into one
+     `## v<new> — YYYY-MM-DD` heading (today's date), directly under the "How entries are
+     added" section. Condense each fragment/entry to a single line — `- **#NNN**/**PR
+#NNN** short title — one clause` — dropping multi-line prose but **keeping every
+     `#NNN` / `PR #NNN` reference intact**, since the governance-freshness gate greps for
+     them. Then **delete the assembled fragment files** from `docs/changelog.d/` (leave
+     `README.md`). Entries from earlier releases are untouched — this only assembles the
+     window being cut. Add the release-bump line itself (`**PR #NNN** Release v<new>`) at
+     the top.
    - Confirm the squashed result with Doug, then `gh pr create`; merge after checks.
 5. **Deploy.** After the release PR merges, trigger the production release — a single
    manual dispatch (ADR-0010): **Actions → Deploy Production → Run workflow**, or
@@ -81,12 +84,12 @@ deploy --prod` → tag `v<new>` + create the GitHub Release (auto-notes; refine 
 - Merging never ships (ADR-0010); the manual `deploy-prod` dispatch is the release moment.
   The version is read at dispatch to tag `v<version>`, skipping if the tag exists.
 - Confirm before the release PR, the milestone close, and the deploy dispatch.
-- The governance backfill (step 2) and the changelog squash (step 4) both touch
-  `docs/CHANGELOG.md`, so do them in that order in one branch — squashing first would
-  bury gaps the governance check hasn't found yet.
-- The squash is release-cut-only. `finish-pr` still adds one dated entry per PR as
-  normal; only `cut-release` ever collapses a window of entries, and only the window
-  since the previous tag.
+- The governance backfill (step 2) adds any missing entries as fragments and the
+  assembly (step 4) folds them into `docs/CHANGELOG.md`, so do them in that order in one
+  branch — assembling first would bury gaps the governance check hasn't found yet.
+- The assembly is release-cut-only. `finish-pr` still adds one `docs/changelog.d/`
+  fragment per PR as normal; only `cut-release` ever assembles a window of fragments into
+  `CHANGELOG.md` and deletes them, and only the window since the previous tag.
 
 ## See also
 

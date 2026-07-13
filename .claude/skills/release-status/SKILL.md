@@ -38,13 +38,16 @@ work that "0 open issues" hides.
    ```
 3. **Cross-check local signals so no single source fools you:** `package.json` version,
    `git tag --sort=-v:refname`, the latest `gh release`, and the newest `docs/CHANGELOG.md`
-   entries. A version is **shipped** only when its milestone is open=0 **and** a matching
+   entries plus the unreleased `docs/changelog.d/` fragments (entries live in fragments
+   from merge until `cut-release` assembles them). A version is **shipped** only when its
+   milestone is open=0 **and** a matching
    Release is published. Per ADR-0015, `package.json` holds the **last shipped** version
    between releases (it is bumped only by `cut-release`, at release time) — so
    `package.json` matching the latest `v*` tag is the normal mid-cycle state, not
    evidence a version is incomplete.
 4. **Look past "0 open."** Build three buckets, not one count:
-   - **Shipped** — closed issues in the milestone (cross-referenced with `docs/CHANGELOG.md`).
+   - **Shipped** — closed issues in the milestone (cross-referenced with `docs/CHANGELOG.md`
+     and the unreleased `docs/changelog.d/` fragments).
    - **Deferred** — work the roadmap/issues explicitly punted to the next milestone. Name it
      and say why (often an intentional scope cut), so Doug decides consciously rather than
      discovering it later.

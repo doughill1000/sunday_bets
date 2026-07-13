@@ -10,11 +10,14 @@
  *      already closed on GitHub means the ratification step was missed.
  *   2. Changelog gaps (retroactive) — a merged PR (to `master`, non-bot, merged
  *      on/after the enforcement cutoff below) with neither its own PR number nor a
- *      closed-issue number it references anywhere in docs/CHANGELOG.md means the
- *      changelog step was missed.
+ *      closed-issue number it references anywhere in the changelog corpus
+ *      (docs/CHANGELOG.md PLUS the unreleased fragments in docs/changelog.d/) means the
+ *      changelog step was missed. Entries ride in a fragment from merge until
+ *      `cut-release` assembles them into CHANGELOG.md, so both are searched.
  *   3. Changelog gap (current PR) — on a `pull_request`-triggered run only, the PR
- *      being opened/updated is itself checked for a docs/CHANGELOG.md change in its
- *      diff. This is what actually stops a merge from shipping without an entry;
+ *      being opened/updated is itself checked for a changelog entry in its diff — a new
+ *      docs/changelog.d/ fragment (the normal path) or a docs/CHANGELOG.md edit. This is
+ *      what actually stops a merge from shipping without an entry;
  *      check #2 can only catch it retroactively, after the PR has already merged
  *      (its own `docs(changelog): backfill ...` PRs are the evidence this gap is
  *      real, not theoretical).
@@ -36,6 +39,7 @@ import path from 'node:path';
 const REPO_ROOT = process.cwd();
 const ADR_DIR = path.join(REPO_ROOT, 'docs', 'adr');
 const CHANGELOG_PATH = path.join(REPO_ROOT, 'docs', 'CHANGELOG.md');
+const FRAGMENTS_DIR = path.join(REPO_ROOT, 'docs', 'changelog.d');
 // A bare 'YYYY-MM-DD' is treated as that day's start (UTC); pass a full ISO timestamp
 // when the boundary needs to fall between two PRs merged on the same calendar day (as
 // it did for the 2026-07-12 changelog squash — see docs/CHANGELOG.md's history note).
@@ -134,8 +138,30 @@ function changelogReferencesAny(changelog: string, numbers: number[]): boolean {
   return numbers.some((n) => new RegExp(`#${n}(?!\\d)`).test(changelog));
 }
 
+/**
+ * The changelog "corpus" a PR/issue reference can live in: the assembled
+ * docs/CHANGELOG.md (released windows) PLUS every unreleased fragment under
+ * docs/changelog.d/. An entry rides in a fragment from merge until `cut-release`
+ * assembles it into CHANGELOG.md and deletes the fragment, so both must be searched.
+ * README.md in the fragments dir is convention docs, not an entry — skip it.
+ */
+function readChangelogCorpus(): string {
+  let corpus = readFileSync(CHANGELOG_PATH, 'utf8');
+  let entries: string[];
+  try {
+    entries = readdirSync(FRAGMENTS_DIR);
+  } catch {
+    return corpus; // dir absent (pre-migration checkout) — CHANGELOG.md only
+  }
+  for (const file of entries) {
+    if (!file.endsWith('.md') || file === 'README.md') continue;
+    corpus += `\n${readFileSync(path.join(FRAGMENTS_DIR, file), 'utf8')}`;
+  }
+  return corpus;
+}
+
 async function checkChangelogFreshness(): Promise<string[]> {
-  const changelog = readFileSync(CHANGELOG_PATH, 'utf8');
+  const changelog = readChangelogCorpus();
   const since = new Date(
     CHANGELOG_ENFORCEMENT_SINCE.includes('T')
       ? CHANGELOG_ENFORCEMENT_SINCE
@@ -181,13 +207,22 @@ async function checkCurrentPrChangelog(): Promise<string[]> {
   const files = await githubApi<GitHubPullRequestFile[]>(
     `/repos/${githubRepo()}/pulls/${prNumber}/files?per_page=100`
   );
-  const touchesChangelog = files.some((f) => f.filename === 'docs/CHANGELOG.md');
+  // The entry normally arrives as a new docs/changelog.d/ fragment; a direct
+  // docs/CHANGELOG.md edit (e.g. a release squash) also counts. The fragments-dir
+  // README is convention docs, not an entry.
+  const touchesChangelog = files.some(
+    (f) =>
+      f.filename === 'docs/CHANGELOG.md' ||
+      (f.filename.startsWith('docs/changelog.d/') &&
+        f.filename.endsWith('.md') &&
+        f.filename !== 'docs/changelog.d/README.md')
+  );
   if (touchesChangelog) return [];
 
   return [
-    `This PR (#${prNumber}) has no docs/CHANGELOG.md change in its diff — add an entry ` +
-      `(see the finish-pr skill's step 3), or apply the "changelog-exempt" label if this ` +
-      `genuinely doesn't need one.`
+    `This PR (#${prNumber}) has no changelog entry in its diff — add a ` +
+      `docs/changelog.d/ fragment (see the finish-pr skill's step 3), or apply the ` +
+      `"changelog-exempt" label if this genuinely doesn't need one.`
   ];
 }
 

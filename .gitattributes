@@ -1,5 +1,6 @@
-# CHANGELOG entries are appended by every merging PR right after the same
-# `## <date>` heading, which routinely collides when two PRs land the same day.
-# Per docs/CHANGELOG.md's own policy ("keep both entries, never take one side
-# wholesale"), let git auto-union those additions instead of conflicting.
+# Per-PR entries now land as unique files under docs/changelog.d/ (assembled into
+# docs/CHANGELOG.md at release time), so concurrent PRs no longer collide here. This
+# union driver is kept only as a fallback for the rare *direct* edit of this file — a
+# cut-release squash — and note it helps local merges only: GitHub's mergeability check
+# and merge button ignore .gitattributes merge drivers. See docs/changelog.d/README.md.
 docs/CHANGELOG.md merge=union

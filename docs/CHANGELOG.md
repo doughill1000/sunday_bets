@@ -11,19 +11,28 @@ Project `Done` column, and Releases remain the sources of truth — see
 
 ## How entries are added
 
-- The entry is added **inside the feature's own PR** (a step in the `finish-pr`
-  skill), so it merges atomically with the code. The entry exists in `master` if and
-  only if the work does — it cannot drift.
-- **Newest first.** Group entries under a `## YYYY-MM-DD` date heading (the PR-open
-  date is fine).
+- The entry is added **inside the feature's own PR** (a step in the `finish-pr` skill)
+  as a fragment file under [`docs/changelog.d/`](changelog.d/) — **not** by editing this
+  file. It merges atomically with the code, so the entry exists in `master` if and only
+  if the work does — it cannot drift.
+- **One fragment per PR, uniquely named** `docs/changelog.d/<branch-slug>.md`. Because no
+  two PRs ever touch the same path, concurrent same-day PRs never collide — the pain that
+  editing the shared top of this file used to cause (GitHub ignores the `merge=union`
+  driver in `.gitattributes` that resolves it locally). `cut-release` assembles the
+  fragments into this file at release time; see
+  [`docs/changelog.d/README.md`](changelog.d/README.md).
+- **This file holds released windows; fragments hold the unreleased window.** Everything
+  from the last release backward lives here under `## v<version>` (and, for anything not
+  yet squashed, `## YYYY-MM-DD`) headings, newest first. Unreleased entries live in
+  `docs/changelog.d/` until the next release cut — so answering "is X done?" reads both.
 - **Keep each entry short — a pointer, not a spec.** Include the issue/PR number, a
   short title, one or two sentences on _what_ changed and _why it matters_, the
   notable tables/views/routes/files touched (as bare pointers), and the governing
   ADR(s). The PR description, the code, and the ADR hold the detail — link to them,
-  don't restate them. Example of the richest form an entry should reach:
+  don't restate them. A fragment holds the bullet only (no date heading); example of the
+  richest form an entry should reach:
 
   ```
-  ## 2026-07-12
   - **#142** Drop-worst-week scoring — season scoring drops each player's lowest
     week. tables: group_rules · view: season_leaderboard · ADR-0006
   ```
@@ -39,22 +48,25 @@ Project `Done` column, and Releases remain the sources of truth — see
   CI/infra, and docs PRs that close no issue are still logged, keyed by PR number and
   written `**PR #NNN**` to distinguish them from issue numbers (`**#NNN**`). This keeps
   the log a complete answer to "is X already done?" rather than a features-only subset.
-- This is a shared file: top-of-file edits from two in-flight PRs can conflict.
-  Resolve by **keeping both entries** (never take one side wholesale), consistent
-  with the serialize-shared-files rule in `docs/WORKFLOW.md`.
+- **Fragments make the old shared-file conflict moot.** The unique filename means two
+  in-flight PRs never touch the same path, so there is nothing to resolve. The
+  `docs/CHANGELOG.md merge=union` line in `.gitattributes` is kept only as a fallback for
+  the rare direct edit of this file (a release squash), consistent with the
+  serialize-shared-files rule in `docs/WORKFLOW.md`.
 
 > History before the first entry below lives in **GitHub Releases (v1.2–v3.3)**; this
 > log is not backfilled past that.
 
 ## Release squashing
 
-The one exception to "never restructure": the `cut-release` skill collapses the
-date-headed entries covering the window since the previous release tag into a single
-`## v<version> — YYYY-MM-DD` heading, condensing each to one line while keeping every
-`#NNN` / `PR #NNN` reference intact (the governance-freshness gate greps for them).
-This only happens at release-cut time and only for that release's window — entries
-from prior releases are never touched, and `finish-pr` still adds one normal dated
-entry per PR the rest of the time.
+At release-cut time the `cut-release` skill **assembles** the unreleased fragments in
+`docs/changelog.d/` (plus any leftover date-headed entries still in this file from before
+the fragments migration) into a single `## v<version> — YYYY-MM-DD` heading, condensing
+each to one line while keeping every `#NNN` / `PR #NNN` reference intact (the
+governance-freshness gate greps for them), then deletes the assembled fragment files.
+This only happens at release-cut time and only for that release's window — entries from
+prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
+of the time.
 
 ## 2026-07-12
 
