@@ -1,6 +1,8 @@
 <script lang="ts">
+  import type { ComponentProps } from 'svelte';
   import { LineChart } from 'layerchart';
   import { buildTrendSeries } from '$lib/utils/stats';
+  import { dismissTooltipOnScroll } from '$lib/utils/chartTooltip';
   import type { SeasonTrendEntry } from '$lib/types/server/stats';
 
   interface Props {
@@ -9,6 +11,10 @@
   }
 
   let { rows, showLegend = true }: Props = $props();
+
+  // Bound so `dismissTooltipOnScroll` can hide the tooltip when an iOS/Android scroll gesture
+  // cancels the pointer that opened it (otherwise the popover freezes on screen — see the action).
+  let chartContext = $state<ComponentProps<typeof LineChart>['context']>();
 
   const colors = [
     'var(--chart-1)',
@@ -64,8 +70,10 @@
   role="img"
   aria-label="Cumulative season points by week for each player"
   data-testid="season-trend-chart"
+  use:dismissTooltipOnScroll={() => chartContext}
 >
   <LineChart
+    bind:context={chartContext}
     x="week_number"
     y="cumulative_points"
     series={chartSeries}
