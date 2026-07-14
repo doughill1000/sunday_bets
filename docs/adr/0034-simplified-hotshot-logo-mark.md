@@ -1,6 +1,6 @@
 # ADR-0034: Simplified Hotshot logo mark (football + rising line)
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-13
 - Issue: #621
 - Supersedes: ADR-0027 (the locked-mark clause in Decision only; the product name
@@ -89,8 +89,9 @@ unchanged and out of scope here.
 
 ## Follow-up
 
-- Implementation of issue #621: canonical SVG sources, full raster regeneration, and
-  the vector-favicon wire-up.
+- Issue #621 implementation (canonical SVG sources, full raster regeneration via
+  `scripts/generate-brand-assets.mjs`, and the vector-favicon wire-up) ships in the
+  same PR as this ADR.
 - Sweep design docs/screenshots that show the old four-point-spark mark for staleness
   once the new assets ship (`docs/DESIGN.md`, `docs/agent-context/design-system.md` if
   either embeds the old mark).
