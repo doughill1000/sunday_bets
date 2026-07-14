@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import * as Sentry from '@sentry/sveltekit';
-import { gradeWeek } from '$lib/server/grading';
+import { gradeWeek, refreshReadModels } from '$lib/server/grading';
 import { sendResultsRecap, sendAIRecapPushes } from '$lib/server/notifications';
 import { sendAIRecaps } from '$lib/server/aiRecap';
 import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
@@ -14,9 +14,52 @@ export const POST: RequestHandler = async (event) => {
   if (guard) return guard;
   const jobResult = await withCronLog('grade', async () => {
     const weeks = await findRecentGradableWeeks();
+    // Grade each target week but SUPPRESS the whole-table stats/ratings refresh (#622): the two
+    // globals are hoisted into one refreshReadModels() call below, after every week (recent +
+    // reconcile) is settled. Doing it per-week fanned out into concurrent full ratings rebuilds
+    // that could transiently empty player_ratings and refreshed the 17 matviews twice per run.
     const results = await Promise.all(
-      weeks.map((w) => gradeWeek(w.id, { refreshScores: true, daysFrom: 3 }))
+      weeks.map((w) =>
+        gradeWeek(w.id, { refreshScores: true, daysFrom: 3, skipReadModelRefresh: true })
+      )
     );
+
+    // Reconcile sweep (#433) BEFORE the single read-model refresh, so its grades are covered by
+    // that one refresh too: self-heal any OTHER week that has final scores but was never settled —
+    // a week missed during the cron's normal processing window, which findRecentGradableWeeks
+    // (active + most-recently-concluded only) never revisits. These weeks are graded to SETTLE
+    // their picks but deliberately skip the recap/AI/push/Wrapped fan-out below, which must stay
+    // scoped to genuinely-recent weeks. find_unsettled_weeks() already excludes frozen seasons and
+    // any week whose finals are all settled, so it is a no-op once healed; we additionally drop the
+    // recent weeks just graded above (now settled) to avoid re-grading them here. A sweep failure
+    // must not fail the primary grade.
+    let reconcile: unknown;
+    try {
+      const recentIds = new Set(weeks.map((w) => w.id));
+      const unsettled = (await findUnsettledGradableWeeks()).filter((w) => !recentIds.has(w.id));
+      reconcile = await Promise.all(
+        unsettled.map(async (w) => {
+          try {
+            return { weekId: w.id, ...(await gradeWeek(w.id, { skipReadModelRefresh: true })) };
+          } catch (e) {
+            Sentry.captureException(e);
+            return {
+              weekId: w.id,
+              error: e instanceof Error ? e.message : 'reconcile grade failed'
+            };
+          }
+        })
+      );
+    } catch (e) {
+      Sentry.captureException(e);
+      reconcile = { error: e instanceof Error ? e.message : 'reconcile sweep failed' };
+    }
+
+    // Now that every week (recent + reconcile) is settled, rebuild the two whole-table read models
+    // exactly once (#622). refreshReadModels() is best-effort internally — each step swallows and
+    // logs its own error — so it never fails the grade. It runs BEFORE the recaps below because the
+    // AI recap reads the freshly-refreshed leaderboard/stats matviews (ADR-0008).
+    await refreshReadModels();
 
     // After grading, recap any week that is now fully settled. The completeness
     // gate + per-(user, week) dedup inside sendResultsRecap make this a no-op on
@@ -36,7 +79,7 @@ export const POST: RequestHandler = async (event) => {
     );
 
     // After push recaps, generate AI recaps for each enabled group (ADR-0008).
-    // Runs post-grade + post-refreshLeaderboardStats (which runs inside gradeWeek).
+    // Runs post-grade + post the single refreshReadModels() above (leaderboard/stats matviews).
     // Errors → Sentry only; never fail grading.
     const aiRecaps = await Promise.all(
       weeks.map(async (w) => {
@@ -103,37 +146,6 @@ export const POST: RequestHandler = async (event) => {
         }
       })
     );
-
-    // Reconcile sweep (#433): self-heal any OTHER week that has final scores but was
-    // never settled — a week missed during the cron's normal processing window, which
-    // findRecentGradableWeeks (active + most-recently-concluded only) never revisits.
-    // These weeks are graded to SETTLE their picks but deliberately skip the
-    // recap/AI/push/Wrapped fan-out above, which must stay scoped to genuinely-recent
-    // weeks. find_unsettled_weeks() already excludes frozen seasons and any week whose
-    // finals are all settled, so it is a no-op once healed; we additionally drop the
-    // recent weeks just graded above (now settled) to avoid re-grading them here.
-    // A sweep failure must not fail the primary grade.
-    let reconcile: unknown;
-    try {
-      const recentIds = new Set(weeks.map((w) => w.id));
-      const unsettled = (await findUnsettledGradableWeeks()).filter((w) => !recentIds.has(w.id));
-      reconcile = await Promise.all(
-        unsettled.map(async (w) => {
-          try {
-            return { weekId: w.id, ...(await gradeWeek(w.id)) };
-          } catch (e) {
-            Sentry.captureException(e);
-            return {
-              weekId: w.id,
-              error: e instanceof Error ? e.message : 'reconcile grade failed'
-            };
-          }
-        })
-      );
-    } catch (e) {
-      Sentry.captureException(e);
-      reconcile = { error: e instanceof Error ? e.message : 'reconcile sweep failed' };
-    }
 
     return {
       weekIds: weeks.map((w) => w.id),
