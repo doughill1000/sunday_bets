@@ -47,10 +47,10 @@ function trendRow(
 
 function award(over: Partial<BadgeAward> & { id: BadgeAward['id'] }): BadgeAward {
   return {
-    label: 'The Sharp',
-    emoji: '📈',
-    flavor: 'Sharp money. Best closing record in the room.',
-    description: 'Best win rate this season.',
+    label: 'The Grinder',
+    emoji: '🪨',
+    flavor: "Can't miss a game. Every slate, every week.",
+    description: 'Placed the most picks this season.',
     kind: 'title',
     holders: [{ user_id: 'u1', display_name: 'Marcus' }],
     ...over
@@ -59,23 +59,6 @@ function award(over: Partial<BadgeAward> & { id: BadgeAward['id'] }): BadgeAward
 
 // ── earningStatFor ──────────────────────────────────────────────────────────────────
 describe('earningStatFor', () => {
-  it('the-sharp → wins/losses and integer win_pct', () => {
-    const i = inputs({
-      seasonTotals: [
-        {
-          user_id: 'u1',
-          display_name: 'Marcus',
-          decisions: 15,
-          wins: 10,
-          losses: 5,
-          pushes: 0,
-          missed: 0
-        }
-      ]
-    });
-    expect(earningStatFor('the-sharp', 'u1', i)).toEqual({ wins: 10, losses: 5, win_pct: 67 });
-  });
-
   it('the-grinder → picks placed = decisions minus missed', () => {
     const i = inputs({
       seasonTotals: [
@@ -209,7 +192,7 @@ describe('earningStatFor', () => {
   });
 
   it('returns an empty stat when the holder has no matching row', () => {
-    expect(earningStatFor('the-sharp', 'ghost', inputs())).toEqual({});
+    expect(earningStatFor('the-grinder', 'ghost', inputs())).toEqual({});
     expect(earningStatFor('the-whale', 'ghost', inputs())).toEqual({});
   });
 });
@@ -231,22 +214,22 @@ describe('toBadgeFlavorSubject', () => {
   });
 
   it('names the holder and attaches its earning stat when not opted out', () => {
-    const subject = toBadgeFlavorSubject(award({ id: 'the-sharp' }), i, {
+    const subject = toBadgeFlavorSubject(award({ id: 'the-grinder' }), i, {
       optedOut: new Set(),
       groupName: 'The League',
       seasonYear: 2025,
       spice: 'medium'
     });
     expect(subject.holders).toEqual([
-      { display_name: 'Marcus', opted_out: false, stat: { wins: 10, losses: 5, win_pct: 67 } }
+      { display_name: 'Marcus', opted_out: false, stat: { picks_placed: 15 } }
     ]);
     expect(subject.any_opted_out).toBe(false);
-    expect(subject.static_flavor).toBe('Sharp money. Best closing record in the room.');
-    expect(subject.badge_id).toBe('the-sharp');
+    expect(subject.static_flavor).toBe("Can't miss a game. Every slate, every week.");
+    expect(subject.badge_id).toBe('the-grinder');
   });
 
   it('neutralizes an opted-out holder to "a player" and flags it', () => {
-    const subject = toBadgeFlavorSubject(award({ id: 'the-sharp' }), i, {
+    const subject = toBadgeFlavorSubject(award({ id: 'the-grinder' }), i, {
       optedOut: new Set(['u1']),
       groupName: 'The League',
       seasonYear: 2025,
@@ -260,7 +243,7 @@ describe('toBadgeFlavorSubject', () => {
 
 // ── fallback + persisted facts ──────────────────────────────────────────────────────
 describe('renderBadgeFallback / factsFromSubject', () => {
-  const subject = toBadgeFlavorSubject(award({ id: 'the-sharp' }), inputs(), {
+  const subject = toBadgeFlavorSubject(award({ id: 'the-grinder' }), inputs(), {
     optedOut: new Set(),
     groupName: 'The League',
     seasonYear: 2025,
@@ -268,14 +251,14 @@ describe('renderBadgeFallback / factsFromSubject', () => {
   });
 
   it('fallback is the exact static tagline', () => {
-    expect(renderBadgeFallback(subject)).toBe('Sharp money. Best closing record in the room.');
+    expect(renderBadgeFallback(subject)).toBe("Can't miss a game. Every slate, every week.");
   });
 
   it('persisted facts carry label/kind/description/holders only', () => {
     expect(factsFromSubject(subject)).toEqual({
-      label: 'The Sharp',
+      label: 'The Grinder',
       kind: 'title',
-      description: 'Best win rate this season.',
+      description: 'Placed the most picks this season.',
       holders: subject.holders
     });
   });
@@ -301,7 +284,7 @@ describe('sanitizeBadgeHolder', () => {
 describe('buildBadgeFlavorInputPacket', () => {
   it('packs display names + numeric stats only, never a user_id', () => {
     const subject = toBadgeFlavorSubject(
-      award({ id: 'the-sharp' }),
+      award({ id: 'the-grinder' }),
       inputs({
         seasonTotals: [
           {
@@ -321,10 +304,10 @@ describe('buildBadgeFlavorInputPacket', () => {
     expect(packet).toEqual({
       group: 'The League',
       season: 2025,
-      badge: 'The Sharp',
+      badge: 'The Grinder',
       kind: 'title',
-      criteria: 'Best win rate this season.',
-      holders: [{ name: 'Marcus', wins: 10, losses: 5, win_pct: 67 }]
+      criteria: 'Placed the most picks this season.',
+      holders: [{ name: 'Marcus', picks_placed: 15 }]
     });
     expect(JSON.stringify(packet)).not.toContain('u1');
   });

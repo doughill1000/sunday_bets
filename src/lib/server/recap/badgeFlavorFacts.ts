@@ -46,14 +46,6 @@ export function earningStatFor(
   switch (badgeId) {
     case 'the-grinder':
       return totals ? { picks_placed: totals.decisions - totals.missed } : {};
-    case 'the-sharp':
-      return totals
-        ? {
-            wins: totals.wins,
-            losses: totals.losses,
-            win_pct: pct(totals.wins, totals.wins + totals.losses)
-          }
-        : {};
     case 'the-choker':
       return allin
         ? {
@@ -108,7 +100,6 @@ export function earningStatFor(
     case 'sheep':
       return cons ? { avg_consensus_pct: Math.round(cons.mean_consensus_pct) } : {};
     case 'oracle':
-    case 'the-fool':
       return cons
         ? {
             contrarian_wins: cons.contrarian_wins,
