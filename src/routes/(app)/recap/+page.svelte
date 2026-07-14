@@ -15,7 +15,8 @@
   // `createQuery` keyed by `(groupId, season)`: a revisit renders the last value instantly
   // and revalidates in the background (ADR-0033, issue #602). `pageData.initialRecap` is
   // the server-prefetched value (present on the initial/SSR request) used as `initialData`,
-  // so first paint has no flash.
+  // so first paint has no flash. The League Week tab reads this SAME cache entry for its
+  // per-week hardware (#631), so the two surfaces cannot disagree about a week's awards.
   const recapQuery = createQuery(() => ({
     queryKey: queryKeys.recap(pageData.groupId, pageData.seasonYear),
     queryFn: () => fetchRecap(fetch, pageData.groupId, pageData.seasonYear),
@@ -43,10 +44,31 @@
   );
 </script>
 
+<svelte:head>
+  <title>Season recaps | Hotshot</title>
+</svelte:head>
+
+<!-- The Season recaps archive (#631). Built long before it had a door: the authed nav linked here
+     nowhere, so it was reachable only via the RecapFlash toast. It is now the destination of the
+     League honors CTA and of every Week tab's hardware recap link, which deep-link to the
+     `#week-N` anchors below. It stays a CTA-reached archive rather than a third League tab —
+     the same treatment Wrapped gets. The trophy shelf leads: it is the season-long index of who
+     won what, and it deliberately lives here rather than beside the honors card's curated
+     Awards, where 30-odd weekly gongs would drown them out. -->
 <div class="mx-auto max-w-2xl space-y-4 px-4 py-6">
-  <div class="flex items-center gap-2">
-    <Sparkles class="h-5 w-5 text-primary-ink" />
-    <h1 class="text-xl font-semibold">League Recaps</h1>
+  <div>
+    <a
+      href="/league"
+      class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+      data-testid="recaps-back">← League</a
+    >
+    <div class="mt-1 flex items-center gap-2">
+      <Sparkles class="h-5 w-5 text-primary-ink" />
+      <h1 class="text-xl font-semibold">Season recaps</h1>
+    </div>
+    <p class="text-sm text-muted-foreground">
+      Every graded week's hardware and the Commissioner's take, newest first.
+    </p>
   </div>
 
   {#if weeks.length === 0 && data.recaps.length === 0}
@@ -60,7 +82,9 @@
 
     <div class="space-y-4">
       {#each weeks as hardware (hardware.week_number)}
-        <div class="space-y-3">
+        <!-- `scroll-mt-20` keeps the anchored week clear of the sticky app header when a Week
+             tab recap link deep-links straight to it. -->
+        <div class="scroll-mt-20 space-y-3" id="week-{hardware.week_number}">
           <WeeklyHardware {hardware} currentUserId={pageData.currentUserId} />
           {#if recapByWeek.has(hardware.week_number)}
             <RecapCard recap={recapByWeek.get(hardware.week_number)!} />

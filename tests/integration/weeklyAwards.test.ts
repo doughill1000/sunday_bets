@@ -223,7 +223,7 @@ describe('weekly hardware read model (#387)', () => {
     const holderById = Object.fromEntries(week1!.awards.map((a) => [a.id, a.holder.user_id]));
     // Alice: 2 wins (top points); Bob: 2 losses (bottom); Bob's BUF loss (-3.5) is the closest
     // cover; Alice's PHI win was the lone minority pick that hit.
-    expect(holderById['sharp-of-week']).toBe(ALICE);
+    expect(holderById['game-ball']).toBe(ALICE);
     expect(holderById['donkey-of-week']).toBe(BOB);
     expect(holderById['bad-beat']).toBe(BOB);
     expect(holderById['contrarian-win']).toBe(ALICE);
@@ -247,7 +247,7 @@ describe('weekly hardware read model (#387)', () => {
     expect(alice?.total).toBe(2);
     expect(bob?.total).toBe(2);
     expect(new Set(alice?.awards.map((a) => a.id))).toEqual(
-      new Set(['sharp-of-week', 'contrarian-win'])
+      new Set(['game-ball', 'contrarian-win'])
     );
     expect(new Set(bob?.awards.map((a) => a.id))).toEqual(new Set(['donkey-of-week', 'bad-beat']));
     // Carol won nothing this week → absent from the shelf.

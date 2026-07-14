@@ -18,8 +18,8 @@ type PickOutcome = 'win' | 'loss' | 'push' | 'missed';
 
 /**
  * The scoring weeks of this season that have fully graded — every game has a final. A
- * partially-graded week is excluded so mid-week grade runs never crown a premature Sharp
- * of the Week. Mirrors `isWeekFullyGraded` (notifications.ts) at the season grain.
+ * partially-graded week is excluded so mid-week grade runs never crown a premature Game
+ * Ball of the Week. Mirrors `isWeekFullyGraded` (notifications.ts) at the season grain.
  */
 async function fullyGradedScoringWeeks(seasonYear: number): Promise<Set<number>> {
   const { data: weeks, error: weeksErr } = await supabaseService

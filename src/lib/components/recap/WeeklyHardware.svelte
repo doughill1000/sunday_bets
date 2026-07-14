@@ -1,12 +1,24 @@
 <script lang="ts">
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import Trophy from '@lucide/svelte/icons/trophy';
+  import Sparkles from '@lucide/svelte/icons/sparkles';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import type { WeeklyAward, WeeklyHardware } from '$lib/domain/weeklyAwards';
 
   let {
     hardware,
-    currentUserId = null
-  }: { hardware: WeeklyHardware; currentUserId?: string | null } = $props();
+    currentUserId = null,
+    recapHref = null,
+    recapLabel = null
+  }: {
+    hardware: WeeklyHardware;
+    currentUserId?: string | null;
+    /** When set, a link out to the week's story renders under the tiles (#631). The League
+     *  Week tab passes it so the recap is one tap away without inlining a RecapCard; the
+     *  Season recaps archive leaves it null because the card already sits right below. */
+    recapHref?: string | null;
+    recapLabel?: string | null;
+  } = $props();
 
   const fmt = (n: number) => String(Number(n));
 
@@ -17,7 +29,7 @@
   /** Award-specific one-line stat under the holder. */
   function detailText(a: WeeklyAward): string {
     switch (a.id) {
-      case 'sharp-of-week':
+      case 'game-ball':
       case 'donkey-of-week':
         return `${a.points > 0 ? '+' : ''}${a.points} pts`;
       case 'bad-beat':
@@ -35,7 +47,7 @@
       Week {hardware.week_number} hardware
     </CardTitle>
   </CardHeader>
-  <CardContent>
+  <CardContent class="space-y-3">
     <ul class="grid grid-cols-2 gap-2" data-testid="weekly-hardware">
       {#each hardware.awards as award (award.id)}
         <li
@@ -54,5 +66,17 @@
         </li>
       {/each}
     </ul>
+
+    {#if recapHref}
+      <a
+        href={recapHref}
+        data-testid="weekly-hardware-recap-link"
+        class="flex items-center gap-2 rounded-lg border border-primary-ink/30 bg-primary/5 px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10"
+      >
+        <Sparkles class="size-4 shrink-0 text-primary-ink" aria-hidden="true" />
+        <span class="flex-1">{recapLabel ?? 'Season recaps'}</span>
+        <ArrowRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </a>
+    {/if}
   </CardContent>
 </Card>
