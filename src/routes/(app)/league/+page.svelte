@@ -2,11 +2,17 @@
   import { goto } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
-  import { fetchLeaderboard, fetchAllTimeLeaderboard, fetchGroup } from '$lib/query/fetchers';
+  import {
+    fetchLeaderboard,
+    fetchAllTimeLeaderboard,
+    fetchGroup,
+    fetchRecap
+  } from '$lib/query/fetchers';
   import type {
     LeaderboardCachePayload,
     AllTimeLeaderboardPayload,
-    GroupCachePayload
+    GroupCachePayload,
+    RecapCachePayload
   } from '$lib/query/types';
   import type { PageData } from './$types';
   import {
@@ -28,24 +34,34 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
+  import WeekNavigator from '$lib/components/leaderboard/WeekNavigator.svelte';
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
+  import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import { seasonScopeOptions } from '$lib/utils/stats';
+  import { weekLabel } from '$lib/utils/weekLabel';
   import { hasGradedWeek, rankMovements } from '$lib/utils/leaderboardTrend';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
-  import ArrowRight from '@lucide/svelte/icons/arrow-right';
   import Users from '@lucide/svelte/icons/users';
 
   let { data: pageData }: { data: PageData } = $props();
+
+  // Two page-level views (principle 2): Standings and Week are Tabs, and each tab owns exactly
+  // one context control rendered inside its own panel (#631) — Standings the season/All-time
+  // window, Week the week picker. The time window folds a pinned "All-time" option into the
+  // season dropdown (#518/#529) rather than being a third tab. `scope` is a pure client flip;
+  // changing the *season* navigates so the season-scoped query re-keys (ADR-0017).
+  let activeTab = $state<'standings' | 'weekly'>(pageData.view);
+  let scope = $state<'season' | 'alltime'>('season');
 
   // Shareable season standings come from a cached `createQuery` keyed by `(groupId, season)`:
   // a revisit renders the last value instantly and revalidates in the background (ADR-0017).
   // `pageData.initialLeaderboard` is the server-prefetched value (present on the initial/SSR
   // request) used as `initialData` so first paint has no flash; on a client-side cache miss
-  // the query loads and the skeleton below shows. The Weekly view's user-specific breakdown
+  // the query loads and the skeleton below shows. The Week view's user-specific breakdown
   // stays on `pageData` (server load). They merge below, `pageData` last.
   const leaderboardQuery = createQuery(() => ({
     queryKey: queryKeys.leaderboard(pageData.groupId, pageData.seasonYear, 'standings', null, null),
@@ -74,6 +90,19 @@
     initialData: pageData.initialGroup
   }));
 
+  // The Week tab leads with the selected week's hardware (#631). Rather than adding a payload to
+  // the server load, it reuses the SAME cached recap query `/recap` already owns — one
+  // `['recap', groupId, season]` entry serves both surfaces (ADR-0033, #602), so the Week tab and
+  // the Season recaps archive can never disagree about a week's awards. Gated on the Week tab so
+  // a Standings visitor never pays for it; `+page.ts` prefetches it only on a `?view=weekly`
+  // request, which is the only way Week is ever server-rendered.
+  const recapQuery = createQuery(() => ({
+    queryKey: queryKeys.recap(pageData.groupId, pageData.seasonYear),
+    queryFn: () => fetchRecap(fetch, pageData.groupId, pageData.seasonYear),
+    initialData: pageData.initialRecap,
+    enabled: activeTab === 'weekly'
+  }));
+
   // Empty shapes so the render stays valid while a query loads on a cache miss (the pending
   // branches gate real render; honors self-hides on the empty shape).
   const EMPTY_LEADERBOARD: LeaderboardCachePayload = {
@@ -97,9 +126,15 @@
     badges: []
   };
 
+  const EMPTY_RECAP: RecapCachePayload = {
+    recaps: [],
+    weeklyAwards: { season_year: 0, weeks: [], shelf: [] }
+  };
+
   const data = $derived({ ...(leaderboardQuery.data ?? EMPTY_LEADERBOARD), ...pageData });
   const allTime = $derived(allTimeQuery.data ?? EMPTY_ALLTIME);
   const group = $derived(groupQuery.data ?? EMPTY_GROUP);
+  const recap = $derived(recapQuery.data ?? EMPTY_RECAP);
 
   // `data.championUserId` would resolve to the layout's streamed champion Promise (added in
   // #339); the reigning champion for the standings crown comes from the cached standings
@@ -110,12 +145,21 @@
   // the server load. Positive = climbed. Season-scoped only; the All-time table passes `null`.
   const movements = $derived(rankMovements(pageData.trend ?? []));
 
-  // Two page-level views (principle 2): Standings and Weekly are Tabs. The time window —
-  // a season or All-time — is one control, folded into the season dropdown as a pinned
-  // option (#518/#529), not a third tab. `scope` is a pure client flip; changing the
-  // *season* navigates so the season-scoped query re-keys (ADR-0017).
-  let activeTab = $state<'standings' | 'weekly'>(pageData.view);
-  let scope = $state<'season' | 'alltime'>('season');
+  // The selected week's hardware, plus the prose recap for that same week if one was generated.
+  // Hardware only exists for FULLY-graded scoring weeks, so both are null on an in-progress week
+  // and on every preseason round (ADR-0016 non-scoring rounds never mint awards).
+  const selectedHardware = $derived(
+    pageData.selectedWeek != null
+      ? (recap.weeklyAwards.weeks.find(
+          (w) => w.week_number === pageData.selectedWeek?.weekNumber
+        ) ?? null)
+      : null
+  );
+  const selectedWeekRecap = $derived(
+    pageData.selectedWeek != null
+      ? (recap.recaps.find((r) => r.week_number === pageData.selectedWeek?.weekNumber) ?? null)
+      : null
+  );
 
   // Fold the currently-displayed season into the option set so the dropdown can always
   // represent `scopeValue`. `resolveSeasonYear` can land on a season that has no standings
@@ -127,16 +171,30 @@
   const scopeOptions = $derived(seasonScopeOptions([...data.availableSeasons, data.seasonYear]));
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.seasonYear));
 
+  // The subtitle names whatever the ACTIVE tab's own control is set to, so the two tabs never
+  // both claim the header line.
+  const subtitle = $derived.by(() => {
+    if (activeTab === 'weekly') {
+      return `${data.seasonYear} season · ${weekLabel(data.selectedWeek)}.`;
+    }
+    return scope === 'alltime' ? 'All-time · every season combined.' : `${data.seasonYear} season.`;
+  });
+
   const SELECT_CLASS =
     'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+  // Full-bleed sticky context bar, shared by both tabs so one-control-per-tab reads as one
+  // pattern. Sticks under the app header (h-14) as the panel below it gets long.
+  const SCOPE_BAR_CLASS =
+    'sticky top-14 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75';
 
   function onScopeChange(e: Event) {
     const value = (e.target as HTMLSelectElement).value;
     if (value === 'alltime') {
-      // All-time is a standings window — it has no Weekly view, so selecting it lands on
-      // Standings.
+      // All-time is a standings window, and this control now lives inside the Standings panel —
+      // so it can only ever be reached from Standings. There is no cross-tab bounce left to
+      // undo: the old global bar offered All-time above Week too and silently yanked you here.
       scope = 'alltime';
-      activeTab = 'standings';
       return;
     }
     scope = 'season';
@@ -147,14 +205,11 @@
     }
   }
 
-  // When the user clicks the Weekly tab and we haven't loaded weekly data yet, trigger a navigation.
+  // When the user clicks the Week tab and we haven't loaded weekly data yet, trigger a navigation.
   let weeklyNavigated = $state(pageData.view === 'weekly');
 
   $effect(() => {
     if (activeTab === 'weekly') {
-      // Weekly is inherently season-scoped (there is no weekly All-time view), so leaving the
-      // All-time window reverts to the season one when Weekly activates.
-      if (scope !== 'season') scope = 'season';
       if (!weeklyNavigated) {
         weeklyNavigated = true;
         const url = new URL(window.location.href);
@@ -320,55 +375,42 @@
   </Card>
 {/snippet}
 
-<!-- The League home (#561): the merged Leaderboard + Group tab. The standings testids keep their
-     `leaderboard-` prefix as stable e2e anchors — the content is still the leaderboard, now the
-     spine of one "who's winning our league" scroll (race → standings → honors → manage). -->
+<!-- The League home (#561, re-contained by #631): two self-contained tabs where the tab you're on
+     fully governs what's on screen. Only the heading, the Manage action, and the seasonal Wrapped
+     promo render outside the tab group — honors and the manage card used to sit after `</Tabs>`
+     and so appeared identically under both tabs. The standings testids keep their `leaderboard-`
+     prefix as stable e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the content is still
+     the leaderboard, and those anchors stay put across renames. -->
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
-  <div>
-    <h1
-      id="leaderboard-heading"
-      data-testid="leaderboard-heading"
-      class="text-3xl font-bold tracking-tight"
-    >
-      League
-    </h1>
-    <p class="mt-1 text-muted-foreground" data-testid="leaderboard-subtitle">
-      {scope === 'alltime' ? 'All-time · every season combined.' : `${data.seasonYear} season.`}
-    </p>
-  </div>
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h1
+        id="leaderboard-heading"
+        data-testid="leaderboard-heading"
+        class="text-3xl font-bold tracking-tight"
+      >
+        League
+      </h1>
+      <p class="mt-1 text-muted-foreground" data-testid="leaderboard-subtitle">
+        {subtitle}
+      </p>
+    </div>
 
-  <!-- One time-window control: seasons + a pinned "All-time" option (#518/#529), replacing the
-       old split of a season dropdown plus a separate All-time tab. Sticky under the app header
-       (matching the /stats and /market scope lines) so the season picker never scrolls away as
-       the race, standings, and honors below get long; full-bleed with a blurred bottom border so
-       it reads as an extension of the header. -->
-  <div
-    data-testid="leaderboard-scope-bar"
-    class="sticky top-14 z-30 -mx-4 flex flex-wrap items-center justify-between gap-3 border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75"
-  >
-    <span
-      id="leaderboard-scope-label"
-      class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+    <!-- Members & manage (#631): a heading action rather than the full-width card that used to
+         render after `</Tabs>` under every tab. It stays on the page rather than in the global
+         AppHeader — that header is shared by /picks, /stats and /market and has no room left at
+         390px, while the roster is a League-only destination. The v3.3 commissioner set builds
+         on /league/manage. -->
+    <Button
+      href="/league/manage"
+      data-testid="manage-entry"
+      variant="outline"
+      size="sm"
+      class="shrink-0"
     >
-    <select
-      class={SELECT_CLASS}
-      value={scopeValue}
-      onchange={onScopeChange}
-      aria-labelledby="leaderboard-scope-label"
-      data-testid="leaderboard-scope"
-    >
-      {#if scopeOptions.latest !== null}
-        <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
-      {/if}
-      <option value="alltime">All-time</option>
-      {#if scopeOptions.pastSeasons.length > 0}
-        <optgroup label="Past seasons">
-          {#each scopeOptions.pastSeasons as year (year)}
-            <option value={String(year)}>{year}</option>
-          {/each}
-        </optgroup>
-      {/if}
-    </select>
+      <Users class="size-4" aria-hidden="true" />
+      Manage
+    </Button>
   </div>
 
   {#if data.latestWrappedSeason != null}
@@ -382,127 +424,175 @@
         data-testid="leaderboard-tab-standings"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
       >
+      <!-- Labelled "Week" (#631) — it shows one selected week, not a trend. The testid and the
+           `?view=weekly` param keep their old spelling on purpose: the testid is a stable e2e
+           anchor, and the param is a shareable-URL contract. -->
       <TabsTrigger
         value="weekly"
         data-testid="leaderboard-tab-weekly"
-        class={ACTIVE_TAB_TRIGGER_CLASS}>Weekly</TabsTrigger
+        class={ACTIVE_TAB_TRIGGER_CLASS}>Week</TabsTrigger
       >
     </TabsList>
 
     <TabsContent value="standings" data-testid="standings-panel">
-      {#if scope === 'alltime'}
-        {#if allTimeQuery.isPending}
-          {@render standingsLoading()}
-        {:else if allTimeQuery.isError && !allTimeQuery.data}
-          {@render standingsError(() => allTimeQuery.refetch())}
-        {:else if allTime.totals.length === 0}
-          <Card class="border-dashed" data-testid="alltime-empty">
-            <CardHeader>
-              <CardTitle>No all-time standings yet</CardTitle>
-              <CardDescription>
-                All-time totals will appear once a season has been graded.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        {:else}
-          {@render standingsTableCard(
-            allTime.totals,
-            'All-time standings',
-            allTime.dropActive,
-            "Total drops each player's lowest week per season. W-L-P count every week.",
-            'alltime-table',
-            null,
-            null
-          )}
-        {/if}
-      {:else if leaderboardQuery.isPending}
-        {@render standingsLoading()}
-      {:else if leaderboardQuery.isError && !leaderboardQuery.data}
-        {@render standingsError(() => leaderboardQuery.refetch())}
-      {:else if data.totals.length === 0}
-        <Card class="border-dashed" data-testid="standings-empty">
-          <CardHeader>
-            <CardTitle>No standings yet</CardTitle>
-            <CardDescription>
-              Season standings will appear after the first games are graded.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      {:else}
-        <div class="space-y-6">
-          <!-- Standings lead the view: the ranked table answers "where do I stand" first, then
-               "The race" tells the story below it. The table is always present; the race renders
-               only once a week is graded (season scope only — the trend is season-scoped), so a
-               pre-grading season shows the table alone. -->
-          {@render standingsTableCard(
-            data.totals,
-            `${data.seasonYear} standings`,
-            data.dropActive,
-            "Total drops each player's lowest week. W-L-P count every week.",
-            'standings-table',
-            championUserId,
-            movements
-          )}
-          {#if hasGradedWeek(pageData.trend ?? [])}
-            <Card data-testid="season-race">
+      <!-- Standings' one control: seasons plus a pinned "All-time" option (#518/#529). Now inside
+           the panel, so All-time is only offered by the tab that actually has an All-time view. -->
+      <div data-testid="leaderboard-scope-bar" class={SCOPE_BAR_CLASS}>
+        <span
+          id="leaderboard-scope-label"
+          class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+        >
+        <select
+          class={SELECT_CLASS}
+          value={scopeValue}
+          onchange={onScopeChange}
+          aria-labelledby="leaderboard-scope-label"
+          data-testid="leaderboard-scope"
+        >
+          {#if scopeOptions.latest !== null}
+            <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+          {/if}
+          <option value="alltime">All-time</option>
+          {#if scopeOptions.pastSeasons.length > 0}
+            <optgroup label="Past seasons">
+              {#each scopeOptions.pastSeasons as year (year)}
+                <option value={String(year)}>{year}</option>
+              {/each}
+            </optgroup>
+          {/if}
+        </select>
+      </div>
+
+      <div class="mt-4">
+        {#if scope === 'alltime'}
+          {#if allTimeQuery.isPending}
+            {@render standingsLoading()}
+          {:else if allTimeQuery.isError && !allTimeQuery.data}
+            {@render standingsError(() => allTimeQuery.refetch())}
+          {:else if allTime.totals.length === 0}
+            <Card class="border-dashed" data-testid="alltime-empty">
               <CardHeader>
-                <CardTitle>The race</CardTitle>
+                <CardTitle>No all-time standings yet</CardTitle>
                 <CardDescription>
-                  Cumulative points by week — tap a name to trace their run.
+                  All-time totals will appear once a season has been graded.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <SeasonRaceChart rows={pageData.trend ?? []} currentUserId={data.currentUserId} />
-              </CardContent>
             </Card>
+          {:else}
+            {@render standingsTableCard(
+              allTime.totals,
+              'All-time standings',
+              allTime.dropActive,
+              "Total drops each player's lowest week per season. W-L-P count every week.",
+              'alltime-table',
+              null,
+              null
+            )}
           {/if}
-        </div>
-      {/if}
+        {:else}
+          <!-- The season window. Honors and the race are both season-scoped, so they render here
+               and not under All-time: an "Awards · 2025 · Crowned" block beside a career table
+               would be exactly the two-things-disagreeing-about-the-season problem #631 set out
+               to fix. Honors sits outside the standings branch chain so a league with a champion
+               but a pre-grading current season still shows its trophy case. -->
+          <div class="space-y-6">
+            {#if leaderboardQuery.isPending}
+              {@render standingsLoading()}
+            {:else if leaderboardQuery.isError && !leaderboardQuery.data}
+              {@render standingsError(() => leaderboardQuery.refetch())}
+            {:else if data.totals.length === 0}
+              <Card class="border-dashed" data-testid="standings-empty">
+                <CardHeader>
+                  <CardTitle>No standings yet</CardTitle>
+                  <CardDescription>
+                    Season standings will appear after the first games are graded.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            {:else}
+              <!-- Standings lead the view: the ranked table answers "where do I stand" first, then
+                   "The race" tells the story below it. The table is always present; the race renders
+                   only once a week is graded (the trend is season-scoped), so a pre-grading season
+                   shows the table alone. -->
+              {@render standingsTableCard(
+                data.totals,
+                `${data.seasonYear} standings`,
+                data.dropActive,
+                "Total drops each player's lowest week. W-L-P count every week.",
+                'standings-table',
+                championUserId,
+                movements
+              )}
+              {#if hasGradedWeek(pageData.trend ?? [])}
+                <Card data-testid="season-race">
+                  <CardHeader>
+                    <CardTitle>The race</CardTitle>
+                    <CardDescription>
+                      Cumulative points by week — tap a name to trace their run.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SeasonRaceChart
+                      rows={pageData.trend ?? []}
+                      currentUserId={data.currentUserId}
+                    />
+                  </CardContent>
+                </Card>
+              {/if}
+            {/if}
+
+            <!-- Honors (#561): champion, trophy case, wooden spoon, and awards — the league's
+                 emotional payoff, sitting with the standings it belongs to. Keyed on the page's
+                 resolved season (shared cache with /league/manage), and following the scope
+                 selector above rather than carrying a second picker of its own (#631). -->
+            <LeagueHonors
+              honors={group.honors}
+              badges={group.badges}
+              members={group.members}
+              currentUserId={data.currentUserId}
+              selectedSeason={data.seasonYear}
+            />
+          </div>
+        {/if}
+      </div>
     </TabsContent>
 
     <TabsContent value="weekly" data-testid="weekly-panel">
       {#if data.view === 'weekly' && data.weeks != null && data.breakdown != null}
-        <WeeklyPicksBreakdown
-          weeks={data.weeks}
-          selectedWeek={data.selectedWeek}
-          breakdown={data.breakdown}
-        />
+        <!-- Week's one control, sitting above everything it drives. -->
+        <div data-testid="week-scope-bar" class={SCOPE_BAR_CLASS}>
+          <span
+            id="week-scope-label"
+            class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Week</span
+          >
+          <WeekNavigator weeks={data.weeks} selectedWeek={data.selectedWeek} />
+        </div>
+
+        <div class="mt-4 space-y-4">
+          <!-- The week leads with its hardware (#631), then the pick breakdown. The AI recap is a
+               link into the Season recaps archive rather than an inline RecapCard, so the tab stays
+               tight and the archive remains the one place the prose lives. Hardware exists only for
+               fully-graded scoring weeks, so an in-progress week shows the breakdown alone. -->
+          {#if selectedHardware}
+            <WeeklyHardware
+              hardware={selectedHardware}
+              currentUserId={data.currentUserId}
+              recapHref="/recap#week-{selectedHardware.week_number}"
+              recapLabel={selectedWeekRecap
+                ? `Read the ${weekLabel(data.selectedWeek)} recap`
+                : 'Season recaps'}
+            />
+          {/if}
+
+          <WeeklyPicksBreakdown
+            weeks={data.weeks}
+            selectedWeek={data.selectedWeek}
+            breakdown={data.breakdown}
+          />
+        </div>
       {:else}
         <p class="text-sm text-muted-foreground">Loading…</p>
       {/if}
     </TabsContent>
   </Tabs>
-
-  <!-- Honors (#561): champion, trophy case, wooden spoon, and awards — moved here from the old
-       Group tab so the league's emotional payoff sits with its standings. Self-hides until the
-       league has a champion, awarded badges, or more than one season, so a fresh league shows
-       nothing. Keyed on the page's resolved season (shared cache with /league/manage). -->
-  <LeagueHonors
-    honors={group.honors}
-    badges={group.badges}
-    members={group.members}
-    currentUserId={data.currentUserId}
-    seasons={data.availableSeasons}
-    selectedSeason={data.seasonYear}
-  />
-
-  <!-- Members & manage entry (#561): the durable door to the roster, invites, roast-me, leave, and
-       the commissioner controls — now a subpage rather than a sibling tab. The v3.3 commissioner
-       set builds on /league/manage. -->
-  <a
-    href="/league/manage"
-    data-testid="manage-entry"
-    class="flex items-center gap-3 rounded-xl border bg-card p-4 text-card-foreground transition-colors hover:bg-accent"
-  >
-    <span
-      class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink"
-    >
-      <Users class="size-5" aria-hidden="true" />
-    </span>
-    <div class="min-w-0 flex-1">
-      <p class="font-semibold">Members &amp; manage</p>
-      <p class="text-sm text-muted-foreground">Roster, invites, roast-me, and league rules</p>
-    </div>
-    <ArrowRight class="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
-  </a>
 </section>

@@ -155,9 +155,9 @@ describe('demo surfaces render against the fixture', () => {
         badges: snapshot.honors.badges,
         members: snapshot.honors.members,
         currentUserId: snapshot.persona.userId,
-        seasons: [snapshot.meta.completedSeasonYear],
         selectedSeason: snapshot.meta.completedSeasonYear,
-        wrappedHref: '/demo/wrapped'
+        wrappedHref: '/demo/wrapped',
+        recapsHref: null
       }
     });
     expect(getByTestId('league-honors')).toBeInTheDocument();

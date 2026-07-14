@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  sharpOfWeek,
+  gameBallOfWeek,
   donkeyOfWeek,
   badBeatOfWeek,
   contrarianWinOfWeek,
@@ -45,13 +45,13 @@ function cons(overrides: Partial<WeeklyConsensusEntry> = {}): WeeklyConsensusEnt
   };
 }
 
-describe('sharpOfWeek', () => {
+describe('gameBallOfWeek', () => {
   it('returns null on an empty week', () => {
-    expect(sharpOfWeek([])).toBeNull();
+    expect(gameBallOfWeek([])).toBeNull();
   });
 
   it('picks the highest week_points', () => {
-    const r = sharpOfWeek([
+    const r = gameBallOfWeek([
       pts({ user_id: 'a', display_name: 'Al', week_points: 3 }),
       pts({ user_id: 'b', display_name: 'Bo', week_points: 9 }),
       pts({ user_id: 'c', display_name: 'Cy', week_points: 7 })
@@ -60,7 +60,7 @@ describe('sharpOfWeek', () => {
   });
 
   it('crowns even a single (negative) player', () => {
-    const r = sharpOfWeek([pts({ week_points: -4 })]);
+    const r = gameBallOfWeek([pts({ week_points: -4 })]);
     expect(r?.points).toBe(-4);
   });
 
@@ -68,11 +68,11 @@ describe('sharpOfWeek', () => {
     const a = pts({ user_id: 'z', display_name: 'Zoe', week_points: 8 });
     const b = pts({ user_id: 'a', display_name: 'Ada', week_points: 8 });
     const c = pts({ user_id: 'm', display_name: 'Moe', week_points: 8 });
-    expect(sharpOfWeek([a, b, c])?.holder.display_name).toBe(
-      sharpOfWeek([c, b, a])?.holder.display_name
+    expect(gameBallOfWeek([a, b, c])?.holder.display_name).toBe(
+      gameBallOfWeek([c, b, a])?.holder.display_name
     );
     // "Ada" < "Moe" < "Zoe" by locale compare.
-    expect(sharpOfWeek([a, b, c])?.holder.user_id).toBe('a');
+    expect(gameBallOfWeek([a, b, c])?.holder.user_id).toBe('a');
   });
 });
 
@@ -87,16 +87,16 @@ describe('donkeyOfWeek', () => {
     ).toBeNull();
   });
 
-  it('picks the fewest points and is distinct from the sharp', () => {
+  it('picks the fewest points and is distinct from the game ball', () => {
     const week = [
       pts({ user_id: 'a', display_name: 'Al', week_points: 10 }),
       pts({ user_id: 'b', display_name: 'Bo', week_points: -3 }),
       pts({ user_id: 'c', display_name: 'Cy', week_points: 2 })
     ];
     const donkey = donkeyOfWeek(week);
-    const sharp = sharpOfWeek(week);
+    const gameBall = gameBallOfWeek(week);
     expect(donkey).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, points: -3 });
-    expect(donkey?.holder.user_id).not.toBe(sharp?.holder.user_id);
+    expect(donkey?.holder.user_id).not.toBe(gameBall?.holder.user_id);
   });
 
   it('breaks a bottom tie by identity', () => {
@@ -210,15 +210,15 @@ describe('computeWeeklyHardware', () => {
   it('orders each week’s awards by WEEKLY_AWARD_ORDER', () => {
     const week1 = computeWeeklyHardware(inputs).find((w) => w.week_number === 1)!;
     expect(week1.awards.map((a) => a.id)).toEqual([
-      'sharp-of-week',
+      'game-ball',
       'donkey-of-week',
       'bad-beat',
       'contrarian-win'
     ]);
-    // Week 1: Al top (sharp), Bo bottom (donkey), Bo bad beat, Al contrarian.
+    // Week 1: Al top (game ball), Bo bottom (donkey), Bo bad beat, Al contrarian.
     const byId = Object.fromEntries(week1.awards.map((a) => [a.id, a.holder.user_id]));
     expect(byId).toEqual({
-      'sharp-of-week': 'a',
+      'game-ball': 'a',
       'donkey-of-week': 'b',
       'bad-beat': 'b',
       'contrarian-win': 'a'
@@ -242,7 +242,7 @@ describe('computeSeasonShelf', () => {
   it('tallies each award per player and lists them most-decorated first', () => {
     const inputs: WeeklyAwardInputs = {
       points: [
-        // Al sharp in weeks 1,2,3; Bo donkey each week.
+        // Al game ball in weeks 1,2,3; Bo donkey each week.
         pts({ user_id: 'a', display_name: 'Al', week_number: 1, week_points: 9 }),
         pts({ user_id: 'b', display_name: 'Bo', week_number: 1, week_points: 1 }),
         pts({ user_id: 'a', display_name: 'Al', week_number: 2, week_points: 9 }),
@@ -260,7 +260,7 @@ describe('computeSeasonShelf', () => {
 
     const al = shelf.find((e) => e.user_id === 'a')!;
     expect(al.total).toBe(3);
-    expect(al.awards).toEqual([{ id: 'sharp-of-week', short: 'Sharp', emoji: '🎯', count: 3 }]);
+    expect(al.awards).toEqual([{ id: 'game-ball', short: 'Game Ball', emoji: '🏈', count: 3 }]);
 
     const bo = shelf.find((e) => e.user_id === 'b')!;
     expect(bo.awards).toEqual([{ id: 'donkey-of-week', short: 'Donkey', emoji: '🫏', count: 3 }]);
@@ -273,12 +273,8 @@ describe('computeSeasonShelf', () => {
       consensus: [cons({ user_id: 'a', display_name: 'Al', week_number: 1, consensus_pct: 30 })]
     };
     const shelf = computeSeasonShelf(computeWeeklyHardware(inputs));
-    // Single player: sharp (only one, no donkey), bad beat, contrarian win — donkey absent.
-    expect(shelf[0].awards.map((a) => a.id)).toEqual([
-      'sharp-of-week',
-      'bad-beat',
-      'contrarian-win'
-    ]);
+    // Single player: game ball (only one, no donkey), bad beat, contrarian win — donkey absent.
+    expect(shelf[0].awards.map((a) => a.id)).toEqual(['game-ball', 'bad-beat', 'contrarian-win']);
     expect(shelf[0].total).toBe(3);
   });
 
@@ -290,7 +286,7 @@ describe('computeSeasonShelf', () => {
 describe('flavor metadata', () => {
   it('has a flavor entry for every award id, in canonical order', () => {
     expect(WEEKLY_AWARD_ORDER).toEqual([
-      'sharp-of-week',
+      'game-ball',
       'donkey-of-week',
       'bad-beat',
       'contrarian-win'

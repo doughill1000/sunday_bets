@@ -1,16 +1,23 @@
 // Weekly "hardware" (issue #387): four deterministic, cosmetic awards minted for every
 // fully-graded scoring week, plus a per-season shelf that tallies how many of each a
-// player has won ("3× Sharp"). Pure and deterministic in the same spirit as the
+// player has won ("3× Game Ball"). Pure and deterministic in the same spirit as the
 // season-badge engine (`src/lib/domain/badges.ts`): the selectors take pre-fetched
 // matview rows and return award holders with stable tie-breaks and no side effects.
 //
 // The four awards and their sources:
-//   Sharp of the Week      — most points that week          (stats_season_trend.week_points)
+//   Game Ball of the Week  — most points that week          (stats_season_trend.week_points)
 //   Donkey of the Week     — fewest points that week        (stats_season_trend.week_points)
 //   Bad Beat of the Week   — the loss that came closest to   (group_pick_cover.cover_margin)
 //                            covering (greatest, i.e. least-negative, losing cover margin)
 //   Contrarian Win of Week — won the loneliest pick          (group_pick_consensus)
 //                            (minority winner with the lowest consensus_pct)
+//
+// The week's points leader was "Sharp of the Week" through #631. "Sharp" already names two
+// unrelated things — the season badge `the-sharp` (best season win rate) and the /stats
+// credibility tier (ADR-0032) — so a shelf chip reading "3× Sharp" beside a "The Sharp"
+// badge claimed a kinship that does not exist. Renamed to the football tradition, which
+// says "best performer this week" without borrowing a word the app spends elsewhere. The
+// award ids are derived on read (never persisted), so the rename needed no data migration.
 //
 // Non-scoring rounds (ADR-0016) never reach here: every source matview filters
 // `w.is_scoring`, so those weeks contribute no rows and are absent from the week set.
@@ -19,11 +26,11 @@
 // this domain module free of the generated DB types (matches badges.ts).
 type PickOutcome = 'win' | 'loss' | 'push' | 'missed';
 
-export type WeeklyAwardId = 'sharp-of-week' | 'donkey-of-week' | 'bad-beat' | 'contrarian-win';
+export type WeeklyAwardId = 'game-ball' | 'donkey-of-week' | 'bad-beat' | 'contrarian-win';
 
 /** Canonical ordering used everywhere awards are listed (weekly tiles + season shelf). */
 export const WEEKLY_AWARD_ORDER: WeeklyAwardId[] = [
-  'sharp-of-week',
+  'game-ball',
   'donkey-of-week',
   'bad-beat',
   'contrarian-win'
@@ -75,7 +82,7 @@ export type WeeklyAwardHolder = { user_id: string; display_name: string };
 type WeeklyAwardBase = {
   id: WeeklyAwardId;
   label: string;
-  /** Short name for the season shelf ("3× Sharp"). */
+  /** Short name for the season shelf ("3× Game Ball"). */
   short: string;
   emoji: string;
   description: string;
@@ -84,10 +91,10 @@ type WeeklyAwardBase = {
 
 /**
  * One minted weekly award. The detail field is award-specific (discriminated by `id`):
- * points for Sharp/Donkey, cover_margin for Bad Beat, consensus_pct for Contrarian Win.
+ * points for Game Ball/Donkey, cover_margin for Bad Beat, consensus_pct for Contrarian Win.
  */
 export type WeeklyAward =
-  | (WeeklyAwardBase & { id: 'sharp-of-week'; points: number })
+  | (WeeklyAwardBase & { id: 'game-ball'; points: number })
   | (WeeklyAwardBase & { id: 'donkey-of-week'; points: number })
   | (WeeklyAwardBase & { id: 'bad-beat'; cover_margin: number })
   | (WeeklyAwardBase & { id: 'contrarian-win'; consensus_pct: number });
@@ -120,10 +127,10 @@ export const WEEKLY_AWARD_FLAVORS: Record<
   WeeklyAwardId,
   { label: string; short: string; emoji: string; description: string }
 > = {
-  'sharp-of-week': {
-    label: 'Sharp of the Week',
-    short: 'Sharp',
-    emoji: '🎯',
+  'game-ball': {
+    label: 'Game Ball of the Week',
+    short: 'Game Ball',
+    emoji: '🏈',
     description: 'Scored the most points this week.'
   },
   'donkey-of-week': {
@@ -181,8 +188,8 @@ function holderOf(e: { user_id: string; display_name: string }): WeeklyAwardHold
 
 // --- Selectors (one holder or null, deterministic) ---
 
-/** Sharp of the Week: most points. Tie → identity. Null only on an empty week. */
-export function sharpOfWeek(
+/** Game Ball of the Week: most points. Tie → identity. Null only on an empty week. */
+export function gameBallOfWeek(
   points: WeeklyPointsEntry[]
 ): { holder: WeeklyAwardHolder; points: number } | null {
   if (points.length === 0) return null;
@@ -192,7 +199,7 @@ export function sharpOfWeek(
 
 /**
  * Donkey of the Week: fewest points. Requires 2+ players AND a real spread — if everyone
- * scored the same there is no distinct donkey (and it could never differ from the sharp),
+ * scored the same there is no distinct donkey (and it could never differ from the game ball),
  * so we award nobody. Tie at the bottom → identity.
  */
 export function donkeyOfWeek(
@@ -265,9 +272,9 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
 
     const awards: WeeklyAward[] = [];
 
-    const sharp = sharpOfWeek(points);
-    if (sharp)
-      awards.push({ ...flavorFor('sharp-of-week'), holder: sharp.holder, points: sharp.points });
+    const gameBall = gameBallOfWeek(points);
+    if (gameBall)
+      awards.push({ ...flavorFor('game-ball'), holder: gameBall.holder, points: gameBall.points });
 
     const donkey = donkeyOfWeek(points);
     if (donkey)

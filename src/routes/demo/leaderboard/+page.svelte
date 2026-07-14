@@ -98,13 +98,16 @@
     </TabsContent>
   </Tabs>
 
+  <!-- `recapsHref={null}`: the demo's own nav already features Recap as a tab, so honors doesn't
+       need to double the door the way the authed app does (#631). The demo snapshot also carries
+       no weekly hardware, so there is no trophy shelf here for the CTA to promise. -->
   <LeagueHonors
     honors={data.honors.honors}
     badges={data.honors.badges}
     members={data.honors.members}
     currentUserId={data.persona.userId}
-    seasons={[data.completedSeasonYear]}
     selectedSeason={data.completedSeasonYear}
     wrappedHref="/demo/wrapped"
+    recapsHref={null}
   />
 </section>

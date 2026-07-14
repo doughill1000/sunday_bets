@@ -9,6 +9,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * content is still the leaderboard, so the anchors stay put across the rename. Tab labels and
  * table headers are UI copy, so the spec keys off testids instead of role/text — a heading or
  * column-label change should not require touching the spec.
+ *
+ * By that same rule the second tab keeps its `leaderboard-tab-weekly` anchor and `weeklyTab()`
+ * accessor even though #631 relabelled it "Week" — the anchor outlives the copy. What #631 did
+ * change is structural, and that IS asserted: each tab owns exactly one context control rendered
+ * inside its own panel (Standings the season/All-time select, Week the week navigator), and no
+ * panel content renders outside the tab group.
  */
 
 export function leaderboardPage(page: Page) {
@@ -42,8 +48,22 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('leaderboard-tab-standings');
     },
 
+    /** The second tab — labelled "Week" since #631; the anchor keeps its older spelling. */
     weeklyTab(): Locator {
       return page.getByTestId('leaderboard-tab-weekly');
+    },
+
+    /** The League honors case. Renders only inside the Standings panel (#631), and only once
+     *  the league has a champion or awarded badges — so it is absent from the e2e fixture,
+     *  whose single seeded game never grades. */
+    honors(): Locator {
+      return page.getByTestId('league-honors');
+    },
+
+    /** The "Manage" heading action — the door to /league/manage since #631 lifted it out of
+     *  the full-width card that used to render under both tabs. */
+    manageEntry(): Locator {
+      return page.getByTestId('manage-entry');
     },
 
     /** The subtitle line under the heading — swaps between "<year> season." and the
@@ -121,6 +141,11 @@ export function leaderboardPage(page: Page) {
     },
 
     // --- week navigator ------------------------------------------------------
+
+    /** The Week tab's one context control, lifted above the week's hardware in #631. */
+    weekNavigator(): Locator {
+      return page.getByTestId('week-navigator');
+    },
 
     /** The "Jump to week" dropdown trigger button. */
     weekDropdownTrigger(): Locator {
