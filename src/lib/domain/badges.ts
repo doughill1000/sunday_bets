@@ -289,23 +289,6 @@ function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
   );
 }
 
-function theSharp(totals: BadgeSeasonTotalsEntry[], guard: number): BadgeHolder | null {
-  const eligible = totals.filter((t) => t.decisions >= guard && t.wins + t.losses > 0);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      const currAcc = curr.wins / (curr.wins + curr.losses);
-      const bestAcc = best.wins / (best.wins + best.losses);
-      if (currAcc > bestAcc) return curr;
-      if (currAcc === bestAcc) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
-}
-
 function theChoker(weights: BadgeWeightEntry[]): BadgeHolder | null {
   const allins = weights.filter((w) => w.weight === 'A' && w.wins + w.losses > 0);
   if (allins.length === 0) return null;
@@ -498,32 +481,8 @@ function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHol
 }
 
 /**
- * The Fool: worst contrarian-pick win rate above the oracle guard.
- * Verdict badge — mirror of oracle() with reduce flipped to find the minimum.
- * Does not award when no player reaches the oracle guard on contrarian picks.
- */
-function theFool(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
-  const eligible = consensus.filter(
-    (c) => c.contrarian_picks >= oracleGuard && c.contrarian_picks > 0
-  );
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((worst, curr) => {
-      const currRate = curr.contrarian_wins / curr.contrarian_picks;
-      const worstRate = worst.contrarian_wins / worst.contrarian_picks;
-      if (currRate < worstRate) return curr;
-      if (currRate === worstRate) {
-        if (curr.contrarian_picks > worst.contrarian_picks) return curr;
-        if (curr.contrarian_picks === worst.contrarian_picks) return alphaFirst(curr, worst);
-      }
-      return worst;
-    })
-  );
-}
-
-/**
  * The Lemming: worst majority-pick win rate above a season-scaled minimum sample.
- * Verdict badge — flock-side mirror of theFool(); uses majority_picks / majority_wins.
+ * Verdict badge — flock-side mirror of oracle(); uses majority_picks / majority_wins.
  * Does not award when no player reaches the guard on majority picks.
  */
 function theLemming(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
@@ -668,7 +627,8 @@ function weeklyTopScorer(rows: BadgeTrendEntry[]): BadgeTrendEntry | null {
 /**
  * Week Winner: led weekly scoring (highest week_points, alphaFirst tie-break per week)
  * in more weeks than anyone else. Always eligible to award — not season-end gated,
- * since it's a running tally, not a final-standing judgment.
+ * since it's a running tally, not a final-standing judgment. Requires sole possession
+ * of the top tally: a tie at the top awards nobody (matching theCardiac/donkeyOfWeek).
  */
 function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {
   const weeks = [...new Set(trend.map((r) => r.week_number))];
@@ -683,13 +643,10 @@ function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {
   }
   const candidates = [...tally.values()];
   if (candidates.length === 0) return null;
-  return holder(
-    candidates.reduce((best, curr) => {
-      if (curr.weeksLed > best.weeksLed) return curr;
-      if (curr.weeksLed === best.weeksLed) return alphaFirst(curr, best);
-      return best;
-    })
-  );
+  const maxWeeksLed = Math.max(...candidates.map((c) => c.weeksLed));
+  const leaders = candidates.filter((c) => c.weeksLed === maxWeeksLed);
+  if (leaders.length !== 1) return null;
+  return holder(leaders[0]);
 }
 
 /**
@@ -770,12 +727,6 @@ const FLAVORS: Record<
     flavor: "Can't miss a game. Every slate, every week.",
     description: 'Placed the most picks this season.'
   },
-  'the-sharp': {
-    label: 'The Sharp',
-    emoji: '📈',
-    flavor: 'Sharp money. Best closing record in the room.',
-    description: 'Best win rate this season (minimum number of picks required).'
-  },
   'the-choker': {
     label: 'The Choker',
     emoji: '😬',
@@ -838,13 +789,6 @@ const FLAVORS: Record<
     flavor: 'Bucks the crowd and wins. Madness or genius?',
     description:
       'Best win rate on picks made against the majority this season (minimum picks required).'
-  },
-  'the-fool': {
-    label: 'The Fool',
-    emoji: '🤡',
-    flavor: 'Bucked the crowd. The crowd was right.',
-    description:
-      'Worst win rate on picks made against the majority this season (minimum picks required).'
   },
   'the-lemming': {
     label: 'The Lemming',
@@ -911,7 +855,6 @@ const FLAVORS: Record<
  */
 const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'the-grinder', kind: 'title' },
-  { id: 'the-sharp', kind: 'title' },
   { id: 'the-choker', kind: 'title' },
   { id: 'the-whale', kind: 'title' },
   { id: 'the-ghost', kind: 'title' },
@@ -920,7 +863,6 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'lone-wolf', kind: 'title' },
   { id: 'sheep', kind: 'title' },
   { id: 'oracle', kind: 'title' },
-  { id: 'the-fool', kind: 'title' },
   { id: 'the-lemming', kind: 'title' },
   { id: 'chalk-eater', kind: 'title' },
   { id: 'dog-lover', kind: 'title' },
@@ -973,9 +915,6 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
   const degen = theGrinder(seasonTotals);
   if (degen) badges.push(award('the-grinder', 'title', [degen]));
 
-  const calc = theSharp(seasonTotals, guard);
-  if (calc) badges.push(award('the-sharp', 'title', [calc]));
-
   const choker = theChoker(weightAccuracy);
   if (choker) badges.push(award('the-choker', 'title', [choker]));
 
@@ -1010,9 +949,6 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
 
     const oracleHolder = oracle(consensus, oracleGuard);
     if (oracleHolder) badges.push(award('oracle', 'title', [oracleHolder]));
-
-    const foolHolder = theFool(consensus, oracleGuard);
-    if (foolHolder) badges.push(award('the-fool', 'title', [foolHolder]));
 
     const lemmingHolder = theLemming(consensus, oracleGuard);
     if (lemmingHolder) badges.push(award('the-lemming', 'title', [lemmingHolder]));

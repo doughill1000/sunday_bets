@@ -179,10 +179,10 @@ describe('diffBadges', () => {
   });
 
   it('handles multiple badges changing in the same week', () => {
-    const prior = { 'the-choker': ['u1'], 'the-sharp': ['u3'] };
+    const prior = { 'the-choker': ['u1'], 'the-whale': ['u3'] };
     const current = [
       makeAward('the-choker', 'The Choker', ['u2']), // changed
-      makeAward('the-sharp', 'The Sharp', ['u3']) // unchanged
+      makeAward('the-whale', 'The Whale', ['u3']) // unchanged
     ];
     const changes = diffBadges(current, prior);
     expect(changes).toHaveLength(1);
