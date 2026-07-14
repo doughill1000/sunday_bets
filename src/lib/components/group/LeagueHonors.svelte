@@ -8,7 +8,7 @@
   } from '$lib/components/ui/card';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import AwardsGuide from '$lib/components/AwardsGuide.svelte';
-  import { BADGE_AXES, AXIS_BADGE_IDS } from '$lib/domain/badges';
+  import { BADGE_AXES, AXIS_BADGE_IDS, BADGE_GLOSSARY } from '$lib/domain/badges';
   import type { BadgeAward, LeagueHonors } from '$lib/types/honors';
   import Trophy from '@lucide/svelte/icons/trophy';
   import Gift from '@lucide/svelte/icons/gift';
@@ -54,12 +54,22 @@
     selectedSeason != null && honors.trophyCase.some((c) => c.season_year === selectedSeason)
   );
 
+  // Render only awards the legend can explain. A badge with no glossary entry is one the
+  // engine can no longer award — today that's the dark crowd-lean pair (#635), which can
+  // still reach this component from a frozen fixture such as the demo snapshot, generated
+  // before the axis landed. A chip the legend can't explain is exactly the unearnable
+  // jewellery this card exists to stop showing, so drop it rather than display an award
+  // nobody could win. Regenerating the snapshot makes this a no-op, and is the real fix —
+  // this guard just means a stale fixture degrades quietly instead of lying.
+  const explainable = new Set(BADGE_GLOSSARY.map((g) => g.id));
+  const shown = $derived(badges.filter((b) => explainable.has(b.id)));
+
   // Pivot awards axis-major (#635), inverting the player-major pivot #631 landed. The
   // award is now the row and the avatar sits inside it, because an axis is a claim about
   // a measure ("who's out on the ends of line lean") that a per-player list can't make —
   // it scattered the two faces of one pair across two rows and never showed that an end
   // went unclaimed. Consequence, by design: a player holding two badges appears twice.
-  const byId = $derived(new Map(badges.map((b) => [b.id, b])));
+  const byId = $derived(new Map(shown.map((b) => [b.id, b])));
 
   // One group per axis, carrying only the ends someone actually earned. An axis nobody
   // earned yields no group at all and renders nothing — absence costs zero lines.
@@ -81,9 +91,9 @@
   // Everything that isn't on an axis still needs a home: the plain titles and the
   // milestones, each keeping the member-first shape they read best in.
   const looseTitles = $derived(
-    badges.filter((b) => b.kind === 'title' && !AXIS_BADGE_IDS.has(b.id))
+    shown.filter((b) => b.kind === 'title' && !AXIS_BADGE_IDS.has(b.id))
   );
-  const milestones = $derived(badges.filter((b) => b.kind === 'milestone'));
+  const milestones = $derived(shown.filter((b) => b.kind === 'milestone'));
 
   // userId → avatarKey lookup for award holders (holders carry no avatar of their own).
   const avatarByUser = $derived<Record<string, string | null>>(
@@ -129,7 +139,7 @@
 <!-- Render once there's a champion or awarded badges. A multi-season league is no longer a
      reason on its own: that only ever justified showing the awards SeasonPicker, which #631
      deleted (honors now follows the season its host tab already selected). -->
-{#if reigning || badges.length > 0}
+{#if reigning || shown.length > 0}
   <Card data-testid="league-honors">
     <CardHeader>
       <CardTitle>League honors</CardTitle>
@@ -208,7 +218,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <p class="text-xs font-semibold uppercase tracking-wide text-primary-ink">Awards</p>
             <!-- Provisional/crowned lifecycle indicator (#296). -->
-            {#if badges.length > 0}
+            {#if shown.length > 0}
               {#if isSeasonComplete}
                 <span
                   class="rounded-full border border-primary-ink/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-ink"
@@ -229,7 +239,7 @@
           <AwardsGuide />
         </div>
 
-        {#if badges.length > 0}
+        {#if shown.length > 0}
           <div class="space-y-4">
             {#each axisGroups as group (group.measure)}
               <div class="space-y-2" data-testid="axis-group-{group.measure.replace(/\s+/g, '-')}">
