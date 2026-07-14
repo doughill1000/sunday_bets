@@ -2,7 +2,6 @@
   import type { PageData } from './$types';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import WrappedStory from '$lib/components/wrapped/WrappedStory.svelte';
-  import WrappedFlash from '$lib/components/wrapped/WrappedFlash.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
@@ -16,8 +15,6 @@
 <svelte:head>
   <title>Season Wrapped | Hotshot</title>
 </svelte:head>
-
-<WrappedFlash row={data.player ?? data.league} />
 
 <section class="mx-auto w-full max-w-screen-xl space-y-8" aria-labelledby="wrapped-heading">
   <div class="flex flex-wrap items-end justify-between gap-4">

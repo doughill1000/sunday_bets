@@ -28,7 +28,7 @@ export function leaderboardPage(page: Page) {
       // Dismiss the AI recap flash modal if it auto-opened (localStorage is empty
       // in a fresh e2e context, so the "seen" guard doesn't fire). The modal is a
       // full-screen overlay that blocks all tab interactions until dismissed.
-      const dismiss = page.getByTestId('recap-dismiss');
+      const dismiss = page.getByTestId('recap-flash').getByRole('button', { name: 'Close' });
       await dismiss
         .waitFor({ state: 'visible', timeout: 3000 })
         .then(() => dismiss.click())

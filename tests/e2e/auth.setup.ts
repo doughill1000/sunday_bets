@@ -35,7 +35,7 @@ setup('authenticate', async ({ page }) => {
   // through, so the "seen" guard doesn't fire). Saving the state below captures the
   // localStorage "seen" key, so all subsequent specs reusing this storageState won't
   // see the modal at all.
-  const recapDismiss = page.getByTestId('recap-dismiss');
+  const recapDismiss = page.getByTestId('recap-flash').getByRole('button', { name: 'Close' });
   await recapDismiss
     .waitFor({ state: 'visible', timeout: 3000 })
     .then(() => recapDismiss.click())
