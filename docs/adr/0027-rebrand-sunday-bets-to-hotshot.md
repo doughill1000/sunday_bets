@@ -4,6 +4,11 @@
 - Date: 2026-07-08
 - Issue: #231
 - Supersedes: None
+- Note: the locked-mark clause in Decision (the four-point-spark-and-ember
+  construction) is superseded by [ADR-0034](0034-simplified-hotshot-logo-mark.md),
+  which replaces it with a simplified football-plus-rising-line mark. The product
+  name, domain-only "Calls" rule, and charcoal/brass-gold/cream palette below are
+  unchanged.
 
 ## Context
 
