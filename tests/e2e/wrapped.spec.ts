@@ -8,30 +8,24 @@ test('wrapped page renders a story or empty state', { tag: '@smoke' }, async ({ 
   const wp = wrappedPage(page);
   await wp.goto();
 
-  // Dismiss the flash if it auto-opened (localStorage is empty in a fresh e2e context,
-  // so the "seen" guard doesn't fire). The modal is a full-screen overlay that would
-  // otherwise obscure the page content.
-  await wp.dismissFlashIfOpen();
-
   // Either a Wrapped story renders (season data exists) or the empty state renders
-  // (season not yet generated). One of them must always be visible.
+  // (season not yet generated). One of them must always be visible. The once-per-season
+  // flash never appears on /wrapped itself (#548) — the page already shows the same
+  // content, so layering the flash on top would double-render the screen the user is
+  // already on.
   await expect(wp.storyOrEmpty()).toBeVisible();
 });
 
 test('wrapped flash modal is dismissable', async ({ page }) => {
   const wp = wrappedPage(page);
+
+  // The flash is mounted app-wide (like the recap flash), not on /wrapped itself
+  // (#548) — visit another authed page first, where it would actually appear if unseen.
+  await page.goto('/league');
+  await wp.dismissFlashIfOpen();
+  await expect(wp.flash()).not.toBeVisible();
+
+  // /wrapped itself still renders normally afterward.
   await wp.goto();
-
-  // If the flash opened, dismiss it and confirm it disappears.
-  const flashVisible = await wp
-    .flash()
-    .isVisible()
-    .catch(() => false);
-  if (flashVisible) {
-    await wp.dismissButton().click();
-    await expect(wp.flash()).not.toBeVisible();
-  }
-
-  // After dismissal (or if the flash never appeared), the page content is accessible.
   await expect(wp.storyOrEmpty()).toBeVisible();
 });

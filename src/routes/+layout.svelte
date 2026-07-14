@@ -7,6 +7,7 @@
   import WelcomeGuide from '$lib/components/howto/WelcomeGuide.svelte';
   import EngagementBanner from '$lib/components/pwa/EngagementBanner.svelte';
   import RecapFlash from '$lib/components/recap/RecapFlash.svelte';
+  import WrappedFlash from '$lib/components/wrapped/WrappedFlash.svelte';
   import FeedbackWidget from '$lib/components/feedback/FeedbackWidget.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
   import { onMount } from 'svelte';
@@ -64,6 +65,11 @@
   // CTAs via /demo/+layout.svelte), so the authenticated app shell — header + bottom tab bar,
   // both linking to gated pages — is suppressed here, the same way the auth screens are.
   const isDemoRoute = $derived(page.url.pathname.startsWith('/demo'));
+
+  // WrappedFlash is suppressed on /wrapped itself: that page already renders the same
+  // WrappedStory content directly, so showing the flash on top of it would double-render
+  // the screen the user is already on (audit S8, issue #548).
+  const isWrappedRoute = $derived(page.url.pathname.startsWith('/wrapped'));
 
   let isChampion = $state(false);
   $effect(() => {
@@ -208,6 +214,13 @@
             <RecapFlash {recap} alreadySeen={seen} />
           {/await}
         {/await}
+        {#if !isWrappedRoute}
+          {#await data.latestWrapped then wrapped}
+            {#await data.wrappedSeen then seen}
+              <WrappedFlash row={wrapped} alreadySeen={seen} />
+            {/await}
+          {/await}
+        {/if}
       {/if}
     {/if}
 

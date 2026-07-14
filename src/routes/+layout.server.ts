@@ -2,6 +2,9 @@ import type { LayoutServerLoad } from './$types';
 import { getLatestRecap } from '$lib/server/db/queries/recaps';
 import { hasSeenRecap } from '$lib/server/db/queries/recapSeen';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
+import { getWrappedSeasons, getSeasonWrapped } from '$lib/server/db/queries/seasonWrapped';
+import { hasSeenWrapped } from '$lib/server/db/queries/wrappedSeen';
+import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
 
 export const load: LayoutServerLoad = async ({ locals, cookies }) => {
   // The hook (injectSession) already validated the JWT via safeGetSession and set
@@ -41,6 +44,32 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
           .catch(() => null)
       : Promise.resolve(null);
 
+  // The most-recent season with a generated Wrapped, whichever row the /wrapped page
+  // itself would default to (the viewer's own player row, falling back to the league
+  // row). Streamed for WrappedFlash.svelte (#548), mirroring the latestRecap shape
+  // above. Always a Promise so the template can unconditionally {#await} it.
+  const latestWrapped: Promise<SeasonWrappedRow | null> =
+    user && locals.groupId
+      ? getWrappedSeasons(locals.groupId)
+          .then((seasons) => {
+            const seasonYear = seasons[0];
+            if (seasonYear == null) return null;
+            return getSeasonWrapped(locals.groupId!, seasonYear, user.id).then(
+              ({ league, player }) => player ?? league
+            );
+          })
+          .catch(() => null)
+      : Promise.resolve(null);
+
+  // Cross-device seen-marker for the Wrapped flash (#548, mirrors recap_seen/#302) —
+  // chained off latestWrapped so it needs no second groupId/seasonYear lookup. Keyed
+  // by season only (not scope), since it tracks whichever row the flash actually showed.
+  const wrappedSeen: Promise<boolean> = user
+    ? latestWrapped
+        .then((row) => (row ? hasSeenWrapped(user.id, row.group_id, row.season_year) : true))
+        .catch(() => true)
+    : Promise.resolve(true);
+
   return {
     session,
     user,
@@ -51,6 +80,8 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
     cookies: cookies.getAll(),
     latestRecap,
     recapSeen,
-    championUserId
+    championUserId,
+    latestWrapped,
+    wrappedSeen
   };
 };

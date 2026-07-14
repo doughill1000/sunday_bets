@@ -599,9 +599,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/group_grants.sql": {
-    "hash": "0087f26109cf11f07e978d43093b585eeaeffc0f28dfa0312ca05f53b9ce2c49",
-    "migration": "20260706234842_add_ai_badge_flavors.sql",
-    "migrationHash": "2bc3d09e139097357a1638e314c7d65737f6edcb91eb8a2bf25cfb2435acc22c"
+    "hash": "ba7c44427c983ea51735e5fdd67d7f778f0fe843ce02368fef3818a0bf687246",
+    "migration": "20260714183210_wrapped_seen.sql",
+    "migrationHash": "bb69bf57061c64f03142607e636d1696c5b179d6b4603764a2111cea9db10064"
   },
   "grants/picks_fanout_grants.sql": {
     "hash": "def61327db9284563b9334f36bb237027b2b9ec5299975eae818a4015821a0df",
@@ -909,5 +909,15 @@
     "hash": "6faa4619c465f78722d71a2973ad989453763b92118aad632491da3c0f4c44ad",
     "migration": "20260713173834_player_ratings_credibility.sql",
     "migrationHash": "922a422fc63b532b791995b8161f361d74ea47d1b8b5c477c17ba08bbd25f73e"
+  },
+  "schemas/0233_wrapped_seen.sql": {
+    "hash": "c1dd19f9f02bb9764e914e42288c8c90e1c160d83970f7cb59c5c393ea1cce4a",
+    "migration": "20260714183210_wrapped_seen.sql",
+    "migrationHash": "bb69bf57061c64f03142607e636d1696c5b179d6b4603764a2111cea9db10064"
+  },
+  "policies/52_policies_wrapped_seen.sql": {
+    "hash": "e7bc511014d861ff2520e7767162609b57846006d4dbbf31a3c16d3d8195a83d",
+    "migration": "20260714183210_wrapped_seen.sql",
+    "migrationHash": "bb69bf57061c64f03142607e636d1696c5b179d6b4603764a2111cea9db10064"
   }
 }

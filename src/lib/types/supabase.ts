@@ -1408,6 +1408,42 @@ export type Database = {
           }
         ];
       };
+      wrapped_seen: {
+        Row: {
+          group_id: string;
+          season_year: number;
+          seen_at: string;
+          user_id: string;
+        };
+        Insert: {
+          group_id: string;
+          season_year: number;
+          seen_at?: string;
+          user_id: string;
+        };
+        Update: {
+          group_id?: string;
+          season_year?: number;
+          seen_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'wrapped_seen_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'wrapped_seen_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: {
       current_season_year: {

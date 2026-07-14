@@ -37,7 +37,7 @@ setup('authenticate multigroup user', async ({ page }) => {
 
   // Dismiss the AI recap flash modal if it opens (same storageState isolation as
   // auth.setup.ts — capture the "seen" key so group-switcher specs don't see it).
-  const recapDismiss = page.getByTestId('recap-dismiss');
+  const recapDismiss = page.getByTestId('recap-flash').getByRole('button', { name: 'Close' });
   await recapDismiss
     .waitFor({ state: 'visible', timeout: 3000 })
     .then(() => recapDismiss.click())

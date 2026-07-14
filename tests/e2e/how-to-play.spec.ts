@@ -167,7 +167,7 @@ test('account menu "How to Play" link navigates to /how-to-play', async ({ page 
   // Dismiss the AI recap flash modal if it appeared (fresh context has no
   // localStorage "seen" key; guide is suppressed via guide_seen_at so the recap
   // would otherwise be the sole overlay blocking the account menu click).
-  const recapDismiss = page.getByTestId('recap-dismiss');
+  const recapDismiss = page.getByTestId('recap-flash').getByRole('button', { name: 'Close' });
   await recapDismiss
     .waitFor({ state: 'visible', timeout: 3000 })
     .then(() => recapDismiss.click())

@@ -19,7 +19,7 @@ const RENDER_TIMEOUT = 30_000;
 /** The recap flash is a full-screen overlay that auto-opens in a fresh context (empty
  *  localStorage) and blocks clicks; dismiss it if present. */
 async function dismissRecap(page: Page) {
-  const dismiss = page.getByTestId('recap-dismiss');
+  const dismiss = page.getByTestId('recap-flash').getByRole('button', { name: 'Close' });
   await dismiss
     .waitFor({ state: 'visible', timeout: 3000 })
     .then(() => dismiss.click())

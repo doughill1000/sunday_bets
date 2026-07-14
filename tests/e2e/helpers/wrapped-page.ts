@@ -46,9 +46,9 @@ export function wrappedPage(page: Page) {
       return page.getByTestId('wrapped-flash');
     },
 
-    /** The dismiss button inside the flash modal. */
+    /** The dismiss (Close) button inside the flash modal — the vendored Dialog/Sheet close. */
     dismissButton(): Locator {
-      return page.getByTestId('wrapped-dismiss');
+      return api.flash().getByRole('button', { name: 'Close' });
     },
 
     /** Dismiss the flash modal if it is open. Silently skips if not visible. */
