@@ -149,6 +149,19 @@ export function seasonScopeOptions(
  */
 export const TENDENCY_MIN_SAMPLE = 5;
 
+/**
+ * How far the two sides of a tendency measure must sit apart before it counts as a lean
+ * rather than noise (0.1 = 10 percentage points). Inside this band the measure is
+ * `'balanced'` and the surface withholds, rather than narrating an 8-point gap as a
+ * personality.
+ *
+ * Exported because the line-lean badge axis (`$lib/domain/badges`, #635) awards off this
+ * same bar. Both surfaces read the same column, so a second hardcoded `0.1` would let
+ * them disagree about the same player — which is exactly the bug #635 fixed. Keep it
+ * single-sourced.
+ */
+export const TENDENCY_LEAN_THRESHOLD = 0.1;
+
 /** Favorite-vs-underdog lean for the line-side tendency tile. */
 export type LineSideTendency = {
   decisions: number;
@@ -170,7 +183,7 @@ export function lineSideTendency(
   const favoritePct = entry.chalk_picks / entry.decisions;
   const underdogPct = entry.dog_picks / entry.decisions;
   const lean =
-    Math.abs(favoritePct - underdogPct) < 0.1
+    Math.abs(favoritePct - underdogPct) < TENDENCY_LEAN_THRESHOLD
       ? 'balanced'
       : favoritePct > underdogPct
         ? 'favorites'

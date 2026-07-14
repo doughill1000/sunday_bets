@@ -8,6 +8,7 @@
   } from '$lib/components/ui/card';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import AwardsGuide from '$lib/components/AwardsGuide.svelte';
+  import { BADGE_AXES, AXIS_BADGE_IDS, BADGE_GLOSSARY } from '$lib/domain/badges';
   import type { BadgeAward, LeagueHonors } from '$lib/types/honors';
   import Trophy from '@lucide/svelte/icons/trophy';
   import Gift from '@lucide/svelte/icons/gift';
@@ -53,29 +54,46 @@
     selectedSeason != null && honors.trophyCase.some((c) => c.season_year === selectedSeason)
   );
 
-  // Pivot awards to a member-first view: one row per holder, their awards collected.
-  // Sorted by most-decorated first, then alphabetically for a stable order.
-  type AwardHolder = { user_id: string; display_name: string; awards: BadgeAward[] };
-  const awardHolders = $derived.by<AwardHolder[]>(() => {
-    const byUser: Record<string, AwardHolder> = {};
-    for (const badge of badges) {
-      for (const h of badge.holders) {
-        const entry = byUser[h.user_id];
-        if (entry) {
-          entry.awards.push(badge);
-        } else {
-          byUser[h.user_id] = {
-            user_id: h.user_id,
-            display_name: h.display_name,
-            awards: [badge]
-          };
-        }
-      }
-    }
-    return Object.values(byUser).sort(
-      (a, b) => b.awards.length - a.awards.length || a.display_name.localeCompare(b.display_name)
-    );
-  });
+  // Render only awards the legend can explain. A badge with no glossary entry is one the
+  // engine can no longer award — today that's the dark crowd-lean pair (#635), which can
+  // still reach this component from a frozen fixture such as the demo snapshot, generated
+  // before the axis landed. A chip the legend can't explain is exactly the unearnable
+  // jewellery this card exists to stop showing, so drop it rather than display an award
+  // nobody could win. Regenerating the snapshot makes this a no-op, and is the real fix —
+  // this guard just means a stale fixture degrades quietly instead of lying.
+  const explainable = new Set(BADGE_GLOSSARY.map((g) => g.id));
+  const shown = $derived(badges.filter((b) => explainable.has(b.id)));
+
+  // Pivot awards axis-major (#635), inverting the player-major pivot #631 landed. The
+  // award is now the row and the avatar sits inside it, because an axis is a claim about
+  // a measure ("who's out on the ends of line lean") that a per-player list can't make —
+  // it scattered the two faces of one pair across two rows and never showed that an end
+  // went unclaimed. Consequence, by design: a player holding two badges appears twice.
+  const byId = $derived(new Map(shown.map((b) => [b.id, b])));
+
+  // One group per axis, carrying only the ends someone actually earned. An axis nobody
+  // earned yields no group at all and renders nothing — absence costs zero lines.
+  type AxisGroup = { measure: string; awards: BadgeAward[]; unclaimed: string | null };
+  const axisGroups = $derived.by<AxisGroup[]>(() =>
+    BADGE_AXES.map((axis) => {
+      const earned = axis.ends.map((e) => byId.get(e.id)).filter((b) => b !== undefined);
+      // With one end earned, name the empty one — "Chalk end unclaimed" is the honest
+      // headline the old card couldn't say. With both or neither, there's nothing to note.
+      const missing = earned.length === 1 ? axis.ends.find((e) => !byId.has(e.id)) : undefined;
+      return {
+        measure: axis.measure,
+        awards: earned,
+        unclaimed: missing ? `${missing.name} end unclaimed` : null
+      };
+    }).filter((g) => g.awards.length > 0)
+  );
+
+  // Everything that isn't on an axis still needs a home: the plain titles and the
+  // milestones, each keeping the member-first shape they read best in.
+  const looseTitles = $derived(
+    shown.filter((b) => b.kind === 'title' && !AXIS_BADGE_IDS.has(b.id))
+  );
+  const milestones = $derived(shown.filter((b) => b.kind === 'milestone'));
 
   // userId → avatarKey lookup for award holders (holders carry no avatar of their own).
   const avatarByUser = $derived<Record<string, string | null>>(
@@ -87,10 +105,41 @@
   }
 </script>
 
+<!-- One row per award: the chip leads, its holder(s) follow. Wraps to a second line at
+     390px rather than truncating the name, and a milestone with several holders lists them
+     all inline. Shared by every group so an axis end, a plain title, and a milestone all
+     read as the same kind of thing. -->
+{#snippet awardRows(awards: BadgeAward[])}
+  <ul class="space-y-1.5">
+    {#each awards as badge (badge.id)}
+      <li class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          class="flex shrink-0 items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pr-2.5 pl-2 text-xs"
+          data-testid="badge-chip-{badge.id}"
+          title={badge.flavor}
+        >
+          <span aria-hidden="true">{badge.emoji}</span>
+          <span class="font-medium">{badge.label}</span>
+        </span>
+        {#each badge.holders as h (h.user_id)}
+          <span class="flex min-w-0 items-center gap-1.5">
+            <UserAvatar
+              avatarKey={avatarByUser[h.user_id] ?? null}
+              displayName={h.display_name}
+              size="xs"
+            />
+            <span class="truncate text-sm">{nameFor(h.user_id, h.display_name)}</span>
+          </span>
+        {/each}
+      </li>
+    {/each}
+  </ul>
+{/snippet}
+
 <!-- Render once there's a champion or awarded badges. A multi-season league is no longer a
      reason on its own: that only ever justified showing the awards SeasonPicker, which #631
      deleted (honors now follows the season its host tab already selected). -->
-{#if reigning || badges.length > 0}
+{#if reigning || shown.length > 0}
   <Card data-testid="league-honors">
     <CardHeader>
       <CardTitle>League honors</CardTitle>
@@ -169,7 +218,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <p class="text-xs font-semibold uppercase tracking-wide text-primary-ink">Awards</p>
             <!-- Provisional/crowned lifecycle indicator (#296). -->
-            {#if badges.length > 0}
+            {#if shown.length > 0}
               {#if isSeasonComplete}
                 <span
                   class="rounded-full border border-primary-ink/40 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-ink"
@@ -190,35 +239,33 @@
           <AwardsGuide />
         </div>
 
-        {#if badges.length > 0}
-          <ul class="space-y-3">
-            {#each awardHolders as member (member.user_id)}
-              <li class="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
-                <div class="flex items-center gap-2 sm:w-32 sm:shrink-0">
-                  <UserAvatar
-                    avatarKey={avatarByUser[member.user_id] ?? null}
-                    displayName={member.display_name}
-                    size="xs"
-                  />
-                  <span class="truncate text-sm font-medium">
-                    {nameFor(member.user_id, member.display_name)}
-                  </span>
-                </div>
-                <ul class="flex flex-wrap gap-1.5">
-                  {#each member.awards as badge (badge.id)}
-                    <li
-                      class="flex items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pr-2.5 pl-2 text-xs"
-                      data-testid="badge-chip-{badge.id}"
-                      title={badge.flavor}
-                    >
-                      <span aria-hidden="true">{badge.emoji}</span>
-                      <span class="font-medium">{badge.label}</span>
-                    </li>
-                  {/each}
-                </ul>
-              </li>
+        {#if shown.length > 0}
+          <div class="space-y-4">
+            {#each axisGroups as group (group.measure)}
+              <div class="space-y-2" data-testid="axis-group-{group.measure.replace(/\s+/g, '-')}">
+                <p class="text-xs font-medium text-muted-foreground">
+                  {group.measure}{#if group.unclaimed}<span class="font-normal">
+                      · {group.unclaimed}</span
+                    >{/if}
+                </p>
+                {@render awardRows(group.awards)}
+              </div>
             {/each}
-          </ul>
+
+            {#if looseTitles.length > 0}
+              <div class="space-y-2 border-t pt-4" data-testid="awards-titles">
+                <p class="text-xs font-medium text-muted-foreground">Titles</p>
+                {@render awardRows(looseTitles)}
+              </div>
+            {/if}
+
+            {#if milestones.length > 0}
+              <div class="space-y-2 border-t pt-4" data-testid="awards-milestones">
+                <p class="text-xs font-medium text-muted-foreground">Milestones</p>
+                {@render awardRows(milestones)}
+              </div>
+            {/if}
+          </div>
         {:else}
           <p class="text-sm text-muted-foreground">No badges awarded this season.</p>
         {/if}

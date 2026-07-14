@@ -12,6 +12,7 @@ import type {
   SeasonStats
 } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
+import { TENDENCY_LEAN_THRESHOLD } from '$lib/utils/stats';
 
 // Input types shaped from matview rows; all required fields already non-null.
 
@@ -417,44 +418,8 @@ function theHomer(
 
 // --- Tier-B consensus badge helpers (#294, #316) ---
 
-/**
- * Lone Wolf: most consistently picks against consensus (lowest mean consensus_pct).
- * Tendency badge — measures how often you deviate, not how well it turned out.
- * Requires `guard` decisions to be eligible (same season-scaled guard as Tier-A).
- */
-function loneWolf(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
-  const eligible = consensus.filter((c) => c.decisions >= guard);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      if (curr.mean_consensus_pct < best.mean_consensus_pct) return curr;
-      if (curr.mean_consensus_pct === best.mean_consensus_pct) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
-}
-
-/**
- * Sheep: most consistently picks with the crowd (highest mean consensus_pct).
- * Tendency badge — requires `guard` decisions to be eligible.
- */
-function sheep(consensus: BadgeConsensusEntry[], guard: number): BadgeHolder | null {
-  const eligible = consensus.filter((c) => c.decisions >= guard);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      if (curr.mean_consensus_pct > best.mean_consensus_pct) return curr;
-      if (curr.mean_consensus_pct === best.mean_consensus_pct) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
-}
+// Lone Wolf / The Sheep used to live here as two bespoke `reduce` calls that always
+// crowned the ends of a sorted list. They are now the two ends of `crowdLeanAxis` (#635).
 
 /**
  * Oracle: best contrarian-pick win rate above a season-scaled minimum sample.
@@ -502,49 +467,138 @@ function theLemming(consensus: BadgeConsensusEntry[], oracleGuard: number): Badg
   );
 }
 
-// --- Line-side badge helpers (#317) ---
+// --- Badge axis layer (#635) ---
+//
+// A paired badge is not "whoever is at the end of a sorted list" — it is "whoever is
+// genuinely out on one end of a measure". An axis declares one measure, two ends, an
+// honest zero, and a bar. Each end awards independently: most extreme on its side AND
+// clear of the bar. So an axis yields 0, 1, or 2 titles, and which one is a fact about
+// the season rather than a rule about the schema.
+//
+// This is not a new idea in this file, just an unevenly-applied one: `donkeyOfWeek` and
+// `theCardiac` already return null when nothing happened, and `lineSideTendency`
+// (`$lib/utils/stats`) already withholds inside a ±10-point dead zone. The paired titles
+// were the last place a sorted list was treated as proof — which is why the app could
+// crown a 🧱 Chalk Eater on a 54% favorite share while `/stats` called the same player
+// balanced. ADR-0035 records the underlying rule: a badge that cannot honestly say
+// "nobody" is suspect.
 
 /**
- * Chalk Eater: biggest share of picks on the spread favorite. Requires `guard`
- * decisions to be eligible (same season-scaled guard as Tier-A). Ratio is favorite
- * picks over all of the player's picks, so pick'em games dilute it like any non-favorite.
+ * One end of an axis: which side of the zero it claims, and the badge it awards.
+ * `lo` sits below the zero, `hi` above it.
  */
-function chalkEater(lineSide: BadgeLineSideEntry[], guard: number): BadgeHolder | null {
-  const eligible = lineSide.filter((l) => l.decisions >= guard);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      const currRatio = curr.chalk_picks / curr.decisions;
-      const bestRatio = best.chalk_picks / best.decisions;
-      if (currRatio > bestRatio) return curr;
-      if (currRatio === bestRatio) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+type AxisSide = 'lo' | 'hi';
+
+type AxisDef<Row extends { user_id: string; display_name: string }> = {
+  /** Short name of the measure, used as the awards-card heading. */
+  measure: string;
+  /** The badge each end awards. */
+  ends: Record<AxisSide, BadgeId>;
+  /**
+   * The player's position on the measure, or null when they are ineligible (thin sample).
+   * Ineligible rows take no part in the "most extreme" comparison.
+   */
+  value: (row: Row) => number | null;
+  /**
+   * The honest zero — the value that means "no lean at all", computed from the eligible
+   * rows. **null means the zero has not been decided**, and an axis without a zero stays
+   * dark: it awards nothing rather than guessing. That is deliberate and reversible.
+   */
+  zero: ((rows: Row[]) => number) | null;
+  /** Minimum distance from the zero before an end awards. */
+  bar: number;
+  /** Volume tie-break: more of this wins when two players sit at the same value. */
+  sample: (row: Row) => number;
+};
+
+/**
+ * Awards one axis: 0, 1, or 2 titles. An end awards only when some eligible player is
+ * both the most extreme on that side of the zero and at least `bar` away from it.
+ *
+ * Ties resolve exactly as the bespoke `reduce` calls this replaced did — larger sample
+ * first, then alphabetically — so migrating a pair onto an axis changes only whether a
+ * badge is deserved, never who gets it when two players tie.
+ */
+function awardAxis<Row extends { user_id: string; display_name: string }>(
+  axis: AxisDef<Row>,
+  rows: Row[]
+): BadgeAward[] {
+  // No zero declared → the axis is dark. Nothing to measure "out on one end" against.
+  if (!axis.zero) return [];
+
+  const eligible = rows.filter((r) => axis.value(r) !== null);
+  if (eligible.length === 0) return [];
+
+  const zero = axis.zero(eligible);
+  const awards: BadgeAward[] = [];
+
+  for (const side of ['lo', 'hi'] as const) {
+    // Distance from the zero, signed so that "further out on my side" is always larger.
+    const deviation = (r: Row) => (side === 'lo' ? zero - axis.value(r)! : axis.value(r)! - zero);
+
+    const cleared = eligible.filter((r) => deviation(r) >= axis.bar);
+    if (cleared.length === 0) continue; // This end is unclaimed — a fact, not a failure.
+
+    const winner = cleared.reduce((best, curr) => {
+      if (deviation(curr) > deviation(best)) return curr;
+      if (deviation(curr) === deviation(best)) {
+        if (axis.sample(curr) > axis.sample(best)) return curr;
+        if (axis.sample(curr) === axis.sample(best)) return alphaFirst(curr, best);
       }
       return best;
-    })
-  );
+    });
+    awards.push(award(axis.ends[side], 'title', [holder(winner)]));
+  }
+
+  return awards;
 }
 
 /**
- * Dog Lover: biggest share of picks on the spread underdog. Mirror of {@link chalkEater}
- * on the same favorite-vs-dog axis; requires `guard` decisions to be eligible.
+ * Line lean: favorite-vs-underdog pick mix (#317, put on an axis in #635).
+ *
+ * The measure is the *gap* between the two shares, and the zero is a real 50/50 coin
+ * flip — the same framing `lineSideTendency` ships, down to importing its threshold, so
+ * the badge and the `/stats` tile cannot disagree about any player. Using the gap (not
+ * the favorite share alone) also keeps pick'em games diluting both ends equally.
  */
-function dogLover(lineSide: BadgeLineSideEntry[], guard: number): BadgeHolder | null {
-  const eligible = lineSide.filter((l) => l.decisions >= guard);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      const currRatio = curr.dog_picks / curr.decisions;
-      const bestRatio = best.dog_picks / best.decisions;
-      if (currRatio > bestRatio) return curr;
-      if (currRatio === bestRatio) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
+function lineLeanAxis(guard: number): AxisDef<BadgeLineSideEntry> {
+  return {
+    measure: 'Line lean',
+    ends: { lo: 'dog-lover', hi: 'chalk-eater' },
+    value: (l) =>
+      l.decisions >= guard && l.decisions > 0 ? (l.chalk_picks - l.dog_picks) / l.decisions : null,
+    zero: () => 0,
+    bar: TENDENCY_LEAN_THRESHOLD,
+    sample: (l) => l.decisions
+  };
+}
+
+/**
+ * Crowd lean: how far a player sits from the room's own agreement level (#294, #316; put
+ * on an axis in #635). Both ends read `mean_consensus_pct`, as they always have.
+ *
+ * **The zero is deliberately unset, so this axis is dark.** It is not an oversight —
+ * see #635's open decision. Crowd lean's zero is not a 50/50 coin flip the way line
+ * lean's is: in a 6-player league you are in the minority by construction on only ~20%
+ * of picks, so no honest anchor is obvious. And the measure is far more compressed than
+ * it looks — 2025's league-wide `mean_consensus_pct` spans just 5.9 points (61.6 → 67.5),
+ * putting the furthest-out player ±2.9 from any league-mean zero. With one season of
+ * data and a span that narrow, any bar we picked would be a guess, and a guess here
+ * re-creates exactly the bug this layer exists to kill.
+ *
+ * So the pair awards nothing until the zero is called. That is strictly better than the
+ * old behaviour (where both ends fired every season by construction) and is a one-line
+ * change to revert once a genuinely polarized season gives us something to calibrate on.
+ */
+function crowdLeanAxis(guard: number): AxisDef<BadgeConsensusEntry> {
+  return {
+    measure: 'Crowd lean',
+    ends: { lo: 'lone-wolf', hi: 'sheep' },
+    value: (c) => (c.decisions >= guard ? c.mean_consensus_pct / 100 : null),
+    zero: null,
+    bar: TENDENCY_LEAN_THRESHOLD,
+    sample: (c) => c.decisions
+  };
 }
 
 // --- Tier-C live-form badge helpers (#296) ---
@@ -802,13 +856,15 @@ const FLAVORS: Record<
     label: 'Chalk Eater',
     emoji: '🧱',
     flavor: "Never met a favorite they didn't back.",
-    description: 'Biggest share of picks on the spread favorite (minimum picks required).'
+    description:
+      'Backs favorites over underdogs by at least 10 points, further than anyone else (minimum picks required). Nobody earns it in a season where everyone picks close to an even split.'
   },
   'dog-lover': {
     label: 'Dog Lover',
     emoji: '🐶',
     flavor: 'Loyalty over logic. Always takes the longshot.',
-    description: 'Biggest share of picks on the spread underdog (minimum picks required).'
+    description:
+      'Backs underdogs over favorites by at least 10 points, further than anyone else (minimum picks required). Nobody earns it in a season where everyone picks close to an even split.'
   },
   // Tier-C live-form badge (#296)
   'hot-hand': {
@@ -860,8 +916,10 @@ const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
   { id: 'the-ghost', kind: 'title' },
   { id: 'the-nemesis', kind: 'title' },
   { id: 'the-homer', kind: 'title' },
-  { id: 'lone-wolf', kind: 'title' },
-  { id: 'sheep', kind: 'title' },
+  // 'lone-wolf' and 'sheep' are deliberately absent: their axis has no zero yet, so the
+  // engine cannot award them, and a legend entry for an unearnable badge is a promise
+  // the engine will never keep (#635). Their `BadgeId` and `FLAVORS` slots stay put — the
+  // pair comes back here the moment crowd lean's zero is decided.
   { id: 'oracle', kind: 'title' },
   { id: 'the-lemming', kind: 'title' },
   { id: 'chalk-eater', kind: 'title' },
@@ -881,6 +939,45 @@ export const BADGE_GLOSSARY: BadgeGlossaryEntry[] = GLOSSARY_ORDER.map(({ id, ki
   kind,
   ...FLAVORS[id]
 }));
+
+/**
+ * The axes, as the UI needs to see them (#635): a measure name, its two ends lo→hi, and
+ * what the zero between them means in plain English.
+ *
+ * The awards card groups by this, and the legend renders one two-faced row per entry.
+ * **Dark axes are omitted** — an axis with no zero (`crowdLeanAxis`) can never award, and
+ * listing an unearnable badge in a legend promises something the engine will never
+ * deliver. Give crowd lean a zero and it belongs back here in the same commit.
+ */
+export type BadgeAxisEndMeta = {
+  id: BadgeId;
+  /** Short name of this end, for the card's "<name> end unclaimed" note. */
+  name: string;
+};
+
+export type BadgeAxisMeta = {
+  measure: string;
+  /** [lo, hi] — the order the ends render in, low side of the zero first. */
+  ends: [BadgeAxisEndMeta, BadgeAxisEndMeta];
+  /** What sitting at the zero means, shown between the two faces in the legend. */
+  zeroLabel: string;
+};
+
+export const BADGE_AXES: BadgeAxisMeta[] = [
+  {
+    measure: 'Line lean',
+    ends: [
+      { id: 'dog-lover', name: 'Dog' },
+      { id: 'chalk-eater', name: 'Chalk' }
+    ],
+    zeroLabel: 'An even split — no lean either way'
+  }
+];
+
+/** The badge ids that belong to an axis, so the card can render the rest as plain titles. */
+export const AXIS_BADGE_IDS: ReadonlySet<BadgeId> = new Set(
+  BADGE_AXES.flatMap((a) => a.ends.map((e) => e.id))
+);
 
 function award(id: BadgeId, kind: 'title', holders: [BadgeHolder]): BadgeAward;
 function award(id: BadgeId, kind: 'milestone', holders: BadgeHolder[]): BadgeAward;
@@ -937,15 +1034,14 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
   const perfecters = perfectWeek(trend);
   if (perfecters.length > 0) badges.push(award('perfect-week', 'milestone', perfecters));
 
-  // Tier-B: consensus titles (#294, #316)
+  // Tier-B: consensus titles (#294, #316). The crowd-lean pair awards through its axis
+  // (#635) and is currently dark by design — see `crowdLeanAxis`. Oracle and The Lemming
+  // are verdict badges on a different measure (how minority/majority picks turned out),
+  // not two ends of one lean, so they stay as they are.
   if (consensus.length > 0) {
     const oracleGuard = computeOracleGuard(consensus);
 
-    const wolf = loneWolf(consensus, guard);
-    if (wolf) badges.push(award('lone-wolf', 'title', [wolf]));
-
-    const sheepHolder = sheep(consensus, guard);
-    if (sheepHolder) badges.push(award('sheep', 'title', [sheepHolder]));
+    badges.push(...awardAxis(crowdLeanAxis(guard), consensus));
 
     const oracleHolder = oracle(consensus, oracleGuard);
     if (oracleHolder) badges.push(award('oracle', 'title', [oracleHolder]));
@@ -954,14 +1050,8 @@ export function computeBadges(inputs: BadgeInputs, seasonComplete = false): Badg
     if (lemmingHolder) badges.push(award('the-lemming', 'title', [lemmingHolder]));
   }
 
-  // Line-side titles (#317)
-  if (lineSide.length > 0) {
-    const chalk = chalkEater(lineSide, guard);
-    if (chalk) badges.push(award('chalk-eater', 'title', [chalk]));
-
-    const dog = dogLover(lineSide, guard);
-    if (dog) badges.push(award('dog-lover', 'title', [dog]));
-  }
+  // Line-side titles (#317), now the two ends of one axis (#635): 0, 1, or 2 holders.
+  badges.push(...awardAxis(lineLeanAxis(guard), lineSide));
 
   // Tier-C: live-form streak title (#296)
   if (streaks.length > 0) {
