@@ -45,6 +45,22 @@ async function rebuildRatings(): Promise<void> {
   });
 }
 
+/**
+ * Rebuild the two global, whole-table read models a grade invalidates: the leaderboard/stats
+ * matviews and the credibility-rating snapshot. Both are best-effort (each swallows and logs its
+ * own error) and neither is week-scoped, so a caller that grades several weeks should invoke this
+ * **once** after all of them rather than once per week.
+ *
+ * The grade cron does exactly that (#622): running it per-`gradeWeek` refreshed the 17 matviews
+ * twice per run and raced two concurrent full ratings rebuilds, which could transiently empty
+ * `player_ratings`. Single-invocation admin graders (`gradeGame`/`gradeSeason`) keep refreshing
+ * inline — there is no fan-out to race.
+ */
+export async function refreshReadModels(): Promise<void> {
+  await refreshLeaderboardStats();
+  await rebuildRatings();
+}
+
 /** Result summary shared by all three graders — powers the admin card's confirmation note. */
 export type GradeSummary = {
   /** Games in the target set that actually had a final (i.e. were gradeable). */
@@ -119,16 +135,22 @@ export async function gradeGame(
   }
   const { error } = await supabaseService.rpc('grade_game', { p_game_id: gameId });
   if (error) throw new Error(error.message);
-  await refreshLeaderboardStats();
-  await rebuildRatings();
+  await refreshReadModels();
   const summary = await summarizeGrade([gameId]);
   return { ok: true, game_id: gameId, ...summary };
 }
 
-/** Grade a week. Optionally pull finals for the week before grading. */
+/**
+ * Grade a week. Optionally pull finals for the week before grading.
+ *
+ * `skipReadModelRefresh` suppresses the whole-table stats/ratings refresh at the tail so a caller
+ * grading several weeks can hoist that global work into a single post-grade `refreshReadModels()`
+ * call. The grade cron uses it to avoid the per-week fan-out that double-refreshed the matviews and
+ * raced the ratings rebuild empty (#622). Defaults to refreshing inline for standalone callers.
+ */
 export async function gradeWeek(
   weekId: number,
-  opts?: { refreshScores?: boolean; daysFrom?: number }
+  opts?: { refreshScores?: boolean; daysFrom?: number; skipReadModelRefresh?: boolean }
 ) {
   const gameIds = await gameIdsForWeek(weekId);
   if (opts?.refreshScores) {
@@ -136,8 +158,9 @@ export async function gradeWeek(
   }
   const { error } = await supabaseService.rpc('grade_week', { p_week_id: weekId });
   if (error) throw new Error(error.message);
-  await refreshLeaderboardStats();
-  await rebuildRatings();
+  if (!opts?.skipReadModelRefresh) {
+    await refreshReadModels();
+  }
   const summary = await summarizeGrade(gameIds);
   return { ok: true, week_id: weekId, ...summary };
 }
@@ -153,8 +176,7 @@ export async function gradeSeason(
   }
   const { error } = await supabaseService.rpc('grade_season', { p_season_id: seasonId });
   if (error) throw new Error(error.message);
-  await refreshLeaderboardStats();
-  await rebuildRatings();
+  await refreshReadModels();
   const summary = await summarizeGrade(gameIds);
   return { ok: true, season_id: seasonId, ...summary };
 }

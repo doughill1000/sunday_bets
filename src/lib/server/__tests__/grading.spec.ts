@@ -48,7 +48,7 @@ vi.mock('$lib/server/rating/rebuild', () => ({
 }));
 
 // AFTER mocks defined, import functions under test
-import { gradeGame, gradeWeek, gradeSeason } from '$lib/server/grading';
+import { gradeGame, gradeWeek, gradeSeason, refreshReadModels } from '$lib/server/grading';
 import { rebuildPlayerRatings } from '$lib/server/rating/rebuild';
 
 // Two target games in the same week (2024, week 1) with distinct matchup identities.
@@ -332,6 +332,22 @@ describe('grading service', () => {
     expect(fetchEspnWeekImpl).not.toHaveBeenCalled();
     expect(fetchScoresImpl).not.toHaveBeenCalled();
     expect(res).toEqual({ ok: true, week_id: 10, gamesGraded: 2, picksSettled: 5 });
+  });
+
+  it('gradeWeek skips the whole-table stats/ratings refresh when asked (#622 hoist)', async () => {
+    await gradeWeek(10, { skipReadModelRefresh: true });
+    // Grading still happens...
+    expect(rpc).toHaveBeenCalledWith('grade_week', { p_week_id: 10 });
+    // ...but neither global read-model refresh runs inline — the cron hoists them into one call.
+    expect(rpc).not.toHaveBeenCalledWith('refresh_leaderboard_stats');
+    expect(rebuildPlayerRatings).not.toHaveBeenCalled();
+  });
+
+  it('refreshReadModels refreshes the matviews and rebuilds the ratings, once', async () => {
+    await refreshReadModels();
+    expect(rpc).toHaveBeenCalledWith('refresh_leaderboard_stats');
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rebuildPlayerRatings).toHaveBeenCalledTimes(1);
   });
 
   it('gradeWeek with refresh triggers an ESPN score pull and updates', async () => {

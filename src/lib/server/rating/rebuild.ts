@@ -45,11 +45,17 @@ async function fetchAllInputs(client: SupabaseClient): Promise<RatingDecision[]>
 /**
  * Recompute and persist every (group, user) credibility rating.
  *
- * Full rebuild: stamps every current row with one `computed_at`, then prunes any row not from this
- * run (a player whose settled picks were all removed, or who left the group). Best-effort by
- * design — safe to call from any settlement-writing path (grading, demo seed, prod clone, imports)
- * and idempotent. Pass a client for scripts that target a non-default database; defaults to the
- * service-role client the graders use.
+ * Full rebuild: stamps every current row with one `computed_at`, then prunes rows carrying a
+ * STRICTLY OLDER stamp (a player whose settled picks were all removed, or who left the group).
+ * Best-effort by design — safe to call from any settlement-writing path (grading, demo seed, prod
+ * clone, imports) and idempotent. Pass a client for scripts that target a non-default database;
+ * defaults to the service-role client the graders use.
+ *
+ * Safe under concurrency (#622): the prune deletes `computed_at < T`, never `!= T`. Two overlapping
+ * rebuilds (Ta ≤ Tb) both upsert every live row, so after both upserts every live row carries Ta or
+ * Tb — both ≥ Ta — and neither run's `< own-T` delete can remove a row the other just wrote. A
+ * `!= T` prune would let whichever ran its delete last wipe the peer's freshly-stamped rows, which
+ * is exactly how the per-week grade fan-out could transiently empty `player_ratings`.
  */
 export async function rebuildPlayerRatings(
   client: SupabaseClient = supabaseService,
@@ -76,12 +82,16 @@ export async function rebuildPlayerRatings(
       if (upsertError) throw upsertError;
     }
 
-    // Drop rows this rebuild did not write. Every live row carries `computedAt`; anything else is
-    // stale. `neq` also clears the whole table when there are no inputs (no settled picks anywhere).
+    // Drop rows carrying an older stamp than this run — a player pruned out of the current result
+    // set (all settled picks removed, or left the group). `lt` (not `neq`) keeps this safe under
+    // concurrent rebuilds: a peer's rows are stamped with its own fresh `computed_at` (≥ ours), so
+    // they are never `< computedAt` and never deleted here. With no inputs at all we skip the upsert
+    // above, and every existing row necessarily predates this run's fresh stamp, so `lt` still
+    // clears the whole table.
     const { error: pruneError } = await client
       .from('player_ratings')
       .delete()
-      .neq('computed_at', computedAt);
+      .lt('computed_at', computedAt);
     if (pruneError) throw pruneError;
   } catch (err) {
     // Non-fatal, exactly like refreshLeaderboardStats: the grade already committed. A failed
