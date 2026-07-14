@@ -20,12 +20,9 @@ function inputs(over: Partial<BadgeInputs> = {}): BadgeInputs {
   return {
     seasonTotals: [],
     weightAccuracy: [],
-    headToHead: [],
-    teamAccuracy: [],
     trend: [],
     consensus: [],
     lineSide: [],
-    streaks: [],
     ...over
   };
 }
@@ -133,47 +130,42 @@ describe('earningStatFor', () => {
     expect(earningStatFor('chalk-eater', 'u1', i)).toEqual({ favorite_share_pct: 75 });
   });
 
-  it('hot-hand → longest win streak (max_streak)', () => {
+  it('lone-wolf / sheep → fade rate, the measure the crowd-lean axis actually reads', () => {
+    // #649 moved the axis from `mean_consensus_pct` (the average size of the crowd this
+    // player sat in) to fade rate (how often they broke from it). The cited stat has to
+    // move with it, or the voice quotes a number the award never looked at.
     const i = inputs({
-      streaks: [
+      consensus: [
         {
           user_id: 'u1',
           display_name: 'Marcus',
-          graded_picks: 20,
-          current_streak: 2,
-          max_streak: 7
+          decisions: 20,
+          mean_consensus_pct: 40,
+          contrarian_picks: 5,
+          contrarian_wins: 3,
+          majority_picks: 15,
+          majority_wins: 8
         }
       ]
     });
-    expect(earningStatFor('hot-hand', 'u1', i)).toEqual({ longest_win_streak: 7 });
+    expect(earningStatFor('lone-wolf', 'u1', i)).toEqual({ fade_rate_pct: 25 });
+    expect(earningStatFor('sheep', 'u1', i)).toEqual({ fade_rate_pct: 25 });
   });
 
-  it('the-nemesis → aggregates both sides of the head-to-head half-matrix', () => {
+  it('week-winner → weeks led outright, with tied weeks credited to nobody', () => {
+    // Mirrors weeklyTopScorer (#651): a tied week was led by nobody and counts for no one.
     const i = inputs({
-      headToHead: [
-        // u1 listed: 3-1 vs u2
-        {
-          user_id: 'u1',
-          display_name: 'Marcus',
-          opponent_user_id: 'u2',
-          opponent_display_name: 'Dana',
-          games_compared: 4,
-          wins: 3,
-          losses: 1
-        },
-        // u1 as opponent: row is 2-1 for u3, so mirror credits u1 with 1-2
-        {
-          user_id: 'u3',
-          display_name: 'Sam',
-          opponent_user_id: 'u1',
-          opponent_display_name: 'Marcus',
-          games_compared: 3,
-          wins: 2,
-          losses: 1
-        }
+      trend: [
+        // Week 1 tied at 20 → counts for neither.
+        trendRow({ user_id: 'u1', week_number: 1, cumulative_rank_this_week: 1, week_points: 20 }),
+        trendRow({ user_id: 'u2', week_number: 1, cumulative_rank_this_week: 1, week_points: 20 }),
+        // Week 2 is u1's outright.
+        trendRow({ user_id: 'u1', week_number: 2, cumulative_rank_this_week: 1, week_points: 30 }),
+        trendRow({ user_id: 'u2', week_number: 2, cumulative_rank_this_week: 2, week_points: 10 })
       ]
     });
-    expect(earningStatFor('the-nemesis', 'u1', i)).toEqual({ h2h_wins: 4, h2h_losses: 3 });
+    expect(earningStatFor('week-winner', 'u1', i)).toEqual({ weeks_led: 1 });
+    expect(earningStatFor('week-winner', 'u2', i)).toEqual({ weeks_led: 0 });
   });
 
   it('the-comeback → spots climbed from season low to final rank', () => {
