@@ -136,7 +136,7 @@
              Uses the stacked lockup (mark + real HOTSHOT logotype) rather than the
              app font, so the wordmark matches the brand sheet exactly. -->
         <div class="mb-4 flex flex-col items-center gap-3 text-center">
-          <img src="/hotshot-lockup.png" alt="Hotshot" class="h-24 w-auto" />
+          <img src="/hotshot-lockup.svg" alt="Hotshot" class="h-24 w-auto" />
           <p class="text-sm text-muted-foreground">Make the call. Out-pick your friends.</p>
         </div>
 

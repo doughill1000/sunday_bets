@@ -13,10 +13,9 @@ family cannot drift:
 | Asset                         | Dimensions | Consumer                                      |
 | ----------------------------- | ---------- | --------------------------------------------- |
 | `logo-mark.svg`               | scalable   | App header and demo navigation                |
-| `hotshot-lockup.svg`          | scalable   | Canonical stacked mark + HOTSHOT lockup       |
+| `hotshot-lockup.svg`          | scalable   | Sign-in page — transparent stacked mark + HOTSHOT lockup |
 | `favicon.svg`                 | scalable   | Modern browser favicon                        |
 | `logo-mark.png`               | 512×512    | Raster standalone-mark fallback               |
-| `hotshot-lockup.png`          | 1181×638   | Sign-in page                                  |
 | `favicon-16x16.png`           | 16×16      | Browser fallback / ICO frame                  |
 | `favicon-32x32.png`           | 32×32      | Browser fallback / ICO frame                  |
 | `favicon-48x48.png`           | 48×48      | Browser fallback / notification badge         |
