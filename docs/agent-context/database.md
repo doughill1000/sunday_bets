@@ -65,7 +65,7 @@ writing a view, function, or pgTAP fixture against a table, confirm its current 
 and constraints: `\d public.<table>` on the local DB, or grep `schemas/` for every
 `alter table public.<table>`.
 
-Two that bite specifically (both cost real rework when assumed wrong):
+Three that bite specifically (all cost real rework when assumed wrong):
 
 - **`picks` is group-scoped.** Its primary key is `(group_id, user_id, game_id)` with
   `group_id` `not null` (added in `0210_pick_group_foreign_keys.sql`); the surrogate `id`
@@ -75,6 +75,15 @@ Two that bite specifically (both cost real rework when assumed wrong):
   `0204_require_locks.sql`), so every settled pick carries a line. Read it without a null
   guard — the way `stats_accuracy_by_line_side` / `stats_situational_base` do — rather than
   adding a defensive branch that can never fire.
+- **`users.role` is app-access, not league participation — never filter a
+  grading/scoring/population query on it.** It answers "can this person do admin things"
+  (see [auth.md](auth.md) "Admin boundary"), not "is this person in the league." Who's in a
+  league is `group_memberships` with `status = 'active'`. Filtering a population query on
+  `role = 'player'` silently drops every admin from that population — this has caused two
+  separate prod defects (the 2022 champion flip fixed by #447, and the wk17 2025
+  `pick_settlement` gap fixed by the migration referenced in
+  `functions/_private/grade_games_by_ids.sql`, whose comment names the bug). Any new
+  query needing "who's an active member" joins `group_memberships`, full stop.
 
 ## Generator emit order (name files so dependencies sort first)
 
