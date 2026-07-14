@@ -71,14 +71,25 @@ describe('LeagueHonors — axis grouping', () => {
   });
 
   it('drops awards the legend cannot explain, so a stale fixture cannot resurrect them', () => {
-    // lone-wolf's axis has no zero, so it is absent from the glossary and unearnable — but a
-    // snapshot frozen before #635 still carries it.
-    const { queryByTestId, getByTestId } = renderCard([
-      badge('the-grinder', 'Doug'),
-      badge('lone-wolf', 'Mike')
-    ]);
-    expect(queryByTestId('badge-chip-lone-wolf')).toBeNull();
+    // #647 cut hot-hand from the catalog entirely, so it has no glossary entry and the
+    // engine can never award it again — but the demo snapshot was frozen while it still
+    // could, and a chip the legend can't explain is exactly the unearnable jewellery this
+    // card exists to stop showing. The cast is the point: a stale fixture carries an id
+    // that is no longer in the `BadgeId` union, which only a runtime guard can catch.
+    const cutBadge = { ...badge('the-ghost', 'Mike'), id: 'hot-hand' as BadgeId };
+    const { queryByTestId, getByTestId } = renderCard([badge('the-grinder', 'Doug'), cutBadge]);
+    expect(queryByTestId('badge-chip-hot-hand')).toBeNull();
     expect(getByTestId('badge-chip-the-grinder')).toBeTruthy();
+  });
+
+  it('renders the crowd-lean axis now that #649 gave it a zero', () => {
+    // The first real exercise of #635's axis-major pivot with two live axes: each axis
+    // groups independently, and a half-earned one still names its empty end.
+    const { getByTestId } = renderCard([badge('lone-wolf', 'Mike'), badge('dog-lover', 'Doug')]);
+    expect(getByTestId('axis-group-Crowd-lean').textContent).toContain('Flock end unclaimed');
+    expect(getByTestId('axis-group-Line-lean').textContent).toContain('Chalk end unclaimed');
+    expect(getByTestId('badge-chip-lone-wolf')).toBeTruthy();
+    expect(getByTestId('badge-chip-dog-lover')).toBeTruthy();
   });
 
   it('lists a player once per award they hold, not once per player', () => {

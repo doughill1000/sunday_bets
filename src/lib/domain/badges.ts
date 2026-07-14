@@ -5,14 +5,8 @@ import type {
   BadgeId,
   BadgeKind
 } from '$lib/types/honors';
-import type {
-  ConsensusStatsEntry,
-  LineSideStatsEntry,
-  StreakStatsEntry,
-  SeasonStats
-} from '$lib/types/server/stats';
+import type { ConsensusStatsEntry, LineSideStatsEntry, SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
-import { TENDENCY_LEAN_THRESHOLD } from '$lib/utils/stats';
 
 // Input types shaped from matview rows; all required fields already non-null.
 
@@ -34,25 +28,6 @@ export type BadgeWeightEntry = {
   wins: number;
   losses: number;
   pushes: number;
-};
-
-export type BadgeH2HEntry = {
-  user_id: string;
-  display_name: string;
-  opponent_user_id: string;
-  opponent_display_name: string;
-  games_compared: number;
-  wins: number;
-  losses: number;
-};
-
-export type BadgeTeamEntry = {
-  user_id: string;
-  display_name: string;
-  team_id: number;
-  decisions: number;
-  wins: number;
-  losses: number;
 };
 
 export type BadgeTrendEntry = {
@@ -98,38 +73,26 @@ export type BadgeLineSideEntry = {
   dog_picks: number;
 };
 
-// Tier-C streak input (from stats_pick_streaks matview, #296).
-export type BadgeStreakEntry = {
-  user_id: string;
-  display_name: string;
-  /** Non-push graded picks (wins + losses + missed) — used by the sample guard. */
-  graded_picks: number;
-  /** Consecutive wins ending at the most recent graded pick (provisional rank). */
-  current_streak: number;
-  /** Longest consecutive win run achieved in the season (crowned rank). */
-  max_streak: number;
-};
-
+// `headToHead`, `teamAccuracy` and `streaks` were dropped from BadgeInputs in #647 along
+// with the only badges that read them (The Nemesis, The Homer, Hot Hand). The matviews
+// behind them — `stats_head_to_head`, `stats_accuracy_by_team`, `stats_pick_streaks` —
+// have other consumers (`/stats`, `/market`, the recap facts builders) and are untouched.
 export type BadgeInputs = {
   seasonTotals: BadgeSeasonTotalsEntry[];
   weightAccuracy: BadgeWeightEntry[];
-  headToHead: BadgeH2HEntry[];
-  teamAccuracy: BadgeTeamEntry[];
   trend: BadgeTrendEntry[];
   /** Per-user consensus aggregates for Tier-B badges (#294). */
   consensus: BadgeConsensusEntry[];
   /** Per-user favorite-vs-underdog pick mix for line-side badges (#317). */
   lineSide: BadgeLineSideEntry[];
-  /** Per-user streak data for Tier-C Hot Hand badge (#296). */
-  streaks: BadgeStreakEntry[];
 };
 
 /**
  * Projects the season stats a `/stats` load already fetches into `BadgeInputs`, so the
- * badge engine reuses those rows instead of re-querying the same five matviews
- * (`leaderboard_season_totals`, `stats_accuracy_by_weight`, `stats_head_to_head`,
- * `stats_accuracy_by_team`, `stats_season_trend`). Pure: only narrows already-non-null
- * fields, no DB access. See `getStatsForSeason` / `getSeasonLeaderboard`.
+ * badge engine reuses those rows instead of re-querying the same matviews
+ * (`leaderboard_season_totals`, `stats_accuracy_by_weight`, `stats_season_trend`,
+ * `group_pick_consensus`, `stats_accuracy_by_line_side`). Pure: only narrows
+ * already-non-null fields, no DB access. See `getStatsForSeason` / `getSeasonLeaderboard`.
  */
 export function badgeInputsFromSeasonStats(
   season: SeasonStats,
@@ -153,23 +116,6 @@ export function badgeInputsFromSeasonStats(
       wins: w.wins,
       losses: w.losses,
       pushes: w.pushes
-    })),
-    headToHead: season.headToHead.map((h) => ({
-      user_id: h.user_id,
-      display_name: h.display_name,
-      opponent_user_id: h.opponent_user_id,
-      opponent_display_name: h.opponent_display_name,
-      games_compared: h.games_compared,
-      wins: h.wins,
-      losses: h.losses
-    })),
-    teamAccuracy: season.teamAccuracy.map((t) => ({
-      user_id: t.user_id,
-      display_name: t.display_name,
-      team_id: t.team_id,
-      decisions: t.decisions,
-      wins: t.wins,
-      losses: t.losses
     })),
     trend: season.trend.map((r) => ({
       user_id: r.user_id,
@@ -197,13 +143,6 @@ export function badgeInputsFromSeasonStats(
       decisions: l.decisions,
       chalk_picks: l.chalk_picks,
       dog_picks: l.dog_picks
-    })),
-    streaks: season.streaks.map((s: StreakStatsEntry): BadgeStreakEntry => ({
-      user_id: s.user_id,
-      display_name: s.display_name,
-      graded_picks: s.graded_picks,
-      current_streak: s.current_streak,
-      max_streak: s.max_streak
     }))
   };
 }
@@ -211,15 +150,50 @@ export function badgeInputsFromSeasonStats(
 // Thresholds
 const MIN_SAMPLE_DECISIONS = 5;
 const SAMPLE_FRACTION = 0.35;
-const BIG_GAME_WIN_THRESHOLD = 3;
 
 /**
- * Minimum graded All-In decisions (wins + losses) for The Whale to be eligible.
- * A small fixed guard, not the season-scaled `computeSampleGuard` — All-Ins are
- * capped at ~17/season (one per week), so the 35%-of-average guard used for other
- * accuracy titles would be far too strict for this stat.
+ * Minimum graded All-In decisions (wins + losses) for The Whale and The Choker.
+ * A small fixed guard rather than the season-scaled `computeSampleGuard`: All-In volume
+ * is a choice, not a function of the schedule, and it varies wildly between players in
+ * the same season (2025 ranged from 0 to 28), so a guard scaled off the league average
+ * would gate out whoever went all in least while saying nothing about sample quality.
  */
 export const WHALE_MIN_ALLINS = 3;
+
+/**
+ * The Whale's bar: an All-In record must be a *winning* one. The 50% is not a tuned
+ * parameter — a spread pick is a coin flip by construction, so 50% is the zero the world
+ * hands us, and a "went all in and it paid" badge below its own zero is a lie. Without
+ * this, the badge crowns the best All-In rate even when that rate is losing (2024's
+ * holder went 10-12).
+ */
+export const WHALE_MIN_WIN_RATE = 0.5;
+
+/**
+ * The Oracle / The Lemming bars. Both are verdict badges — their zero is 50%, given by
+ * the world — so each needs a distance past it before "bucked the crowd and won" or
+ * "followed the herd off the cliff" is a claim about the player rather than about noise.
+ * On 2022-25 these fire twice each in four seasons and go dark twice.
+ */
+export const ORACLE_MIN_RATE = 0.55;
+export const LEMMING_MAX_RATE = 0.45;
+
+/**
+ * Lean-axis bars, in the units of their own measure (both are fractions).
+ *
+ * They differ because they are different measures on different scales, not because one
+ * end is stricter: 0.05 is ~1.9 standard errors of a fade rate over ~250 picks, and 0.15
+ * is ~2.4 standard errors of a chalk-minus-dog gap. These deliberately do not reuse
+ * `TENDENCY_LEAN_THRESHOLD` (`$lib/utils/stats`), the shared 0.1 the line axis borrowed
+ * from the `/stats` tile — with a league-mean zero (#649) that value lights both ends of
+ * both axes in every season on record.
+ *
+ * Lean badges describe style, not achievement, so they are pitched to fire roughly once
+ * a season rather than to Perfect Week's rarity: a contrarian isn't rare, he's a
+ * contrarian. Each axis can still go dark, and does (crowd lean 2022, line lean 2023).
+ */
+export const CROWD_LEAN_BAR = 0.05;
+export const LINE_LEAN_BAR = 0.15;
 
 /**
  * Season-scaled minimum decisions for accuracy-based title eligibility.
@@ -233,7 +207,8 @@ export function computeSampleGuard(totals: BadgeSeasonTotalsEntry[]): number {
 
 /**
  * Season-scaled minimum contrarian picks for Oracle eligibility.
- * Scales with average contrarian-pick count across the league.
+ * Scales with average contrarian-pick count across the league — its own denominator,
+ * which is what keeps it honest where the other guards went vacuous.
  */
 export function computeOracleGuard(consensus: BadgeConsensusEntry[]): number {
   if (consensus.length === 0) return MIN_SAMPLE_DECISIONS;
@@ -242,13 +217,16 @@ export function computeOracleGuard(consensus: BadgeConsensusEntry[]): number {
 }
 
 /**
- * Season-scaled minimum graded non-push picks for Hot Hand eligibility.
- * Prevents a week-1 streak from crowning immediately. Scales with average
- * league activity (graded_picks); floor is MIN_SAMPLE_DECISIONS.
+ * Season-scaled minimum majority picks for Lemming eligibility.
+ *
+ * The Lemming used to reuse `computeOracleGuard` — a guard scaled off `contrarian_picks`
+ * (~18/season) applied to `majority_picks` (~198/season), so it gated on roughly a tenth
+ * of the sample it was meant to protect. It changed no outcome on 2022-25, but a guard
+ * computed on one measure and applied to another is only ever accidentally right (#648).
  */
-export function computeHotHandGuard(streaks: BadgeStreakEntry[]): number {
-  if (streaks.length === 0) return MIN_SAMPLE_DECISIONS;
-  const avg = streaks.reduce((s, t) => s + t.graded_picks, 0) / streaks.length;
+export function computeLemmingGuard(consensus: BadgeConsensusEntry[]): number {
+  if (consensus.length === 0) return MIN_SAMPLE_DECISIONS;
+  const avg = consensus.reduce((s, c) => s + c.majority_picks, 0) / consensus.length;
   return Math.max(MIN_SAMPLE_DECISIONS, Math.round(avg * SAMPLE_FRACTION));
 }
 
@@ -263,61 +241,24 @@ function holder(entry: { user_id: string; display_name: string }): BadgeHolder {
 // --- Title badge helpers (superlative: one holder or null) ---
 
 /**
- * Picks actually placed this season. The matview's `decisions` counts every
- * settlement row — including `missed` slates a player never picked — so the raw
- * column equals the full schedule, not participation. Subtracting `missed`
- * yields the graded picks (wins + losses + pushes) the player truly placed.
- */
-function placedPicks(t: BadgeSeasonTotalsEntry): number {
-  return t.decisions - t.missed;
-}
-
-function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
-  // Rank by picks *placed*, not the raw slate count: once a season has missed
-  // picks, every player shares the same `decisions` (the full schedule), which
-  // collapses the title into an alphabetical tie-break and can hand it to the
-  // player who actually missed the most — the opposite of a grinder.
-  const eligible = totals.filter((t) => placedPicks(t) > 0);
-  if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((best, curr) => {
-      const currPlaced = placedPicks(curr);
-      const bestPlaced = placedPicks(best);
-      if (currPlaced > bestPlaced) return curr;
-      if (currPlaced === bestPlaced) return alphaFirst(curr, best);
-      return best;
-    })
-  );
-}
-
-function theChoker(weights: BadgeWeightEntry[]): BadgeHolder | null {
-  const allins = weights.filter((w) => w.weight === 'A' && w.wins + w.losses > 0);
-  if (allins.length === 0) return null;
-  return holder(
-    allins.reduce((worst, curr) => {
-      const currRate = curr.losses / (curr.wins + curr.losses);
-      const worstRate = worst.losses / (worst.wins + worst.losses);
-      if (currRate > worstRate) return curr;
-      if (currRate === worstRate) {
-        if (curr.decisions > worst.decisions) return curr;
-        if (curr.decisions === worst.decisions) return alphaFirst(curr, worst);
-      }
-      return worst;
-    })
-  );
-}
-
-/**
- * The Whale: best All-In win rate above a minimum-sample guard (ADR-0023 Decision
- * point 6). Positive mirror of {@link theChoker} — reduces to the *best* rate instead
- * of the worst, and requires `guard` graded All-In decisions (`WHALE_MIN_ALLINS`) to
- * suppress a 1-for-1 fluke, since The Choker has no such guard.
+ * The Whale: the best All-In win rate in the room, above a minimum-sample guard
+ * (ADR-0023 Decision point 6) **and above 50%** (`WHALE_MIN_WIN_RATE`).
+ *
+ * The bar is what makes this a verdict rather than a ranking. Conviction is negatively
+ * predictive in this league by about 14 points — 2022-25 the room went 50-90 (35.7%) on
+ * All-Ins against roughly 50% on ordinary picks — so the top of a sorted list is usually
+ * still a losing record, and the badge shipped crowning it (2024: 10-12, flavored "the
+ * house pays this one"). With the bar it fires once in four seasons, for the one player
+ * who actually did it. That rarity is the point: the badge measures exactly what the
+ * rating deliberately discards (ADR-0032 v2 made the rating conviction-flat, and this
+ * data is why), so it should only fire when conviction genuinely paid.
  */
 function theWhale(weights: BadgeWeightEntry[], guard: number): BadgeHolder | null {
   const allins = weights.filter((w) => w.weight === 'A' && w.wins + w.losses >= guard);
-  if (allins.length === 0) return null;
+  const winning = allins.filter((w) => w.wins / (w.wins + w.losses) > WHALE_MIN_WIN_RATE);
+  if (winning.length === 0) return null;
   return holder(
-    allins.reduce((best, curr) => {
+    winning.reduce((best, curr) => {
       const currRate = curr.wins / (curr.wins + curr.losses);
       const bestRate = best.wins / (best.wins + best.losses);
       if (currRate > bestRate) return curr;
@@ -342,79 +283,19 @@ function theGhost(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
   );
 }
 
-function theNemesis(h2h: BadgeH2HEntry[]): BadgeHolder | null {
-  if (h2h.length === 0) return null;
-  const byUser = new Map<
-    string,
-    { user_id: string; display_name: string; wins: number; losses: number }
-  >();
-  // `stats_head_to_head` is an upper-triangle half-matrix: one row per pair, recorded
-  // from the smaller-UUID player's perspective (`user_id < opponent_user_id`). Credit
-  // BOTH players from each row — the listed user with (wins, losses) and the opponent
-  // with the mirror (losses, wins). Aggregating by `user_id` alone collapses the award
-  // to whoever owns the smallest UUID in the group, since theirs are the only matchups
-  // ever counted. Mirrors `headToHeadForUser` in utils/stats.ts.
-  const add = (id: string, name: string, wins: number, losses: number) => {
-    const acc = byUser.get(id);
-    if (acc) {
-      acc.wins += wins;
-      acc.losses += losses;
-    } else {
-      byUser.set(id, { user_id: id, display_name: name, wins, losses });
-    }
-  };
-  for (const row of h2h) {
-    add(row.user_id, row.display_name, row.wins, row.losses);
-    add(row.opponent_user_id, row.opponent_display_name, row.losses, row.wins);
-  }
-  const players = [...byUser.values()];
-  return holder(
-    players.reduce((best, curr) => {
-      if (curr.wins > best.wins) return curr;
-      if (curr.wins === best.wins) {
-        if (curr.losses < best.losses) return curr;
-        if (curr.losses === best.losses) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
-}
-
-function theHomer(
-  teams: BadgeTeamEntry[],
-  totals: BadgeSeasonTotalsEntry[],
-  guard: number
-): BadgeHolder | null {
-  const eligible = totals.filter((t) => t.decisions >= guard);
-  if (eligible.length === 0) return null;
-
-  type Candidate = { user_id: string; display_name: string; ratio: number; maxDecisions: number };
-  const candidates: Candidate[] = eligible.flatMap((player) => {
-    const playerTeams = teams.filter((t) => t.user_id === player.user_id);
-    if (playerTeams.length === 0) return [];
-    const top = playerTeams.reduce((max, curr) => (curr.decisions > max.decisions ? curr : max));
-    return [
-      {
-        user_id: player.user_id,
-        display_name: player.display_name,
-        ratio: top.decisions / player.decisions,
-        maxDecisions: top.decisions
-      }
-    ];
-  });
-
-  if (candidates.length === 0) return null;
-  return holder(
-    candidates.reduce((best, curr) => {
-      if (curr.ratio > best.ratio) return curr;
-      if (curr.ratio === best.ratio) {
-        if (curr.maxDecisions > best.maxDecisions) return curr;
-        if (curr.maxDecisions === best.maxDecisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
-}
+// The Nemesis and The Homer used to live here. Both were cut in #647.
+//
+// The Nemesis ("owns the head-to-head") reduced on raw `wins`, making it a volume award —
+// 2025 went to a 256-247 (.5089) player over a 248-191 (.5649) one. The obvious fix, a
+// rate, is exactly the road ADR-0035 §1 closes: in a league where everyone picks the same
+// games, aggregate head-to-head rate *is* cover rate wearing a different hat, and it
+// picked the same player as the #1 cover rate in all four seasons on record.
+//
+// The Homer ("rides one team all season") measured a trait this format cannot express.
+// Every player picks every game, so the largest possible share of a season on one team is
+// 17/272 = 6.25%, random play sits at ~5.1%, and the league's four-season range is
+// 4.4%-6.5%. The whole signal band is a point wide and bounded by the schedule, not by
+// behaviour. No bar separates a homer from a coin flip.
 
 // --- Tier-B consensus badge helpers (#294, #316) ---
 
@@ -422,13 +303,18 @@ function theHomer(
 // crowned the ends of a sorted list. They are now the two ends of `crowdLeanAxis` (#635).
 
 /**
- * Oracle: best contrarian-pick win rate above a season-scaled minimum sample.
- * Verdict badge — only picks made against the majority (is_minority = true) count.
- * Does not award when no player reaches the oracle guard on contrarian picks.
+ * Oracle: best contrarian-pick win rate, above a season-scaled minimum sample **and above
+ * `ORACLE_MIN_RATE`**. Verdict badge — only picks made against the majority
+ * (is_minority = true) count, and its zero is the 50% the world hands any spread pick.
+ * Without the bar it crowned the top of a sorted list whether or not bucking the crowd
+ * had actually worked; with it, 2024's 51.1% "oracle" correctly resolves to nobody.
  */
 function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
   const eligible = consensus.filter(
-    (c) => c.contrarian_picks >= oracleGuard && c.contrarian_picks > 0
+    (c) =>
+      c.contrarian_picks >= oracleGuard &&
+      c.contrarian_picks > 0 &&
+      c.contrarian_wins / c.contrarian_picks >= ORACLE_MIN_RATE
   );
   if (eligible.length === 0) return null;
   return holder(
@@ -446,12 +332,21 @@ function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHol
 }
 
 /**
- * The Lemming: worst majority-pick win rate above a season-scaled minimum sample.
+ * The Lemming: worst majority-pick win rate, above its own season-scaled minimum sample
+ * (`computeLemmingGuard`, not the Oracle's) **and at or below `LEMMING_MAX_RATE`**.
  * Verdict badge — flock-side mirror of oracle(); uses majority_picks / majority_wins.
- * Does not award when no player reaches the guard on majority picks.
+ *
+ * The bar is what stops it lying. Unbarred it went to a player on a 52.2% *winning*
+ * record in 2024, in a season where all six players finished winning — the badge said
+ * following the crowd cost him while he was beating the market.
  */
-function theLemming(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHolder | null {
-  const eligible = consensus.filter((c) => c.majority_picks >= oracleGuard && c.majority_picks > 0);
+function theLemming(consensus: BadgeConsensusEntry[], lemmingGuard: number): BadgeHolder | null {
+  const eligible = consensus.filter(
+    (c) =>
+      c.majority_picks >= lemmingGuard &&
+      c.majority_picks > 0 &&
+      c.majority_wins / c.majority_picks <= LEMMING_MAX_RATE
+  );
   if (eligible.length === 0) return null;
   return holder(
     eligible.reduce((worst, curr) => {
@@ -501,11 +396,12 @@ type AxisDef<Row extends { user_id: string; display_name: string }> = {
   value: (row: Row) => number | null;
   /**
    * The honest zero — the value that means "no lean at all", computed from the eligible
-   * rows. **null means the zero has not been decided**, and an axis without a zero stays
-   * dark: it awards nothing rather than guessing. That is deliberate and reversible.
+   * rows each season. For a lean measure that zero is **the room**: nothing in the world
+   * says how contrarian a player "should" be, or how often they "should" take the dog, so
+   * the only non-arbitrary anchor is where this league sat this season (#649, ADR-0035).
    */
-  zero: ((rows: Row[]) => number) | null;
-  /** Minimum distance from the zero before an end awards. */
+  zero: (rows: Row[]) => number;
+  /** Minimum distance from the zero before an end awards, in the measure's own units. */
   bar: number;
   /** Volume tie-break: more of this wins when two players sit at the same value. */
   sample: (row: Row) => number;
@@ -523,9 +419,6 @@ function awardAxis<Row extends { user_id: string; display_name: string }>(
   axis: AxisDef<Row>,
   rows: Row[]
 ): BadgeAward[] {
-  // No zero declared → the axis is dark. Nothing to measure "out on one end" against.
-  if (!axis.zero) return [];
-
   const eligible = rows.filter((r) => axis.value(r) !== null);
   if (eligible.length === 0) return [];
 
@@ -553,82 +446,86 @@ function awardAxis<Row extends { user_id: string; display_name: string }>(
   return awards;
 }
 
+/** The mean of an axis measure across the eligible rows — the room, as a number. */
+function leagueMean<Row extends { user_id: string; display_name: string }>(
+  rows: Row[],
+  value: (row: Row) => number | null
+): number {
+  const vals = rows.map(value).filter((v): v is number => v !== null);
+  if (vals.length === 0) return 0;
+  return vals.reduce((s, v) => s + v, 0) / vals.length;
+}
+
 /**
- * Line lean: favorite-vs-underdog pick mix (#317, put on an axis in #635).
+ * Line lean: favorite-vs-underdog pick mix (#317, put on an axis in #635, given its real
+ * zero in #649). The measure is the *gap* between the two shares — using the gap rather
+ * than the favorite share alone keeps pick'em games diluting both ends equally.
  *
- * The measure is the *gap* between the two shares, and the zero is a real 50/50 coin
- * flip — the same framing `lineSideTendency` ships, down to importing its threshold, so
- * the badge and the `/stats` tile cannot disagree about any player. Using the gap (not
- * the favorite share alone) also keeps pick'em games diluting both ends equally.
+ * **The zero is the league, not an even split.** This axis shipped with `zero: () => 0`,
+ * an absolute 50/50, and the room is never at zero because the lines aren't: the league
+ * mean ran -9.4 (2025), -13.3 (2024), -11.3 (2023), -5.6 (2022) — dog-side every single
+ * year. Measuring against an absolute therefore measured *the schedule*, and Dog Lover
+ * fired 4 seasons out of 4 while Chalk Eater fired 1. An axis where one end is an annual
+ * gift and the other is nearly unreachable is not an axis.
+ *
+ * Note this deliberately breaks step with `lineSideTendency`'s ±10 dead zone on `/stats`:
+ * that tile answers "does this player take dogs or chalk", an absolute question with an
+ * absolute zero, and it is right to keep answering it that way. The badge answers "is
+ * this player out on an end *of this room*", so it needs the room's zero. Same numbers,
+ * different questions — see #649.
  */
 function lineLeanAxis(guard: number): AxisDef<BadgeLineSideEntry> {
+  const value = (l: BadgeLineSideEntry) =>
+    l.decisions >= guard && l.decisions > 0 ? (l.chalk_picks - l.dog_picks) / l.decisions : null;
   return {
     measure: 'Line lean',
     ends: { lo: 'dog-lover', hi: 'chalk-eater' },
-    value: (l) =>
-      l.decisions >= guard && l.decisions > 0 ? (l.chalk_picks - l.dog_picks) / l.decisions : null,
-    zero: () => 0,
-    bar: TENDENCY_LEAN_THRESHOLD,
+    value,
+    zero: (rows) => leagueMean(rows, value),
+    bar: LINE_LEAN_BAR,
     sample: (l) => l.decisions
   };
 }
 
 /**
- * Crowd lean: how far a player sits from the room's own agreement level (#294, #316; put
- * on an axis in #635). Both ends read `mean_consensus_pct`, as they always have.
+ * Crowd lean: how far a player sits from the room's own contrarianism (#294, #316; put on
+ * an axis in #635, lit for the first time in #649).
  *
- * **The zero is deliberately unset, so this axis is dark.** It is not an oversight —
- * see #635's open decision. Crowd lean's zero is not a 50/50 coin flip the way line
- * lean's is: in a 6-player league you are in the minority by construction on only ~20%
- * of picks, so no honest anchor is obvious. And the measure is far more compressed than
- * it looks — 2025's league-wide `mean_consensus_pct` spans just 5.9 points (61.6 → 67.5),
- * putting the furthest-out player ±2.9 from any league-mean zero. With one season of
- * data and a span that narrow, any bar we picked would be a guess, and a guess here
- * re-creates exactly the bug this layer exists to kill.
+ * **The measure is fade rate** — the share of a player's picks that were the minority
+ * side — not `mean_consensus_pct`, the average size of the crowd a player happened to sit
+ * in. Fade rate is what the badge names actually claim. It needs no new SQL: `is_minority`
+ * strictly partitions every pick, so `contrarian_picks + majority_picks === decisions`.
  *
- * So the pair awards nothing until the zero is called. That is strictly better than the
- * old behaviour (where both ends fired every season by construction) and is a one-line
- * change to revert once a genuinely polarized season gives us something to calibrate on.
+ * **The zero is the room, recomputed per season**, and 2022 is why that has to be per
+ * season rather than a constant. League mean fade rate ran 21.0% (2025), 20.3% (2024),
+ * 21.2% (2023) — then 28.2% (2022). That outlier is mechanical, not behavioural: 2022 had
+ * five pickers, and with six a 3-3 split makes nobody a minority (`is_minority` is
+ * `pct < 0.5`, and 50 is not), while with five every non-unanimous split produces
+ * contrarians. A hardcoded 21% would have made the whole 2022 field look like wolves for
+ * a reason that has nothing to do with 2022. Against its own room, 2022 correctly goes
+ * dark.
  */
 function crowdLeanAxis(guard: number): AxisDef<BadgeConsensusEntry> {
+  const value = (c: BadgeConsensusEntry) =>
+    c.decisions >= guard && c.decisions > 0 ? c.contrarian_picks / c.decisions : null;
   return {
     measure: 'Crowd lean',
-    ends: { lo: 'lone-wolf', hi: 'sheep' },
-    value: (c) => (c.decisions >= guard ? c.mean_consensus_pct / 100 : null),
-    zero: null,
-    bar: TENDENCY_LEAN_THRESHOLD,
+    ends: { lo: 'sheep', hi: 'lone-wolf' },
+    value,
+    zero: (rows) => leagueMean(rows, value),
+    bar: CROWD_LEAN_BAR,
     sample: (c) => c.decisions
   };
 }
 
-// --- Tier-C live-form badge helpers (#296) ---
-
-/**
- * Hot Hand: longest current correct-pick streak.
- * Provisional (in-season): ranks by `current_streak`.
- * Crowned (season complete): ranks by `max_streak` (longest run achieved).
- * Requires `guard` graded non-push picks to suppress early-season noise.
- * AlphaFirst tie-break, then more graded_picks for volume tie-break.
- */
-function hotHand(
-  streaks: BadgeStreakEntry[],
-  guard: number,
-  seasonComplete: boolean
-): BadgeHolder | null {
-  const eligible = streaks.filter((s) => s.graded_picks >= guard);
-  if (eligible.length === 0) return null;
-  const key = (s: BadgeStreakEntry) => (seasonComplete ? s.max_streak : s.current_streak);
-  const best = eligible.reduce((best, curr) => {
-    if (key(curr) > key(best)) return curr;
-    if (key(curr) === key(best)) {
-      if (curr.graded_picks > best.graded_picks) return curr;
-      if (curr.graded_picks === best.graded_picks) return alphaFirst(curr, best);
-    }
-    return best;
-  });
-  if (key(best) === 0) return null;
-  return holder(best);
-}
+// Hot Hand ("longest win streak") lived here until #647. It measured luck: the best
+// streaks on record are 10, 9, 9, 8, and the expected longest run for the luckiest of six
+// ~270-pick coin-flip seasons is 9-10, so the winners sat exactly where chance puts them.
+// No bar repairs that, because the quantity carries no skill signal to threshold.
+//
+// The streak idea survives, on the surface that fits it: a *live* streak is fun precisely
+// because it is fragile and about to break, which is why it belongs on the sweat board as
+// in-week status rather than on the honors shelf as a season title (#652).
 
 // --- Comeback & weekly honors (#397): non-scoring recognition, ADR-0020 ---
 
@@ -668,21 +565,29 @@ function theComeback(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHo
   );
 }
 
-/** The single highest week_points in a set of same-week rows; alphaFirst tie-break. */
+/**
+ * The single highest week_points in a set of same-week rows, or **null when the week's top
+ * score is tied**. A tied week was led by nobody, so it credits nobody (#651).
+ *
+ * #634 applied this rule one level up (a tie on the season-long "most weeks led" tally now
+ * resolves to nobody) but left the per-week tally underneath still calling `alphaFirst`,
+ * which silently credited a tied week to whoever sorted first — meaning a player late in
+ * the alphabet could never win one. `bestOfTheRest` already counts every player who tied
+ * for a week's top score; this makes the two agree.
+ */
 function weeklyTopScorer(rows: BadgeTrendEntry[]): BadgeTrendEntry | null {
   if (rows.length === 0) return null;
-  return rows.reduce((best, curr) => {
-    if (curr.week_points > best.week_points) return curr;
-    if (curr.week_points === best.week_points) return alphaFirst(curr, best);
-    return best;
-  });
+  const maxPoints = Math.max(...rows.map((r) => r.week_points));
+  const leaders = rows.filter((r) => r.week_points === maxPoints);
+  return leaders.length === 1 ? leaders[0] : null;
 }
 
 /**
- * Week Winner: led weekly scoring (highest week_points, alphaFirst tie-break per week)
- * in more weeks than anyone else. Always eligible to award — not season-end gated,
- * since it's a running tally, not a final-standing judgment. Requires sole possession
- * of the top tally: a tie at the top awards nobody (matching theCardiac/donkeyOfWeek).
+ * Week Winner: led weekly scoring (sole highest week_points that week) in more weeks than
+ * anyone else. Always eligible to award — not season-end gated, since it's a running
+ * tally, not a final-standing judgment. Requires sole possession of the top tally: a tie
+ * at the top awards nobody (matching theCardiac/donkeyOfWeek). Weeks that were themselves
+ * tied are led by nobody and simply don't enter the tally.
  */
 function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {
   const weeks = [...new Set(trend.map((r) => r.week_number))];
@@ -751,10 +656,62 @@ function bestOfTheRest(trend: BadgeTrendEntry[]): BadgeHolder[] {
 }
 
 // --- Milestone badge helpers (threshold: zero or more holders) ---
+//
+// Big Game Hunter ("went all in — and cashed") was cut here in #647. It counted All-In
+// *wins* with no rate and no bar, so it rewarded volume of conviction rather than
+// conviction that paid: 2025's holder went 8-20 (28.6%, the worst mark in the room), and
+// 2024 gave it to all five All-In players while they went a collective 31-55. Raising the
+// count cannot fix a count — that player made 28 All-Ins, clearing any threshold anyone
+// would set — and switching it to a rate turns it into The Whale. It had no version that
+// was both correct and distinct (ADR-0035: one measure, one surface).
 
-function bigGameHunter(weights: BadgeWeightEntry[]): BadgeHolder[] {
+/**
+ * The Grinder: missed nothing all season. An attendance **milestone**, not a ranking —
+ * everyone who showed up every week earned it, so multiple holders are correct and
+ * expected, and there is no tie to break.
+ *
+ * It was miscast as a title ("placed the most picks this season"), which always crowned
+ * the maximum whether or not the maximum meant anything — on the record simply the same
+ * player every year, and in 2022 a genuine 208-208 tie decided by D-before-H. Miscasting
+ * a threshold as a ranking is the defect; the `alphaFirst` tie-break was only its symptom,
+ * which is why it is deleted rather than fixed (#651).
+ *
+ * **The legacy gate** (`totals.some(t => t.missed > 0)`) restricts this to seasons that
+ * actually recorded attendance. The 2022-24 sheet import never wrote a single `missed`
+ * row for anyone, so "0 missed" is trivially true for all six players and an ungated
+ * badge would award the entire league three seasons running. This is the same gate
+ * `theGhost` already applies, so the mirror pair goes dark and lights up together.
+ *
+ * Known edge, named honestly: a season in which literally nobody missed a pick would go
+ * dark precisely when everyone earned it. With six players over 272 games that isn't a
+ * real risk (2025: five of six missed something, one missed 133), and if it ever bites,
+ * the fix is a real provenance flag on the season, not a cleverer heuristic.
+ */
+function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder[] {
+  const attendanceRecorded = totals.some((t) => t.missed > 0);
+  if (!attendanceRecorded) return [];
+  return totals
+    .filter((t) => t.missed === 0)
+    .map((t) => ({ user_id: t.user_id, display_name: t.display_name }))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
+}
+
+/**
+ * The Choker: went all in and got shut out — `WHALE_MIN_ALLINS`+ All-Ins, zero wins.
+ *
+ * A **milestone**, not a title: if two players both go 0-for-3+, both choked. That is why
+ * it sheds its `alphaFirst` outright (#648) — the redefinition removes the scarcity, so
+ * there is no tie left to break.
+ *
+ * It shipped as "worst All-In win rate" with no guard at all, so it always crowned
+ * someone: 2022 handed a season title to a player on a 1-for-1 All-In loss — one pick,
+ * one bad night. The shutout gives it the same honest zero The Whale gets, reuses the
+ * existing guard rather than inventing a bar, fires exactly once on 2022-25 (a 0-4), and
+ * kills the 2022 absurdity for free.
+ */
+function theChoker(weights: BadgeWeightEntry[], guard: number): BadgeHolder[] {
   return weights
-    .filter((w) => w.weight === 'A' && w.wins >= BIG_GAME_WIN_THRESHOLD)
+    .filter((w) => w.weight === 'A' && w.wins + w.losses >= guard && w.wins === 0)
     .map((w) => ({ user_id: w.user_id, display_name: w.display_name }))
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
@@ -779,43 +736,28 @@ const FLAVORS: Record<
     label: 'The Grinder',
     emoji: '🪨',
     flavor: "Can't miss a game. Every slate, every week.",
-    description: 'Placed the most picks this season.'
+    description:
+      'Missed nothing all season — every slate, every week. Anyone with a perfect attendance record earns it. Only awarded in seasons where attendance was recorded.'
   },
   'the-choker': {
     label: 'The Choker',
     emoji: '😬',
     flavor: 'Went all in… and all in went wrong.',
-    description: 'Worst win rate on All-In picks this season.'
+    description:
+      'Went all in at least 3 times and lost every one of them. Nobody earns it in a season where every All-In player won at least once.'
   },
   'the-whale': {
     label: 'The Whale',
     emoji: '🐳',
     flavor: 'Goes big and cashes — the house pays this one.',
-    description: 'Best win rate on All-In picks this season (minimum number of All-Ins required).'
+    description:
+      'Best win rate on All-In picks this season, and a winning one — above 50% on at least 3 All-Ins. Nobody earns it in a season where the best All-In record is losing.'
   },
   'the-ghost': {
     label: 'The Ghost',
     emoji: '👻',
     flavor: 'Showed up for the group chat. Not the picks.',
     description: 'Missed the most picks this season.'
-  },
-  'the-nemesis': {
-    label: 'The Nemesis',
-    emoji: '⚔️',
-    flavor: 'Nobody wants to be on the other side of this matchup.',
-    description: 'Best head-to-head record this season on games where you picked the opposite side.'
-  },
-  'the-homer': {
-    label: 'The Homer',
-    emoji: '🏠',
-    flavor: 'Picks on vibes and team colors.',
-    description: 'Biggest share of picks on a single team (minimum number of picks required).'
-  },
-  'big-game-hunter': {
-    label: 'Big Game Hunter',
-    emoji: '🎯',
-    flavor: 'Went all in — and cashed.',
-    description: 'Won 3 or more All-In picks this season.'
   },
   'perfect-week': {
     label: 'Perfect Week',
@@ -829,27 +771,28 @@ const FLAVORS: Record<
     emoji: '🐺',
     flavor: 'Runs with no one. Fades the whole flock.',
     description:
-      "Fades the group's consensus more often than anyone this season (minimum picks required)."
+      'Takes the minority side at least 5 points more often than the league average this season, further than anyone else (minimum picks required). Measured against this league in this season, not a fixed number.'
   },
   sheep: {
     label: 'The Sheep',
     emoji: '🐑',
     flavor: 'Goes where the group goes. Safety in numbers.',
-    description: "Most often picks with the group's consensus (minimum picks required)."
+    description:
+      'Takes the minority side at least 5 points less often than the league average this season, further than anyone else (minimum picks required). Measured against this league in this season, not a fixed number.'
   },
   oracle: {
     label: 'The Oracle',
     emoji: '🔮',
     flavor: 'Bucks the crowd and wins. Madness or genius?',
     description:
-      'Best win rate on picks made against the majority this season (minimum picks required).'
+      'Best win rate on picks made against the majority this season, and at least 55% (minimum picks required). Nobody earns it in a season where bucking the crowd barely beat a coin flip.'
   },
   'the-lemming': {
     label: 'The Lemming',
     emoji: '🐹',
     flavor: 'Followed the herd. Right off the cliff.',
     description:
-      'Worst win rate on picks made with the majority this season (minimum picks required).'
+      'Worst win rate on picks made with the majority this season, and 45% or below (minimum picks required). Nobody earns it in a season where following the crowd still won.'
   },
   // Line-side badges (#317)
   'chalk-eater': {
@@ -857,22 +800,14 @@ const FLAVORS: Record<
     emoji: '🧱',
     flavor: "Never met a favorite they didn't back.",
     description:
-      'Backs favorites over underdogs by at least 10 points, further than anyone else (minimum picks required). Nobody earns it in a season where everyone picks close to an even split.'
+      'Backs favorites at least 15 points more than the league average this season, further than anyone else (minimum picks required). Measured against this league in this season, not an even split.'
   },
   'dog-lover': {
     label: 'Dog Lover',
     emoji: '🐶',
     flavor: 'Loyalty over logic. Always takes the longshot.',
     description:
-      'Backs underdogs over favorites by at least 10 points, further than anyone else (minimum picks required). Nobody earns it in a season where everyone picks close to an even split.'
-  },
-  // Tier-C live-form badge (#296)
-  'hot-hand': {
-    label: 'Hot Hand',
-    emoji: '🔥',
-    flavor: "Can't miss right now. Every pick is money.",
-    description:
-      'Longest correct-pick streak this season (minimum picks required). Provisional in-season; crowned at season end on the longest run achieved.'
+      'Backs underdogs at least 15 points more than the league average this season, further than anyone else (minimum picks required). Measured against this league in this season, not an even split.'
   },
   // Comeback & weekly honors (#397, ADR-0020)
   'the-comeback': {
@@ -910,27 +845,26 @@ const FLAVORS: Record<
  * so copy stays single-sourced.
  */
 const GLOSSARY_ORDER: { id: BadgeId; kind: BadgeKind }[] = [
-  { id: 'the-grinder', kind: 'title' },
-  { id: 'the-choker', kind: 'title' },
   { id: 'the-whale', kind: 'title' },
   { id: 'the-ghost', kind: 'title' },
-  { id: 'the-nemesis', kind: 'title' },
-  { id: 'the-homer', kind: 'title' },
-  // 'lone-wolf' and 'sheep' are deliberately absent: their axis has no zero yet, so the
-  // engine cannot award them, and a legend entry for an unearnable badge is a promise
-  // the engine will never keep (#635). Their `BadgeId` and `FLAVORS` slots stay put — the
-  // pair comes back here the moment crowd lean's zero is decided.
+  // Crowd lean (#294, #316) is an axis as of #649 and awards for the first time here: it
+  // had no zero and shipped dark, so these two were deliberately absent from this list.
+  { id: 'lone-wolf', kind: 'title' },
+  { id: 'sheep', kind: 'title' },
   { id: 'oracle', kind: 'title' },
   { id: 'the-lemming', kind: 'title' },
   { id: 'chalk-eater', kind: 'title' },
   { id: 'dog-lover', kind: 'title' },
-  { id: 'hot-hand', kind: 'title' },
-  { id: 'big-game-hunter', kind: 'milestone' },
-  { id: 'perfect-week', kind: 'milestone' },
   // Comeback & weekly honors (#397, ADR-0020)
   { id: 'the-comeback', kind: 'title' },
   { id: 'week-winner', kind: 'title' },
   { id: 'cardiac', kind: 'title' },
+  // Milestones: thresholds anyone can clear, so zero or more holders and no tie-break.
+  // The Grinder and The Choker moved here from the titles above in #651 / #648 — neither
+  // was ever a ranking, and being miscast as one was the whole defect.
+  { id: 'the-grinder', kind: 'milestone' },
+  { id: 'the-choker', kind: 'milestone' },
+  { id: 'perfect-week', kind: 'milestone' },
   { id: 'best-of-the-rest', kind: 'milestone' }
 ];
 
@@ -945,9 +879,9 @@ export const BADGE_GLOSSARY: BadgeGlossaryEntry[] = GLOSSARY_ORDER.map(({ id, ki
  * what the zero between them means in plain English.
  *
  * The awards card groups by this, and the legend renders one two-faced row per entry.
- * **Dark axes are omitted** — an axis with no zero (`crowdLeanAxis`) can never award, and
- * listing an unearnable badge in a legend promises something the engine will never
- * deliver. Give crowd lean a zero and it belongs back here in the same commit.
+ * Every axis the engine can award belongs here, and only those: listing an unearnable
+ * badge in a legend promises something the engine will never deliver. Crowd lean joined
+ * line lean here in #649, in the same commit that gave it a zero.
  */
 export type BadgeAxisEndMeta = {
   id: BadgeId;
@@ -970,7 +904,15 @@ export const BADGE_AXES: BadgeAxisMeta[] = [
       { id: 'dog-lover', name: 'Dog' },
       { id: 'chalk-eater', name: 'Chalk' }
     ],
-    zeroLabel: 'An even split — no lean either way'
+    zeroLabel: 'Picking dogs and chalk about as often as the rest of the league'
+  },
+  {
+    measure: 'Crowd lean',
+    ends: [
+      { id: 'sheep', name: 'Flock' },
+      { id: 'lone-wolf', name: 'Wolf' }
+    ],
+    zeroLabel: 'Fading the group about as often as the rest of the league'
   }
 ];
 
@@ -991,74 +933,47 @@ function award(id: BadgeId, kind: BadgeAward['kind'], holders: BadgeHolder[]): B
  * from pre-fetched settled stats. Returns only awarded badges (unqualified badges
  * are omitted). Deterministic: stable tie-breaks and no side effects.
  *
- * @param seasonComplete - true when the season has completed; switches Hot Hand from
- *   provisional (current_streak) to crowned (max_streak) ranking.
+ * @param seasonComplete - true when the season has completed; gates the badges whose
+ *   answer isn't meaningful until the season stops adding weeks (The Comeback, Cardiac).
  */
 export function computeBadges(inputs: BadgeInputs, seasonComplete = false): BadgeAward[] {
-  const {
-    seasonTotals,
-    weightAccuracy,
-    headToHead,
-    teamAccuracy,
-    trend,
-    consensus,
-    lineSide,
-    streaks
-  } = inputs;
+  const { seasonTotals, weightAccuracy, trend, consensus, lineSide } = inputs;
   const guard = computeSampleGuard(seasonTotals);
   const badges: BadgeAward[] = [];
 
   // Tier-A: superlative titles
-  const degen = theGrinder(seasonTotals);
-  if (degen) badges.push(award('the-grinder', 'title', [degen]));
-
-  const choker = theChoker(weightAccuracy);
-  if (choker) badges.push(award('the-choker', 'title', [choker]));
-
   const whale = theWhale(weightAccuracy, WHALE_MIN_ALLINS);
   if (whale) badges.push(award('the-whale', 'title', [whale]));
 
   const ghost = theGhost(seasonTotals);
   if (ghost) badges.push(award('the-ghost', 'title', [ghost]));
 
-  const nemesis = theNemesis(headToHead);
-  if (nemesis) badges.push(award('the-nemesis', 'title', [nemesis]));
-
-  const homer = theHomer(teamAccuracy, seasonTotals, guard);
-  if (homer) badges.push(award('the-homer', 'title', [homer]));
-
   // Tier-A: milestone badges
-  const hunters = bigGameHunter(weightAccuracy);
-  if (hunters.length > 0) badges.push(award('big-game-hunter', 'milestone', hunters));
+  const grinders = theGrinder(seasonTotals);
+  if (grinders.length > 0) badges.push(award('the-grinder', 'milestone', grinders));
+
+  const chokers = theChoker(weightAccuracy, WHALE_MIN_ALLINS);
+  if (chokers.length > 0) badges.push(award('the-choker', 'milestone', chokers));
 
   const perfecters = perfectWeek(trend);
   if (perfecters.length > 0) badges.push(award('perfect-week', 'milestone', perfecters));
 
-  // Tier-B: consensus titles (#294, #316). The crowd-lean pair awards through its axis
-  // (#635) and is currently dark by design — see `crowdLeanAxis`. Oracle and The Lemming
-  // are verdict badges on a different measure (how minority/majority picks turned out),
-  // not two ends of one lean, so they stay as they are.
+  // Tier-B: consensus badges (#294, #316). The crowd-lean pair awards through its axis
+  // (#635), live since #649 gave it a league-mean zero. Oracle and The Lemming are verdict
+  // badges on a different measure (how minority/majority picks turned out), not two ends
+  // of one lean, so they stay as they are.
   if (consensus.length > 0) {
-    const oracleGuard = computeOracleGuard(consensus);
-
     badges.push(...awardAxis(crowdLeanAxis(guard), consensus));
 
-    const oracleHolder = oracle(consensus, oracleGuard);
+    const oracleHolder = oracle(consensus, computeOracleGuard(consensus));
     if (oracleHolder) badges.push(award('oracle', 'title', [oracleHolder]));
 
-    const lemmingHolder = theLemming(consensus, oracleGuard);
+    const lemmingHolder = theLemming(consensus, computeLemmingGuard(consensus));
     if (lemmingHolder) badges.push(award('the-lemming', 'title', [lemmingHolder]));
   }
 
   // Line-side titles (#317), now the two ends of one axis (#635): 0, 1, or 2 holders.
   badges.push(...awardAxis(lineLeanAxis(guard), lineSide));
-
-  // Tier-C: live-form streak title (#296)
-  if (streaks.length > 0) {
-    const hotHandGuard = computeHotHandGuard(streaks);
-    const hand = hotHand(streaks, hotHandGuard, seasonComplete);
-    if (hand) badges.push(award('hot-hand', 'title', [hand]));
-  }
 
   // Comeback & weekly honors (#397, ADR-0020): non-scoring recognition, zero effect
   // on standings.
