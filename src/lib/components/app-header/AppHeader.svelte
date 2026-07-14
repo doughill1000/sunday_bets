@@ -82,7 +82,11 @@
       <!-- The mark's ink fills ~80% of its (now transparent) viewBox, so the box is
            sized to sit within the h-14 header row rather than overflow it — keeping
            the mark optically centered without dwarfing the surrounding chrome. -->
-      <img src="/logo-mark.svg" alt="Hotshot logo" class="h-12 w-12 shrink-0 md:h-14 md:w-14" />
+      <img
+        src="/logo-mark.svg"
+        alt="Hotshot logo"
+        class="brand-chip h-12 w-12 shrink-0 md:h-14 md:w-14"
+      />
     </a>
   </div>
 

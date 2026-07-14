@@ -323,3 +323,18 @@
   color: var(--lock-text);
   border-color: transparent;
 }
+
+/* Brand-mark chip — the transparent Hotshot marks (logo-mark.svg, hotshot-lockup.svg)
+   carry cream laces and a brass wordmark that melt into the light "Parchment" ground.
+   On light we sit the mark on a charcoal chip — the same #1c1c1c the dark theme uses as
+   its ground, and the mark's own former baked-in backing — so the cream/gold pop and the
+   header mark reads as a mini app-icon. On .dark the mark already sits on charcoal, so
+   the chip disappears and the mark floats on the header. The art keeps its native inset
+   inside the viewBox, so the chip needs no extra padding. */
+.brand-chip {
+  background-color: #1c1c1c;
+  border-radius: var(--radius);
+}
+.dark .brand-chip {
+  background-color: transparent;
+}
