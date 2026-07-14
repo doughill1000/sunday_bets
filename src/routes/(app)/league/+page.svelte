@@ -55,7 +55,11 @@
   // season dropdown (#518/#529) rather than being a third tab. `scope` is a pure client flip;
   // changing the *season* navigates so the season-scoped query re-keys (ADR-0017).
   let activeTab = $state<'standings' | 'weekly'>(pageData.view);
-  let scope = $state<'season' | 'alltime'>('season');
+  // Initial scope comes from `pageData.defaultScope` (#638): 'alltime' when the newest season
+  // with data has already concluded (off-season) and the visitor didn't ask for a specific
+  // season via `?season=`; 'season' otherwise — unchanged from the old always-'season' default
+  // while a season is actually in progress.
+  let scope = $state<'season' | 'alltime'>(pageData.defaultScope);
 
   // Shareable season standings come from a cached `createQuery` keyed by `(groupId, season)`:
   // a revisit renders the last value instantly and revalidates in the background (ADR-0017).
@@ -168,7 +172,9 @@
   // only (`group_season_years`), so that season is absent from it. Without this the <select>
   // value would match no <option>, silently blanking the control to `''` while the subtitle
   // still reads "<year> season." (this empty value is what tripped the all-time e2e spec).
-  const scopeOptions = $derived(seasonScopeOptions([...data.availableSeasons, data.seasonYear]));
+  const scopeOptions = $derived(
+    seasonScopeOptions([...data.availableSeasons, data.seasonYear], data.latestSeasonInProgress)
+  );
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.seasonYear));
 
   // The subtitle names whatever the ACTIVE tab's own control is set to, so the two tabs never

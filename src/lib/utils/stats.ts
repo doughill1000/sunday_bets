@@ -104,22 +104,36 @@ export function formatAccuracy(accuracy: number | null): string {
   return accuracy == null ? '--' : `${Math.round(accuracy * 100)}%`;
 }
 
-// ── /stats scope selector (issue #518) ────────────────────────────────────────
+// ── /stats scope selector (issue #518, #638) ──────────────────────────────────
 // The Season/Career tab is gone: scope folds into one dropdown that pins the newest
 // season ("This season") and Career, then lists older seasons newest-first. This derives
 // that option model from the seasons that actually have data, so the control scales as
 // years accumulate. Pure, so the ordering/scaling is unit-tested without a DOM.
+//
+// The newest season only earns the "This season" pin while it's actually in progress
+// (`latestInProgress`, from `isSeasonInProgress` — a real weeks-based signal, not just
+// "has the most recent standings"). Once its scoring weeks have all concluded, it folds
+// into `pastSeasons` like any other year instead of misleadingly still reading "This
+// season" during the off-season (#638).
 
 export type SeasonScopeOptions = {
-  /** Newest season with data — the pinned "This season" option; null when none exist. */
+  /** Newest season with data, while still in progress — the pinned "This season" option;
+   *  null when there is none (no seasons at all, or the newest one has concluded). */
   latest: number | null;
-  /** Older seasons, newest-first, listed beneath "This season" and "Career". */
+  /** Every other season, newest-first, listed beneath "This season" and "Career". Includes
+   *  the newest season too when it is no longer in progress. */
   pastSeasons: number[];
 };
 
-export function seasonScopeOptions(availableSeasons: number[]): SeasonScopeOptions {
+export function seasonScopeOptions(
+  availableSeasons: number[],
+  latestInProgress: boolean
+): SeasonScopeOptions {
   const desc = [...new Set(availableSeasons)].sort((a, b) => b - a);
-  return { latest: desc[0] ?? null, pastSeasons: desc.slice(1) };
+  if (desc.length === 0) return { latest: null, pastSeasons: [] };
+  return latestInProgress
+    ? { latest: desc[0], pastSeasons: desc.slice(1) }
+    : { latest: null, pastSeasons: desc };
 }
 
 // ── Personal tendency tiles (issue #502) ──────────────────────────────────────
