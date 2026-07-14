@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generatedAt": "2026-07-13T15:48:15.677Z",
+    "generatedAt": "2026-07-14T17:17:46.257Z",
     "groupId": "00000000-0000-4000-8000-000000000017",
     "groupName": "Sunday Bets",
     "completedSeasonYear": 2024,
@@ -17,8 +17,8 @@
     "weekNumber": 16,
     "games": [
       {
-        "id": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
-        "kickoff": "2026-07-12T13:45:48.424+00:00",
+        "id": "372cfdb1-c2ca-43b8-9618-92178963692d",
+        "kickoff": "2026-07-13T15:15:47.452+00:00",
         "homeTeamId": 16,
         "awayTeamId": 14,
         "home": "PIT",
@@ -43,7 +43,7 @@
             "userId": "00000000-0000-0000-0000-000000000002",
             "displayName": "Hank",
             "avatarKey": null,
-            "gameId": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
+            "gameId": "372cfdb1-c2ca-43b8-9618-92178963692d",
             "pickedSide": "home",
             "weight": "M",
             "pickedTeamShort": "PIT",
@@ -55,7 +55,7 @@
             "userId": "00000000-0000-0000-0000-000000000003",
             "displayName": "Charlie",
             "avatarKey": null,
-            "gameId": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
+            "gameId": "372cfdb1-c2ca-43b8-9618-92178963692d",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "PIT",
@@ -67,7 +67,7 @@
             "userId": "00000000-0000-0000-0000-000000000004",
             "displayName": "Marcus",
             "avatarKey": null,
-            "gameId": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
+            "gameId": "372cfdb1-c2ca-43b8-9618-92178963692d",
             "pickedSide": "away",
             "weight": "L",
             "pickedTeamShort": "NYJ",
@@ -79,7 +79,7 @@
             "userId": "00000000-0000-0000-0000-000000000005",
             "displayName": "Beth",
             "avatarKey": null,
-            "gameId": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
+            "gameId": "372cfdb1-c2ca-43b8-9618-92178963692d",
             "pickedSide": "home",
             "weight": "L",
             "pickedTeamShort": "PIT",
@@ -91,7 +91,7 @@
             "userId": "00000000-0000-0000-0000-000000000006",
             "displayName": "Mike",
             "avatarKey": null,
-            "gameId": "330f81bc-c602-48b4-8cc6-55f52caa9ff4",
+            "gameId": "372cfdb1-c2ca-43b8-9618-92178963692d",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "PIT",
@@ -102,8 +102,8 @@
         ]
       },
       {
-        "id": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
-        "kickoff": "2026-07-13T12:45:48.424+00:00",
+        "id": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
+        "kickoff": "2026-07-14T14:15:47.452+00:00",
         "homeTeamId": 3,
         "awayTeamId": 2,
         "home": "KC",
@@ -128,7 +128,7 @@
             "userId": "00000000-0000-0000-0000-000000000001",
             "displayName": "Doug",
             "avatarKey": null,
-            "gameId": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
+            "gameId": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
             "pickedSide": "home",
             "weight": "M",
             "pickedTeamShort": "KC",
@@ -140,7 +140,7 @@
             "userId": "00000000-0000-0000-0000-000000000002",
             "displayName": "Hank",
             "avatarKey": null,
-            "gameId": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
+            "gameId": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "KC",
@@ -152,7 +152,7 @@
             "userId": "00000000-0000-0000-0000-000000000003",
             "displayName": "Charlie",
             "avatarKey": null,
-            "gameId": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
+            "gameId": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
             "pickedSide": "away",
             "weight": "L",
             "pickedTeamShort": "DAL",
@@ -164,7 +164,7 @@
             "userId": "00000000-0000-0000-0000-000000000005",
             "displayName": "Beth",
             "avatarKey": null,
-            "gameId": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
+            "gameId": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
             "pickedSide": "home",
             "weight": "A",
             "pickedTeamShort": "KC",
@@ -176,7 +176,7 @@
             "userId": "00000000-0000-0000-0000-000000000006",
             "displayName": "Mike",
             "avatarKey": null,
-            "gameId": "e6b39b64-fafc-4852-ac3e-fb0e5f9fd13a",
+            "gameId": "b03b403e-954d-4570-9ecc-e1e45ff3b9f4",
             "pickedSide": "away",
             "weight": "L",
             "pickedTeamShort": "DAL",
@@ -187,8 +187,8 @@
         ]
       },
       {
-        "id": "68d6c305-1722-4631-97de-7930587c1b25",
-        "kickoff": "2026-07-14T13:45:48.424+00:00",
+        "id": "dd62b568-6746-4cdd-85ca-937c8878c266",
+        "kickoff": "2026-07-15T15:15:47.452+00:00",
         "homeTeamId": 4,
         "awayTeamId": 1,
         "home": "BUF",
@@ -213,7 +213,7 @@
             "userId": "00000000-0000-0000-0000-000000000001",
             "displayName": "Doug",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "BUF",
@@ -225,7 +225,7 @@
             "userId": "00000000-0000-0000-0000-000000000002",
             "displayName": "Hank",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "away",
             "weight": "L",
             "pickedTeamShort": "PHI",
@@ -237,7 +237,7 @@
             "userId": "00000000-0000-0000-0000-000000000003",
             "displayName": "Charlie",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "home",
             "weight": "M",
             "pickedTeamShort": "BUF",
@@ -249,7 +249,7 @@
             "userId": "00000000-0000-0000-0000-000000000004",
             "displayName": "Marcus",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "BUF",
@@ -261,7 +261,7 @@
             "userId": "00000000-0000-0000-0000-000000000005",
             "displayName": "Beth",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "home",
             "weight": "H",
             "pickedTeamShort": "BUF",
@@ -273,7 +273,7 @@
             "userId": "00000000-0000-0000-0000-000000000006",
             "displayName": "Mike",
             "avatarKey": null,
-            "gameId": "68d6c305-1722-4631-97de-7930587c1b25",
+            "gameId": "dd62b568-6746-4cdd-85ca-937c8878c266",
             "pickedSide": "home",
             "weight": "M",
             "pickedTeamShort": "BUF",
@@ -284,8 +284,8 @@
         ]
       },
       {
-        "id": "bdfc3805-8626-44a5-acc9-0b841d099e46",
-        "kickoff": "2026-07-15T15:45:48.424+00:00",
+        "id": "67128652-0ea1-46d7-956c-0ff696a8f321",
+        "kickoff": "2026-07-16T17:15:47.452+00:00",
         "homeTeamId": 7,
         "awayTeamId": 6,
         "home": "CIN",
@@ -310,7 +310,7 @@
             "userId": "00000000-0000-0000-0000-000000000001",
             "displayName": "Doug",
             "avatarKey": null,
-            "gameId": "bdfc3805-8626-44a5-acc9-0b841d099e46",
+            "gameId": "67128652-0ea1-46d7-956c-0ff696a8f321",
             "pickedSide": "home",
             "weight": "L",
             "pickedTeamShort": "CIN",
@@ -322,7 +322,7 @@
             "userId": "00000000-0000-0000-0000-000000000002",
             "displayName": "Hank",
             "avatarKey": null,
-            "gameId": "bdfc3805-8626-44a5-acc9-0b841d099e46",
+            "gameId": "67128652-0ea1-46d7-956c-0ff696a8f321",
             "pickedSide": "away",
             "weight": "M",
             "pickedTeamShort": "BAL",
@@ -334,7 +334,7 @@
             "userId": "00000000-0000-0000-0000-000000000004",
             "displayName": "Marcus",
             "avatarKey": null,
-            "gameId": "bdfc3805-8626-44a5-acc9-0b841d099e46",
+            "gameId": "67128652-0ea1-46d7-956c-0ff696a8f321",
             "pickedSide": "home",
             "weight": "L",
             "pickedTeamShort": "CIN",
@@ -346,7 +346,7 @@
             "userId": "00000000-0000-0000-0000-000000000005",
             "displayName": "Beth",
             "avatarKey": null,
-            "gameId": "bdfc3805-8626-44a5-acc9-0b841d099e46",
+            "gameId": "67128652-0ea1-46d7-956c-0ff696a8f321",
             "pickedSide": "away",
             "weight": "M",
             "pickedTeamShort": "BAL",
@@ -358,7 +358,7 @@
             "userId": "00000000-0000-0000-0000-000000000006",
             "displayName": "Mike",
             "avatarKey": null,
-            "gameId": "bdfc3805-8626-44a5-acc9-0b841d099e46",
+            "gameId": "67128652-0ea1-46d7-956c-0ff696a8f321",
             "pickedSide": "away",
             "weight": "H",
             "pickedTeamShort": "BAL",
@@ -369,8 +369,8 @@
         ]
       },
       {
-        "id": "985ecb93-da77-4ebd-b3f8-a096ea57da72",
-        "kickoff": "2026-07-17T15:45:48.424+00:00",
+        "id": "246b392d-30c3-4fbb-958f-9402323f4307",
+        "kickoff": "2026-07-18T17:15:47.452+00:00",
         "homeTeamId": 8,
         "awayTeamId": 5,
         "home": "MIA",
@@ -674,20 +674,6 @@
         ]
       },
       {
-        "id": "the-sharp",
-        "label": "The Sharp",
-        "emoji": "📈",
-        "flavor": "Sharp money. Best closing record in the room.",
-        "description": "Best win rate this season (minimum number of picks required).",
-        "kind": "title",
-        "holders": [
-          {
-            "user_id": "00000000-0000-0000-0000-000000000003",
-            "display_name": "Charlie"
-          }
-        ]
-      },
-      {
         "id": "the-choker",
         "label": "The Choker",
         "emoji": "😬",
@@ -856,20 +842,6 @@
         ]
       },
       {
-        "id": "the-fool",
-        "label": "The Fool",
-        "emoji": "🤡",
-        "flavor": "Bucked the crowd. The crowd was right.",
-        "description": "Worst win rate on picks made against the majority this season (minimum picks required).",
-        "kind": "title",
-        "holders": [
-          {
-            "user_id": "00000000-0000-0000-0000-000000000006",
-            "display_name": "Mike"
-          }
-        ]
-      },
-      {
         "id": "the-lemming",
         "label": "The Lemming",
         "emoji": "🐹",
@@ -940,20 +912,6 @@
         ]
       },
       {
-        "id": "week-winner",
-        "label": "Week Winner",
-        "emoji": "🏆",
-        "flavor": "Every week's its own title fight — and you keep winning it.",
-        "description": "Led the league in weekly scoring more often than anyone else this season.",
-        "kind": "title",
-        "holders": [
-          {
-            "user_id": "00000000-0000-0000-0000-000000000005",
-            "display_name": "Beth"
-          }
-        ]
-      },
-      {
         "id": "best-of-the-rest",
         "label": "Best of the Rest",
         "emoji": "🌟",
@@ -980,42 +938,42 @@
       {
         "userId": "00000000-0000-0000-0000-000000000001",
         "role": "commissioner",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Doug",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000002",
         "role": "member",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Hank",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000003",
         "role": "member",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Charlie",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000004",
         "role": "member",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Marcus",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000005",
         "role": "member",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Beth",
         "avatarKey": null
       },
       {
         "userId": "00000000-0000-0000-0000-000000000006",
         "role": "member",
-        "joinedAt": "2026-07-13T15:45:48.635516+00:00",
+        "joinedAt": "2026-07-14T17:15:47.626413+00:00",
         "displayName": "Mike",
         "avatarKey": null
       }
@@ -1023,12 +981,12 @@
   },
   "wrapped": {
     "player": {
-      "id": "8a781fd7-b226-4e23-8a4d-594255560b56",
+      "id": "f7311b6b-13a8-448d-aaa5-f9a7dbf1a3a7",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "scope": "player",
       "subject_user_id": "00000000-0000-0000-0000-000000000005",
-      "prose": "You finished the regular season exactly where the rest of these degenerates feared you would: No. 1 with 105 points and a 36-17-2 record. After coughing up a pathetic -6 in Week 2, you ripped off an 8-game heater, dropped an 18-point nuke in Week 5, and went 8-1-1 on All-Ins like you owned the damn house 🔥. Ten contrarian shots with 4 cashes says you didn’t need to play cute often — you just played better, stacked badges, and left the league arguing over second place.",
+      "prose": "You finished No. 1 with 105 points and a 36-17-2 record, and once you grabbed the throne you never looked back. Week 5 was pure arson — 18 points and a Perfect Week — and that 8-1-1 All-In mark is the kind of heater that makes the rest of Sunday Bets look like they were donating 💰. Even your wobble in Week 2 at -6 just set up The Comeback, because champs don’t stay down; they bury the league, cash big spots, and call it a season.",
       "facts": {
         "rank": 1,
         "allin": {
@@ -1060,12 +1018,6 @@
             "kind": "title",
             "emoji": "🧗",
             "label": "The Comeback"
-          },
-          {
-            "id": "week-winner",
-            "kind": "title",
-            "emoji": "🏆",
-            "label": "Week Winner"
           }
         ],
         "record": {
@@ -1094,17 +1046,17 @@
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 654,
-      "completion_tokens": 129,
-      "created_at": "2026-07-13T15:47:16.083089+00:00"
+      "prompt_tokens": 651,
+      "completion_tokens": 122,
+      "created_at": "2026-07-14T17:16:56.199272+00:00"
     },
     "league": {
-      "id": "c600cd7b-4680-4e7b-a318-5da5d19ef3fc",
+      "id": "091f3041-5db8-48c8-b6b4-ed82fb87a3d7",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "scope": "league",
       "subject_user_id": null,
-      "prose": "Three lead changes, a 6-point title margin, and in the end Beth slammed the door with 105 to Hank’s 99 — not a coronation, a knife fight, and she still walked out wearing The Comeback, The Homer, and Week Winner like a damn crown 👑. Hank was a monster all year with the league’s 13-win heater and enough badges to fill a trophy case, but “The Grinder” and “The Whale” still cash out as runner-up when the math says 99. Charlie played the sharp/oracle act to 75 and Doug pulled the season’s funniest pratfall, sliding from 1st to 4th for a nice little 3-spot faceplant. And then there’s Mike: dead last at -144 with The Choker, The Fool, The Lemming, and Chalk Eater — brother, that’s not a résumé, that’s a crime scene.",
+      "prose": "Three lead changes, a 6-point title margin, and in the end Beth snatched the crown at 105 while Hank’s 13-game heater still only bought him second at 99 — hell of a run, no parade. Doug deserves a special slow clap for turning a season that once had him at #1 into a faceplant all the way down to 4th, finishing with 74 while Charlie slid right past him to 75 by a single damn point. And then there’s Mike: dead last at -144, proudly hauling home The Choker, The Lemming, and Chalk Eater like a one-man disaster class. Beth held #1 for 10 weeks and closed the job; everybody else was just background noise 👑",
       "facts": {
         "lead": {
           "changes": 3,
@@ -1164,11 +1116,6 @@
             "holders": ["Hank"]
           },
           {
-            "emoji": "📈",
-            "label": "The Sharp",
-            "holders": ["Charlie"]
-          },
-          {
             "emoji": "😬",
             "label": "The Choker",
             "holders": ["Mike"]
@@ -1209,11 +1156,6 @@
             "holders": ["Charlie"]
           },
           {
-            "emoji": "🤡",
-            "label": "The Fool",
-            "holders": ["Mike"]
-          },
-          {
             "emoji": "🐹",
             "label": "The Lemming",
             "holders": ["Mike"]
@@ -1236,11 +1178,6 @@
           {
             "emoji": "🧗",
             "label": "The Comeback",
-            "holders": ["Beth"]
-          },
-          {
-            "emoji": "🏆",
-            "label": "Week Winner",
             "holders": ["Beth"]
           }
         ],
@@ -1268,18 +1205,18 @@
       },
       "is_fallback": false,
       "model": "openai/gpt-5.4",
-      "prompt_tokens": 1102,
-      "completion_tokens": 192,
-      "created_at": "2026-07-13T15:47:12.788142+00:00"
+      "prompt_tokens": 1057,
+      "completion_tokens": 155,
+      "created_at": "2026-07-14T17:16:52.603773+00:00"
     }
   },
   "recaps": [
     {
-      "id": "8d34d8fb-2586-4576-8bce-bb72a477a73c",
+      "id": "bff28f85-97b5-4b4c-8be8-5db87e086947",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 14,
-      "prose": "That’s the regular season curtain call: Beth slams the door on everybody at 105 points, holding off Hank’s 99 with a tidy little 6-point gap while riding a 3-win heater like the throne was never up for debate 👑. Charlie made the loudest last-week noise, dropping 8 points to lead the week, cashing a contrarian hit at just 33.33% consensus, and vaulting from 4th to 3rd while Doug’s cute crowd-fade routine blew up in his face and dumped him to 74. And then there’s Mike — a catastrophic -19 on the week, busted All-In, dead last at -144 overall… brother, that is generational getting cooked. Marcus at least nailed the All-In hero play, but finishing the year at -32 after a heavy loss is still the kind of résumé that belongs in the shredder.",
+      "prose": "Beth slams the regular season door shut at 105 points, holding Hank off by 6 like a proper champion while stretching the hottest hand in the room to 3 straight wins 👑. Charlie made the loudest mess of Week 14: week-best 8 points, a gutsy 33.33% contrarian hit, and a last-day shove past Doug for 3rd, 75-74 — Doug tried to fade the crowd and got cooked for it. And then there’s Mike, who somehow found a trapdoor beneath last place: week-worst -19, a blown All-In, and a season-ending crater at -144. Marcus at least nailed the All-In hero bit, but even that couldn’t hide a heavy loss and a brutal -32 finish.",
       "facts": {
         "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
@@ -1434,19 +1371,16 @@
           "sheep": ["00000000-0000-0000-0000-000000000004"],
           "oracle": ["00000000-0000-0000-0000-000000000003"],
           "hot-hand": ["00000000-0000-0000-0000-000000000005"],
-          "the-fool": ["00000000-0000-0000-0000-000000000006"],
           "dog-lover": ["00000000-0000-0000-0000-000000000001"],
           "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
           "the-ghost": ["00000000-0000-0000-0000-000000000004"],
           "the-homer": ["00000000-0000-0000-0000-000000000005"],
-          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
           "the-whale": ["00000000-0000-0000-0000-000000000002"],
           "the-choker": ["00000000-0000-0000-0000-000000000006"],
           "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
           "the-grinder": ["00000000-0000-0000-0000-000000000002"],
           "the-lemming": ["00000000-0000-0000-0000-000000000006"],
           "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
-          "week-winner": ["00000000-0000-0000-0000-000000000005"],
           "perfect-week": [
             "00000000-0000-0000-0000-000000000005",
             "00000000-0000-0000-0000-000000000003",
@@ -1471,15 +1405,15 @@
       "is_fallback": false,
       "model": "openai/gpt-5.4",
       "prompt_tokens": 1168,
-      "completion_tokens": 188,
-      "created_at": "2026-07-13T15:46:04.225181+00:00"
+      "completion_tokens": 163,
+      "created_at": "2026-07-14T17:16:03.215043+00:00"
     },
     {
-      "id": "fb6340f2-a26d-4825-8fd4-e9f336c5c2e4",
+      "id": "89db0d4a-5fdc-4e69-88e3-5e27bb2599ce",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 13,
-      "prose": "Charlie kicked the door in this week: 19 points, a flawless card, and he cashed the All-In too — that’s how you go from hanging around to breathing down the podium’s neck at 75 total. Meanwhile Mike put on a disasterclass, faceplanting to -23 for the week and nuking another All-In, which is how you end up marinating at -144 on the season 💀. Up top, Beth kept the crown at 105 with a 3-win heater, but don’t get smug after that backfired fade — Hank’s sitting at 99, only 4 back, and Doug got shoved from 2nd to 3rd while Charlie closes to within a single point of him, 75-74. Marcus also managed to light an All-In on fire, because apparently watching Mike get cooked wasn’t enough of a warning.",
+      "prose": "Charlie kicked the door off the hinges in Week 13: perfect week, 19 points, and he cashed the All-In too — the kind of heater that makes third place at 75 suddenly feel a lot louder. Meanwhile Mike put on a disasterclass, faceplanting to -23 and torching his All-In for good measure; at -144 on the season, that’s not a slump, that’s a crater. Up top, Beth’s still wearing the crown at 105 with a 3-win streak, but with Hank lurking at 99 the title race is only 4 points wide, so she can’t afford many more cute fades that backfire. And Doug? Congrats on the scenic route from #2 to #3 — got cooked by a week where Charlie remembered how to collect.",
       "facts": {
         "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
@@ -1629,19 +1563,16 @@
           "sheep": ["00000000-0000-0000-0000-000000000004"],
           "oracle": ["00000000-0000-0000-0000-000000000003"],
           "hot-hand": ["00000000-0000-0000-0000-000000000005"],
-          "the-fool": ["00000000-0000-0000-0000-000000000006"],
           "dog-lover": ["00000000-0000-0000-0000-000000000001"],
           "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
           "the-ghost": ["00000000-0000-0000-0000-000000000004"],
           "the-homer": ["00000000-0000-0000-0000-000000000005"],
-          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
           "the-whale": ["00000000-0000-0000-0000-000000000002"],
           "the-choker": ["00000000-0000-0000-0000-000000000006"],
           "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
           "the-grinder": ["00000000-0000-0000-0000-000000000002"],
           "the-lemming": ["00000000-0000-0000-0000-000000000006"],
           "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
-          "week-winner": ["00000000-0000-0000-0000-000000000005"],
           "perfect-week": [
             "00000000-0000-0000-0000-000000000005",
             "00000000-0000-0000-0000-000000000003",
@@ -1666,15 +1597,15 @@
       "is_fallback": false,
       "model": "openai/gpt-5.4",
       "prompt_tokens": 1138,
-      "completion_tokens": 183,
-      "created_at": "2026-07-13T15:46:04.137317+00:00"
+      "completion_tokens": 167,
+      "created_at": "2026-07-14T17:16:03.115418+00:00"
     },
     {
-      "id": "bbf57d5f-946d-4f84-9ec0-c5decb9b585b",
+      "id": "0a1d1d12-962c-4726-ab1a-01440d0e773d",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 12,
-      "prose": "Hank kicked the damn door in this week: 19 points, a perfect card, cashed the All-In, and even nailed the 33.33% contrarian shot like he was insulting the rest of you on purpose. That heater vaulted him from 3rd to 2nd at 99, and suddenly Beth’s still on top at 105 but that lead is down to 10 — cute little 3-win streak, but the throne’s starting to creak 👑. Meanwhile Charlie managed the week’s saddest magic trick: busted his All-In and got jumped despite sitting on 75, while Doug’s big-brain crowd fade blew up in his face and left him marooned at 74. And Mike? -17 on the week, -144 on the season — that’s not a cold spell, that’s a crime scene.",
+      "prose": "Hank kicked the damn door in this week: a flawless card, 19 points, hit the All-In, and even nailed the 33.33% contrarian like he was playing against children. That heater vaulted him from 3rd to 2nd, and now Beth’s still on the throne at 105 — but that 3-win streak is the only thing keeping her 10 points clear, because Hank is at 99 and coming loud. Meanwhile Charlie lit his All-In on fire and still sits on 75, while Mike somehow found a way to post a hideous -17 week and drag his season corpse to -144 💀.",
       "facts": {
         "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
@@ -1828,19 +1759,16 @@
           "sheep": ["00000000-0000-0000-0000-000000000004"],
           "oracle": ["00000000-0000-0000-0000-000000000003"],
           "hot-hand": ["00000000-0000-0000-0000-000000000005"],
-          "the-fool": ["00000000-0000-0000-0000-000000000006"],
           "dog-lover": ["00000000-0000-0000-0000-000000000001"],
           "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
           "the-ghost": ["00000000-0000-0000-0000-000000000004"],
           "the-homer": ["00000000-0000-0000-0000-000000000005"],
-          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
           "the-whale": ["00000000-0000-0000-0000-000000000002"],
           "the-choker": ["00000000-0000-0000-0000-000000000006"],
           "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
           "the-grinder": ["00000000-0000-0000-0000-000000000002"],
           "the-lemming": ["00000000-0000-0000-0000-000000000006"],
           "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
-          "week-winner": ["00000000-0000-0000-0000-000000000005"],
           "perfect-week": [
             "00000000-0000-0000-0000-000000000005",
             "00000000-0000-0000-0000-000000000003",
@@ -1865,15 +1793,15 @@
       "is_fallback": false,
       "model": "openai/gpt-5.4",
       "prompt_tokens": 1151,
-      "completion_tokens": 179,
-      "created_at": "2026-07-13T15:46:04.034216+00:00"
+      "completion_tokens": 137,
+      "created_at": "2026-07-14T17:16:03.031855+00:00"
     },
     {
-      "id": "718d3b00-e0aa-4096-a70b-6afe2e7d47a8",
+      "id": "7971e3fa-715d-41b8-8eb5-a52ebe16457c",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 11,
-      "prose": "Mike dropped a 14-point week and somehow still sits at a cartoonish -144 on the season — that’s like winning a bar fight after your house already burned down 💀. The real bloodletting was Charlie: dead last this week at -2, coughed up 3rd place to Hank, and now trails him 99-75 in the standings while their all-time matchup sits a tight 54-51. Meanwhile Beth keeps strutting around at 105 with a 3-win heater and the All-In cash, even with a backfired fade on the résumé — ugly process, beautiful result, and the gap to second is still just 3.",
+      "prose": "Mike dropped a 14-point nuke on the week and still sits at -144 on the season, which is the kind of “too little, way too damn late” heater this league deserves. The real bloodletting was Charlie: -2 on the week, dumped from 3rd to 4th by Hank, while Hank stayed perfect and tightened that head-to-head to 54-51 all-time — your lead in that rivalry isn’t looking so comfy now. Up top, Beth keeps the crown at 105 with a 3-win streak and the All-In cash, but let’s not pretend she walked on water: even the leader managed a backfired fade, same as Charlie and Doug, and the top of this thing is still close enough for somebody to get cooked.",
       "facts": {
         "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
@@ -2030,19 +1958,16 @@
           "sheep": ["00000000-0000-0000-0000-000000000004"],
           "oracle": ["00000000-0000-0000-0000-000000000003"],
           "hot-hand": ["00000000-0000-0000-0000-000000000005"],
-          "the-fool": ["00000000-0000-0000-0000-000000000006"],
           "dog-lover": ["00000000-0000-0000-0000-000000000001"],
           "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
           "the-ghost": ["00000000-0000-0000-0000-000000000004"],
           "the-homer": ["00000000-0000-0000-0000-000000000005"],
-          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
           "the-whale": ["00000000-0000-0000-0000-000000000002"],
           "the-choker": ["00000000-0000-0000-0000-000000000006"],
           "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
           "the-grinder": ["00000000-0000-0000-0000-000000000002"],
           "the-lemming": ["00000000-0000-0000-0000-000000000006"],
           "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
-          "week-winner": ["00000000-0000-0000-0000-000000000005"],
           "perfect-week": [
             "00000000-0000-0000-0000-000000000005",
             "00000000-0000-0000-0000-000000000003",
@@ -2067,15 +1992,15 @@
       "is_fallback": false,
       "model": "openai/gpt-5.4",
       "prompt_tokens": 1161,
-      "completion_tokens": 141,
-      "created_at": "2026-07-13T15:46:03.914508+00:00"
+      "completion_tokens": 164,
+      "created_at": "2026-07-14T17:16:02.94889+00:00"
     },
     {
-      "id": "e87f70f4-ee99-489e-bc97-a742d2b78a87",
+      "id": "3a9bbcb7-408d-468a-bd67-8bf55c56ba18",
       "group_id": "00000000-0000-4000-8000-000000000017",
       "season_year": 2024,
       "week_number": 10,
-      "prose": "Marcus didn’t just lose Week 10 — he got dragged behind it: league-worst -11 points and a busted All-In, while Mike somehow found the same trap door and kept his season in the abyss at -144. Up top, Beth keeps acting like rent’s due with a 3-win heater and 105 total points, still holding first by 7 over the field, but Hank dropped 9 this week to remind everyone he’s still in the damn picture at 99. And Doug? Nice guts on the 40% contrarian hit, shame about the backfired fade — that’s the kind of week that almost makes you look smart until the rest of the slip catches fire 💀",
+      "prose": "Marcus didn’t just finish last — he faceplanted into -11 and lit his All-In ticket on fire, while Mike somehow keeps digging and now sits at a grotesque -144 on the season. Hank took the weekly crown with 9, but Beth is still the one hogging the throne: 105 points, a 3-win heater, and a 7-point cushion over second while the rest of you keep pretending this is a race. Doug gets half a clap for cashing a 40% contrarian hit, then loses the other half for a backfired fade — classic “look at me, I’m sharp” stuff that still leaves him fourth at 74. And Hank, before you puff your chest too hard, Beth still owns you head-to-head 57-49 👑",
       "facts": {
         "spice": "spicy",
         "group_id": "00000000-0000-4000-8000-000000000017",
@@ -2215,19 +2140,16 @@
           "sheep": ["00000000-0000-0000-0000-000000000004"],
           "oracle": ["00000000-0000-0000-0000-000000000003"],
           "hot-hand": ["00000000-0000-0000-0000-000000000005"],
-          "the-fool": ["00000000-0000-0000-0000-000000000006"],
           "dog-lover": ["00000000-0000-0000-0000-000000000001"],
           "lone-wolf": ["00000000-0000-0000-0000-000000000006"],
           "the-ghost": ["00000000-0000-0000-0000-000000000004"],
           "the-homer": ["00000000-0000-0000-0000-000000000005"],
-          "the-sharp": ["00000000-0000-0000-0000-000000000003"],
           "the-whale": ["00000000-0000-0000-0000-000000000002"],
           "the-choker": ["00000000-0000-0000-0000-000000000006"],
           "chalk-eater": ["00000000-0000-0000-0000-000000000006"],
           "the-grinder": ["00000000-0000-0000-0000-000000000002"],
           "the-lemming": ["00000000-0000-0000-0000-000000000006"],
           "the-nemesis": ["00000000-0000-0000-0000-000000000003"],
-          "week-winner": ["00000000-0000-0000-0000-000000000005"],
           "perfect-week": [
             "00000000-0000-0000-0000-000000000005",
             "00000000-0000-0000-0000-000000000003",
@@ -2252,8 +2174,8 @@
       "is_fallback": false,
       "model": "openai/gpt-5.4",
       "prompt_tokens": 1076,
-      "completion_tokens": 147,
-      "created_at": "2026-07-13T15:46:03.862615+00:00"
+      "completion_tokens": 167,
+      "created_at": "2026-07-14T17:16:02.859734+00:00"
     }
   ]
 }

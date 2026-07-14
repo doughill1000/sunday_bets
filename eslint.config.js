@@ -47,5 +47,12 @@ export default ts.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off'
     }
+  },
+  {
+    // Plain Node build scripts run outside the TS project, not type-checked by `pnpm check`.
+    files: ['scripts/*.mjs'],
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off'
+    }
   }
 );

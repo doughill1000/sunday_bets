@@ -193,8 +193,8 @@ const SEASON_STATS: SeasonStats = {
 
 const BADGES: BadgeAward[] = [
   {
-    id: 'the-sharp',
-    label: 'The Sharp',
+    id: 'the-whale',
+    label: 'The Whale',
     emoji: '🎯',
     flavor: '',
     description: '',
@@ -272,7 +272,7 @@ describe('buildSeasonWrappedFacts (happy path)', () => {
     const facts = await buildSeasonWrappedFacts({ groupId: 'g1', seasonYear: 2024 });
     const alice = facts.players.find((p) => p.user_id === 'u1')!;
     expect(alice.badges).toEqual([
-      { id: 'the-sharp', label: 'The Sharp', emoji: '🎯', kind: 'title' }
+      { id: 'the-whale', label: 'The Whale', emoji: '🎯', kind: 'title' }
     ]);
   });
 
@@ -283,7 +283,7 @@ describe('buildSeasonWrappedFacts (happy path)', () => {
     expect(facts.league.player_count).toBe(3);
     expect(facts.league.standings).toHaveLength(3);
     expect(facts.league.title_badges).toEqual([
-      { label: 'The Sharp', emoji: '🎯', holders: ['Alice'] }
+      { label: 'The Whale', emoji: '🎯', holders: ['Alice'] }
     ]);
   });
 });
@@ -295,8 +295,8 @@ describe('buildSeasonWrappedFacts (opt-out neutralization)', () => {
   // in the league packet (title_badges only surfaces 'title'-kind awards).
   const OPTOUT_BADGES: BadgeAward[] = [
     {
-      id: 'the-sharp',
-      label: 'The Sharp',
+      id: 'the-whale',
+      label: 'The Whale',
       emoji: '🎯',
       flavor: '',
       description: '',
@@ -310,8 +310,8 @@ describe('buildSeasonWrappedFacts (opt-out neutralization)', () => {
     const facts = await buildSeasonWrappedFacts({ groupId: 'g1', seasonYear: 2024 });
     const bobStanding = facts.league.standings.find((s) => s.user_id === 'u2')!;
     expect(bobStanding.display_name).toBe('a player');
-    // The Sharp is held by opted-out Bob → holder neutralized.
-    expect(facts.league.title_badges.find((b) => b.label === 'The Sharp')?.holders).toEqual([
+    // The Whale is held by opted-out Bob → holder neutralized.
+    expect(facts.league.title_badges.find((b) => b.label === 'The Whale')?.holders).toEqual([
       'a player'
     ]);
   });
@@ -393,7 +393,7 @@ describe('renderSeasonFallback', () => {
     expect(copy).toContain('18-10-2');
     expect(copy).toContain('Week 2');
     expect(copy).toContain('Bob'); // nemesis (not opted out in this scenario)
-    expect(copy).toContain('The Sharp');
+    expect(copy).toContain('The Whale');
   });
 
   it('league copy names the champion and player count', async () => {

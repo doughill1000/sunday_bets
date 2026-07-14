@@ -268,58 +268,6 @@ describe('The Grinder', () => {
   });
 });
 
-// --- The Sharp ---
-
-describe('The Sharp', () => {
-  it('awards the player with the best ATS accuracy', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10, wins: 8, losses: 2 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10, wins: 5, losses: 5 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-sharp');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('excludes players below the sample guard', () => {
-    // u2 has 2 decisions; guard with avg=6 is max(5, round(6*0.35))=max(5,2)=5 → u2 excluded
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10, wins: 6, losses: 4 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2, wins: 2, losses: 0 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-sharp');
-    // Bob has perfect accuracy but is below guard; Alice should win
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('is not awarded when no player reaches the sample guard', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 2, wins: 2, losses: 0 })]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('the-sharp');
-  });
-
-  it('breaks ties by higher decision count, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        // All exactly 75% (3 wins / 4 decisions); Zara has the most decisions → wins
-        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12, wins: 9, losses: 3 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8, wins: 6, losses: 2 }),
-        totals({ user_id: 'u3', display_name: 'Bob', decisions: 8, wins: 6, losses: 2 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-sharp');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-});
-
 // --- The Choker ---
 
 describe('The Choker', () => {
@@ -1335,87 +1283,6 @@ describe('The Oracle', () => {
   });
 });
 
-// --- The Fool (Tier-B) ---
-
-describe('The Fool', () => {
-  it('awards the player with the worst contrarian-pick win rate', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
-      ],
-      consensus: [
-        // Alice: 4/5 = 80% contrarian win rate (good → Oracle, not Fool)
-        consensus({
-          user_id: 'u1',
-          display_name: 'Alice',
-          decisions: 10,
-          contrarian_picks: 5,
-          contrarian_wins: 4
-        }),
-        // Bob: 1/5 = 20% contrarian win rate (worst → Fool)
-        consensus({
-          user_id: 'u2',
-          display_name: 'Bob',
-          decisions: 10,
-          contrarian_picks: 5,
-          contrarian_wins: 1
-        })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-fool');
-    expect(badge?.holders[0].user_id).toBe('u2');
-  });
-
-  it('does not award when no player reaches the oracle guard', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 10 })],
-      consensus: [consensus({ contrarian_picks: 2, contrarian_wins: 0 })]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('the-fool');
-  });
-
-  it('breaks ties by more contrarian picks, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 10 })
-      ],
-      consensus: [
-        // Same 0% rate; Zara has more contrarian picks → wins the Fool
-        consensus({
-          user_id: 'u1',
-          display_name: 'Zara',
-          decisions: 10,
-          contrarian_picks: 10,
-          contrarian_wins: 0
-        }),
-        consensus({
-          user_id: 'u2',
-          display_name: 'Alice',
-          decisions: 10,
-          contrarian_picks: 5,
-          contrarian_wins: 0
-        })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-fool');
-    expect(badge?.holders[0].display_name).toBe('Zara');
-  });
-
-  it('is not awarded when there is no consensus data', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 10 })],
-      consensus: []
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('the-fool');
-  });
-});
-
 // --- The Lemming (Tier-B) ---
 
 describe('The Lemming', () => {
@@ -2041,7 +1908,7 @@ describe('Week Winner', () => {
     expect(badge?.holders[0].user_id).toBe('u1');
   });
 
-  it('breaks a tie in weeks-led count alphabetically', () => {
+  it('is not awarded when two players tie on weeks-led (no sole possession)', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       trend: [
@@ -2051,8 +1918,23 @@ describe('Week Winner', () => {
         trend({ user_id: 'u2', display_name: 'Alice', week_number: 2, week_points: 25 })
       ]
     };
+    expect(ids(computeBadges(inputs))).not.toContain('week-winner');
+  });
+
+  it('still awards when one player leads weeks-led outright', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({ user_id: 'u1', display_name: 'Zara', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u2', display_name: 'Alice', week_number: 1, week_points: 10 }),
+        trend({ user_id: 'u1', display_name: 'Zara', week_number: 2, week_points: 5 }),
+        trend({ user_id: 'u2', display_name: 'Alice', week_number: 2, week_points: 25 }),
+        trend({ user_id: 'u1', display_name: 'Zara', week_number: 3, week_points: 30 }),
+        trend({ user_id: 'u2', display_name: 'Alice', week_number: 3, week_points: 0 })
+      ]
+    };
     const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
-    expect(badge?.holders[0].display_name).toBe('Alice');
+    expect(badge?.holders[0].display_name).toBe('Zara');
   });
 
   it('breaks a within-week points tie alphabetically before tallying', () => {

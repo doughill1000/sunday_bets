@@ -27,7 +27,6 @@ export type LeagueHonors = {
 
 export type BadgeId =
   | 'the-grinder'
-  | 'the-sharp'
   | 'the-choker'
   | 'the-whale'
   | 'the-ghost'
@@ -39,7 +38,6 @@ export type BadgeId =
   | 'lone-wolf'
   | 'sheep'
   | 'oracle'
-  | 'the-fool'
   | 'the-lemming'
   // Line-side badges (#317): favorite-vs-underdog pick mix
   | 'chalk-eater'

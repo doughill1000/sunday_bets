@@ -12,12 +12,13 @@
 //   Contrarian Win of Week — won the loneliest pick          (group_pick_consensus)
 //                            (minority winner with the lowest consensus_pct)
 //
-// The week's points leader was "Sharp of the Week" through #631. "Sharp" already names two
-// unrelated things — the season badge `the-sharp` (best season win rate) and the /stats
-// credibility tier (ADR-0032) — so a shelf chip reading "3× Sharp" beside a "The Sharp"
-// badge claimed a kinship that does not exist. Renamed to the football tradition, which
-// says "best performer this week" without borrowing a word the app spends elsewhere. The
-// award ids are derived on read (never persisted), so the rename needed no data migration.
+// The week's points leader was "Sharp of the Week" through #631. "Sharp" already named two
+// unrelated things — the season badge `the-sharp` (best season win rate, deleted in #634 per
+// ADR-0035's "the rating owns the market" boundary) and the /stats credibility tier
+// (ADR-0032) — so a shelf chip reading "3× Sharp" beside a "The Sharp" badge claimed a
+// kinship that does not exist. Renamed to the football tradition, which says "best
+// performer this week" without borrowing a word the app spends elsewhere. The award ids are
+// derived on read (never persisted), so the rename needed no data migration.
 //
 // Non-scoring rounds (ADR-0016) never reach here: every source matview filters
 // `w.is_scoring`, so those weeks contribute no rows and are absent from the week set.
