@@ -70,7 +70,7 @@
     staleTime: 0
   }));
 
-  // ── Page-level scope (#529) ─────────────────────────────────────────────────────
+  // ── Page-level scope (#529, #638) ─────────────────────────────────────────────────
   // One control drives the whole page: a season (the roster + that season's situational cuts) or
   // the pooled "Last 5" window (the market-structure cuts across the recent seasons, epic #424).
   // Picking a season navigates so `leagueQuery` re-keys (ADR-0017); picking pooled is a pure
@@ -78,7 +78,12 @@
   // scope on /stats (#518): `scope` is set before any `goto`, so it survives the reload as
   // 'season'. This replaces the old split — a Teams-tab picker and a separate Trends-tab toggle
   // that silently disagreed on the window.
-  let scope = $state<'season' | 'pooled'>('season');
+  //
+  // The initial value comes from `pageData.defaultScope` (#638): 'pooled' when the newest season
+  // with data has already concluded (off-season) and the visitor didn't ask for a specific season
+  // via `?season=`; 'season' otherwise — unchanged from the old always-'season' default while a
+  // season is actually in progress.
+  let scope = $state<'season' | 'pooled'>(pageData.defaultScope);
 
   // Seasons newest-first for the dropdown; "Last 5 · pooled" is appended as a pinned option.
   const seasonsDesc = $derived([...new Set(pageData.availableSeasons)].sort((a, b) => b - a));

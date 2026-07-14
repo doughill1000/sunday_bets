@@ -4,6 +4,7 @@ import { getAvailableSeasons, getWeeklyCumulative } from '$lib/server/db/queries
 import { getWrappedSeasons } from '$lib/server/db/queries/seasonWrapped';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
 import { isActiveWeekLive } from '$lib/server/liveScores';
+import { isSeasonInProgress } from '$lib/server/db/queries/seasonProgress';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
 
@@ -52,7 +53,18 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
   // so the race chart still has its rows when the user flips back from the Weekly tab without a
   // reload. Only ever holds rows for graded weeks, which is exactly the chart's "≥1 graded week"
   // gate. All-time scope is a pure client flip that hides both, so no all-time trend is needed.
-  const trend = await getWeeklyCumulative(seasonYear, groupId);
+  //
+  // #638: the newest season only keeps the "This season" pin / 'season' default while it's
+  // actually in progress (a real weeks-based signal — see seasonProgress.ts), rather than just
+  // being the most recent one with standings. Folded with `seasonYear` the same way the client
+  // derives `scopeOptions`, so a brand-new season with no standings yet is still checked
+  // correctly. An explicit `?season=` always wins the initial scope regardless.
+  const [trend, latestSeasonInProgress] = await Promise.all([
+    getWeeklyCumulative(seasonYear, groupId),
+    isSeasonInProgress(Math.max(seasonYear, ...availableSeasons))
+  ]);
+  const defaultScope: 'season' | 'alltime' =
+    seasonParam != null || latestSeasonInProgress ? 'season' : 'alltime';
 
   // Season standings (shareable) come from the client `createQuery` keyed by `(groupId, season)`
   // so a revisit renders from cache (ADR-0017); `+page.ts` prefetches them on the server for a
@@ -65,6 +77,8 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
       currentSeasonYear,
       seasonYear,
       availableSeasons,
+      latestSeasonInProgress,
+      defaultScope,
       latestWrappedSeason,
       currentUserId,
       trend,
@@ -91,6 +105,8 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
     currentSeasonYear,
     seasonYear,
     availableSeasons,
+    latestSeasonInProgress,
+    defaultScope,
     latestWrappedSeason,
     currentUserId,
     trend,
