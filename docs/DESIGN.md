@@ -37,7 +37,7 @@ decision this guide details is ratified in
   That layer owns the "what"; this guide owns the "how it's arranged".
 - **Confident, with signature moments.** Quiet premium by default: charcoal and gold, the
   data leads, motion is sparing. A **signature treatment marks an event, accomplishment, or
-  consequential transition** — All-In, The Whale, Hot Hand, a streak, an award. It does not
+  consequential transition** — All-In, The Whale, a live streak, an award. It does not
   decorate routine navigation, ordinary selections, empty states, or every successful save;
   that restraint is what keeps `--ember` and the slower motion tokens meaningful. The
   group-chat swagger lives mainly in the **copy** (the Commissioner's voice), not the

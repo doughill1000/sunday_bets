@@ -40,7 +40,6 @@ export function earningStatFor(
   const allin = inputs.weightAccuracy.find((w) => w.user_id === userId && w.weight === 'A');
   const cons = inputs.consensus.find((c) => c.user_id === userId);
   const ls = inputs.lineSide.find((l) => l.user_id === userId);
-  const streak = inputs.streaks.find((s) => s.user_id === userId);
   const trend = inputs.trend.filter((r) => r.user_id === userId);
 
   switch (badgeId) {
@@ -64,32 +63,6 @@ export function earningStatFor(
         : {};
     case 'the-ghost':
       return totals ? { missed_picks: totals.missed } : {};
-    case 'the-nemesis': {
-      // stats_head_to_head is an upper-triangle half-matrix; credit both sides for this user.
-      let wins = 0;
-      let losses = 0;
-      for (const h of inputs.headToHead) {
-        if (h.user_id === userId) {
-          wins += h.wins;
-          losses += h.losses;
-        } else if (h.opponent_user_id === userId) {
-          wins += h.losses;
-          losses += h.wins;
-        }
-      }
-      return { h2h_wins: wins, h2h_losses: losses };
-    }
-    case 'the-homer': {
-      const playerTeams = inputs.teamAccuracy.filter((t) => t.user_id === userId);
-      if (!totals || playerTeams.length === 0) return {};
-      const top = playerTeams.reduce((max, curr) => (curr.decisions > max.decisions ? curr : max));
-      return {
-        top_team_picks: top.decisions,
-        top_team_share_pct: pct(top.decisions, totals.decisions)
-      };
-    }
-    case 'big-game-hunter':
-      return allin ? { allin_wins: allin.wins } : {};
     case 'perfect-week': {
       const weeks = trend.filter(
         (r) => r.week_wins > 0 && r.week_losses === 0 && r.week_missed === 0
@@ -98,7 +71,10 @@ export function earningStatFor(
     }
     case 'lone-wolf':
     case 'sheep':
-      return cons ? { avg_consensus_pct: Math.round(cons.mean_consensus_pct) } : {};
+      // Fade rate — the share of picks taken on the minority side — is what the crowd-lean
+      // axis measures as of #649. Citing `mean_consensus_pct` (the average size of the
+      // crowd this player sat in) would quote a number the award no longer reads.
+      return cons ? { fade_rate_pct: pct(cons.contrarian_picks, cons.decisions) } : {};
     case 'oracle':
       return cons
         ? {
@@ -119,8 +95,6 @@ export function earningStatFor(
       return ls ? { favorite_share_pct: pct(ls.chalk_picks, ls.decisions) } : {};
     case 'dog-lover':
       return ls ? { underdog_share_pct: pct(ls.dog_picks, ls.decisions) } : {};
-    case 'hot-hand':
-      return streak ? { longest_win_streak: streak.max_streak } : {};
     case 'the-comeback': {
       if (trend.length === 0) return {};
       const sorted = [...trend].sort((a, b) => a.week_number - b.week_number);
@@ -133,17 +107,17 @@ export function earningStatFor(
       };
     }
     case 'week-winner': {
-      // Weeks this user led weekly scoring (highest week_points, alphaFirst tie-break per week).
+      // Weeks this user led weekly scoring outright. A tied week was led by nobody and
+      // counts for no one — mirrors `weeklyTopScorer` (#651), which dropped the
+      // alphabetical tie-break this used to duplicate.
       const weeks = [...new Set(inputs.trend.map((r) => r.week_number))];
       let weeksLed = 0;
       for (const w of weeks) {
         const rows = inputs.trend.filter((r) => r.week_number === w);
         if (rows.length === 0) continue;
         const maxPoints = Math.max(...rows.map((r) => r.week_points));
-        const top = rows
-          .filter((r) => r.week_points === maxPoints)
-          .sort((a, b) => a.display_name.localeCompare(b.display_name))[0];
-        if (top && top.user_id === userId) weeksLed++;
+        const leaders = rows.filter((r) => r.week_points === maxPoints);
+        if (leaders.length === 1 && leaders[0].user_id === userId) weeksLed++;
       }
       return { weeks_led: weeksLed };
     }

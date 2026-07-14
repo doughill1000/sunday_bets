@@ -3,8 +3,9 @@ import {
   computeBadges,
   computeSampleGuard,
   computeOracleGuard,
-  computeHotHandGuard,
+  computeLemmingGuard,
   badgeInputsFromSeasonStats,
+  BADGE_AXES,
   BADGE_GLOSSARY
 } from '../badges';
 import type {
@@ -12,14 +13,10 @@ import type {
   BadgeInputs,
   BadgeLineSideEntry,
   BadgeSeasonTotalsEntry,
-  BadgeStreakEntry,
   BadgeWeightEntry,
-  BadgeH2HEntry,
-  BadgeTeamEntry,
   BadgeTrendEntry
 } from '../badges';
-import { lineSideTendency } from '$lib/utils/stats';
-import type { LineSideStatsEntry, SeasonStats } from '$lib/types/server/stats';
+import type { SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // --- Fixture helpers ---
@@ -50,31 +47,6 @@ function weightEntry(overrides: Partial<BadgeWeightEntry> = {}): BadgeWeightEntr
   };
 }
 
-function h2h(overrides: Partial<BadgeH2HEntry> = {}): BadgeH2HEntry {
-  return {
-    user_id: 'u1',
-    display_name: 'Alice',
-    opponent_user_id: 'u2',
-    opponent_display_name: 'Bob',
-    games_compared: 10,
-    wins: 7,
-    losses: 3,
-    ...overrides
-  };
-}
-
-function team(overrides: Partial<BadgeTeamEntry> = {}): BadgeTeamEntry {
-  return {
-    user_id: 'u1',
-    display_name: 'Alice',
-    team_id: 1,
-    decisions: 5,
-    wins: 3,
-    losses: 2,
-    ...overrides
-  };
-}
-
 function trend(overrides: Partial<BadgeTrendEntry> = {}): BadgeTrendEntry {
   return {
     user_id: 'u1',
@@ -92,12 +64,9 @@ function trend(overrides: Partial<BadgeTrendEntry> = {}): BadgeTrendEntry {
 const EMPTY: BadgeInputs = {
   seasonTotals: [],
   weightAccuracy: [],
-  headToHead: [],
-  teamAccuracy: [],
   trend: [],
   consensus: [],
-  lineSide: [],
-  streaks: []
+  lineSide: []
 };
 
 function consensus(overrides: Partial<BadgeConsensusEntry> = {}): BadgeConsensusEntry {
@@ -125,19 +94,13 @@ function lineSide(overrides: Partial<BadgeLineSideEntry> = {}): BadgeLineSideEnt
   };
 }
 
-function streak(overrides: Partial<BadgeStreakEntry> = {}): BadgeStreakEntry {
-  return {
-    user_id: 'u1',
-    display_name: 'Alice',
-    graded_picks: 10,
-    current_streak: 3,
-    max_streak: 5,
-    ...overrides
-  };
-}
-
 function ids(badges: ReturnType<typeof computeBadges>) {
   return badges.map((b) => b.id);
+}
+
+/** The holders of one badge, by display name — the shape most assertions here want. */
+function holderNames(badges: ReturnType<typeof computeBadges>, id: string): string[] {
+  return badges.find((b) => b.id === id)?.holders.map((h) => h.display_name) ?? [];
 }
 
 // --- Sample guard ---
@@ -190,28 +153,30 @@ describe('computeBadges — empty season', () => {
 // --- The Grinder ---
 
 describe('The Grinder', () => {
-  it('awards the player who placed the most picks', () => {
+  it('awards every player who missed nothing, as a milestone', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 14 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 14, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 14, missed: 0 }),
+        totals({ user_id: 'u3', display_name: 'Zara', decisions: 14, missed: 3 })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-grinder');
-    expect(badge?.holders[0].user_id).toBe('u1');
+    const badges = computeBadges(inputs);
+    const badge = badges.find((b) => b.id === 'the-grinder');
+    // Attendance is a threshold, not a competition: two clean seasons, two winners.
+    expect(badge?.kind).toBe('milestone');
+    expect(holderNames(badges, 'the-grinder')).toEqual(['Alice', 'Bob']);
   });
 
-  it('ranks by picks placed, not the full slate — the player who missed the most cannot win', () => {
-    // Regression for the 2025 prod bug: once a season has missed picks, every
-    // player shares the same `decisions` (the full schedule). Ranking on that raw
-    // count collapsed the title to an alphabetical tie-break and handed it to the
-    // player who actually placed the fewest picks (and missed the most → The Ghost).
+  it('is not awarded to a player who missed even one game', () => {
+    // 2025 with #650's settlement row restored: Doug missed exactly one game (week 17),
+    // so the badge resolves to nobody. Before that row was backfilled his `missed` read 0
+    // only because the row was absent, and the badge would have crowned him for a season
+    // in which he missed a game.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
-        // Brett: full slate but missed almost all of it → fewest picks placed.
-        // Sorts first alphabetically, so he'd win a raw-`decisions` tie-break.
         totals({
           user_id: 'u1',
           display_name: 'Brett',
@@ -221,48 +186,64 @@ describe('The Grinder', () => {
           pushes: 1,
           missed: 133
         }),
-        // Doug: missed nothing → placed the most picks → the real Grinder.
         totals({
           user_id: 'u2',
           display_name: 'Doug',
-          decisions: 271,
+          decisions: 272,
           wins: 132,
           losses: 137,
           pushes: 2,
-          missed: 0
+          missed: 1
         })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-grinder');
-    expect(badge?.holders[0].display_name).toBe('Doug');
+    expect(ids(computeBadges(inputs))).not.toContain('the-grinder');
   });
 
-  it('breaks ties alphabetically by display_name', () => {
+  it('is dark in a season that recorded no misses at all (the 2022-24 legacy gate)', () => {
+    // The sheet import never wrote a `missed` row for anyone in 2022-24, so "0 missed" is
+    // trivially true for the whole league. Ungated, this would award every player three
+    // seasons running. A season that recorded no miss did not measure attendance.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara', decisions: 14 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 14 })
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 208, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Harry', decisions: 208, missed: 0 })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-grinder');
-    expect(badge?.holders[0].display_name).toBe('Alice');
+    expect(ids(computeBadges(inputs))).not.toContain('the-grinder');
   });
 
-  it('is not awarded when nobody placed a pick (all missed or zero slate)', () => {
+  it('shares its gate with The Ghost — the mirror pair goes dark and lights up together', () => {
+    const legacy: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 208, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Harry', decisions: 208, missed: 0 })
+      ]
+    };
+    const measured: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 208, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Harry', decisions: 208, missed: 4 })
+      ]
+    };
+    const legacyIds = ids(computeBadges(legacy));
+    expect(legacyIds).not.toContain('the-grinder');
+    expect(legacyIds).not.toContain('the-ghost');
+
+    const measuredIds = ids(computeBadges(measured));
+    expect(measuredIds).toContain('the-grinder');
+    expect(measuredIds).toContain('the-ghost');
+  });
+
+  it('is not awarded when everyone missed something', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
-        totals({ decisions: 0, wins: 0, losses: 0, pushes: 0, missed: 0 }),
-        totals({
-          user_id: 'u2',
-          display_name: 'Bob',
-          decisions: 8,
-          wins: 0,
-          losses: 0,
-          pushes: 0,
-          missed: 8
-        })
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 14, missed: 2 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 14, missed: 5 })
       ]
     };
     expect(ids(computeBadges(inputs))).not.toContain('the-grinder');
@@ -272,12 +253,12 @@ describe('The Grinder', () => {
 // --- The Choker ---
 
 describe('The Choker', () => {
-  it('awards the player with the worst All-In loss rate', () => {
+  it('awards a player shut out on 3+ All-Ins', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Alice' }),
-        totals({ user_id: 'u2', display_name: 'Bob' })
+        totals({ user_id: 'u2', display_name: 'Brett' })
       ],
       weightAccuracy: [
         weightEntry({
@@ -288,18 +269,99 @@ describe('The Choker', () => {
           losses: 1,
           decisions: 4
         }),
+        // Brett 2025: 0-4. The one shutout on the 2022-25 record.
         weightEntry({
           user_id: 'u2',
-          display_name: 'Bob',
+          display_name: 'Brett',
           weight: 'A',
-          wins: 1,
-          losses: 3,
+          wins: 0,
+          losses: 4,
           decisions: 4
         })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-choker');
-    expect(badge?.holders[0].user_id).toBe('u2');
+    const badges = computeBadges(inputs);
+    expect(badges.find((b) => b.id === 'the-choker')?.kind).toBe('milestone');
+    expect(holderNames(badges, 'the-choker')).toEqual(['Brett']);
+  });
+
+  it('awards every shut-out player, with no alphabetical filtering', () => {
+    // A shutout is a threshold, not a ranking: if two players both go 0-for-3+, both
+    // choked. This is exactly the tie the old `alphaFirst` silently resolved.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Zara' }),
+        totals({ user_id: 'u2', display_name: 'Alice' }),
+        totals({ user_id: 'u3', display_name: 'Bob' })
+      ],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Zara',
+          weight: 'A',
+          wins: 0,
+          losses: 3,
+          decisions: 3
+        }),
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 0,
+          losses: 5,
+          decisions: 5
+        }),
+        weightEntry({
+          user_id: 'u3',
+          display_name: 'Bob',
+          weight: 'A',
+          wins: 1,
+          losses: 4,
+          decisions: 5
+        })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'the-choker')).toEqual(['Alice', 'Zara']);
+  });
+
+  it('is not awarded to a 1-for-1 All-In loser — the 2022 absurdity', () => {
+    // The badge shipped with no guard at all, so 2022 handed a season title to a player
+    // on a single lost All-In: one pick, one bad night. The shared WHALE_MIN_ALLINS guard
+    // kills this for free.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Frank' })],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Frank',
+          weight: 'A',
+          wins: 0,
+          losses: 1,
+          decisions: 1
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-choker');
+  });
+
+  it('is not awarded when every All-In player won at least once', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice' })],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 1,
+          losses: 9,
+          decisions: 10
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-choker');
   });
 
   it('is not awarded when nobody has an All-In decision', () => {
@@ -318,37 +380,6 @@ describe('The Choker', () => {
       weightAccuracy: [weightEntry({ weight: 'A', wins: 0, losses: 0, decisions: 1 })]
     };
     expect(ids(computeBadges(inputs))).not.toContain('the-choker');
-  });
-
-  it('breaks ties by higher All-In decision count, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara' }),
-        totals({ user_id: 'u2', display_name: 'Alice' })
-      ],
-      weightAccuracy: [
-        // Both 0% win rate; Zara has more decisions → wins the Choker
-        weightEntry({
-          user_id: 'u1',
-          display_name: 'Zara',
-          weight: 'A',
-          wins: 0,
-          losses: 3,
-          decisions: 3
-        }),
-        weightEntry({
-          user_id: 'u2',
-          display_name: 'Alice',
-          weight: 'A',
-          wins: 0,
-          losses: 2,
-          decisions: 2
-        })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-choker');
-    expect(badge?.holders[0].display_name).toBe('Zara');
   });
 });
 
@@ -446,6 +477,90 @@ describe('The Whale', () => {
     expect(ids(computeBadges(inputs))).not.toContain('the-whale');
   });
 
+  it('is not awarded when the best All-In record in the room is losing — the 2024 case', () => {
+    // 2024's holder went 10-12 and was flavored "the house pays this one". The house did
+    // not pay. Conviction is negatively predictive here by ~14 points (the room went
+    // 50-90 on All-Ins across 2022-25), so the top of a sorted list is usually still a
+    // losing record — which is exactly why the badge needs the 50% the world hands it.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Brett' }),
+        totals({ user_id: 'u2', display_name: 'Colin' })
+      ],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Brett',
+          weight: 'A',
+          wins: 10,
+          losses: 12,
+          decisions: 22
+        }),
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Colin',
+          weight: 'A',
+          wins: 4,
+          losses: 9,
+          decisions: 13
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-whale');
+  });
+
+  it('is not awarded on an exactly-even All-In record — 50% is the zero, not a win', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice' })],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Alice',
+          weight: 'A',
+          wins: 4,
+          losses: 4,
+          decisions: 8
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-whale');
+  });
+
+  it('awards the one winning All-In season on record — the 2025 case', () => {
+    // Doug 2025 (5-3, .625) is the only winning All-In season across 2022-25. With the
+    // bar the badge fires once in four seasons, for the player who actually did it.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Doug' }),
+        totals({ user_id: 'u2', display_name: 'Frank' })
+      ],
+      weightAccuracy: [
+        weightEntry({
+          user_id: 'u1',
+          display_name: 'Doug',
+          weight: 'A',
+          wins: 5,
+          losses: 3,
+          decisions: 8
+        }),
+        // Frank went 8-20 (28.6%) on 28 All-Ins — the worst mark in the room, and the
+        // player Big Game Hunter used to crown for the volume alone (#647).
+        weightEntry({
+          user_id: 'u2',
+          display_name: 'Frank',
+          weight: 'A',
+          wins: 8,
+          losses: 20,
+          decisions: 28
+        })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'the-whale')).toEqual(['Doug']);
+  });
+
   it('lets The Whale (best) and The Choker (worst) co-hold in the same season', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
@@ -513,189 +628,6 @@ describe('The Ghost', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-ghost');
     expect(badge?.holders[0].display_name).toBe('Alice');
-  });
-});
-
-// --- The Nemesis ---
-
-// `stats_head_to_head` is an upper-triangle half-matrix: each pair appears in exactly
-// ONE row, recorded from the smaller-UUID player's perspective (`user_id <
-// opponent_user_id`). These fixtures mirror that shape — never both directions.
-describe('The Nemesis', () => {
-  it('awards the player with the most H2H wins summed across opponents', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice' }),
-        totals({ user_id: 'u2', display_name: 'Bob' })
-      ],
-      headToHead: [
-        // Single row for the pair; Alice 8-2 over Bob → Bob is implicitly 2-8.
-        h2h({
-          user_id: 'u1',
-          display_name: 'Alice',
-          opponent_user_id: 'u2',
-          opponent_display_name: 'Bob',
-          wins: 8,
-          losses: 2
-        })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('sums wins across multiple opponents, crediting both sides of each row', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice' }),
-        totals({ user_id: 'u2', display_name: 'Bob' }),
-        totals({ user_id: 'u3', display_name: 'Carol' })
-      ],
-      headToHead: [
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', opponent_display_name: 'Bob', wins: 6, losses: 4 }), // prettier-ignore
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 6, losses: 4 }), // prettier-ignore
-        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 9, losses: 1 }) // prettier-ignore
-      ]
-    };
-    // Mirrored totals — Alice: 12-8, Bob: 4+9=13-7, Carol: 4+1=5 → Bob is Nemesis.
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
-    expect(badge?.holders[0].user_id).toBe('u2');
-  });
-
-  // Regression (#nemesis-half-matrix): aggregating by `user_id` alone handed the title
-  // to whoever owned the smallest UUID, because the upper-triangle view never lists the
-  // largest-UUID player as `user_id`. Here Carol (largest UUID) is the true nemesis but
-  // never appears as a row's `user_id`; the old code would have crowned Alice.
-  it('credits the opponent side so the smallest-UUID player cannot sweep', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice' }),
-        totals({ user_id: 'u2', display_name: 'Bob' }),
-        totals({ user_id: 'u3', display_name: 'Carol' })
-      ],
-      headToHead: [
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u2', opponent_display_name: 'Bob', wins: 1, losses: 9 }), // prettier-ignore
-        h2h({ user_id: 'u1', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 1, losses: 9 }), // prettier-ignore
-        h2h({ user_id: 'u2', display_name: 'Bob', opponent_user_id: 'u3', opponent_display_name: 'Carol', wins: 1, losses: 9 }) // prettier-ignore
-      ]
-    };
-    // Mirrored totals — Alice: 2-18, Bob: 10-10, Carol: 18-2 → Carol is the Nemesis.
-    // Buggy (user_id-only) totals would be Alice 2, Bob 1, Carol 0 → Alice.
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
-    expect(badge?.holders[0].display_name).toBe('Carol');
-  });
-
-  it('is not awarded when there are no H2H entries', () => {
-    expect(ids(computeBadges(EMPTY))).not.toContain('the-nemesis');
-  });
-
-  it('breaks ties by fewer H2H losses, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara' }),
-        totals({ user_id: 'u2', display_name: 'Alice' }),
-        totals({ user_id: 'u3', display_name: 'Mike' })
-      ],
-      headToHead: [
-        h2h({ user_id: 'u1', display_name: 'Zara', opponent_user_id: 'u2', opponent_display_name: 'Alice', wins: 5, losses: 5 }), // prettier-ignore
-        h2h({ user_id: 'u1', display_name: 'Zara', opponent_user_id: 'u3', opponent_display_name: 'Mike', wins: 5, losses: 0 }), // prettier-ignore
-        h2h({ user_id: 'u2', display_name: 'Alice', opponent_user_id: 'u3', opponent_display_name: 'Mike', wins: 5, losses: 3 }) // prettier-ignore
-      ]
-    };
-    // Mirrored totals — Zara: 10-5, Alice: 10-8, Mike: 3-10. Zara and Alice tie on wins;
-    // Zara has fewer losses → Zara wins.
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-nemesis');
-    expect(badge?.holders[0].display_name).toBe('Zara');
-  });
-});
-
-// --- The Homer ---
-
-describe('The Homer', () => {
-  it('awards the player with the highest single-team concentration ratio', () => {
-    // Alice: 8/10 = 80% on one team; Bob: 5/10 = 50% on one team
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
-      ],
-      teamAccuracy: [
-        team({ user_id: 'u1', display_name: 'Alice', team_id: 1, decisions: 8 }),
-        team({ user_id: 'u1', display_name: 'Alice', team_id: 2, decisions: 2 }),
-        team({ user_id: 'u2', display_name: 'Bob', team_id: 3, decisions: 5 }),
-        team({ user_id: 'u2', display_name: 'Bob', team_id: 4, decisions: 5 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'the-homer');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('excludes players below the sample guard', () => {
-    // Only one player but decisions = 2 (below guard of 5)
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 2, wins: 1, losses: 1 })],
-      teamAccuracy: [team({ decisions: 2 })]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('the-homer');
-  });
-
-  it('is not awarded when no eligible player has team data', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 10 })],
-      teamAccuracy: [] // no team rows at all
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('the-homer');
-  });
-});
-
-// --- Big Game Hunter (milestone) ---
-
-describe('Big Game Hunter', () => {
-  it('awards all players with 3 or more All-In wins', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice' }),
-        totals({ user_id: 'u2', display_name: 'Bob' }),
-        totals({ user_id: 'u3', display_name: 'Carol' })
-      ],
-      weightAccuracy: [
-        weightEntry({ user_id: 'u1', display_name: 'Alice', weight: 'A', wins: 3, decisions: 4 }),
-        weightEntry({ user_id: 'u2', display_name: 'Bob', weight: 'A', wins: 1, decisions: 3 }),
-        weightEntry({ user_id: 'u3', display_name: 'Carol', weight: 'A', wins: 4, decisions: 5 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'big-game-hunter');
-    expect(badge?.kind).toBe('milestone');
-    expect(badge?.holders.map((h) => h.user_id).sort()).toEqual(['u1', 'u3']);
-  });
-
-  it('is not awarded when nobody reaches the threshold', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals()],
-      weightAccuracy: [weightEntry({ weight: 'A', wins: 2, decisions: 5 })]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('big-game-hunter');
-  });
-
-  it('ignores non-All-In weight rows', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals()],
-      weightAccuracy: [
-        weightEntry({ weight: 'H', wins: 10, decisions: 10 }),
-        weightEntry({ weight: 'A', wins: 2, decisions: 3 })
-      ]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('big-game-hunter');
   });
 });
 
@@ -806,6 +738,29 @@ describe('BADGE_GLOSSARY', () => {
     }
     // No duplicate ids in the glossary.
     expect(new Set(BADGE_GLOSSARY.map((g) => g.id)).size).toBe(BADGE_GLOSSARY.length);
+  });
+
+  it('covers every BadgeId exactly once — the catalog and the legend cannot drift', () => {
+    // Pinned over the `BadgeId` union rather than a hardcoded count, so #647 shrinking the
+    // catalog and #649 growing it again can never disagree about the number. `FLAVORS` is
+    // typed `Record<BadgeId, …>`, so TypeScript already guarantees its keys ARE the union;
+    // this asserts the glossary enumerates exactly those keys at runtime.
+    const flavorIds = BADGE_GLOSSARY.map((g) => g.id).sort();
+    const badgeAward = computeBadges({
+      ...EMPTY,
+      seasonTotals: [totals({ decisions: 10, wins: 7, losses: 3, missed: 1 })]
+    });
+    for (const b of badgeAward) expect(flavorIds).toContain(b.id);
+    expect(new Set(flavorIds).size).toBe(flavorIds.length);
+  });
+
+  it('lists every axis end, and every axis end is in the glossary', () => {
+    // #635's rule: an axis the engine can award must appear in both, in the same commit.
+    // Listing an unearnable badge promises something the engine will never deliver.
+    const glossaryIds = new Set(BADGE_GLOSSARY.map((g) => g.id));
+    for (const axis of BADGE_AXES) {
+      for (const end of axis.ends) expect(glossaryIds.has(end.id)).toBe(true);
+    }
   });
 });
 
@@ -984,20 +939,6 @@ describe('badgeInputsFromSeasonStats', () => {
         pushes: 0
       }
     ]);
-    expect(inputs.headToHead).toEqual([
-      {
-        user_id: 'u1',
-        display_name: 'Alice',
-        opponent_user_id: 'u2',
-        opponent_display_name: 'Bob',
-        games_compared: 10,
-        wins: 7,
-        losses: 3
-      }
-    ]);
-    expect(inputs.teamAccuracy).toEqual([
-      { user_id: 'u1', display_name: 'Alice', team_id: 7, decisions: 5, wins: 3, losses: 2 }
-    ]);
     expect(inputs.trend).toEqual([
       {
         user_id: 'u1',
@@ -1025,17 +966,32 @@ describe('badgeInputsFromSeasonStats', () => {
     expect(inputs.lineSide).toEqual([
       { user_id: 'u1', display_name: 'Alice', decisions: 10, chalk_picks: 7, dog_picks: 3 }
     ]);
-    expect(inputs.streaks).toEqual([
-      { user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3, max_streak: 5 }
+  });
+
+  it('drops the inputs no badge reads any more, without touching their season rows', () => {
+    // #647 cut The Nemesis, The Homer and Hot Hand, which were the only readers of
+    // headToHead / teamAccuracy / streaks. The matviews behind them stay — `/stats`,
+    // `/market` and the recap facts builders still read them — so `SeasonStats` keeps
+    // carrying them and the projection simply stops forwarding them.
+    const inputs = badgeInputsFromSeasonStats(seasonStats, seasonTotals);
+    expect(Object.keys(inputs).sort()).toEqual([
+      'consensus',
+      'lineSide',
+      'seasonTotals',
+      'trend',
+      'weightAccuracy'
     ]);
+    expect(seasonStats.headToHead).toHaveLength(1);
+    expect(seasonStats.teamAccuracy).toHaveLength(1);
+    expect(seasonStats.streaks).toHaveLength(1);
   });
 
   it('feeds computeBadges so derived badges carry through (equivalence to the old getBadges path)', () => {
     const badges = computeBadges(badgeInputsFromSeasonStats(seasonStats, seasonTotals));
     const awarded = ids(badges);
-    // trend → perfect-week, totals → the-grinder: proves both sources flow through the mapper.
+    // trend → perfect-week, totals → the-ghost: proves both sources flow through the mapper.
     expect(awarded).toContain('perfect-week');
-    expect(awarded).toContain('the-grinder');
+    expect(awarded).toContain('the-ghost');
   });
 
   it('returns empty arrays for empty season stats', () => {
@@ -1076,53 +1032,172 @@ describe('computeOracleGuard', () => {
   });
 });
 
-// --- Crowd lean axis: Lone Wolf / The Sheep (Tier-B, dark since #635) ---
+// --- computeLemmingGuard ---
 
-describe('Crowd lean axis (zero unset)', () => {
-  // Both ends used to fire every season by construction — whoever sat at either end of a
-  // sorted mean_consensus_pct list. The axis has no zero yet (#635's open decision), so it
-  // awards nothing at all. These tests exist to catch the pair coming back to life by
-  // accident: give crowdLeanAxis a zero and they should fail loudly, not pass quietly.
-  it('awards neither end even when the league is maximally split', () => {
-    const inputs: BadgeInputs = {
+describe('computeLemmingGuard', () => {
+  it('returns the floor when the list is empty', () => {
+    expect(computeLemmingGuard([])).toBe(5);
+  });
+
+  it('scales off majority_picks, not contrarian_picks', () => {
+    // The bug this guard exists to fix: The Lemming reused computeOracleGuard, which
+    // scales off ~18 contrarian picks/season, and applied it to a ~198-pick majority
+    // pool — a guard computed on one measure and applied to another.
+    const rows = [
+      consensus({ contrarian_picks: 18, majority_picks: 200 }),
+      consensus({ contrarian_picks: 18, majority_picks: 200 })
+    ];
+    expect(computeLemmingGuard(rows)).toBe(70); // round(200 * 0.35)
+    expect(computeOracleGuard(rows)).toBe(6); // round(18 * 0.35)
+  });
+});
+
+// --- Crowd lean axis: Lone Wolf / The Sheep (Tier-B, live since #649) ---
+//
+// The axis measures FADE RATE — the share of a player's picks taken on the minority side
+// — against a zero that is the league mean for that season, with a bar of 5 points. It
+// shipped dark (`zero: null`) and on the wrong quantity (`mean_consensus_pct`, the average
+// size of the crowd a player sat in rather than how often they broke from it).
+
+describe('Crowd lean axis', () => {
+  /** A consensus row expressed as a fade rate: `fade` of `decisions` picks were minority. */
+  function fader(name: string, id: string, fade: number, decisions = 250): BadgeConsensusEntry {
+    const contrarian = Math.round(fade * decisions);
+    return consensus({
+      user_id: id,
+      display_name: name,
+      decisions,
+      contrarian_picks: contrarian,
+      // Held at a middling rate so this fixture never trips Oracle/Lemming's own bars.
+      contrarian_wins: Math.round(contrarian * 0.5),
+      majority_picks: decisions - contrarian,
+      majority_wins: Math.round((decisions - contrarian) * 0.5)
+    });
+  }
+
+  function withFaders(rows: BadgeConsensusEntry[]): BadgeInputs {
+    return {
       ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
-      ],
-      consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 5 }),
-        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 95 })
-      ]
+      seasonTotals: rows.map((r) =>
+        totals({ user_id: r.user_id, display_name: r.display_name, decisions: r.decisions })
+      ),
+      consensus: rows
     };
-    const awarded = ids(computeBadges(inputs));
+  }
+
+  it('awards both ends when both clear the bar — the 2025 case', () => {
+    // League mean 21.0%; Harry +7.1 → Wolf, Colin -6.6 → Sheep.
+    const badges = computeBadges(
+      withFaders([
+        fader('Harry', 'u1', 0.281),
+        fader('Colin', 'u2', 0.144),
+        fader('Doug', 'u3', 0.21),
+        fader('Brett', 'u4', 0.21),
+        fader('Michael', 'u5', 0.21),
+        fader('Frank', 'u6', 0.21)
+      ])
+    );
+    expect(holderNames(badges, 'lone-wolf')).toEqual(['Harry']);
+    expect(holderNames(badges, 'sheep')).toEqual(['Colin']);
+  });
+
+  it('awards one end when only that end clears the bar — the 2024 case', () => {
+    // League mean 20.3%; Colin +5.4 → Wolf, nobody far enough the other way.
+    const badges = computeBadges(
+      withFaders([
+        fader('Colin', 'u1', 0.257),
+        fader('Doug', 'u2', 0.19),
+        fader('Brett', 'u3', 0.19),
+        fader('Harry', 'u4', 0.19),
+        fader('Michael', 'u5', 0.19),
+        fader('Frank', 'u6', 0.2)
+      ])
+    );
+    expect(holderNames(badges, 'lone-wolf')).toEqual(['Colin']);
+    expect(ids(badges)).not.toContain('sheep');
+  });
+
+  it('goes dark when nobody is far enough from the room — the 2022 case', () => {
+    // 2022's league mean fade rate was 28.2%, way off the other three seasons' ~21%. The
+    // cause is mechanical, not behavioural: that season had five pickers, and with six a
+    // 3-3 split makes nobody a minority (`is_minority` is `pct < 0.5`, and 50 is not),
+    // while with five every non-unanimous split produces contrarians. Measured against
+    // its own room, the 2022 field is unremarkable and the axis correctly goes dark.
+    const badges = computeBadges(
+      withFaders([
+        fader('Brett', 'u1', 0.29),
+        fader('Colin', 'u2', 0.285),
+        fader('Doug', 'u3', 0.28),
+        fader('Frank', 'u4', 0.275),
+        fader('Harry', 'u5', 0.28)
+      ])
+    );
+    expect(ids(badges)).not.toContain('lone-wolf');
+    expect(ids(badges)).not.toContain('sheep');
+  });
+
+  it('recomputes the zero per season — the same player moves with the room', () => {
+    // The heart of #649: a hardcoded 21% would have made the whole 2022 five-player field
+    // look like wolves for a reason that has nothing to do with 2022. Here one player sits
+    // at 28% in both fixtures and is a Wolf only in the room where 28% is unusual.
+    const unusual = computeBadges(
+      withFaders([
+        fader('Wolf', 'u1', 0.28),
+        fader('Alice', 'u2', 0.21),
+        fader('Bob', 'u3', 0.21),
+        fader('Carol', 'u4', 0.21)
+      ])
+    );
+    expect(holderNames(unusual, 'lone-wolf')).toEqual(['Wolf']);
+
+    const ordinary = computeBadges(
+      withFaders([
+        fader('Wolf', 'u1', 0.28),
+        fader('Alice', 'u2', 0.28),
+        fader('Bob', 'u3', 0.28),
+        fader('Carol', 'u4', 0.28)
+      ])
+    );
+    expect(ids(ordinary)).not.toContain('lone-wolf');
+  });
+
+  it('reads fade rate, not the size of the crowd the player sat in', () => {
+    // Both players fade identically; only `mean_consensus_pct` — the measure this axis
+    // used to read — differs. Neither may be crowned on it.
+    const rows = [
+      { ...fader('Alice', 'u1', 0.21), mean_consensus_pct: 5 },
+      { ...fader('Bob', 'u2', 0.21), mean_consensus_pct: 95 }
+    ];
+    const awarded = ids(computeBadges(withFaders(rows)));
     expect(awarded).not.toContain('lone-wolf');
     expect(awarded).not.toContain('sheep');
   });
 
-  it('does not take the other consensus badges dark with it', () => {
-    // Oracle/Lemming measure how minority/majority picks turned out, not where a player
-    // sits on a lean — they are not on this axis and must keep awarding.
+  it('excludes players below the sample guard', () => {
+    const rows = [
+      fader('Thin', 'u1', 0.9, 2),
+      fader('Alice', 'u2', 0.21),
+      fader('Bob', 'u3', 0.21)
+    ];
     const inputs: BadgeInputs = {
       ...EMPTY,
-      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
-      consensus: [
-        consensus({
-          user_id: 'u1',
-          display_name: 'Alice',
-          decisions: 10,
-          contrarian_picks: 6,
-          contrarian_wins: 5
-        })
-      ]
+      seasonTotals: rows.map((r) =>
+        totals({ user_id: r.user_id, display_name: r.display_name, decisions: r.decisions })
+      ),
+      consensus: rows
     };
-    expect(ids(computeBadges(inputs))).toContain('oracle');
+    expect(holderNames(computeBadges(inputs), 'lone-wolf')).not.toContain('Thin');
   });
 
-  it('advertises neither face in the glossary, since neither can be earned', () => {
+  it('advertises both faces in the glossary, now that both can be earned', () => {
     const glossaryIds = BADGE_GLOSSARY.map((g) => g.id);
-    expect(glossaryIds).not.toContain('lone-wolf');
-    expect(glossaryIds).not.toContain('sheep');
+    expect(glossaryIds).toContain('lone-wolf');
+    expect(glossaryIds).toContain('sheep');
+  });
+
+  it('is listed in BADGE_AXES so the awards card can group it', () => {
+    const crowd = BADGE_AXES.find((a) => a.measure === 'Crowd lean');
+    expect(crowd?.ends.map((e) => e.id)).toEqual(['sheep', 'lone-wolf']);
   });
 });
 
@@ -1168,6 +1243,63 @@ describe('The Oracle', () => {
       consensus: [consensus({ contrarian_picks: 2, contrarian_wins: 2 })]
     };
     expect(ids(computeBadges(inputs))).not.toContain('oracle');
+  });
+
+  it('does not award when the best contrarian rate barely beats a coin flip — the 2024 case', () => {
+    // 2024's best contrarian rate was 51.1%. A verdict badge whose zero is 50% must be
+    // able to say nobody, or it just crowns the top of a sorted list.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Michael', decisions: 250 }),
+        totals({ user_id: 'u2', display_name: 'Doug', decisions: 250 })
+      ],
+      consensus: [
+        consensus({
+          user_id: 'u1',
+          display_name: 'Michael',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 23 // 51.1%
+        }),
+        consensus({
+          user_id: 'u2',
+          display_name: 'Doug',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('oracle');
+  });
+
+  it('awards when the best contrarian rate clears 55% — the 2025 case', () => {
+    // Colin 2025: 62.2% against the crowd. This is the badge doing its job.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Colin', decisions: 250 }),
+        totals({ user_id: 'u2', display_name: 'Doug', decisions: 250 })
+      ],
+      consensus: [
+        consensus({
+          user_id: 'u1',
+          display_name: 'Colin',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 28 // 62.2%
+        }),
+        consensus({
+          user_id: 'u2',
+          display_name: 'Doug',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20
+        })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'oracle')).toEqual(['Colin']);
   });
 
   it('breaks ties by more contrarian picks, then alphabetically', () => {
@@ -1243,15 +1375,109 @@ describe('The Lemming', () => {
     expect(badge?.holders[0].user_id).toBe('u2');
   });
 
-  it('does not award when no player reaches the oracle guard on majority picks', () => {
+  it('does not award when no player reaches its guard on majority picks', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [totals({ decisions: 10 })],
-      // majority_picks = 2, oracle guard = max(5, round(avg(contrarian_picks)*0.35))
-      // with contrarian_picks=2 → guard=5; majority_picks=2 < 5 → not eligible
+      // majority_picks = 2 → lemming guard = max(5, round(2*0.35)) = 5; 2 < 5 → ineligible
       consensus: [consensus({ contrarian_picks: 2, majority_picks: 2, majority_wins: 0 })]
     };
     expect(ids(computeBadges(inputs))).not.toContain('the-lemming');
+  });
+
+  it('does not award to a player with a winning majority record — the 2024 absurdity', () => {
+    // The Lemming 2024 went to Doug on a 52.2% WINNING record, in a season where all six
+    // players finished winning: the badge said following the crowd cost him while he was
+    // beating the market. He held it three years running; only 2022 survives the bar.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Doug', decisions: 250 }),
+        totals({ user_id: 'u2', display_name: 'Colin', decisions: 250 })
+      ],
+      consensus: [
+        consensus({
+          user_id: 'u1',
+          display_name: 'Doug',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20,
+          majority_picks: 205,
+          majority_wins: 107 // 52.2%
+        }),
+        consensus({
+          user_id: 'u2',
+          display_name: 'Colin',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20,
+          majority_picks: 205,
+          majority_wins: 115
+        })
+      ]
+    };
+    expect(ids(computeBadges(inputs))).not.toContain('the-lemming');
+  });
+
+  it('awards when the worst majority rate is genuinely under water — the 2025 case', () => {
+    // Brett 2025: 42.6% with the crowd, below the 45% bar.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Brett', decisions: 250 }),
+        totals({ user_id: 'u2', display_name: 'Colin', decisions: 250 })
+      ],
+      consensus: [
+        consensus({
+          user_id: 'u1',
+          display_name: 'Brett',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20,
+          majority_picks: 205,
+          majority_wins: 87 // 42.4%
+        }),
+        consensus({
+          user_id: 'u2',
+          display_name: 'Colin',
+          decisions: 250,
+          contrarian_picks: 45,
+          contrarian_wins: 20,
+          majority_picks: 205,
+          majority_wins: 115
+        })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'the-lemming')).toEqual(['Brett']);
+  });
+
+  it('uses a guard scaled off majority_picks, not the Oracle guard on contrarian_picks', () => {
+    // A player with a real majority sample but a thin contrarian one used to be judged by
+    // the Oracle's guard — computed on ~18 contrarian picks and applied to ~198 majority
+    // ones. Here the contrarian-scaled guard (5) would let a 6-pick majority sample count;
+    // the majority-scaled guard (round(6 * 0.35) → floor 5) is what must apply.
+    const rows = [
+      consensus({
+        user_id: 'u1',
+        display_name: 'Alice',
+        decisions: 100,
+        contrarian_picks: 94,
+        contrarian_wins: 47,
+        majority_picks: 6,
+        majority_wins: 0
+      }),
+      consensus({
+        user_id: 'u2',
+        display_name: 'Bob',
+        decisions: 100,
+        contrarian_picks: 94,
+        contrarian_wins: 47,
+        majority_picks: 6,
+        majority_wins: 3
+      })
+    ];
+    expect(computeLemmingGuard(rows)).toBe(5);
+    expect(holderNames(computeBadges({ ...EMPTY, seasonTotals: [totals({ decisions: 100 }), totals({ user_id: 'u2', display_name: 'Bob', decisions: 100 })], consensus: rows }), 'the-lemming')).toEqual(['Alice']); // prettier-ignore
   });
 
   it('breaks ties by more majority picks, then alphabetically', () => {
@@ -1356,14 +1582,17 @@ describe('Chalk Eater', () => {
     expect(badge?.holders[0].user_id).toBe('u1');
   });
 
-  it('excludes players below the sample guard', () => {
-    // u2 has 2 decisions (below the 5 floor) but a perfect chalk ratio → still excluded,
-    // so the badge falls to Alice, who leans chalk 8-2 and clears the bar on her own.
+  it('excludes players below the sample guard, and they do not move the zero either', () => {
+    // Bob has 2 decisions (below the 5 floor) and a perfect chalk ratio → excluded both
+    // from winning and from the league mean the others are measured against. Alice is the
+    // room's chalk end among the players who count.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 }),
+        totals({ user_id: 'u3', display_name: 'Cara', decisions: 10 }),
+        totals({ user_id: 'u4', display_name: 'Dan', decisions: 10 })
       ],
       lineSide: [
         lineSide({
@@ -1373,11 +1602,30 @@ describe('Chalk Eater', () => {
           chalk_picks: 8,
           dog_picks: 2
         }),
-        lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 2, dog_picks: 0 })
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 2,
+          chalk_picks: 2,
+          dog_picks: 0
+        }),
+        lineSide({
+          user_id: 'u3',
+          display_name: 'Cara',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        }),
+        lineSide({
+          user_id: 'u4',
+          display_name: 'Dan',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
-    expect(badge?.holders[0].user_id).toBe('u1');
+    expect(holderNames(computeBadges(inputs), 'chalk-eater')).toEqual(['Alice']);
   });
 
   it('breaks ties by higher decision count, then alphabetically', () => {
@@ -1385,11 +1633,13 @@ describe('Chalk Eater', () => {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
+        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 }),
+        totals({ user_id: 'u3', display_name: 'Cara', decisions: 10 })
       ],
       lineSide: [
-        // Both lean chalk by exactly +50 points, well clear of the bar; Zara has more
-        // decisions → wins. Tie-breaks are unchanged by the axis layer.
+        // Zara and Alice sit at the same +50-point chalk lean, both clear of the bar once
+        // Cara pulls the room's zero down; Zara has more decisions → wins. Tie-breaks are
+        // unchanged by the league-mean zero.
         lineSide({
           user_id: 'u1',
           display_name: 'Zara',
@@ -1403,11 +1653,17 @@ describe('Chalk Eater', () => {
           decisions: 8,
           chalk_picks: 6,
           dog_picks: 2
+        }),
+        lineSide({
+          user_id: 'u3',
+          display_name: 'Cara',
+          decisions: 10,
+          chalk_picks: 2,
+          dog_picks: 8
         })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
-    expect(badge?.holders[0].display_name).toBe('Zara');
+    expect(holderNames(computeBadges(inputs), 'chalk-eater')).toEqual(['Zara']);
   });
 
   it('is not awarded when there is no line-side data', () => {
@@ -1482,13 +1738,15 @@ describe('Dog Lover', () => {
   });
 
   it('excludes players below the sample guard', () => {
-    // Bob is all-dog but on 2 decisions (below the 5 floor) → excluded, leaving Alice,
-    // who leans dog 8-2 on a real sample.
+    // Bob is all-dog but on 2 decisions (below the 5 floor) → excluded, leaving Alice as
+    // the dog end of a room that otherwise splits evenly.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 }),
+        totals({ user_id: 'u3', display_name: 'Cara', decisions: 10 }),
+        totals({ user_id: 'u4', display_name: 'Dan', decisions: 10 })
       ],
       lineSide: [
         lineSide({
@@ -1498,7 +1756,27 @@ describe('Dog Lover', () => {
           chalk_picks: 2,
           dog_picks: 8
         }),
-        lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 0, dog_picks: 2 })
+        lineSide({
+          user_id: 'u2',
+          display_name: 'Bob',
+          decisions: 2,
+          chalk_picks: 0,
+          dog_picks: 2
+        }),
+        lineSide({
+          user_id: 'u3',
+          display_name: 'Cara',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        }),
+        lineSide({
+          user_id: 'u4',
+          display_name: 'Dan',
+          decisions: 10,
+          chalk_picks: 5,
+          dog_picks: 5
+        })
       ]
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'dog-lover');
@@ -1549,9 +1827,10 @@ describe('Line lean axis', () => {
     expect(badges.find((b) => b.id === 'dog-lover')?.holders[0].display_name).toBe('Bob');
   });
 
-  it('awards nothing when nobody clears the bar, and leaves no placeholder behind', () => {
-    // Every player inside the ±10-point dead zone: a league of moderates earns no titles.
-    const badges = computeBadges(league(['Alice', 54, 46], ['Bob', 48, 52], ['Cara', 51, 49]));
+  it('awards nothing when nobody is far enough from the room — the 2023 case', () => {
+    // A league that leans dog together earns no titles: every player sits within the bar
+    // of the league mean, so nobody is "out on an end" of anything.
+    const badges = computeBadges(league(['Alice', 44, 56], ['Bob', 42, 58], ['Cara', 46, 54]));
     const awarded = ids(badges);
     expect(awarded).not.toContain('chalk-eater');
     expect(awarded).not.toContain('dog-lover');
@@ -1560,45 +1839,59 @@ describe('Line lean axis', () => {
   });
 
   it('awards one end when only one side clears the bar — the 2025 line-lean case', () => {
-    // Real 2025 shares: Doug is 19.6 points clear on the dog side and earns it; Brett's
-    // 54.0% favorite share is an 7.9-point gap that never leaves the dead zone, so the
-    // chalk end is simply empty. Two guaranteed titles become one earned one.
+    // Real 2025 shape: the league mean gap is -9.4 (dog-side, as it is every year), and
+    // Brett is the one player far enough the other way. With the old absolute zero this
+    // fixture crowned a Dog Lover instead — the annual gift #649 exists to stop.
     const badges = computeBadges(
-      league(['Doug', 40, 60], ['Brett', 54, 46], ['Frank', 42, 58], ['Colin', 44, 56])
+      league(['Brett', 54, 46], ['Doug', 40, 60], ['Frank', 42, 58], ['Colin', 44, 56])
     );
-    expect(badges.find((b) => b.id === 'dog-lover')?.holders[0].display_name).toBe('Doug');
+    expect(holderNames(badges, 'chalk-eater')).toEqual(['Brett']);
+    expect(ids(badges)).not.toContain('dog-lover');
+  });
+
+  it('measures against the room, not an even split — the whole league leaning dog awards nobody', () => {
+    // The defect in one test. The room is never at an absolute zero because the lines
+    // aren't: the league mean gap ran -9.4 / -13.3 / -11.3 / -5.6 across 2025-22, dog-side
+    // every year. Against a hardcoded 0 every one of these players clears a 15-point dog
+    // lean and Dog Lover fires — measuring the schedule, not the player. Against their own
+    // mean they are identical, and the axis correctly says nothing.
+    const badges = computeBadges(league(['Alice', 35, 65], ['Bob', 35, 65], ['Cara', 35, 65]));
+    expect(ids(badges)).not.toContain('dog-lover');
     expect(ids(badges)).not.toContain('chalk-eater');
   });
 
-  it('agrees with lineSideTendency on every player, by construction', () => {
-    // The regression this issue was filed for: /stats said 'balanced', the badge crowned
-    // anyway. Both now read the same column through the same threshold, so a player the
-    // tile calls balanced can never hold a line-lean title.
+  it('deliberately parts company with lineSideTendency, which keeps its absolute zero', () => {
+    // #635 had the badge import the /stats tile's threshold so the two could never
+    // disagree. #649 breaks that on purpose, because they answer different questions:
+    // the tile asks "does this player take dogs or chalk" (absolute, absolute zero), the
+    // badge asks "is this player out on an end OF THIS ROOM" (relative, league zero).
+    // Here every player is dog-leaning enough that the tile calls them all 'dog', while
+    // the badge — correctly — crowns only the one who is unlike the others.
     const players: [string, number, number][] = [
-      ['Doug', 40, 60],
-      ['Brett', 54, 46],
-      ['Frank', 42, 58],
-      ['Colin', 44, 56]
+      ['Alice', 30, 70],
+      ['Bob', 33, 67],
+      ['Cara', 32, 68],
+      ['Chalky', 50, 50]
     ];
     const badges = computeBadges(league(...players));
-    const leanIds = new Set(['chalk-eater', 'dog-lover']);
-    const titled = new Set(
-      badges.filter((b) => leanIds.has(b.id)).flatMap((b) => b.holders.map((h) => h.display_name))
-    );
+    // The tile would call Chalky balanced; the room makes him its Chalk Eater.
+    expect(holderNames(badges, 'chalk-eater')).toEqual(['Chalky']);
+    // And nobody is crowned Dog Lover for merely being as dog-leaning as everyone else.
+    expect(ids(badges)).not.toContain('dog-lover');
+  });
 
-    for (const [name, chalk, dog] of players) {
-      const tendency = lineSideTendency({
-        user_id: name,
-        display_name: name,
-        season_year: 2025,
-        decisions: 100,
-        chalk_picks: chalk,
-        dog_picks: dog
-      } as LineSideStatsEntry);
-      if (tendency?.lean === 'balanced') expect(titled.has(name)).toBe(false);
-    }
-    // And the fixture genuinely exercises both states, or the loop above proves nothing.
-    expect(titled.size).toBeGreaterThan(0);
+  it('pins the units: the bar is a fraction on both axes, never a percentage', () => {
+    // A 20-point gap is 0.20 in the measure's units and clears a 0.15 bar. If either side
+    // of the comparison ever slipped into percentage points (20 vs 0.15) every player
+    // would clear every bar, and both axes would light both ends every season.
+    const badges = computeBadges(league(['Alice', 60, 40], ['Bob', 40, 60]));
+    expect(holderNames(badges, 'chalk-eater')).toEqual(['Alice']);
+    expect(holderNames(badges, 'dog-lover')).toEqual(['Bob']);
+
+    // Same shape, an order of magnitude smaller: a 2-point gap must clear nothing.
+    const flat = computeBadges(league(['Alice', 51, 49], ['Bob', 49, 51]));
+    expect(ids(flat)).not.toContain('chalk-eater');
+    expect(ids(flat)).not.toContain('dog-lover');
   });
 });
 
@@ -1608,7 +1901,10 @@ describe('Tier-B and Tier-A badges coexist', () => {
   it('returns both Tier-A and Tier-B badges in the same output', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
-      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
+      seasonTotals: [
+        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10, missed: 4 })
+      ],
       consensus: [
         consensus({
           user_id: 'u1',
@@ -1621,177 +1917,11 @@ describe('Tier-B and Tier-A badges coexist', () => {
       ]
     };
     const awarded = ids(computeBadges(inputs));
-    // Tier-A: the-grinder is always awarded when someone has decisions
+    // Tier-A: the-grinder, on Alice's clean attendance in a season that recorded a miss.
     expect(awarded).toContain('the-grinder');
     // Tier-B: oracle, on this player's contrarian record. (Not lone-wolf — its axis is
     // dark since #635, so a single eligible player no longer wins it by default.)
     expect(awarded).toContain('oracle');
-  });
-});
-
-// --- computeHotHandGuard ---
-
-describe('computeHotHandGuard', () => {
-  it('returns the floor when the list is empty', () => {
-    expect(computeHotHandGuard([])).toBe(5);
-  });
-
-  it('returns the floor for a low-activity season', () => {
-    const small = [streak({ graded_picks: 4 }), streak({ graded_picks: 4 })];
-    expect(computeHotHandGuard(small)).toBe(5);
-  });
-
-  it('scales up with a high-activity season', () => {
-    const busy = [streak({ graded_picks: 30 }), streak({ graded_picks: 30 })];
-    expect(computeHotHandGuard(busy)).toBe(11);
-  });
-});
-
-// --- Hot Hand (Tier-C) ---
-
-describe('Hot Hand — provisional (in-season, seasonComplete=false)', () => {
-  it('awards the player with the highest current_streak', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 4 }),
-        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 2 })
-      ]
-    };
-    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('is not awarded when the best current_streak is 0 (all recent picks are losses/misses)', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 0 }),
-        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 0 })
-      ]
-    };
-    expect(ids(computeBadges(inputs, false))).not.toContain('hot-hand');
-  });
-
-  it('uses alphabetical tie-break when current_streaks are equal', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 10, current_streak: 3 }),
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
-      ]
-    };
-    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
-    expect(badge?.holders[0].display_name).toBe('Alice');
-  });
-
-  it('uses graded_picks as secondary tie-break before alpha', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({ user_id: 'u2', display_name: 'Bob', graded_picks: 15, current_streak: 3 }),
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
-      ]
-    };
-    const badge = computeBadges(inputs, false).find((b) => b.id === 'hot-hand');
-    expect(badge?.holders[0].display_name).toBe('Bob');
-  });
-
-  it('ignores players below the sample guard', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        // Only one player; guard = max(5, round(2 * 0.35)) = 5; below guard → no award
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 2, current_streak: 2 })
-      ]
-    };
-    expect(ids(computeBadges(inputs, false))).not.toContain('hot-hand');
-  });
-});
-
-describe('Hot Hand — crowned (season complete, seasonComplete=true)', () => {
-  it('awards the player with the highest max_streak', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({
-          user_id: 'u1',
-          display_name: 'Alice',
-          graded_picks: 10,
-          current_streak: 1,
-          max_streak: 6
-        }),
-        streak({
-          user_id: 'u2',
-          display_name: 'Bob',
-          graded_picks: 10,
-          current_streak: 4,
-          max_streak: 4
-        })
-      ]
-    };
-    const badge = computeBadges(inputs, true).find((b) => b.id === 'hot-hand');
-    // Alice has the longer max_streak even though Bob's current_streak is higher
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('is not awarded when all max_streaks are 0', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, max_streak: 0 })]
-    };
-    expect(ids(computeBadges(inputs, true))).not.toContain('hot-hand');
-  });
-
-  it('uses alphabetical tie-break when max_streaks are equal', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      streaks: [
-        streak({ user_id: 'u2', display_name: 'Zara', graded_picks: 10, max_streak: 5 }),
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, max_streak: 5 })
-      ]
-    };
-    const badge = computeBadges(inputs, true).find((b) => b.id === 'hot-hand');
-    expect(badge?.holders[0].display_name).toBe('Alice');
-  });
-});
-
-describe('Hot Hand — no streak data', () => {
-  it('is not awarded when streaks array is empty', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
-      streaks: []
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('hot-hand');
-  });
-});
-
-// --- Tier-C and Tier-A coexist ---
-
-describe('Tier-C and Tier-A badges coexist', () => {
-  it('returns Tier-A, Tier-B, and Tier-C badges in the same output', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
-      consensus: [
-        consensus({
-          user_id: 'u1',
-          display_name: 'Alice',
-          decisions: 10,
-          contrarian_picks: 6,
-          contrarian_wins: 4
-        })
-      ],
-      streaks: [
-        streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
-      ]
-    };
-    const awarded = ids(computeBadges(inputs));
-    expect(awarded).toContain('the-grinder');
-    // Tier-B is represented by oracle; the crowd-lean pair is dark since #635.
-    expect(awarded).toContain('oracle');
-    expect(awarded).toContain('hot-hand');
   });
 });
 
@@ -1963,7 +2093,9 @@ describe('Week Winner', () => {
     expect(badge?.holders[0].display_name).toBe('Zara');
   });
 
-  it('breaks a within-week points tie alphabetically before tallying', () => {
+  it('credits a tied week to nobody, rather than to whoever sorts first', () => {
+    // #634 made a tie on the season-long weeks-led tally resolve to nobody but left the
+    // per-week tally underneath calling alphaFirst. A tied week was led by nobody.
     const inputs: BadgeInputs = {
       ...EMPTY,
       trend: [
@@ -1971,8 +2103,40 @@ describe('Week Winner', () => {
         trend({ user_id: 'u1', display_name: 'Alice', week_number: 1, week_points: 20 })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
-    expect(badge?.holders[0].display_name).toBe('Alice');
+    expect(ids(computeBadges(inputs))).not.toContain('week-winner');
+  });
+
+  it('lets a player late in the alphabet win a week they tied — the Michael Chestnut case', () => {
+    // The live symptom: with alphaFirst per week, Michael Chestnut could never win a tied
+    // week — every tie went to the earlier name. Now a tie credits neither, so the tally
+    // turns on weeks genuinely led, and Michael takes this one on his outright week 2.
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        // Week 1 tied: counts for neither, where it used to hand Colin a free week.
+        trend({ user_id: 'u1', display_name: 'Colin', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u2', display_name: 'Michael', week_number: 1, week_points: 20 }),
+        // Week 2 is Michael's outright.
+        trend({ user_id: 'u1', display_name: 'Colin', week_number: 2, week_points: 5 }),
+        trend({ user_id: 'u2', display_name: 'Michael', week_number: 2, week_points: 25 })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'week-winner')).toEqual(['Michael']);
+  });
+
+  it('skips tied weeks in the tally without taking the badge down with them', () => {
+    const inputs: BadgeInputs = {
+      ...EMPTY,
+      trend: [
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 1, week_points: 20 }),
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 2, week_points: 30 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 2, week_points: 10 }),
+        trend({ user_id: 'u1', display_name: 'Alice', week_number: 3, week_points: 30 }),
+        trend({ user_id: 'u2', display_name: 'Bob', week_number: 3, week_points: 10 })
+      ]
+    };
+    expect(holderNames(computeBadges(inputs), 'week-winner')).toEqual(['Alice']);
   });
 
   it('is not awarded when there are no trend rows', () => {

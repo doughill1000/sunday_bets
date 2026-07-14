@@ -25,14 +25,14 @@ export type LeagueHonors = {
 // milestones derived from settled stats. Flavor slots are hardcoded here; the AI layer
 // (#189) overrides them later via ai_recaps.
 
+// The Homer, The Nemesis, Big Game Hunter and Hot Hand were cut in #647: each measured
+// something other than its label, and neither a bar nor a rate could repair any of them.
+// See ADR-0035 for the rules the audit distilled ("where does your zero come from?").
 export type BadgeId =
   | 'the-grinder'
   | 'the-choker'
   | 'the-whale'
   | 'the-ghost'
-  | 'the-nemesis'
-  | 'the-homer'
-  | 'big-game-hunter'
   | 'perfect-week'
   // Tier-B consensus badges (#294, Wave 2 of epic #277; titles refreshed #316)
   | 'lone-wolf'
@@ -42,8 +42,6 @@ export type BadgeId =
   // Line-side badges (#317): favorite-vs-underdog pick mix
   | 'chalk-eater'
   | 'dog-lover'
-  // Tier-C live-form badge (#296, Wave 3 epic #277)
-  | 'hot-hand'
   // Comeback & weekly honors (#397): non-scoring recognition for trailing/mid-pack
   // players, per ADR-0020 (no catch-up scoring mechanic).
   | 'the-comeback'
