@@ -146,13 +146,18 @@
       : (data.allTimeTotals[0]?.user_id ?? null);
   });
 
-  // ── Scope: player + season/Career fold into one context bar (#518) ──────────────
+  // ── Scope: player + season/Career fold into one context bar (#518, #638) ────────
   // The Season/Career tab is gone. `scope` is a single value: 'season' shows the season
   // resolved from the URL, 'career' the all-time view. Switching to Career is a pure
   // client-side view flip (career data always loads); changing the *season* navigates so the
   // season-scoped query re-keys (ADR-0017). Because a full navigation re-mounts nothing, the
   // scope is set before `goto` so it survives the reload as 'season'.
-  let scope = $state<'season' | 'career'>('season');
+  //
+  // The initial value comes from `pageData.defaultScope` (#638): 'career' when the newest
+  // season with data has already concluded (off-season) and the visitor didn't ask for a
+  // specific season via `?season=`; 'season' otherwise — unchanged from the old always-'season'
+  // default while a season is actually in progress.
+  let scope = $state<'season' | 'career'>(pageData.defaultScope);
   // Fold the currently-displayed season into the option set so the dropdown can always
   // represent `scopeValue`. `resolveSeasonYear` can land on a season with no settled picks
   // yet — a brand-new/pre-grading season (empty `availableSeasons` → the active season year),
@@ -160,7 +165,9 @@
   // only (`group_season_years`), so that season is absent from it. Without this the <select>
   // value would match no <option>, silently blanking the control to `''` while the empty
   // state still reads "No settled picks for <year>." (mirrors the /leaderboard scope fix).
-  const scopeOptions = $derived(seasonScopeOptions([...data.availableSeasons, data.seasonYear]));
+  const scopeOptions = $derived(
+    seasonScopeOptions([...data.availableSeasons, data.seasonYear], data.latestSeasonInProgress)
+  );
   const scopeValue = $derived(scope === 'career' ? 'career' : String(data.seasonYear));
 
   function onScopeChange(e: Event) {
