@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "db:backfill:local": "cross-env DOTENV_CONFIG_PATH=.env.local node -r dotenv/config --import tsx supabase/scripts/backfill-picks/index.ts \"C:/Users/dough/code/sunday_bets/NFL 2025.xlsx\" --season 2025 --lock-at-kickoff",
