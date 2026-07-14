@@ -13,7 +13,7 @@ import type {
   LeagueSituationalBaselineEntry,
   TeamBookEntry
 } from '$lib/types/server/stats';
-import type { PlayerRatingEntry } from '$lib/domain/rating';
+import type { PlayerRatingEntry, RatingLadderRow } from '$lib/domain/rating';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
@@ -117,6 +117,14 @@ export type AllTimeLeaderboardPayload = {
    *  Career caption — every member's total already sums drop-aware season totals once this
    *  is true, regardless of which season a commissioner started the rule from. */
   dropActive: boolean;
+  /** The credibility ladder (#637, ADR-0032): every member ordered by career rating and
+   *  dense-ranked, Unrated members last. Career-grain and season-independent — exactly this
+   *  payload's own scope, which is why it rides this key rather than minting a season-shaped
+   *  one. Derived server-side by `ratingLadder` (as `totals`' own dense rank already is)
+   *  because its roster is the group MEMBERSHIP, not the career totals: a member who has never
+   *  had a pick graded has no `totals` row but is still a member, and must read Unrated rather
+   *  than vanish. A null `entry.rating` is the Unrated state. */
+  ladder: RatingLadderRow[];
 };
 
 /**

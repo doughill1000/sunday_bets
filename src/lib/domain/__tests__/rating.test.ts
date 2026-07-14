@@ -6,7 +6,10 @@ import {
   tierLabel,
   meterPct,
   ratingRank,
-  type PlayerRatingEntry
+  ratingLadder,
+  hasRatedMember,
+  type PlayerRatingEntry,
+  type RatingLadderMember
 } from '$lib/domain/rating';
 
 const entry = (user_id: string, rating: number | null): PlayerRatingEntry => ({
@@ -116,5 +119,108 @@ describe('ratingRank', () => {
     expect(ratingRank(tied, 'b')).toBe(1);
     // Two players share rank 1; the next distinct rating is rank 2 (dense ranking).
     expect(ratingRank(tied, 'c')).toBe(2);
+  });
+});
+
+describe('ratingLadder', () => {
+  const member = (user_id: string, display_name: string): RatingLadderMember => ({
+    user_id,
+    display_name,
+    avatar_key: null
+  });
+
+  const members = [
+    member('colin', 'Colin'),
+    member('marcus', 'Marcus'),
+    member('rey', 'Rey'),
+    member('you', 'You')
+  ];
+
+  it('orders rated players by rating descending and dense-ranks them', () => {
+    const rows = ratingLadder(
+      [entry('colin', 1503), entry('marcus', 1522), entry('you', 1513)],
+      [member('colin', 'Colin'), member('marcus', 'Marcus'), member('you', 'You')]
+    );
+
+    expect(rows.map((r) => r.user_id)).toEqual(['marcus', 'you', 'colin']);
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, 3]);
+  });
+
+  it('shares a rank on a tie without skipping the next rank', () => {
+    const rows = ratingLadder(
+      [entry('a', 1512), entry('b', 1512), entry('c', 1505)],
+      [member('a', 'A'), member('b', 'B'), member('c', 'C')]
+    );
+
+    expect(rows.map((r) => r.rank)).toEqual([1, 1, 2]);
+  });
+
+  it('sorts every unrated player behind every rated one, regardless of rating', () => {
+    const rows = ratingLadder(
+      [entry('marcus', 1522), entry('rey', null), entry('you', 1488)],
+      members
+    );
+
+    // Colin has no row at all — still unrated, still behind the rated players.
+    expect(rows.map((r) => r.user_id)).toEqual(['marcus', 'you', 'rey', 'colin']);
+    expect(rows.map((r) => r.rank)).toEqual([1, 2, null, null]);
+  });
+
+  it('gives a member with no rating row the Unrated state at zero decisions, not a number', () => {
+    const rows = ratingLadder(
+      [entry('marcus', 1522)],
+      [member('marcus', 'Marcus'), member('new', 'New')]
+    );
+    const newcomer = rows.find((r) => r.user_id === 'new');
+
+    expect(newcomer?.entry).toEqual({
+      user_id: 'new',
+      rating: null,
+      decisions: 0,
+      decisionsToQualify: MIN_QUALIFIED_DECISIONS,
+      seasonDelta: null
+    });
+    expect(newcomer?.rank).toBeNull();
+  });
+
+  it('orders unrated players by progress toward the gate, then by name', () => {
+    const close: PlayerRatingEntry = {
+      user_id: 'close',
+      rating: null,
+      decisions: 18,
+      decisionsToQualify: 2,
+      seasonDelta: null
+    };
+    const rows = ratingLadder(
+      [close],
+      [member('zoe', 'Zoe'), member('close', 'Close'), member('abe', 'Abe')]
+    );
+
+    // `close` is nearest the gate; the two 0-decision members fall back to name order.
+    expect(rows.map((r) => r.user_id)).toEqual(['close', 'abe', 'zoe']);
+  });
+
+  it('renders every member exactly once, including those absent from the ratings', () => {
+    const rows = ratingLadder([entry('marcus', 1522)], members);
+    expect(rows).toHaveLength(members.length);
+    expect(new Set(rows.map((r) => r.user_id)).size).toBe(members.length);
+  });
+
+  it('is empty for a group with no members', () => {
+    expect(ratingLadder([], [])).toEqual([]);
+  });
+});
+
+describe('hasRatedMember', () => {
+  const members = [{ user_id: 'a', display_name: 'A', avatar_key: null }];
+
+  it('is true once any member has cleared the gate', () => {
+    expect(hasRatedMember(ratingLadder([entry('a', 1500)], members))).toBe(true);
+  });
+
+  it('is false when nobody is qualified, so the ladder can stay off the page', () => {
+    expect(hasRatedMember(ratingLadder([entry('a', null)], members))).toBe(false);
+    expect(hasRatedMember(ratingLadder([], members))).toBe(false);
+    expect(hasRatedMember([])).toBe(false);
   });
 });

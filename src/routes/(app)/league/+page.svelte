@@ -39,6 +39,8 @@
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
+  import { hasRatedMember } from '$lib/domain/rating';
   import { seasonScopeOptions } from '$lib/utils/stats';
   import { weekLabel } from '$lib/utils/weekLabel';
   import { hasGradedWeek, rankMovements } from '$lib/utils/leaderboardTrend';
@@ -119,7 +121,8 @@
 
   const EMPTY_ALLTIME: AllTimeLeaderboardPayload = {
     totals: [],
-    dropActive: false
+    dropActive: false,
+    ladder: []
   };
 
   const EMPTY_GROUP: GroupCachePayload = {
@@ -485,15 +488,27 @@
               </CardHeader>
             </Card>
           {:else}
-            {@render standingsTableCard(
-              allTime.totals,
-              'All-time standings',
-              allTime.dropActive,
-              "Total drops each player's lowest week per season. W-L-P count every week.",
-              'alltime-table',
-              null,
-              null
-            )}
+            <!-- The career table leads — "where do I stand" first — then the ladder answers the
+                 question the table can't: whether standing there meant beating the market. Both are
+                 career-grain, so they belong to this window and no other (#637). The ladder is a
+                 sibling card INSIDE the Standings panel, never outside the tab group and never a
+                 fourth column on the three-column table (#631). -->
+            <div class="space-y-6">
+              {@render standingsTableCard(
+                allTime.totals,
+                'All-time standings',
+                allTime.dropActive,
+                "Total drops each player's lowest week per season. W-L-P count every week.",
+                'alltime-table',
+                null,
+                null
+              )}
+              <!-- Nobody qualified yet is a legitimate state, not an error: render nothing rather
+                   than a card of dashes (ADR-0032 §5 — no number before the gate). -->
+              {#if hasRatedMember(allTime.ladder)}
+                <RatingLadder rows={allTime.ladder} currentUserId={data.currentUserId} />
+              {/if}
+            </div>
           {/if}
         {:else}
           <!-- The season window. Honors and the race are both season-scoped, so they render here

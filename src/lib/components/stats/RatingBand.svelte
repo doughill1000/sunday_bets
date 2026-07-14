@@ -12,10 +12,10 @@
     MIN_QUALIFIED_DECISIONS,
     meterPct,
     ratingTier,
-    tierLabel,
     type PlayerRatingEntry,
     type RatingTier
   } from '$lib/domain/rating';
+  import RatingTierPill from '$lib/components/RatingTierPill.svelte';
 
   let {
     entry,
@@ -37,17 +37,6 @@
   const fillPct = $derived(
     rating != null ? meterPct(rating) : (decisions / MIN_QUALIFIED_DECISIONS) * 100
   );
-
-  // Tier pill loudness, a four-step ladder mirroring the tiers: Hotshot (the namesake apex) earns the
-  // brass fill plus an ink ring so winning the top tier stands apart; Sharp the plain brass fill;
-  // Solid a quiet raised chip; Square and Unrated a plain outline (Unrated dashed, to read as "not
-  // yet a verdict").
-  function tierPillClass(t: RatingTier): string {
-    if (t === 'hotshot') return 'bg-primary text-primary-foreground ring-2 ring-primary-ink/50';
-    if (t === 'sharp') return 'bg-primary text-primary-foreground';
-    if (t === 'solid') return 'border border-border bg-muted text-foreground';
-    return 'border border-border text-muted-foreground';
-  }
 </script>
 
 <div
@@ -60,17 +49,7 @@
     <span class="text-eyebrow {rated ? 'text-primary-ink' : 'text-muted-foreground'}"
       >Market credibility</span
     >
-    {#if rated && tier}
-      <span
-        class="rounded-full px-2 py-0.5 text-eyebrow {tierPillClass(tier)}"
-        data-testid="rating-tier">{tier === 'hotshot' ? '★ ' : ''}{tierLabel(tier)}</span
-      >
-    {:else}
-      <span
-        class="rounded-full border border-dashed border-border px-2 py-0.5 text-eyebrow text-muted-foreground"
-        >Unrated</span
-      >
-    {/if}
+    <RatingTierPill tier={rated ? tier : null} testid="rating-tier" />
   </div>
 
   {#if rated && rating != null}
