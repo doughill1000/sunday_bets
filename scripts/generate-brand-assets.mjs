@@ -164,14 +164,19 @@ function wordmarkGeometry() {
   </g>`;
 }
 
-function lockupSvg() {
+function lockupSvg({ charcoalBackground = false } = {}) {
   return svgDocument({
     width: LOCKUP_WIDTH,
     height: LOCKUP_HEIGHT,
-    title: 'Hotshot',
-    description: 'The Hotshot football mark stacked above the uppercase HOTSHOT wordmark.',
-    body: `<rect width="1181" height="638" rx="44" fill="${CHARCOAL}" />
-  <g transform="translate(430.5 30) scale(0.625)">
+    title: charcoalBackground ? 'Hotshot lockup on charcoal' : 'Hotshot',
+    description: `The Hotshot football mark stacked above the uppercase HOTSHOT wordmark${
+      charcoalBackground ? ' on a charcoal background' : ' on a transparent background'
+    }.`,
+    body: `${
+      charcoalBackground
+        ? `<rect width="${LOCKUP_WIDTH}" height="${LOCKUP_HEIGHT}" fill="${CHARCOAL}" />\n  `
+        : ''
+    }<g transform="translate(430.5 30) scale(0.625)">
     ${markGeometry()}
   </g>
   ${wordmarkGeometry()}`
@@ -249,12 +254,14 @@ async function main() {
   const markSvg = logoMarkSvg();
   const faviconSvg = logoMarkSvg({ compact: true });
   const fullLockupSvg = lockupSvg();
+  const charcoalLockupSvg = lockupSvg({ charcoalBackground: true });
   const safeMaskableSvg = maskableMarkSvg();
 
   await Promise.all([
     writeFile(path.join(STATIC_DIR, 'logo-mark.svg'), markSvg),
     writeFile(path.join(STATIC_DIR, 'favicon.svg'), faviconSvg),
-    writeFile(path.join(STATIC_DIR, 'hotshot-lockup.svg'), fullLockupSvg)
+    writeFile(path.join(STATIC_DIR, 'hotshot-lockup.svg'), fullLockupSvg),
+    writeFile(path.join(STATIC_DIR, 'hotshot-lockup-charcoal.svg'), charcoalLockupSvg)
   ]);
 
   const browser = await chromium.launch({ headless: true });
@@ -273,6 +280,7 @@ async function main() {
     const targets = [
       ['logo-mark.png', markSvg, 512, 512, null],
       ['hotshot-lockup.png', fullLockupSvg, LOCKUP_WIDTH, LOCKUP_HEIGHT, null],
+      ['hotshot-lockup-charcoal.png', charcoalLockupSvg, LOCKUP_WIDTH, LOCKUP_HEIGHT, CHARCOAL],
       ['apple-touch-icon.png', markSvg, 180, 180, CHARCOAL],
       ['pwa-192x192.png', markSvg, 192, 192, CHARCOAL],
       ['pwa-512x512.png', markSvg, 512, 512, CHARCOAL],
@@ -294,9 +302,11 @@ async function main() {
   const generated = [
     'logo-mark.svg',
     'hotshot-lockup.svg',
+    'hotshot-lockup-charcoal.svg',
     'favicon.svg',
     'logo-mark.png',
     'hotshot-lockup.png',
+    'hotshot-lockup-charcoal.png',
     'favicon-16x16.png',
     'favicon-32x32.png',
     'favicon-48x48.png',
