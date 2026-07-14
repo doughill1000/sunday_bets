@@ -5,8 +5,6 @@
   // rather than to the whole week. Mirrors the role the Season/All-time scope bar plays on
   // Standings: one control per tab, at the top of the tab.
   import { goto } from '$app/navigation';
-  import ChevronLeft from '@lucide/svelte/icons/chevron-left';
-  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { Button } from '$lib/components/ui/button';
   import {
     DropdownMenu,
@@ -25,32 +23,15 @@
     selectedWeek: SeasonWeekOption | null;
   } = $props();
 
-  const currentIndex = $derived(
-    selectedWeek != null ? weeks.findIndex((w) => w.weekNumber === selectedWeek.weekNumber) : -1
-  );
-  const hasPrev = $derived(currentIndex > 0);
-  const hasNext = $derived(currentIndex >= 0 && currentIndex < weeks.length - 1);
-
   function navigate(weekNumber: number) {
     const url = new URL(window.location.href);
     url.searchParams.set('view', 'weekly');
     url.searchParams.set('week', String(weekNumber));
     void goto(url.toString(), { invalidateAll: true, noScroll: true, keepFocus: true });
   }
-
-  function prev() {
-    if (hasPrev) navigate(weeks[currentIndex - 1].weekNumber);
-  }
-
-  function next() {
-    if (hasNext) navigate(weeks[currentIndex + 1].weekNumber);
-  }
 </script>
 
-<div class="flex items-center justify-between gap-2" data-testid="week-navigator">
-  <Button variant="outline" size="sm" onclick={prev} disabled={!hasPrev} aria-label="Previous week">
-    <ChevronLeft class="size-4" aria-hidden="true" />
-  </Button>
+<div class="flex items-center justify-center" data-testid="week-navigator">
   <DropdownMenu>
     <DropdownMenuTrigger>
       {#snippet child({ props })}
@@ -101,7 +82,4 @@
       {/each}
     </DropdownMenuContent>
   </DropdownMenu>
-  <Button variant="outline" size="sm" onclick={next} disabled={!hasNext} aria-label="Next week">
-    <ChevronRight class="size-4" aria-hidden="true" />
-  </Button>
 </div>
