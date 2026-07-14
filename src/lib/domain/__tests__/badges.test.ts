@@ -18,7 +18,8 @@ import type {
   BadgeTeamEntry,
   BadgeTrendEntry
 } from '../badges';
-import type { SeasonStats } from '$lib/types/server/stats';
+import { lineSideTendency } from '$lib/utils/stats';
+import type { LineSideStatsEntry, SeasonStats } from '$lib/types/server/stats';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 
 // --- Fixture helpers ---
@@ -1075,10 +1076,14 @@ describe('computeOracleGuard', () => {
   });
 });
 
-// --- Lone Wolf (Tier-B) ---
+// --- Crowd lean axis: Lone Wolf / The Sheep (Tier-B, dark since #635) ---
 
-describe('Lone Wolf', () => {
-  it('awards the player with the lowest mean consensus_pct', () => {
+describe('Crowd lean axis (zero unset)', () => {
+  // Both ends used to fire every season by construction — whoever sat at either end of a
+  // sorted mean_consensus_pct list. The axis has no zero yet (#635's open decision), so it
+  // awards nothing at all. These tests exist to catch the pair coming back to life by
+  // accident: give crowdLeanAxis a zero and they should fail loudly, not pass quietly.
+  it('awards neither end even when the league is maximally split', () => {
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
@@ -1086,116 +1091,38 @@ describe('Lone Wolf', () => {
         totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
       ],
       consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 35 }),
-        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 65 })
+        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 5 }),
+        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 95 })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'lone-wolf');
-    expect(badge?.holders[0].user_id).toBe('u1');
+    const awarded = ids(computeBadges(inputs));
+    expect(awarded).not.toContain('lone-wolf');
+    expect(awarded).not.toContain('sheep');
   });
 
-  it('excludes players below the decision sample guard', () => {
+  it('does not take the other consensus badges dark with it', () => {
+    // Oracle/Lemming measure how minority/majority picks turned out, not where a player
+    // sits on a lean — they are not on this axis and must keep awarding.
     const inputs: BadgeInputs = {
       ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
-      ],
+      seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
       consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 50 }),
-        // Bob is below the guard (2 decisions < 5 floor)
-        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 2, mean_consensus_pct: 20 })
+        consensus({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          contrarian_picks: 6,
+          contrarian_wins: 5
+        })
       ]
     };
-    const badge = computeBadges(inputs).find((b) => b.id === 'lone-wolf');
-    expect(badge?.holders[0].user_id).toBe('u1');
+    expect(ids(computeBadges(inputs))).toContain('oracle');
   });
 
-  it('is not awarded when no player reaches the guard', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 2 })],
-      consensus: [consensus({ decisions: 2, mean_consensus_pct: 30 })]
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('lone-wolf');
-  });
-
-  it('breaks ties by higher decision count, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
-      ],
-      consensus: [
-        // Tied mean; Zara has more decisions → wins
-        consensus({ user_id: 'u1', display_name: 'Zara', decisions: 12, mean_consensus_pct: 40 }),
-        consensus({ user_id: 'u2', display_name: 'Alice', decisions: 8, mean_consensus_pct: 40 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'lone-wolf');
-    expect(badge?.holders[0].display_name).toBe('Zara');
-  });
-
-  it('is not awarded when there is no consensus data', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [totals({ decisions: 10 })],
-      consensus: []
-    };
-    expect(ids(computeBadges(inputs))).not.toContain('lone-wolf');
-  });
-});
-
-// --- The Sheep (Tier-B) ---
-
-describe('The Sheep', () => {
-  it('awards the player with the highest mean consensus_pct', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 10 })
-      ],
-      consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 75 }),
-        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 10, mean_consensus_pct: 55 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('excludes players below the guard', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 2 })
-      ],
-      consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 60 }),
-        consensus({ user_id: 'u2', display_name: 'Bob', decisions: 2, mean_consensus_pct: 95 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
-    expect(badge?.holders[0].user_id).toBe('u1');
-  });
-
-  it('breaks ties by higher decision count, then alphabetically', () => {
-    const inputs: BadgeInputs = {
-      ...EMPTY,
-      seasonTotals: [
-        totals({ user_id: 'u1', display_name: 'Zara', decisions: 12 }),
-        totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
-      ],
-      consensus: [
-        consensus({ user_id: 'u1', display_name: 'Zara', decisions: 12, mean_consensus_pct: 70 }),
-        consensus({ user_id: 'u2', display_name: 'Alice', decisions: 8, mean_consensus_pct: 70 })
-      ]
-    };
-    const badge = computeBadges(inputs).find((b) => b.id === 'sheep');
-    expect(badge?.holders[0].display_name).toBe('Zara');
+  it('advertises neither face in the glossary, since neither can be earned', () => {
+    const glossaryIds = BADGE_GLOSSARY.map((g) => g.id);
+    expect(glossaryIds).not.toContain('lone-wolf');
+    expect(glossaryIds).not.toContain('sheep');
   });
 });
 
@@ -1430,7 +1357,8 @@ describe('Chalk Eater', () => {
   });
 
   it('excludes players below the sample guard', () => {
-    // u2 has 2 decisions (below the 5 floor) but a perfect chalk ratio → still excluded
+    // u2 has 2 decisions (below the 5 floor) but a perfect chalk ratio → still excluded,
+    // so the badge falls to Alice, who leans chalk 8-2 and clears the bar on her own.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
@@ -1442,8 +1370,8 @@ describe('Chalk Eater', () => {
           user_id: 'u1',
           display_name: 'Alice',
           decisions: 10,
-          chalk_picks: 5,
-          dog_picks: 5
+          chalk_picks: 8,
+          dog_picks: 2
         }),
         lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 2, dog_picks: 0 })
       ]
@@ -1460,20 +1388,21 @@ describe('Chalk Eater', () => {
         totals({ user_id: 'u2', display_name: 'Alice', decisions: 8 })
       ],
       lineSide: [
-        // Both 50% chalk share; Zara has more decisions → wins
+        // Both lean chalk by exactly +50 points, well clear of the bar; Zara has more
+        // decisions → wins. Tie-breaks are unchanged by the axis layer.
         lineSide({
           user_id: 'u1',
           display_name: 'Zara',
           decisions: 12,
-          chalk_picks: 6,
-          dog_picks: 6
+          chalk_picks: 9,
+          dog_picks: 3
         }),
         lineSide({
           user_id: 'u2',
           display_name: 'Alice',
           decisions: 8,
-          chalk_picks: 4,
-          dog_picks: 4
+          chalk_picks: 6,
+          dog_picks: 2
         })
       ]
     };
@@ -1553,6 +1482,8 @@ describe('Dog Lover', () => {
   });
 
   it('excludes players below the sample guard', () => {
+    // Bob is all-dog but on 2 decisions (below the 5 floor) → excluded, leaving Alice,
+    // who leans dog 8-2 on a real sample.
     const inputs: BadgeInputs = {
       ...EMPTY,
       seasonTotals: [
@@ -1564,8 +1495,8 @@ describe('Dog Lover', () => {
           user_id: 'u1',
           display_name: 'Alice',
           decisions: 10,
-          chalk_picks: 5,
-          dog_picks: 5
+          chalk_picks: 2,
+          dog_picks: 8
         }),
         lineSide({ user_id: 'u2', display_name: 'Bob', decisions: 2, chalk_picks: 0, dog_picks: 2 })
       ]
@@ -1581,6 +1512,93 @@ describe('Dog Lover', () => {
       lineSide: []
     };
     expect(ids(computeBadges(inputs))).not.toContain('dog-lover');
+  });
+});
+
+// --- The line-lean axis itself (#635) ---
+//
+// The behaviour the axis layer exists for: each end awards independently, so a season can
+// produce two titles, one, or none. Before #635 the pair always produced exactly two,
+// which is how the app came to crown a Chalk Eater on a 54% favorite share while /stats
+// called the same player balanced.
+
+describe('Line lean axis', () => {
+  /** Builds a league from [name, chalk, dog] triples on a fixed 100-decision sample. */
+  function league(...players: [string, number, number][]): BadgeInputs {
+    return {
+      ...EMPTY,
+      seasonTotals: players.map(([name], i) =>
+        totals({ user_id: `u${i + 1}`, display_name: name, decisions: 100 })
+      ),
+      lineSide: players.map(([name, chalk, dog], i) =>
+        lineSide({
+          user_id: `u${i + 1}`,
+          display_name: name,
+          decisions: 100,
+          chalk_picks: chalk,
+          dog_picks: dog
+        })
+      )
+    };
+  }
+
+  it('awards both faces when both ends clear the bar', () => {
+    // The layer must not collapse to a single winner per axis.
+    const badges = computeBadges(league(['Alice', 70, 30], ['Bob', 30, 70]));
+    expect(badges.find((b) => b.id === 'chalk-eater')?.holders[0].display_name).toBe('Alice');
+    expect(badges.find((b) => b.id === 'dog-lover')?.holders[0].display_name).toBe('Bob');
+  });
+
+  it('awards nothing when nobody clears the bar, and leaves no placeholder behind', () => {
+    // Every player inside the ±10-point dead zone: a league of moderates earns no titles.
+    const badges = computeBadges(league(['Alice', 54, 46], ['Bob', 48, 52], ['Cara', 51, 49]));
+    const awarded = ids(badges);
+    expect(awarded).not.toContain('chalk-eater');
+    expect(awarded).not.toContain('dog-lover');
+    // Nothing glossary-less or holder-less sneaks through in place of the missing titles.
+    expect(badges.every((b) => b.holders.length > 0)).toBe(true);
+  });
+
+  it('awards one end when only one side clears the bar — the 2025 line-lean case', () => {
+    // Real 2025 shares: Doug is 19.6 points clear on the dog side and earns it; Brett's
+    // 54.0% favorite share is an 7.9-point gap that never leaves the dead zone, so the
+    // chalk end is simply empty. Two guaranteed titles become one earned one.
+    const badges = computeBadges(
+      league(['Doug', 40, 60], ['Brett', 54, 46], ['Frank', 42, 58], ['Colin', 44, 56])
+    );
+    expect(badges.find((b) => b.id === 'dog-lover')?.holders[0].display_name).toBe('Doug');
+    expect(ids(badges)).not.toContain('chalk-eater');
+  });
+
+  it('agrees with lineSideTendency on every player, by construction', () => {
+    // The regression this issue was filed for: /stats said 'balanced', the badge crowned
+    // anyway. Both now read the same column through the same threshold, so a player the
+    // tile calls balanced can never hold a line-lean title.
+    const players: [string, number, number][] = [
+      ['Doug', 40, 60],
+      ['Brett', 54, 46],
+      ['Frank', 42, 58],
+      ['Colin', 44, 56]
+    ];
+    const badges = computeBadges(league(...players));
+    const leanIds = new Set(['chalk-eater', 'dog-lover']);
+    const titled = new Set(
+      badges.filter((b) => leanIds.has(b.id)).flatMap((b) => b.holders.map((h) => h.display_name))
+    );
+
+    for (const [name, chalk, dog] of players) {
+      const tendency = lineSideTendency({
+        user_id: name,
+        display_name: name,
+        season_year: 2025,
+        decisions: 100,
+        chalk_picks: chalk,
+        dog_picks: dog
+      } as LineSideStatsEntry);
+      if (tendency?.lean === 'balanced') expect(titled.has(name)).toBe(false);
+    }
+    // And the fixture genuinely exercises both states, or the loop above proves nothing.
+    expect(titled.size).toBeGreaterThan(0);
   });
 });
 
@@ -1605,8 +1623,9 @@ describe('Tier-B and Tier-A badges coexist', () => {
     const awarded = ids(computeBadges(inputs));
     // Tier-A: the-grinder is always awarded when someone has decisions
     expect(awarded).toContain('the-grinder');
-    // Tier-B: lone-wolf awarded (single eligible player)
-    expect(awarded).toContain('lone-wolf');
+    // Tier-B: oracle, on this player's contrarian record. (Not lone-wolf — its axis is
+    // dark since #635, so a single eligible player no longer wins it by default.)
+    expect(awarded).toContain('oracle');
   });
 });
 
@@ -1756,7 +1775,13 @@ describe('Tier-C and Tier-A badges coexist', () => {
       ...EMPTY,
       seasonTotals: [totals({ user_id: 'u1', display_name: 'Alice', decisions: 10 })],
       consensus: [
-        consensus({ user_id: 'u1', display_name: 'Alice', decisions: 10, mean_consensus_pct: 40 })
+        consensus({
+          user_id: 'u1',
+          display_name: 'Alice',
+          decisions: 10,
+          contrarian_picks: 6,
+          contrarian_wins: 4
+        })
       ],
       streaks: [
         streak({ user_id: 'u1', display_name: 'Alice', graded_picks: 10, current_streak: 3 })
@@ -1764,7 +1789,8 @@ describe('Tier-C and Tier-A badges coexist', () => {
     };
     const awarded = ids(computeBadges(inputs));
     expect(awarded).toContain('the-grinder');
-    expect(awarded).toContain('lone-wolf');
+    // Tier-B is represented by oracle; the crowd-lean pair is dark since #635.
+    expect(awarded).toContain('oracle');
     expect(awarded).toContain('hot-hand');
   });
 });
