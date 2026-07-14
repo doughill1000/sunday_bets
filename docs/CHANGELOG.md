@@ -68,6 +68,28 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.6.0 — 2026-07-14
+
+- **PR #645** Release v3.6.0.
+- **#634** Trim the season badge catalog — cut 📈 The Sharp and 🤡 The Fool (both
+  duplicated or contradicted the ADR-0032 credibility rating), Week Winner now requires
+  sole possession. ADR-0035 ("the credibility rating owns the market, badges own the
+  room"). files: `src/lib/domain/badges.ts` · `src/lib/types/honors.ts`
+- **#635** Badge axis layer — a paired badge declares one measure, two ends, an honest
+  zero, and a bar; each end awards independently, so an axis yields 0, 1, or 2 titles
+  instead of always crowning both ends of a sorted list. Line lean now shares its
+  zero/threshold with `/stats`' `lineSideTendency`; crowd lean stays dark with its zero
+  unset. ADR-0035. files: `src/lib/domain/badges.ts` · `src/lib/components/group/LeagueHonors.svelte`
+- **#636** Backdoor of the Week — mirror of Bad Beat, crowning the win that barely
+  covered instead of the loss that almost did, derived from the same weekly-hardware
+  matview. files: `src/lib/domain/weeklyAwards.ts` · `src/lib/components/recap/WeeklyHardware.svelte`
+- **#637** /league credibility ladder — the All-time Standings scope now shows every
+  member's career rating and tier, putting the room and the market on one screen.
+  ADR-0032. routes: `/league` · files: `src/lib/components/leaderboard/RatingLadder.svelte`
+- **#638** Season dropdowns default to career/all-time in the off-season —
+  `/league`, `/stats`, and `/market` no longer preselect a finished season; in-progress
+  is read from the season's scoring weeks. files: `src/lib/server/db/queries/seasonProgress.ts`
+
 ## v3.5.0 — 2026-07-14
 
 - **PR #639** Release v3.5.0.
