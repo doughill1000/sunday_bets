@@ -3,6 +3,7 @@ import {
   gameBallOfWeek,
   donkeyOfWeek,
   badBeatOfWeek,
+  backdoorOfWeek,
   contrarianWinOfWeek,
   computeWeeklyHardware,
   computeSeasonShelf,
@@ -148,6 +149,85 @@ describe('badBeatOfWeek', () => {
   });
 });
 
+describe('backdoorOfWeek', () => {
+  it('returns null when no pick won', () => {
+    expect(
+      backdoorOfWeek([
+        cover({ outcome: 'loss', cover_margin: -3 }),
+        cover({ outcome: 'push', cover_margin: 0 })
+      ])
+    ).toBeNull();
+  });
+
+  it('awards the player whose win covered by the smallest margin', () => {
+    const r = backdoorOfWeek([
+      cover({ user_id: 'a', display_name: 'Al', outcome: 'win', cover_margin: 7 }),
+      cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 0.5 }),
+      cover({ user_id: 'c', display_name: 'Cy', outcome: 'win', cover_margin: 3 })
+    ]);
+    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 0.5 });
+  });
+
+  it('ignores losing and pushing picks even if their margin is closer to zero', () => {
+    const r = backdoorOfWeek([
+      cover({ user_id: 'a', display_name: 'Al', outcome: 'loss', cover_margin: -0.5 }),
+      cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 2 })
+    ]);
+    expect(r?.holder.user_id).toBe('b');
+  });
+
+  it('still crowns the least-wide win when every win was comfortable (no separate threshold)', () => {
+    // Mirrors Bad Beat exactly: null means "nobody won", not "nobody won narrowly" — Bad Beat
+    // has no configurable "how bad is a bad beat" cutoff either, it just takes the best of
+    // whatever losses exist. A blowout-only week still crowns the least-blowout win.
+    const r = backdoorOfWeek([
+      cover({ user_id: 'a', display_name: 'Al', outcome: 'win', cover_margin: 21 }),
+      cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 14 })
+    ]);
+    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 14 });
+  });
+
+  it('breaks equal-margin ties by identity then game_id, order-independent', () => {
+    const a = cover({
+      user_id: 'b',
+      display_name: 'Bo',
+      game_id: 'g9',
+      outcome: 'win',
+      cover_margin: 1
+    });
+    const b = cover({
+      user_id: 'b',
+      display_name: 'Bo',
+      game_id: 'g2',
+      outcome: 'win',
+      cover_margin: 1
+    });
+    const c = cover({
+      user_id: 'a',
+      display_name: 'Al',
+      game_id: 'g5',
+      outcome: 'win',
+      cover_margin: 1
+    });
+    // Al < Bo by name, so 'a' wins regardless of game_id or order.
+    expect(backdoorOfWeek([a, b, c])?.holder.user_id).toBe('a');
+    expect(backdoorOfWeek([c, b, a])?.holder.user_id).toBe('a');
+    // Same player, tie falls to the lower game_id.
+    expect(backdoorOfWeek([a, b])?.holder.user_id).toBe('b');
+  });
+
+  it('fires alongside Bad Beat in the same week without interfering', () => {
+    const covers = [
+      cover({ user_id: 'a', display_name: 'Al', outcome: 'loss', cover_margin: -0.5 }),
+      cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 0.5 })
+    ];
+    const badBeat = badBeatOfWeek(covers);
+    const backdoor = backdoorOfWeek(covers);
+    expect(badBeat).toEqual({ holder: { user_id: 'a', display_name: 'Al' }, cover_margin: -0.5 });
+    expect(backdoor).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 0.5 });
+  });
+});
+
 describe('contrarianWinOfWeek', () => {
   it('returns null when no minority pick won', () => {
     expect(
@@ -194,6 +274,14 @@ describe('computeWeeklyHardware', () => {
         game_id: 'g1',
         cover_margin: -0.5
       }),
+      cover({
+        user_id: 'a',
+        display_name: 'Al',
+        week_number: 1,
+        game_id: 'g2',
+        outcome: 'win',
+        cover_margin: 2
+      }),
       cover({ user_id: 'a', display_name: 'Al', week_number: 2, game_id: 'g9', cover_margin: -4 })
     ],
     consensus: [
@@ -213,14 +301,16 @@ describe('computeWeeklyHardware', () => {
       'game-ball',
       'donkey-of-week',
       'bad-beat',
+      'backdoor',
       'contrarian-win'
     ]);
-    // Week 1: Al top (game ball), Bo bottom (donkey), Bo bad beat, Al contrarian.
+    // Week 1: Al top (game ball), Bo bottom (donkey), Bo bad beat, Al backdoor, Al contrarian.
     const byId = Object.fromEntries(week1.awards.map((a) => [a.id, a.holder.user_id]));
     expect(byId).toEqual({
       'game-ball': 'a',
       'donkey-of-week': 'b',
       'bad-beat': 'b',
+      backdoor: 'a',
       'contrarian-win': 'a'
     });
   });
@@ -289,6 +379,7 @@ describe('flavor metadata', () => {
       'game-ball',
       'donkey-of-week',
       'bad-beat',
+      'backdoor',
       'contrarian-win'
     ]);
     for (const id of WEEKLY_AWARD_ORDER) {

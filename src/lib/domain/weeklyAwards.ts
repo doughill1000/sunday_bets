@@ -1,14 +1,16 @@
-// Weekly "hardware" (issue #387): four deterministic, cosmetic awards minted for every
+// Weekly "hardware" (issue #387): five deterministic, cosmetic awards minted for every
 // fully-graded scoring week, plus a per-season shelf that tallies how many of each a
 // player has won ("3× Game Ball"). Pure and deterministic in the same spirit as the
 // season-badge engine (`src/lib/domain/badges.ts`): the selectors take pre-fetched
 // matview rows and return award holders with stable tie-breaks and no side effects.
 //
-// The four awards and their sources:
+// The five awards and their sources:
 //   Game Ball of the Week  — most points that week          (stats_season_trend.week_points)
 //   Donkey of the Week     — fewest points that week        (stats_season_trend.week_points)
 //   Bad Beat of the Week   — the loss that came closest to   (group_pick_cover.cover_margin)
 //                            covering (greatest, i.e. least-negative, losing cover margin)
+//   Backdoor of the Week   — the win that barely covered     (group_pick_cover.cover_margin)
+//                            (smallest positive, winning cover margin — mirror of Bad Beat, #636)
 //   Contrarian Win of Week — won the loneliest pick          (group_pick_consensus)
 //                            (minority winner with the lowest consensus_pct)
 //
@@ -26,13 +28,15 @@
 // this domain module free of the generated DB types (matches badges.ts).
 type PickOutcome = 'win' | 'loss' | 'push' | 'missed';
 
-export type WeeklyAwardId = 'game-ball' | 'donkey-of-week' | 'bad-beat' | 'contrarian-win';
+export type WeeklyAwardId =
+  'game-ball' | 'donkey-of-week' | 'bad-beat' | 'backdoor' | 'contrarian-win';
 
 /** Canonical ordering used everywhere awards are listed (weekly tiles + season shelf). */
 export const WEEKLY_AWARD_ORDER: WeeklyAwardId[] = [
   'game-ball',
   'donkey-of-week',
   'bad-beat',
+  'backdoor',
   'contrarian-win'
 ];
 
@@ -91,12 +95,14 @@ type WeeklyAwardBase = {
 
 /**
  * One minted weekly award. The detail field is award-specific (discriminated by `id`):
- * points for Game Ball/Donkey, cover_margin for Bad Beat, consensus_pct for Contrarian Win.
+ * points for Game Ball/Donkey, cover_margin for Bad Beat/Backdoor, consensus_pct for
+ * Contrarian Win.
  */
 export type WeeklyAward =
   | (WeeklyAwardBase & { id: 'game-ball'; points: number })
   | (WeeklyAwardBase & { id: 'donkey-of-week'; points: number })
   | (WeeklyAwardBase & { id: 'bad-beat'; cover_margin: number })
+  | (WeeklyAwardBase & { id: 'backdoor'; cover_margin: number })
   | (WeeklyAwardBase & { id: 'contrarian-win'; consensus_pct: number });
 
 /** All awards minted for a single fully-graded scoring week, in canonical order. */
@@ -144,6 +150,12 @@ export const WEEKLY_AWARD_FLAVORS: Record<
     short: 'Bad Beat',
     emoji: '💔',
     description: 'Lost the pick that came closest to covering this week.'
+  },
+  backdoor: {
+    label: 'Backdoor of the Week',
+    short: 'Backdoor',
+    emoji: '🚪',
+    description: 'Won the pick that barely covered this week.'
   },
   'contrarian-win': {
     label: 'Contrarian Win of the Week',
@@ -228,6 +240,20 @@ export function badBeatOfWeek(
 }
 
 /**
+ * Backdoor of the Week: the winning pick that barely covered — the smallest positive
+ * cover_margin among wins. Tie → identity. Null if no pick won. Mirror of badBeatOfWeek (#636).
+ */
+export function backdoorOfWeek(
+  covers: WeeklyCoverEntry[]
+): { holder: WeeklyAwardHolder; cover_margin: number } | null {
+  const wins = covers.filter((c) => c.outcome === 'win');
+  if (wins.length === 0) return null;
+  // Narrowest = smallest positive margin: negate so bestBy's "higher wins" finds the minimum.
+  const narrowest = bestBy(wins, (c) => -c.cover_margin);
+  return { holder: holderOf(narrowest), cover_margin: narrowest.cover_margin };
+}
+
+/**
  * Contrarian Win of the Week: the lowest-consensus minority pick that won. Tie → identity.
  * Null if no minority pick won this week.
  */
@@ -286,6 +312,14 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
         ...flavorFor('bad-beat'),
         holder: badBeat.holder,
         cover_margin: badBeat.cover_margin
+      });
+
+    const backdoor = backdoorOfWeek(covers);
+    if (backdoor)
+      awards.push({
+        ...flavorFor('backdoor'),
+        holder: backdoor.holder,
+        cover_margin: backdoor.cover_margin
       });
 
     const contrarian = contrarianWinOfWeek(consensus);
