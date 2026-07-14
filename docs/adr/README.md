@@ -78,5 +78,6 @@ current status.
 | [ADR-0031](0031-local-jwt-verification-hot-path.md)                         | Local JWT verification on the request hot path (replace per-navigation `getUser()`)                         |
 | [ADR-0032](0032-cross-season-credibility-rating.md)                         | Cross-season credibility rating — vs-Market, conviction-weighted, soft season reset, hidden-until-qualified |
 | [ADR-0033](0033-client-query-data-loading.md)                               | Client-query data loading — move page-load reads behind `+server.ts` (SPA-shell + API consolidation)        |
+| [ADR-0034](0034-simplified-hotshot-logo-mark.md)                            | Simplified Hotshot logo mark — football + rising line, replacing ADR-0027's four-point-spark-and-ember mark |
 
-_The numbering is sequential; the next ADR is 0034._
+_The numbering is sequential; the next ADR is 0035._
