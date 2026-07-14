@@ -2,7 +2,7 @@
 //
 // End-to-end check of the weekly-hardware read model (issue #387): seed a fully-graded
 // scoring week of real picks, grade + refresh the matviews, then assert getSeasonWeeklyAwards
-// derives the four awards, the season shelf, AND excludes a partially-graded week (the
+// derives the five awards, the season shelf, AND excludes a partially-graded week (the
 // completeness gate). The award *selection* logic itself is unit-tested exhaustively in
 // src/lib/domain/__tests__/weeklyAwards.test.ts; this suite verifies the DB wiring.
 //
@@ -215,22 +215,29 @@ afterAll(async () => {
 });
 
 describe('weekly hardware read model (#387)', () => {
-  test('mints all four awards for the fully-graded week with the right holders', async () => {
+  test('mints all five awards for the fully-graded week with the right holders', async () => {
     const { weeks } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
     const week1 = weeks.find((w) => w.week_number === 1);
     expect(week1).toBeDefined();
 
     const holderById = Object.fromEntries(week1!.awards.map((a) => [a.id, a.holder.user_id]));
     // Alice: 2 wins (top points); Bob: 2 losses (bottom); Bob's BUF loss (-3.5) is the closest
-    // cover; Alice's PHI win was the lone minority pick that hit.
+    // cover; Alice's PHI win was the lone minority pick that hit. Alice and Carol both covered
+    // KC by the same 3.5 margin (the smallest of the week's wins), so identity breaks the tie
+    // to Alice ("WA_Alice" < "WA_Carol").
     expect(holderById['game-ball']).toBe(ALICE);
     expect(holderById['donkey-of-week']).toBe(BOB);
     expect(holderById['bad-beat']).toBe(BOB);
+    expect(holderById['backdoor']).toBe(ALICE);
     expect(holderById['contrarian-win']).toBe(ALICE);
 
     // Bad Beat detail = the closest losing cover margin (Bob's BUF pick at -3.5).
     const badBeat = week1!.awards.find((a) => a.id === 'bad-beat');
     expect(badBeat && 'cover_margin' in badBeat ? badBeat.cover_margin : null).toBe(-3.5);
+
+    // Backdoor detail = the smallest winning cover margin (Alice's KC pick at 3.5).
+    const backdoor = week1!.awards.find((a) => a.id === 'backdoor');
+    expect(backdoor && 'cover_margin' in backdoor ? backdoor.cover_margin : null).toBe(3.5);
   });
 
   test('excludes the partially-graded week via the completeness gate', async () => {
@@ -244,10 +251,10 @@ describe('weekly hardware read model (#387)', () => {
     const { shelf } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
     const alice = shelf.find((e) => e.user_id === ALICE);
     const bob = shelf.find((e) => e.user_id === BOB);
-    expect(alice?.total).toBe(2);
+    expect(alice?.total).toBe(3);
     expect(bob?.total).toBe(2);
     expect(new Set(alice?.awards.map((a) => a.id))).toEqual(
-      new Set(['game-ball', 'contrarian-win'])
+      new Set(['game-ball', 'backdoor', 'contrarian-win'])
     );
     expect(new Set(bob?.awards.map((a) => a.id))).toEqual(new Set(['donkey-of-week', 'bad-beat']));
     // Carol won nothing this week → absent from the shelf.

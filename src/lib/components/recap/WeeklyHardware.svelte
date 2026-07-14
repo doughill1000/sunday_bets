@@ -34,6 +34,8 @@
         return `${a.points > 0 ? '+' : ''}${a.points} pts`;
       case 'bad-beat':
         return `lost by ${fmt(Math.abs(a.cover_margin))}`;
+      case 'backdoor':
+        return `won by ${fmt(a.cover_margin)}`;
       case 'contrarian-win':
         return `${fmt(a.consensus_pct)}% took it`;
     }
