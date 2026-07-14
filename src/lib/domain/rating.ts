@@ -2,7 +2,7 @@
 // ADR-0032 v2). This module owns the constants and pure display helpers that BOTH the server
 // fold ($lib/server/rating/computeRatings.ts, which imports RATING_PAR / MIN_QUALIFIED_DECISIONS
 // from here so the qualification gate has one source) and the client surfaces (the /stats Career
-// hero, a future /league ladder) agree on.
+// hero, the /league All-time ladder) agree on.
 //
 // The rating math itself — an order-independent, conviction-flat, shrunk career cover-rate mapped
 // onto the 1500/ELO scale — lives server-side in $lib/server/rating/. Here we keep only what a
@@ -102,4 +102,68 @@ export function ratingRank(entries: PlayerRatingEntry[], userId: string): number
     if (e.rating != null && e.rating > target.rating) higher.add(e.rating);
   }
   return higher.size + 1;
+}
+
+/** A member's identity as the ladder needs it — whatever the surface already has names and avatars
+ *  for. `player_ratings` carries neither (it is keyed by user id alone), so the ladder is joined
+ *  against the roster the calling surface already loaded rather than widening the read model. */
+export type RatingLadderMember = {
+  user_id: string;
+  display_name: string;
+  avatar_key: string | null;
+};
+
+/** One rendered ladder row: a member, their rating row, and their dense rank (null while Unrated). */
+export type RatingLadderRow = RatingLadderMember & {
+  entry: PlayerRatingEntry;
+  rank: number | null;
+};
+
+/** The Unrated row a member with no `player_ratings` row yet gets: zero settled decisions, the
+ *  full gate still to go. Mirrors what the Career hero shows for the same state (ADR-0032 §5). */
+function unratedEntry(user_id: string): PlayerRatingEntry {
+  return {
+    user_id,
+    rating: null,
+    decisions: 0,
+    decisionsToQualify: MIN_QUALIFIED_DECISIONS,
+    seasonDelta: null
+  };
+}
+
+/**
+ * The /league All-time credibility ladder (#637): every member, rated players first by rating
+ * descending and dense-ranked (ties share a rank, via {@link ratingRank}), then the Unrated behind
+ * them by how close they are to the gate. A member with no rating row at all is Unrated at 0 —
+ * never a provisional number (ADR-0032 §5). Ties beyond the sort keys fall back to display name so
+ * the order is deterministic across renders. Pure; career-grain, like the rating itself.
+ */
+export function ratingLadder(
+  entries: PlayerRatingEntry[],
+  members: RatingLadderMember[]
+): RatingLadderRow[] {
+  const entryByUserId = new Map(entries.map((e) => [e.user_id, e]));
+
+  const rows = members.map((m) => {
+    const entry = entryByUserId.get(m.user_id) ?? unratedEntry(m.user_id);
+    return { ...m, entry, rank: ratingRank(entries, m.user_id) };
+  });
+
+  return rows.sort((a, b) => {
+    if (a.entry.rating != null && b.entry.rating != null) {
+      if (b.entry.rating !== a.entry.rating) return b.entry.rating - a.entry.rating;
+    } else if (a.entry.rating != null || b.entry.rating != null) {
+      return a.entry.rating != null ? -1 : 1;
+    } else if (b.entry.decisions !== a.entry.decisions) {
+      return b.entry.decisions - a.entry.decisions;
+    }
+    return a.display_name.localeCompare(b.display_name);
+  });
+}
+
+/** Whether the ladder has anything to say: at least one member has cleared the qualification gate.
+ *  A group where nobody is rated renders no ladder at all rather than a card of empty rows — the
+ *  honest state pre-gate is silence, not six dashes. */
+export function hasRatedMember(rows: RatingLadderRow[]): boolean {
+  return rows.some((r) => r.entry.rating != null);
 }
