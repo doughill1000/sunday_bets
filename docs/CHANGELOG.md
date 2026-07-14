@@ -70,7 +70,7 @@ of the time.
 
 ## v3.5.0 — 2026-07-14
 
-- **PR #633** Release v3.5.0.
+- **PR #639** Release v3.5.0.
 - **#631** League home's two tabs are now fully self-contained — honors and the Members & manage card are scoped to their own panel, Standings keeps the season/All-time select, Week gets a new `WeekNavigator` and leads with that week's hardware plus a link into `/recap`; the weekly "Sharp of the Week" award is renamed Game Ball of the Week. files: league/+page.svelte · LeagueHonors.svelte · WeeklyHardware.svelte · WeekNavigator.svelte · recap/+page.svelte
 - **PR #629** Fix the black-box brand mark behind the sign-in logo and header — the in-app Hotshot lockup/mark SVGs are now transparent with a theme-aware chip, navbar mark right-sized. files: `static/hotshot-lockup.svg` · `static/logo-mark.svg` · `src/app.css`
 - **#628** iOS PWA launch (splash) screen — home-screen installs show a charcoal launch image with the centered HOTSHOT lockup instead of a blank flash. files: `scripts/generate-brand-assets.mjs` · `src/app.html` · ADR-0034
