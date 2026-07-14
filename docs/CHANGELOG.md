@@ -68,6 +68,28 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.5.0 — 2026-07-14
+
+- **PR #633** Release v3.5.0.
+- **#631** League home's two tabs are now fully self-contained — honors and the Members & manage card are scoped to their own panel, Standings keeps the season/All-time select, Week gets a new `WeekNavigator` and leads with that week's hardware plus a link into `/recap`; the weekly "Sharp of the Week" award is renamed Game Ball of the Week. files: league/+page.svelte · LeagueHonors.svelte · WeeklyHardware.svelte · WeekNavigator.svelte · recap/+page.svelte
+- **PR #629** Fix the black-box brand mark behind the sign-in logo and header — the in-app Hotshot lockup/mark SVGs are now transparent with a theme-aware chip, navbar mark right-sized. files: `static/hotshot-lockup.svg` · `static/logo-mark.svg` · `src/app.css`
+- **#628** iOS PWA launch (splash) screen — home-screen installs show a charcoal launch image with the centered HOTSHOT lockup instead of a blank flash. files: `scripts/generate-brand-assets.mjs` · `src/app.html` · ADR-0034
+- **#622** Grade cron runs the global post-grade refreshes once — leaderboard/stats matview refresh and the credibility-ratings rebuild are hoisted into a single `refreshReadModels()` call, fixing a transient empty `player_ratings` and a doubled matview refresh. files: grading.ts · rating/rebuild.ts · ADR-0013 / ADR-0032
+- **#621** Simplify the Hotshot logo into a pointed football, cream laces, and a restrained rising line; regenerate the complete browser/auth/Apple/PWA/push asset family from deterministic vector geometry. files: `static/` · `scripts/generate-brand-assets.mjs` · ADR-0034
+- **PR #620** Rename the apex credibility-rating tier Shark → Hotshot, one pill louder than Sharp on the `/stats` Career band. ADR-0032 (amendment §5)
+- **#361** Credibility rating v2 (PR #618) — the cross-season "who knows ball" rating is now an order-independent, conviction-flat career cover-rate graded against the pick-time line, replacing the sequential conviction-weighted ELO. files: `computeRatings.ts` · `rating.ts` · ADR-0032 (amended)
+- **PR #617** De-flake the admin authz integration suite — the `/api/admin/sync-schedule` auth test mocks `scheduleSync` instead of running live ESPN fetches that intermittently tripped the CI timeout. Test-only.
+- **PR #615** Confirm your name in the welcome guide — a prefilled "Your name" field lets email signups pick a friendly display name once. component: `WelcomeGuide`
+- **#602** Client-query data loading (ADR-0033), first slice (PR #616) — adds the load-classification inventory and migrates `/recap` to a cached `createQuery`-backed `/api/recap` endpoint; Wrapped/Picks remain follow-ups.
+- **PR #613** Native share for invite links — the commissioner Invites panel offers a mobile OS share sheet with clipboard-copy fallback. route: `/league/manage`
+- **PR #614** PWA mobile polish — iOS standalone metas for a full-screen launch, manifest gains a stable `id` plus app shortcuts. files: `src/app.html` · `vite.config.ts`
+- **PR #612** Invite-only onboarding screen — the groupless `/join` page now redeems a pasted invite link/code or offers a demo escape hatch. route: `/join`
+- **PR #611** Streamline the sign-up entry path — "Continue with Google" renders in sign-up mode too, and post-auth `next` survives email confirmation for invitees. routes: `/auth`, `/auth/confirm`
+- **PR #610** Fix the no-group redirect — six routes that bounced groupless users to `/auth/error` now send them to `/join`.
+- **#604** Prove the Supabase backup is restorable (restore drill) — restored the latest off-platform prod dump into a scratch DB and reconciled row counts against prod with zero drift. files: `docs/runbooks/backup-restore-drill.md` · ADR-0010
+- **#387** Weekly hardware + season shelf — every fully-graded week mints four deterministic awards (Sharp / Donkey / Bad Beat / Contrarian Win of the Week) shown on the recap and a per-season trophy shelf. view: `group_pick_cover` · `lib/domain/weeklyAwards.ts` · ADR-0013 / ADR-0016
+- **PR #603** Mark ADR-0033 (client-query data loading) Accepted — ratifies the client-side query/cache data-loading pattern as the standard for read surfaces.
+
 ## v3.4.0 — 2026-07-13
 
 - **PR #601** Release v3.4.0.
