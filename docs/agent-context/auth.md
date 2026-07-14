@@ -51,6 +51,12 @@ Never check admin status against `auth.users.user_metadata` or any other field â
 only `public.users.role`. To verify: `select is_admin()` in a Supabase SQL editor
 while authenticated as the user under test.
 
+**`role` answers "can this person do admin things," not "is this person in the league."**
+Never reuse it as a population filter in a grading/scoring/participation query â€” an admin
+is still a competing league member. See [database.md](database.md) "Read the assembled
+table shape" for the two prod defects this has already caused; population always comes
+from `group_memberships`.
+
 ## PWA considerations
 
 The app is installed as a PWA on iOS and Android via `vite-plugin-pwa`. Key points:
