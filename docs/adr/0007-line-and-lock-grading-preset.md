@@ -1,7 +1,7 @@
 # ADR-0007: Line and lock grading preset (House vs Gamer)
 
 - Status: Accepted
-- Amended: 2026-06-26 (#177) — see "Amendment" below
+- Amended: 2026-06-26 (#177), 2026-07-15 (#657) — see "Amendment" below
 - Date: 2026-06-24
 - Issue: #108
 - Supersedes: None
@@ -146,3 +146,36 @@ group's treatment:
 - Rationale: with no live users there is no dispute risk in moving the one real group
   to the fairer House rule going forward, while per-settlement freeze guarantees
   history is never silently regraded.
+
+## Amendment (2026-07-15, issue #657)
+
+The 2026-06-26 amendment froze the preset **"per settlement at first grade,"** but the
+implementation froze it **per row**, not per the game cohort those rows belong to. A row
+with no prior settlement of its own (`ps_prior` null) fell through to
+`cfg.grading_preset` — the group's config **today** — rather than to the preset every
+other row of that same game was already frozen under. If `group_config.grading_preset`
+had changed since the game was first graded, a late-born row (an added member, or a
+backfilled gap) would graded-preset-mismatch its own game's siblings. Confirmed in prod:
+group `…0017`'s 2025 settlements are 1631 `gamer` rows to 1 `house` row — the `house` row
+is a late-born backfill that picked up the config's current value instead of the game's
+actual grading history.
+
+This amendment corrects "frozen per settlement at first grade" to mean **frozen per game,
+first grade wins**, closing the gap:
+
+- `_grade_games_by_ids` resolves the effective preset as
+  `coalesce(ps_prior.graded_preset, ps_cohort.graded_preset, cfg.grading_preset, 'gamer')`,
+  where `ps_cohort` is any existing `pick_settlement` row for the same `(group_id,
+game_id)` — i.e. the game's cohort, sourced from any member already graded, not just
+  this row's own prior. `ps_prior` (this exact row's own history) still wins when present,
+  so an existing frozen row is never re-presetted.
+- The unit of freeze is the **game**, not the week: the grader operates on game ids
+  (`_grade_games_by_ids(p_game_ids uuid[])`), games within a week can kick off — and
+  therefore grade — hours apart, and a week-level freeze would require an extra lookup
+  join with no fairness benefit over the game-level one already available at the choke
+  point.
+- No behavior changes for a game whose rows were all born together (the common case, and
+  the only case `find_unsettled_weeks()` / #433 can reach — see #657's reachability note):
+  `ps_cohort` and `ps_prior` agree, so the coalesce chain resolves identically to before.
+  The gap is specific to a **partial** re-grade of an already-settled game, which only
+  #654's completeness guard newly makes reachable.
