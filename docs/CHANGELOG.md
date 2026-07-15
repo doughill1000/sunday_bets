@@ -70,7 +70,7 @@ of the time.
 
 ## v3.7.0 — 2026-07-14
 
-- **PR #NNN** Release v3.7.0.
+- **PR #664** Release v3.7.0.
 - **#548** Rebuild RecapFlash/WrappedFlash on the vendored Dialog/Sheet — replaces the two
   hand-rolled overlays with real modal semantics (focus trap, Escape, no suppressed a11y
   warnings) and fixes the vendored dialog's edge-to-edge width at 390px. Wrapped's seen-once
