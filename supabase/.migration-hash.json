@@ -919,5 +919,11 @@
     "hash": "e7bc511014d861ff2520e7767162609b57846006d4dbbf31a3c16d3d8195a83d",
     "migration": "20260714183210_wrapped_seen.sql",
     "migrationHash": "bb69bf57061c64f03142607e636d1696c5b179d6b4603764a2111cea9db10064"
+  },
+  "functions/_private/rebuild_player_ratings.sql": {
+    "hash": "6c94fc60f511d94714208d714dc9e0d882f37dfa43a5170f8c36b5f58985c542",
+    "signature": "public._rebuild_player_ratings(jsonb, timestamptz)",
+    "migration": "20260715135606_atomic_player_ratings_rebuild.sql",
+    "migrationHash": "8b966dac6a8651ff2ba2d45fcc0c1145b88e906359547dedb63b2b8ccf6aed8c"
   }
 }

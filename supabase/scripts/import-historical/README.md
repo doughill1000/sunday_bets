@@ -35,6 +35,15 @@ pasted into the Supabase SQL editor. The file is a single `BEGIN`/`COMMIT`
 transaction with `ON CONFLICT DO NOTHING` on every insert — atomic and safely
 re-runnable.
 
+This writes `pick_settlement` rows directly (see "Settlement design" below), bypassing the
+app's grading path that normally rebuilds the credibility rating read model afterward — so
+`public.player_ratings` is left stale for these seasons until the next live grade unless you
+rebuild it explicitly (issue #619, ADR-0032 §8):
+
+```sh
+pnpm ratings:rebuild -- --env=.env.staging     # then --env=.env.production
+```
+
 ## Settlement design
 
 Points come directly from the per-player points columns already recorded in the
