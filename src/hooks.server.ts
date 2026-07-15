@@ -14,12 +14,16 @@ import { traceDbQuery, traceSpan } from '$lib/server/observability';
 import { DEFAULT_THEME_MODE, isThemeMode, themeClassFor, type ThemeMode } from '$lib/theme';
 
 // Route-move redirects for renamed tabs. #561 (IA merge): the standalone Leaderboard and Group
-// tabs became the one League home and its Members & manage subpage. Later: the NFL-wide ATS tab
+// tabs became the one League home and its manage subpage. Later: the NFL-wide ATS tab
 // moved /teams → /market (renamed so the tab names the market concept and never collides with
 // "League", the user's group). Runs before auth so an old deep link forwards regardless of
 // session, and preserves the query string (e.g. ?season=, ?view=weekly) so bookmarked/shared URLs
 // land on the same content. 308 keeps the method and marks the move permanent. The old route
 // directories no longer exist, so without this these paths would 404.
+//
+// #660 made /league/manage a commissioner-only console. /group still forwards there for
+// everyone — this hook runs before auth and has no role to check — and that page's own load
+// redirects a non-commissioner on to /league. Two hops, but the role check stays in one place.
 const legacyRouteRedirects: Handle = async ({ event, resolve }) => {
   const { pathname, search } = event.url;
   if (pathname === '/leaderboard') throw redirect(308, `/league${search}`);

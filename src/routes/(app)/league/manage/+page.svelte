@@ -10,8 +10,6 @@
   import { Button } from '$lib/components/ui/button';
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
-  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import FormNote from '$lib/components/FormNote.svelte';
 
@@ -22,8 +20,8 @@
   // in the background (ADR-0017). `pageData.initialGroup` is the server-prefetched value
   // (present on the initial/SSR request) used as `initialData` so first paint has no flash;
   // on a client-side cache miss the query loads and the skeleton below shows. Commissioner-
-  // only data (isCommissioner, invites, grading config) stays on `pageData` and is never
-  // cached. The two merge below, `pageData` last so its sensitive fields always win.
+  // only data (invites, grading config) stays on `pageData` and is never cached. The two
+  // merge below, `pageData` last so its sensitive fields always win.
   const queryClient = useQueryClient();
   const groupQuery = createQuery(() => ({
     queryKey: queryKeys.group(pageData.groupId, pageData.badgeSeasonYear),
@@ -81,10 +79,6 @@
   let memberBusy = $state<string | null>(null); // userId currently being acted on
   let memberMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
 
-  // Leave group
-  let leaveBusy = $state(false);
-  let leaveMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
-
   // Invite
   let mintBusy = $state(false);
   let mintMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
@@ -108,19 +102,12 @@
   let recapSettingsMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let recapSettingsBusy = $state(false);
 
-  // AI recap opt-out — per-player (issue #301, ADR-0008)
-  let aiRecapOptOut = $state(data.aiRecapOptOut);
-  let optOutMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
-  let optOutBusy = $state(false);
-
   // ── Derived ───────────────────────────────────────────────────────────────
 
+  // Guards "Remove" on the last commissioner, matching the server-side rule. The per-player
+  // recap opt-out and Leave league moved to /settings (#660) — this console is commissioner
+  // controls only.
   const commissionerCount = $derived(data.members.filter((m) => m.role === 'commissioner').length);
-  const isLastCommissioner = $derived(
-    data.isCommissioner &&
-      commissionerCount === 1 &&
-      data.members.find((m) => m.userId === data.currentUserId)?.role === 'commissioner'
-  );
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -136,11 +123,11 @@
       });
       const body = (await res.json().catch(() => ({}))) as { reason?: string };
       if (!res.ok) {
-        renameMsg = { kind: 'error', text: body.reason ?? 'Could not rename group.' };
+        renameMsg = { kind: 'error', text: body.reason ?? 'Could not rename league.' };
         return;
       }
       renaming = false;
-      renameMsg = { kind: 'success', text: 'Group renamed.' };
+      renameMsg = { kind: 'success', text: 'League renamed.' };
       await queryClient.invalidateQueries({ queryKey: invalidationKeys.group(pageData.groupId) });
       newGroupName = data.group.name;
     } finally {
@@ -215,27 +202,6 @@
       await queryClient.invalidateQueries({ queryKey: invalidationKeys.group(pageData.groupId) });
     } finally {
       memberBusy = null;
-    }
-  }
-
-  async function leaveGroup() {
-    if (leaveBusy) return;
-    leaveBusy = true;
-    leaveMsg = null;
-    try {
-      const res = await fetch('/api/group/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const body = (await res.json().catch(() => ({}))) as { reason?: string };
-      if (!res.ok) {
-        leaveMsg = { kind: 'error', text: body.reason ?? 'Could not leave group.' };
-        return;
-      }
-      // After leaving, redirect to join page (hooks.server.ts will redirect).
-      window.location.href = '/join';
-    } finally {
-      leaveBusy = false;
     }
   }
 
@@ -342,31 +308,6 @@
       recapSettingsBusy = false;
     }
   }
-
-  async function toggleOptOut(optOut: boolean) {
-    if (optOutBusy) return;
-    optOutMsg = null;
-    optOutBusy = true;
-    try {
-      const res = await fetch('/api/group/recap-opt-out', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_recap_opt_out: optOut })
-      });
-      const body = (await res.json().catch(() => ({}))) as { reason?: string };
-      if (!res.ok) {
-        optOutMsg = { kind: 'error', text: body.reason ?? 'Could not update recap preference.' };
-        aiRecapOptOut = !optOut;
-        return;
-      }
-      optOutMsg = {
-        kind: 'success',
-        text: optOut ? "Opted out — you'll appear as neutral facts." : 'Opted back in.'
-      };
-    } finally {
-      optOutBusy = false;
-    }
-  }
 </script>
 
 {#snippet loadingState()}
@@ -381,26 +322,25 @@
 {#snippet errorState()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Couldn't load group</CardTitle>
+      <CardTitle class="text-xl font-bold">Couldn't load league</CardTitle>
     </CardHeader>
     <CardContent class="p-0 pt-2 text-sm text-muted-foreground">
-      Something went wrong loading this group. Refresh the page to try again.
+      Something went wrong loading this league. Refresh the page to try again.
     </CardContent>
   </Card>
 {/snippet}
 
-<!-- Members view (default): the roster plus the personal Roast-me / Leave controls that every
-   member sees. Honors moved to the League home (#561), so this subpage is roster + settings, not
-   the league's trophy case. Commissioners reach the config cards via the Manage tab (manageView);
-   non-commissioners never see a tab bar, so this is simply their whole page. -->
-{#snippet membersView()}
-  <!-- Members list -->
+<!-- The roster, kept here as a commissioner tool rather than a second Standings (#660): its
+   unique value is promote/remove, and /league's Standings already renders every member with
+   avatar, name and record. Each member's role shows here because the commissioner needs it to
+   decide who to promote; everyone else reads it off the Standings row's Commissioner chip. -->
+{#snippet membersCard()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
       <CardTitle class="text-xl font-bold">Members</CardTitle>
     </CardHeader>
     <CardContent class="p-0 pt-2">
-      <ul class="space-y-3" aria-label="Group members">
+      <ul class="space-y-3" aria-label="League members">
         {#each data.members as member (member.userId)}
           {@const isSelf = member.userId === data.currentUserId}
           {@const isOnlyCommissioner = member.role === 'commissioner' && commissionerCount === 1}
@@ -425,7 +365,7 @@
               </div>
             </div>
 
-            {#if data.isCommissioner && !isSelf}
+            {#if !isSelf}
               <div class="flex shrink-0 gap-2 self-end sm:self-auto">
                 {#if member.role === 'member'}
                   <Button
@@ -443,7 +383,7 @@
                   size="sm"
                   disabled={memberBusy === member.userId || isOnlyCommissioner}
                   onclick={() => {
-                    if (confirm(`Remove ${member.displayName} from the group?`)) {
+                    if (confirm(`Remove ${member.displayName} from the league?`)) {
                       void removeMember(member.userId);
                     }
                   }}
@@ -463,83 +403,12 @@
       {/if}
     </CardContent>
   </Card>
-
-  <!-- AI recap opt-out — visible to every member (issue #301, ADR-0008) -->
-  <Card class="p-6">
-    <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Roast me?</CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-4 p-0 pt-2">
-      <p class="text-sm text-muted-foreground">
-        When on, you may appear in the weekly recap with personalised commentary. When off, you'll
-        show up only as neutral facts — wins, losses, points.
-      </p>
-      <div class="flex items-center gap-3">
-        <input
-          id="ai-recap-opt-out"
-          type="checkbox"
-          checked={!aiRecapOptOut}
-          disabled={optOutBusy}
-          class="border-input h-4 w-4 rounded border"
-          onchange={(e) => {
-            const optOut = !(e.currentTarget as HTMLInputElement).checked;
-            aiRecapOptOut = optOut;
-            void toggleOptOut(optOut);
-          }}
-        />
-        <Label for="ai-recap-opt-out">Include me in the AI recap</Label>
-      </div>
-
-      {#if optOutMsg}
-        <FormNote kind={optOutMsg.kind} text={optOutMsg.text} />
-      {/if}
-    </CardContent>
-  </Card>
-
-  <!-- Leave group -->
-  <Card class="p-6">
-    <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Leave group</CardTitle>
-    </CardHeader>
-    <CardContent class="space-y-3 p-0 pt-2">
-      {#if isLastCommissioner}
-        <p class="text-sm text-muted-foreground">
-          You are the only commissioner. Promote another member to commissioner before leaving.
-        </p>
-        <Button variant="destructive" disabled>Leave group</Button>
-      {:else}
-        <p class="text-sm text-muted-foreground">
-          You will lose access to this group's picks and standings.
-        </p>
-        <Button
-          variant="destructive"
-          disabled={leaveBusy}
-          onclick={() => {
-            if (confirm('Leave this group? You will lose access to picks and standings.')) {
-              void leaveGroup();
-            }
-          }}
-        >
-          {leaveBusy ? 'Leaving…' : 'Leave group'}
-        </Button>
-      {/if}
-
-      {#if leaveMsg}
-        <FormNote kind={leaveMsg.kind} text={leaveMsg.text} />
-      {/if}
-    </CardContent>
-  </Card>
 {/snippet}
 
-<!-- Manage tab (commissioner-only): the four group-config cards. Surfaced only under
-   the Manage tab so regular members land on the Members tab, not a settings wall; the
-   tab label itself conveys "commissioner controls", so no separate heading is needed.
-   This is the durable home the v3.3 commissioner set (#454/#457/#458) slots into. -->
-{#snippet manageView()}
-  <!-- Group name / rename -->
+{#snippet leagueNameCard()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Group name</CardTitle>
+      <CardTitle class="text-xl font-bold">League name</CardTitle>
     </CardHeader>
     <CardContent class="space-y-4 p-0 pt-2">
       {#if !renaming}
@@ -566,12 +435,12 @@
           }}
         >
           <div class="space-y-1">
-            <Label for="group-name">Group name</Label>
+            <Label for="group-name">League name</Label>
             <Input
               id="group-name"
               bind:value={newGroupName}
               maxlength={60}
-              placeholder="Group name"
+              placeholder="League name"
               disabled={renameBusy}
             />
           </div>
@@ -603,8 +472,9 @@
       {/if}
     </CardContent>
   </Card>
+{/snippet}
 
-  <!-- Invites -->
+{#snippet invitesCard()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
       <CardTitle class="text-xl font-bold">Invites</CardTitle>
@@ -704,8 +574,9 @@
       {/if}
     </CardContent>
   </Card>
+{/snippet}
 
-  <!-- League rules -->
+{#snippet leagueRulesCard()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
       <CardTitle class="text-xl font-bold">League rules</CardTitle>
@@ -789,15 +660,18 @@
       {/if}
     </CardContent>
   </Card>
+{/snippet}
 
-  <!-- AI recap settings (issue #301, ADR-0008) -->
+<!-- League-wide AI recap settings (issue #301, ADR-0008). The per-player "include me" opt-out
+   is NOT here — it's a personal knob and lives on /settings (#660). -->
+{#snippet aiRecapCard()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
       <CardTitle class="text-xl font-bold">AI Recap</CardTitle>
     </CardHeader>
     <CardContent class="space-y-5 p-0 pt-2">
       <p class="text-sm text-muted-foreground">
-        Control how the weekly AI recap reads for your group.
+        Control how the weekly AI recap reads for your league.
       </p>
       <form
         class="space-y-5"
@@ -818,7 +692,7 @@
           <div class="space-y-0.5">
             <Label for="ai-recaps-enabled">Enable weekly AI recap</Label>
             <p class="text-xs text-muted-foreground">
-              When off, the grade-cron skips recap generation for this group.
+              When off, the grade-cron skips recap generation for this league.
             </p>
           </div>
         </div>
@@ -858,9 +732,13 @@
 {/snippet}
 
 <svelte:head>
-  <title>Members & manage | Hotshot</title>
+  <title>Manage league | Hotshot</title>
 </svelte:head>
 
+<!-- The commissioner console (#660). One flat scroll, no tab bar: the Members/Manage tabs this
+   page shipped with weren't two topics but two AUDIENCES, and the personal half moved to
+   /settings. What's left is one job — running the league — so it reads top to bottom. The
+   server load redirects any non-commissioner here, which is why nothing below re-checks a role. -->
 <section class="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
   {#if groupQuery.isPending}
     {@render loadingState()}
@@ -873,21 +751,14 @@
         class="text-sm text-muted-foreground transition-colors hover:text-foreground"
         data-testid="manage-back">← League</a
       >
-      <h1 class="mt-1 text-2xl font-bold">{data.group.name}</h1>
-      <p class="text-sm text-muted-foreground">Members & league settings</p>
+      <h1 class="mt-1 text-2xl font-bold">Manage league</h1>
+      <p class="text-sm text-muted-foreground">{data.group.name}</p>
     </div>
 
-    {#if data.isCommissioner}
-      <Tabs value="members" class="w-full space-y-6">
-        <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
-          <TabsTrigger value="members" class={ACTIVE_TAB_TRIGGER_CLASS}>Members</TabsTrigger>
-          <TabsTrigger value="manage" class={ACTIVE_TAB_TRIGGER_CLASS}>Manage</TabsTrigger>
-        </TabsList>
-        <TabsContent value="members" class="space-y-6">{@render membersView()}</TabsContent>
-        <TabsContent value="manage" class="space-y-6">{@render manageView()}</TabsContent>
-      </Tabs>
-    {:else}
-      {@render membersView()}
-    {/if}
+    {@render leagueNameCard()}
+    {@render membersCard()}
+    {@render invitesCard()}
+    {@render leagueRulesCard()}
+    {@render aiRecapCard()}
   {/if}
 </section>
