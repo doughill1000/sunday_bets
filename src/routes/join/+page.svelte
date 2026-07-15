@@ -43,9 +43,9 @@
 
 <section class="container mx-auto max-w-lg space-y-6 p-6">
   <div class="space-y-2">
-    <h1 class="text-2xl font-bold">Join a group</h1>
+    <h1 class="text-2xl font-bold">Join a league</h1>
     <p class="text-muted-foreground">
-      You're not in a group yet. Paste an invite link or code from your commissioner below to join.
+      You're not in a league yet. Paste an invite link or code from your commissioner below to join.
     </p>
   </div>
 
@@ -84,10 +84,10 @@
   {#if data.canCreate}
     <Card class="p-6">
       <CardHeader class="mb-2 p-0">
-        <CardTitle class="text-xl font-bold">Create a group</CardTitle>
+        <CardTitle class="text-xl font-bold">Create a league</CardTitle>
       </CardHeader>
       <CardContent class="space-y-4 p-0 pt-2">
-        <p class="text-sm text-muted-foreground">Start a new group. You'll be its commissioner.</p>
+        <p class="text-sm text-muted-foreground">Start a new league. You'll be its commissioner.</p>
         <form
           method="POST"
           action="?/create"
@@ -101,7 +101,7 @@
           class="space-y-4"
         >
           <div class="space-y-2">
-            <Label for="group-name">Group name</Label>
+            <Label for="group-name">League name</Label>
             <Input
               id="group-name"
               name="name"
@@ -120,7 +120,7 @@
 
           <div class="flex justify-end">
             <Button type="submit" disabled={submitting || name.trim().length === 0}>
-              {submitting ? 'Creating…' : 'Create group'}
+              {submitting ? 'Creating…' : 'Create league'}
             </Button>
           </div>
         </form>

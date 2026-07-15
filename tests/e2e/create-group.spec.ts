@@ -59,7 +59,7 @@ test.beforeAll(async () => {
       role: 'player',
       can_create_group: true,
       // Suppress the welcome guide; once signed in on /join its modal overlay
-      // would intercept the "Create group" click (shouldAutoOpenGuide fires for
+      // would intercept the "Create league" click (shouldAutoOpenGuide fires for
       // any path when guide_seen_at is null).
       guide_seen_at: new Date().toISOString()
     },
@@ -120,7 +120,7 @@ test('capable no-membership user creates a group from /join and reaches the app'
     await nameInput.fill(groupName);
 
     await expect(async () => {
-      await page.getByRole('button', { name: 'Create group' }).click();
+      await page.getByRole('button', { name: 'Create league' }).click();
       // On success the action redirects to /picks (the new active group resolves).
       await expect(page).toHaveURL(/\/picks/, { timeout: 2000 });
     }).toPass({ timeout: 15000 });

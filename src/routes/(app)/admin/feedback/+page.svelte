@@ -63,7 +63,7 @@
       }
     }
     push('Season', c.seasonYear);
-    push('Group', c.groupId);
+    push('League', c.groupId);
     push('Sentry event', c.sentryEventId);
     push('User', c.userId);
     push('User agent', c.userAgent);
