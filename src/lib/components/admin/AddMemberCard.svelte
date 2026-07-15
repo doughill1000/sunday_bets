@@ -38,7 +38,7 @@
         password: password.trim() || undefined
       });
       lastResult = { email: result.email, temporaryPassword: result.temporaryPassword };
-      note('success', `Added ${result.displayName} (${result.email}) to the group.`);
+      note('success', `Added ${result.displayName} (${result.email}) to the league.`);
       email = '';
       displayName = '';
       password = '';
@@ -51,7 +51,7 @@
 </script>
 
 <div data-testid="add-member-card">
-  <AdminCard title="Admin • Add Member" subtitle="Onboard a new player to the group">
+  <AdminCard title="Admin • Add Member" subtitle="Onboard a new player to the league">
     <div class="mb-4 grid gap-3">
       <div>
         <label class="text-sm opacity-80" for="member-email">Email</label>
