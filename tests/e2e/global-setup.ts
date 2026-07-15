@@ -53,6 +53,16 @@ export default async function globalSetup() {
 
   // Elevate E2E user to admin so the admin UI is accessible in E2E tests,
   // and add them to the original group for group-scoped page access.
+  //
+  // These are two DIFFERENT roles and are routinely confused (see 7cba0c0):
+  //   users.role: 'admin'                  → app-wide admin access (/admin)
+  //   group_memberships.role: 'commissioner' → runs THIS league (/league/manage)
+  //
+  // The membership role is 'commissioner' since #660 made /league/manage a commissioner-only
+  // console: this user drives the console specs. Member-facing coverage (no Manage entry, the
+  // /league/manage and /group redirects, the /settings League card) uses E2E_MULTIGROUP_USER,
+  // who is already a plain 'member' of this same league with its own storageState — so both
+  // audiences are covered without a third fixture.
   if (e2eUserId) {
     await supabase.from('users').upsert(
       {
@@ -68,7 +78,7 @@ export default async function globalSetup() {
     await supabase
       .from('group_memberships')
       .upsert(
-        { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'member' },
+        { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'commissioner' },
         { onConflict: 'group_id,user_id' }
       );
   }

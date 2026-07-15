@@ -61,7 +61,8 @@ export function leaderboardPage(page: Page) {
     },
 
     /** The "Manage" heading action — the door to /league/manage since #631 lifted it out of
-     *  the full-width card that used to render under both tabs. */
+     *  the full-width card that used to render under both tabs. Renders for commissioners
+     *  only since #660, so a member fixture will find nothing here. */
     manageEntry(): Locator {
       return page.getByTestId('manage-entry');
     },

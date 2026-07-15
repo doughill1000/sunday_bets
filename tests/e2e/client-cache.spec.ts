@@ -4,8 +4,10 @@ import { leaderboardPage } from './helpers/leaderboard-page';
 /**
  * Client-side stale-while-revalidate cache for Stats / Group / Leaderboard
  * (ADR-0017, issue #330). Post-#561 the standings live on the League home (`/league`) and the
- * members list on its Members & manage subpage (`/league/manage`), reached from the League home's
- * manage entry — the cached read models (and their `/api/*` endpoints) are unchanged.
+ * members list on its manage subpage (`/league/manage`), reached from the League home's manage
+ * entry — the cached read models (and their `/api/*` endpoints) are unchanged. #660 gated that
+ * entry on the commissioner role; the default E2E_USER is one (global-setup.ts), so this probe
+ * still reaches it.
  *
  * These specs assert the *observable* cache contract rather than internals:
  *   1. Each read screen renders its content when reached by client navigation
@@ -41,13 +43,13 @@ function navTo(page: Page, name: 'League' | 'Stats') {
   return page.getByTestId('primary-nav').getByRole('link', { name, exact: true }).click();
 }
 
-/** Reach the members list (group cache) via the League home's Members & manage entry. */
+/** Reach the members list (group cache) via the League home's Manage entry. */
 function navToManage(page: Page) {
   return page.getByTestId('manage-entry').click();
 }
 
 const statsHeading = (page: Page) => page.getByRole('heading', { name: 'Stats & history' });
-const groupMembers = (page: Page) => page.getByRole('list', { name: 'Group members' });
+const groupMembers = (page: Page) => page.getByRole('list', { name: 'League members' });
 
 test('cached read routes render across client navigation', { tag: '@smoke' }, async ({ page }) => {
   // One initial full load; everything after is client-side navigation.

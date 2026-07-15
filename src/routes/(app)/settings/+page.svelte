@@ -7,6 +7,7 @@
   import { Label } from '$lib/components/ui/label';
   import { Input } from '$lib/components/ui/input';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { AVATAR_PRESETS } from '$lib/avatars';
   import { THEME_MODES, DEFAULT_THEME_MODE, applyThemeMode, type ThemeMode } from '$lib/theme';
 
@@ -366,6 +367,66 @@
 
   async function onSubPrefChange() {
     if (await savePrefs()) msg = { kind: 'success', text: 'Settings saved.' };
+  }
+
+  // ── League (#660) ─────────────────────────────────────────────────────────
+  // The two personal league knobs, moved here from /league/manage when that page became a
+  // commissioner-only console. They belong next to Notifications' own "Recap ready" toggle:
+  // same shape — per-user preferences, not league administration.
+
+  // Per-player AI recap opt-out (issue #301, ADR-0008).
+  let aiRecapOptOut = $state(data.aiRecapOptOut);
+  let optOutMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let optOutBusy = $state(false);
+
+  let leaveBusy = $state(false);
+  let leaveMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+
+  async function toggleOptOut(optOut: boolean) {
+    if (optOutBusy) return;
+    optOutMsg = null;
+    optOutBusy = true;
+    try {
+      const res = await fetch('/api/group/recap-opt-out', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai_recap_opt_out: optOut })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        optOutMsg = { kind: 'error', text: body.reason ?? 'Could not update recap preference.' };
+        aiRecapOptOut = !optOut; // revert the optimistic toggle
+        return;
+      }
+      optOutMsg = {
+        kind: 'success',
+        text: optOut ? "Opted out — you'll appear as neutral facts." : 'Opted back in.'
+      };
+    } finally {
+      optOutBusy = false;
+    }
+  }
+
+  async function leaveLeague() {
+    if (leaveBusy) return;
+    leaveBusy = true;
+    leaveMsg = null;
+    try {
+      const res = await fetch('/api/group/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        leaveMsg = { kind: 'error', text: body.reason ?? 'Could not leave league.' };
+        return;
+      }
+      // Full document load, not a client nav: leaving invalidates the active-group cookie and
+      // every cached group query, so hooks.server.ts must re-resolve the group from scratch.
+      window.location.href = '/join';
+    } finally {
+      leaveBusy = false;
+    }
   }
 </script>
 
@@ -793,4 +854,76 @@
       {/if}
     </CardContent>
   </Card>
+
+  <!-- League (#660): the personal knobs for the league you're in — NOT league administration,
+       which is the commissioner's console at /league/manage. Sits last, directly under
+       Notifications, because the recap opt-out is the sibling of that card's "Recap ready"
+       toggle. Renders only when an active league resolved. -->
+  {#if data.leagueName}
+    <Card class="p-6">
+      <CardHeader class="mb-2 p-0">
+        <CardTitle class="text-xl font-bold">League</CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-4 p-0 pt-2">
+        <p class="font-medium">{data.leagueName}</p>
+
+        <label class="flex items-start gap-3">
+          <input
+            type="checkbox"
+            class="mt-1 size-4"
+            checked={!aiRecapOptOut}
+            disabled={optOutBusy}
+            onchange={(e) => {
+              const optOut = !e.currentTarget.checked;
+              aiRecapOptOut = optOut;
+              void toggleOptOut(optOut);
+            }}
+          />
+          <span>
+            <span class="font-medium">Include me in the AI recap</span>
+            <p class="text-sm text-muted-foreground">
+              When on, you may appear in the weekly recap with personalised commentary. When off,
+              you'll show up only as neutral facts — wins, losses, points.
+            </p>
+          </span>
+        </label>
+
+        {#if optOutMsg}
+          <FormNote kind={optOutMsg.kind} text={optOutMsg.text} />
+        {/if}
+
+        <div class="space-y-3 border-t pt-4">
+          <div>
+            <p class="font-medium">Leave league</p>
+            {#if data.isLastCommissioner}
+              <p class="text-sm text-muted-foreground">
+                You are the only commissioner. Promote another member to commissioner before
+                leaving.
+              </p>
+            {:else}
+              <p class="text-sm text-muted-foreground">
+                You will lose access to this league's picks and standings.
+              </p>
+            {/if}
+          </div>
+
+          <Button
+            variant="destructive"
+            disabled={data.isLastCommissioner || leaveBusy}
+            onclick={() => {
+              if (confirm('Leave this league? You will lose access to picks and standings.')) {
+                void leaveLeague();
+              }
+            }}
+          >
+            {leaveBusy ? 'Leaving…' : 'Leave league'}
+          </Button>
+
+          {#if leaveMsg}
+            <FormNote kind={leaveMsg.kind} text={leaveMsg.text} />
+          {/if}
+        </div>
+      </CardContent>
+    </Card>
+  {/if}
 </section>

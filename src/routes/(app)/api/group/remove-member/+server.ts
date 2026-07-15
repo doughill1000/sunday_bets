@@ -6,9 +6,11 @@ import { invalidateAuthContext } from '$lib/server/auth-context-cache';
 
 function errReason(code: string | undefined): string {
   if (code === 'P0020') return 'Only commissioners can remove members.';
-  if (code === 'P0021') return 'That user is not a member of this group.';
+  if (code === 'P0021') return 'That user is not a member of this league.';
   if (code === 'P0022') return 'Cannot remove the last commissioner. Promote another member first.';
-  if (code === 'P0023') return 'Use "Leave group" to remove yourself.';
+  // Renders on the commissioner console, so it must point at where that control actually
+  // lives — #660 moved "Leave league" to Settings.
+  if (code === 'P0023') return 'Use "Leave league" on Settings to remove yourself.';
   return 'Could not remove member.';
 }
 
