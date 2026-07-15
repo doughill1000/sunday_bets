@@ -255,7 +255,7 @@
         return;
       }
       newInviteCode = body.code ?? null;
-      mintMsg = { kind: 'success', text: 'Invite created.' };
+      mintMsg = { kind: 'success', text: 'Invite link ready.' };
       await invalidateAll();
     } finally {
       mintBusy = false;
@@ -610,10 +610,10 @@
       <CardTitle class="text-xl font-bold">Invites</CardTitle>
     </CardHeader>
     <CardContent class="space-y-4 p-0 pt-2">
-      <p class="text-sm text-muted-foreground">Create invite links to share with new members.</p>
+      <p class="text-sm text-muted-foreground">Get an invite link to share with new members.</p>
 
       <Button onclick={() => void mintInvite()} disabled={mintBusy}>
-        {mintBusy ? 'Creating…' : 'Create invite link'}
+        {mintBusy ? 'Loading…' : 'Get invite link'}
       </Button>
 
       {#if newInviteCode}
@@ -625,10 +625,18 @@
           <div class="flex items-center gap-2">
             {#if canShare}
               <Button size="sm" onclick={() => void shareInvite(newInviteCode!)}>Share</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onclick={() => void copyInviteLink(newInviteCode!)}
+              >
+                {copiedCode === newInviteCode ? 'Copied' : 'Copy'}
+              </Button>
+            {:else}
+              <Button size="sm" onclick={() => void copyInviteLink(newInviteCode!)}>
+                {copiedCode === newInviteCode ? 'Copied' : 'Copy'}
+              </Button>
             {/if}
-            <Button variant="outline" size="sm" onclick={() => void copyInviteLink(newInviteCode!)}>
-              {copiedCode === newInviteCode ? 'Copied' : 'Copy'}
-            </Button>
           </div>
         </div>
       {/if}
@@ -642,9 +650,11 @@
           <p class="text-sm font-medium">Active invites</p>
           <ul class="space-y-2">
             {#each data.invites as invite (invite.id)}
-              <li class="flex items-center justify-between gap-2 rounded-lg border p-2 text-sm">
+              <li
+                class="flex flex-col gap-2 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              >
                 <div class="min-w-0">
-                  <code class="truncate text-xs">{invite.code}</code>
+                  <code class="block truncate text-xs">{invite.code}</code>
                   <p class="text-xs text-muted-foreground">
                     Used {invite.used_count}{invite.max_uses != null ? `/${invite.max_uses}` : ''} time{invite.used_count !==
                     1
@@ -655,10 +665,9 @@
                     {/if}
                   </p>
                 </div>
-                <div class="flex shrink-0 gap-1">
+                <div class="flex shrink-0 flex-wrap gap-1.5 self-end sm:self-auto">
                   {#if canShare}
                     <Button
-                      variant="outline"
                       size="sm"
                       onclick={() => void shareInvite(invite.code)}
                       aria-label="Share invite link for {invite.code}"
@@ -667,7 +676,7 @@
                     </Button>
                   {/if}
                   <Button
-                    variant="outline"
+                    variant={canShare ? 'outline' : 'default'}
                     size="sm"
                     onclick={() => void copyInviteLink(invite.code)}
                     aria-label="Copy invite link for {invite.code}"
