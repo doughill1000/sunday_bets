@@ -4,6 +4,11 @@ import path from 'path';
 import { execa } from 'execa';
 import fs from 'fs';
 import os from 'os';
+import postgres from 'postgres';
+import {
+  computePlayerRatings,
+  type RatingDecision
+} from '../../src/lib/server/rating/computeRatings.ts';
 
 const envFileArg = process.argv.find((arg) => arg.startsWith('--env='));
 const envFile = envFileArg ? envFileArg.replace('--env=', '') : process.env.ENV_FILE || '.env';
@@ -153,9 +158,64 @@ async function main() {
     input: restoreSql
   });
 
+  await rebuildPlayerRatingsOverRawSql();
+
   console.log('Clone complete ✅');
   console.log(`Temp artifacts: ${tmpDir}`);
   console.log('Done.');
+}
+
+// Cloning prod data writes settlements without going through the app's grading.ts caller, so
+// public.player_ratings is left empty/stale after a clone unless it's rebuilt here (issue #619,
+// ADR-0032 §8 "the rebuild must run on every settlement-writing path" — this was the gap that
+// forced a manual hand-populate of prod right after #618 merged). This script otherwise only
+// speaks raw psql/pg_dump, never supabase-js, so rather than requiring a PostgREST URL + service
+// key for the destination (which cloneDb.ts has never needed), the rebuild's two real pieces are
+// invoked directly over the same `DEST` connection this script already has: the pure TS fold
+// (computePlayerRatings, zero I/O, identical to what rebuild.ts calls) computes the ratings, and
+// the atomic `_rebuild_player_ratings` RPC (the same one rebuild.ts calls) persists them in one
+// transaction. Guarded so an older destination without the function/view still clones; best-effort
+// like every other rebuildPlayerRatings caller — a failure here logs and leaves ratings to
+// self-heal on the next grade, rather than failing the whole clone.
+async function rebuildPlayerRatingsOverRawSql(): Promise<void> {
+  const sql = postgres(DEST);
+  try {
+    const [{ has_view }] = await sql`
+      select to_regclass('public.player_rating_inputs') is not null as has_view
+    `;
+    const [{ has_fn }] = await sql`
+      select to_regprocedure('public._rebuild_player_ratings(jsonb, timestamptz)') is not null as has_fn
+    `;
+    if (!has_view || !has_fn) {
+      console.log('Skipping player_ratings rebuild (destination predates issue #619).');
+      return;
+    }
+
+    console.log('Rebuilding player_ratings…');
+    const inputs = (await sql`
+      select group_id, user_id, season_year, commence_time, game_id, weight, outcome
+      from public.player_rating_inputs
+    `) as unknown as RatingDecision[];
+    const results = computePlayerRatings(inputs);
+    const computedAt = new Date().toISOString();
+    const rows = results.map((r) => ({
+      group_id: r.group_id,
+      user_id: r.user_id,
+      rating: r.rating,
+      decisions: r.decisions,
+      decisions_to_qualify: r.decisionsToQualify,
+      season_delta: r.seasonDelta
+    }));
+    await sql`select public._rebuild_player_ratings(${sql.json(rows)}::jsonb, ${computedAt}::timestamptz)`;
+    console.log(`player_ratings rebuilt (${rows.length} row(s)).`);
+  } catch (err) {
+    console.error(
+      'player_ratings rebuild failed (ratings may be stale until the next grade):',
+      err instanceof Error ? err.message : String(err)
+    );
+  } finally {
+    await sql.end();
+  }
 }
 
 main().catch((err) => {

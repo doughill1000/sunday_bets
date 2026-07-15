@@ -29,6 +29,7 @@
 import 'dotenv/config';
 import postgres from 'postgres';
 import { makeClient, getTeamsMap } from '../backfill-picks/db.ts';
+import { rebuildPlayerRatings } from '../../../src/lib/server/rating/rebuild.ts';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // --- Players -----------------------------------------------------------------
@@ -1386,6 +1387,16 @@ async function run() {
   console.log('Refreshing leaderboard/stats matviews…');
   const { error: refreshErr } = await supabase.rpc('refresh_leaderboard_stats');
   if (refreshErr) throw new Error(`refresh_leaderboard_stats failed: ${refreshErr.message}`);
+
+  // Demo seed grades games via the raw `grade_game` RPC (above), bypassing the TS grading.ts
+  // caller that normally rebuilds player_ratings after a live grade — so without this the demo's
+  // credibility rating always shows every player as Unrated (issue #619, ADR-0032 §8 "the rebuild
+  // must run on every settlement-writing path"). Best-effort like every other rebuildPlayerRatings
+  // call: a failure here logs and leaves the table empty rather than aborting the whole seed.
+  console.log('Rebuilding player_ratings…');
+  await rebuildPlayerRatings(supabase, {
+    onError: (err) => console.error('rebuildPlayerRatings failed during demo seed:', err)
+  });
 
   let recapCount = 0;
   for (const group of GROUPS) {
