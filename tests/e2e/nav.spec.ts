@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
+import { leaderboardPage } from './helpers/leaderboard-page';
+import { E2E_USER } from './test-user';
 
 // Primary navigation: four first-class tabs — Picks · League · Stats · Market. The desktop inline
 // nav and the mobile bottom tab bar render the same four destinations. League is the merged
@@ -121,6 +123,18 @@ test('the last commissioner cannot leave the league from /settings', async ({ pa
   ).toBeVisible();
 });
 
+test('the standings mark who runs the league', async ({ page }) => {
+  // The marker needs the commissioner to HAVE a standings row, which global-setup seeds a
+  // settlement for (#660) — E2E_USER places no picks and would otherwise be absent from the
+  // table entirely, leaving this to pass against a row that never rendered. Asserting a plain
+  // member's row is unmarked is what proves the marker tracks the role and isn't just static.
+  const lb = leaderboardPage(page);
+  await lb.goto();
+
+  await expect(lb.standingsRow(`${E2E_USER.displayName} (you)`)).toContainText('Commissioner');
+  await expect(lb.standingsRow('test1')).not.toContainText('Commissioner');
+});
+
 test.describe('as a non-commissioner member', () => {
   test.use({ storageState: 'playwright/.auth/multigroup-user.json' });
 
@@ -128,6 +142,17 @@ test.describe('as a non-commissioner member', () => {
     await page.goto('/league');
     await expect(page.getByTestId('leaderboard-heading')).toBeVisible();
     await expect(page.getByTestId('manage-entry')).toHaveCount(0);
+  });
+
+  test('the Commissioner marker is visible to members, not just commissioners', async ({
+    page
+  }) => {
+    // "Everyone can see who runs the league" is the point of the marker — a member has no
+    // Manage entry and no console, so this row is the only place the app tells them.
+    const lb = leaderboardPage(page);
+    await lb.goto();
+
+    await expect(lb.standingsRow(E2E_USER.displayName)).toContainText('Commissioner');
   });
 
   test('the console and its legacy /group path both bounce to /league', async ({ page }) => {

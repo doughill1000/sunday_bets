@@ -63,6 +63,10 @@ export default async function globalSetup() {
   // /league/manage and /group redirects, the /settings League card) uses E2E_MULTIGROUP_USER,
   // who is already a plain 'member' of this same league with its own storageState — so both
   // audiences are covered without a third fixture.
+  //
+  // E2E_USER must stay the league's ONLY commissioner: it is what makes the last-commissioner
+  // "Leave league" guard testable at all. Promoting a second member would silently disarm that
+  // spec rather than fail it, so any new commissioner belongs in a different group.
   if (e2eUserId) {
     await supabase.from('users').upsert(
       {
@@ -81,6 +85,85 @@ export default async function globalSetup() {
         { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'commissioner' },
         { onConflict: 'group_id,user_id' }
       );
+
+    // ---------------------------------------------------------------------------
+    // Commissioner standings row (#660)
+    //
+    // The `Commissioner` marker on /league rides a STANDINGS row, and a standings row
+    // exists only for a user with a settled pick (`leaderboard_season_totals` is built
+    // from `pick_settlement`). E2E_USER places no picks, so without this the sole
+    // commissioner never appears in the table and the marker has nothing to render on —
+    // the assertion would pass vacuously against an empty set.
+    //
+    // Mirror the shape the seeded test1-3 already carry (a `missed` settlement, -1) on the
+    // same game, so this adds a row to the standings without inventing new game state. It
+    // must be E2E_USER rather than a promoted test1-3: those are the only members left to
+    // keep the last-commissioner guard live (see above).
+    //
+    // The game must be in the season the standings actually DEFAULT to, which is the newest
+    // one this group has settled rows for — not merely any settled game. Picking an arbitrary
+    // settlement lands the row in an older season, where the League home never looks and the
+    // marker spec fails for a reason that has nothing to do with the marker.
+    const { data: newestRow } = await supabase
+      .from('leaderboard_season_totals')
+      .select('season_year')
+      .eq('group_id', ORIGINAL_GROUP_ID)
+      .order('season_year', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const seedGameId = newestRow
+      ? await (async () => {
+          const { data: season } = await supabase
+            .from('seasons')
+            .select('id')
+            .eq('year', newestRow.season_year)
+            .maybeSingle();
+          if (!season) return null;
+          const { data: weeks } = await supabase
+            .from('weeks')
+            .select('id')
+            .eq('season_id', season.id)
+            .eq('is_scoring', true);
+          if (!weeks?.length) return null;
+          const { data: settled } = await supabase
+            .from('pick_settlement')
+            .select('game_id, games!inner(week_id)')
+            .eq('group_id', ORIGINAL_GROUP_ID)
+            .in(
+              'games.week_id',
+              weeks.map((w) => w.id)
+            )
+            .limit(1)
+            .maybeSingle();
+          return settled?.game_id ?? null;
+        })()
+      : null;
+
+    if (seedGameId) {
+      await supabase.from('pick_settlement').upsert(
+        {
+          group_id: ORIGINAL_GROUP_ID,
+          user_id: e2eUserId,
+          game_id: seedGameId,
+          pick_id: null, // a `missed` settlement has no pick behind it
+          outcome: 'missed',
+          points_delta: -1
+        },
+        { onConflict: 'group_id,user_id,game_id' }
+      );
+      // The standings read the matview, not the table — without this the new row is invisible.
+      await supabase.rpc('refresh_leaderboard_stats');
+      console.log(
+        `[e2e seed] commissioner standings row seeded in season ${newestRow!.season_year} (#660 marker)`
+      );
+    } else {
+      throw new Error(
+        'seed commissioner standings row (#660): no settled game found in the newest season for ' +
+          'the original group. The Commissioner-marker specs assert against a real standings row, ' +
+          'so failing here beats letting them pass against an empty table.'
+      );
+    }
   }
 
   // E2E password-reset user — kept separate from E2E_USER so the reset test can

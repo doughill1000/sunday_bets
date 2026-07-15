@@ -23,7 +23,6 @@
     CardTitle
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
-  import { Badge } from '$lib/components/ui/badge';
   import {
     Table,
     TableBody,
@@ -376,23 +375,22 @@
                     champion={isChampion}
                   />
                   <div class="min-w-0 leading-tight">
-                    <!-- The Commissioner chip (#660) rides beside the name, and Badge is already
-                         `shrink-0 whitespace-nowrap` — so it never yields width and a long name
-                         truncates around it. That ordering is deliberate: the Total column stays
-                         pinned at 390px, which is the constraint this row is built around. -->
-                    <div class="flex min-w-0 items-center gap-1.5">
-                      <span class="truncate"
-                        >{isYou ? `${r.display_name} (you)` : r.display_name}</span
-                      >
-                      {#if commissionerIds.has(r.user_id)}
-                        <Badge variant="outline" class="px-1.5 py-0 text-[10px] font-normal">
-                          Commissioner
-                        </Badge>
-                      {/if}
-                    </div>
+                    <div class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</div>
                     <div class="text-xs font-normal tabular-nums text-muted-foreground">
                       {r.wins}-{r.losses}-{r.pushes}
                     </div>
+                    <!-- The Commissioner marker (#660) gets its own line rather than sitting beside
+                         the name or the record. `max-w-0` above shrinks this cell to its minimum so
+                         the Total column can never be pushed off 390px — which leaves ~115px here,
+                         too little to share: beside the name it truncated the name to two
+                         characters, and appended to the record ("0-0-0 · Commissioner") it
+                         truncated itself. Alone on a line it fits whole, and only commissioner
+                         rows pay the extra height. -->
+                    {#if commissionerIds.has(r.user_id)}
+                      <div class="truncate text-xs font-normal text-muted-foreground">
+                        Commissioner
+                      </div>
+                    {/if}
                   </div>
                 </div>
               </TableCell>

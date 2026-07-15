@@ -85,6 +85,14 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('standings-empty');
     },
 
+    /** A single standings row, addressed by the player name rendered in it. Keyed off text
+     *  rather than a testid because the row has no per-player anchor — the name IS how a
+     *  reader finds their row. The `Commissioner` marker (#660) renders inside this row, on
+     *  the muted record line beneath the name. */
+    standingsRow(displayName: string): Locator {
+      return api.standingsTable().getByRole('row').filter({ hasText: displayName });
+    },
+
     // --- weekly panel --------------------------------------------------------
 
     /**
