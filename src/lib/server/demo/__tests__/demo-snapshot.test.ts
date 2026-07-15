@@ -1,4 +1,5 @@
-// CI drift-guard for the public demo season (#460, ADR-0026, acceptance criterion 5).
+// CI drift-guard for the public demo season (#460, ADR-0026, acceptance criterion 5; extended
+// #669 for the IA-mirror surfaces and the badge-catalog subset check).
 //
 // Renders every demo surface component against the COMMITTED snapshot fixture and fails if it
 // throws or references a field the snapshot doesn't carry. This is the enforcement that forces
@@ -7,10 +8,17 @@
 // staleness prevention (the AGENTS.md refresh rule covers coverage drift).
 import { render } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
+import { QueryClient } from '@tanstack/svelte-query';
 import { getDemoSnapshot } from '../snapshot';
 import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
-import DemoPicksBoard from '$lib/components/demo/DemoPicksBoard.svelte';
-import DemoStandingsTable from '$lib/components/demo/DemoStandingsTable.svelte';
+import { BADGE_GLOSSARY } from '$lib/domain/badges';
+import DemoPicksPageHarness from './DemoPicksPageHarness.svelte';
+import DemoStatsPage from '../../../../routes/demo/stats/+page.svelte';
+import DemoMarketPage from '../../../../routes/demo/market/+page.svelte';
+import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
+import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
+import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
+import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
 import WeeklyLiveBoard from '$lib/components/leaderboard/WeeklyLiveBoard.svelte';
 import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
 import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
@@ -54,6 +62,17 @@ describe('demo snapshot fixture', () => {
   it('never presents weekly recap prose as the "AI unavailable" fallback', () => {
     // Same as Wrapped: curated artifact, never the deterministic-fallback note.
     for (const recap of snapshot.recaps) expect(recap.is_fallback).toBe(false);
+  });
+
+  // #669: the fixture's badges must still exist in the live catalog — the check that would have
+  // caught the 17-vs-15 staleness (#647) the day the catalog shrank.
+  it('carries only badges that still exist in the live catalog', () => {
+    const catalogIds = new Set(BADGE_GLOSSARY.map((g) => g.id));
+    const stale = snapshot.honors.badges.map((b) => b.id).filter((id) => !catalogIds.has(id));
+    expect(
+      stale,
+      `stale badge id(s) not in the live catalog — run \`pnpm demo:snapshot\`: ${stale.join(', ')}`
+    ).toEqual([]);
   });
 });
 
@@ -104,18 +123,26 @@ describe('frozen live-week sweat states (#585)', () => {
 });
 
 describe('demo surfaces render against the fixture', () => {
-  it('picks screen (the verb + live sweat)', () => {
-    const { getByText, getByTestId, getAllByTestId } = render(DemoPicksBoard, {
+  it('picks screen — the real PicksBoard in readonly mode (#669)', () => {
+    // `/demo/+page.svelte` itself reshapes `snapshot.liveWeek` into the readonly PicksBoard's
+    // props (seeded `lockedPick`s, frozen live scores, committed-vs-open split) — rendering the
+    // page directly exercises that reshape, not a hand-duplicated copy of it.
+    const { getByText, getByTestId, getAllByTestId, queryByTestId } = render(DemoPicksPageHarness, {
       props: {
-        liveWeek: snapshot.liveWeek,
-        personaName: snapshot.persona.displayName,
-        personaUserId: snapshot.persona.userId
+        client: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+        data: {
+          liveWeek: snapshot.liveWeek,
+          personaName: snapshot.persona.displayName,
+          personaUserId: snapshot.persona.userId
+        } as unknown as import('../../../../routes/demo/$types').PageData
       }
     });
-    expect(getByText(`Week ${snapshot.liveWeek.weekNumber} picks`)).toBeInTheDocument();
-    // The frozen live week renders the sweat surfaces (week-so-far + the live cards).
-    expect(getByTestId('demo-week-so-far')).toBeInTheDocument();
-    expect(getAllByTestId('demo-live-game').length).toBeGreaterThan(0);
+    expect(getByText('My Picks')).toBeInTheDocument();
+    // The frozen live week always carries committed (live/final) games.
+    expect(getByTestId('committed-section')).toBeInTheDocument();
+    expect(getAllByTestId('committed-row').length).toBeGreaterThan(0);
+    // No unlock/lock-in write controls in readonly mode.
+    expect(queryByTestId('unlock-pick')).not.toBeInTheDocument();
   });
 
   it('weekly provisional live board (#584 surface)', () => {
@@ -125,27 +152,38 @@ describe('demo surfaces render against the fixture', () => {
     expect(getByTestId('weekly-live-board')).toBeInTheDocument();
   });
 
-  it('season standings', () => {
-    const { getByTestId } = render(DemoStandingsTable, {
+  it('season standings (shared StandingsTable, #669)', () => {
+    const { getByTestId } = render(StandingsTable, {
       props: {
         rows: snapshot.leaderboard.totals,
-        personaUserId: snapshot.persona.userId,
-        championUserId: snapshot.leaderboard.championUserId,
-        dropActive: snapshot.leaderboard.dropActive
+        title: `${snapshot.meta.completedSeasonYear} standings`,
+        currentUserId: snapshot.persona.userId,
+        tableTestid: 'demo-standings-table',
+        champion: snapshot.leaderboard.championUserId,
+        showDropFootnote: snapshot.leaderboard.dropActive
       }
     });
     expect(getByTestId('demo-standings-table')).toBeInTheDocument();
   });
 
-  it('all-time standings (same table, career rows)', () => {
-    const { getByTestId } = render(DemoStandingsTable, {
+  it('all-time standings (same shared table, career rows)', () => {
+    const { getByTestId } = render(StandingsTable, {
       props: {
         rows: snapshot.allTime.totals,
-        personaUserId: snapshot.persona.userId,
-        dropActive: snapshot.allTime.dropActive
+        title: 'All-time standings',
+        currentUserId: snapshot.persona.userId,
+        tableTestid: 'demo-alltime-table',
+        showDropFootnote: snapshot.allTime.dropActive
       }
     });
-    expect(getByTestId('demo-standings-table')).toBeInTheDocument();
+    expect(getByTestId('demo-alltime-table')).toBeInTheDocument();
+  });
+
+  it('the credibility ladder under All-time (#637, #669)', () => {
+    const { getByTestId } = render(RatingLadder, {
+      props: { rows: snapshot.allTime.ladder, currentUserId: snapshot.persona.userId }
+    });
+    expect(getByTestId('rating-ladder')).toBeInTheDocument();
   });
 
   it('league honors + awards', () => {
@@ -157,10 +195,52 @@ describe('demo surfaces render against the fixture', () => {
         currentUserId: snapshot.persona.userId,
         selectedSeason: snapshot.meta.completedSeasonYear,
         wrappedHref: '/demo/wrapped',
-        recapsHref: null
+        recapsHref: '/demo/recap'
       }
     });
     expect(getByTestId('league-honors')).toBeInTheDocument();
+  });
+
+  it('weekly hardware on the Week tab / recap (#387, #669)', () => {
+    const hardware = snapshot.weeklyAwards.weeks[0];
+    expect(hardware, 'the fixture must carry at least one graded week of hardware').toBeTruthy();
+    const { getByTestId } = render(WeeklyHardware, {
+      props: { hardware, currentUserId: snapshot.persona.userId }
+    });
+    expect(getByTestId('weekly-hardware')).toBeInTheDocument();
+  });
+
+  it('the season shelf on the recap archive (#669)', () => {
+    expect(snapshot.weeklyAwards.shelf.length).toBeGreaterThan(0);
+    const { getByTestId } = render(SeasonShelf, {
+      props: { shelf: snapshot.weeklyAwards.shelf, currentUserId: snapshot.persona.userId }
+    });
+    expect(getByTestId('season-shelf')).toBeInTheDocument();
+  });
+
+  it('demo Stats (#669) — real Stats surfaces off the frozen `stats` payload', () => {
+    const { getByText } = render(DemoStatsPage, {
+      props: {
+        data: {
+          persona: snapshot.persona,
+          seasonYear: snapshot.meta.completedSeasonYear,
+          stats: snapshot.stats
+        } as unknown as import('../../../../routes/demo/stats/$types').PageData
+      }
+    });
+    expect(getByText('Stats & history')).toBeInTheDocument();
+  });
+
+  it('demo Market (#669) — real Market surfaces off the frozen `market` payload', () => {
+    const { getByTestId } = render(DemoMarketPage, {
+      props: {
+        data: {
+          seasonYear: snapshot.meta.liveSeasonYear,
+          market: snapshot.market
+        } as unknown as import('../../../../routes/demo/market/$types').PageData
+      }
+    });
+    expect(getByTestId('market-heading')).toBeInTheDocument();
   });
 
   it('season wrapped — player and league', () => {

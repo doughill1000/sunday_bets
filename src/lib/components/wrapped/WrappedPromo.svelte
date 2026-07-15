@@ -10,7 +10,11 @@
   import Gift from '@lucide/svelte/icons/gift';
   import X from '@lucide/svelte/icons/x';
 
-  let { groupId, seasonYear }: { groupId: string; seasonYear: number } = $props();
+  let {
+    groupId,
+    seasonYear,
+    href = `/wrapped?season=${seasonYear}`
+  }: { groupId: string; seasonYear: number; href?: string } = $props();
 
   let visible = $state(false);
 
@@ -43,11 +47,7 @@
         </p>
       </div>
     </div>
-    <Button
-      href="/wrapped?season={seasonYear}"
-      data-testid="wrapped-promo-cta"
-      class="w-full shrink-0 sm:w-auto"
-    >
+    <Button {href} data-testid="wrapped-promo-cta" class="w-full shrink-0 sm:w-auto">
       View Wrapped
     </Button>
     <button

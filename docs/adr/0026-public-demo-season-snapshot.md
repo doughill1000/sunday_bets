@@ -164,3 +164,18 @@ Product questions settled with the owner before writing:
   `demo-snapshot.json` fixture + `pnpm demo:snapshot` generator (a cron-secret-guarded in-app
   export endpoint that reuses the real read-model/Wrapped pipeline), the CI drift-guard test,
   and the `refresh-demo-snapshot` skill + AGENTS.md refresh rule.
+- 2026-07-15 (#669) — Refines §6's staleness-prevention clause with a standing IA rule: **the
+  demo mirrors the app's tab structure, and every new first-class tab ships a demo surface.**
+  The demo had drifted to a superseded four-tab shape (Picks · League · Wrapped · Recap) that
+  showed neither Stats, Market, the credibility rating, nor weekly hardware — coverage drift the
+  CI guard could not see, because it only renders the surfaces the demo already uses. #669 closed
+  that gap structurally rather than by discipline: it extracted the two hand-mirrored components
+  (`DemoStandingsTable`, `DemoPicksBoard`) into a shared `StandingsTable` and a `readonly` mode on
+  the real `PicksBoard`, so the demo and the authed app render identical markup and can no longer
+  diverge silently; extended the generator/fixture with `weeklyAwards`/`stats`/`market`; rebuilt
+  the nav to the real four tabs (Picks · League · Stats · Market); and hardened the drift-guard to
+  render the new surfaces plus assert the fixture's badge set is a subset of the live catalog (the
+  check that would have caught the #647 badge-count staleness the day it shipped). Going forward,
+  a PR that adds a first-class tab to the authed app is not done until `/demo` gains the matching
+  surface in the same PR or a tracked follow-up — mirrors the existing "shipping a marketing-worthy
+  surface? refresh the demo snapshot" AGENTS.md rule, but for structural IA rather than content.

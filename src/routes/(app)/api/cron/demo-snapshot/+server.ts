@@ -21,6 +21,9 @@ import {
   getAllTimeStandingsPayload
 } from '$lib/server/readModels/leaderboardCache';
 import { getGroupCachePayload } from '$lib/server/readModels/groupCache';
+import { getSeasonWeeklyAwards } from '$lib/server/readModels/weeklyAwards';
+import { getStatsCachePayload } from '$lib/server/readModels/statsCache';
+import { getLeagueCachePayload } from '$lib/server/readModels/leagueCache';
 import { generateSeasonWrapped } from '$lib/server/seasonWrapped';
 import { getSeasonWrapped } from '$lib/server/db/queries/seasonWrapped';
 import { getRecentRecaps, upsertRecap, type RecapRow } from '$lib/server/db/queries/recaps';
@@ -331,11 +334,16 @@ async function assembleDemoSnapshot(params: {
   ]);
 
   // Standings drive the persona default: the featured season's champion (rank 1) is the
-  // aspirational "you", unless an explicit persona was requested.
-  const [leaderboard, allTime, group] = await Promise.all([
+  // aspirational "you", unless an explicit persona was requested. `stats`/`weeklyAwards` are
+  // completed-season-scoped like `leaderboard`; `market` is season-only (group-independent, #669)
+  // and shows the LIVE season to match the frozen live picks week, not the completed season.
+  const [leaderboard, allTime, group, weeklyAwards, stats, market] = await Promise.all([
     getLeaderboardStandingsPayload(groupId, completedSeasonYear, currentSeasonYear),
     getAllTimeStandingsPayload(groupId),
-    getGroupCachePayload(groupId, completedSeasonYear)
+    getGroupCachePayload(groupId, completedSeasonYear),
+    getSeasonWeeklyAwards(groupId, completedSeasonYear),
+    getStatsCachePayload(groupId, completedSeasonYear),
+    getLeagueCachePayload(currentSeasonYear)
   ]);
 
   const championId = leaderboard.totals.find((t) => t.rank === 1)?.user_id ?? null;
@@ -385,7 +393,10 @@ async function assembleDemoSnapshot(params: {
       player: presentAsFinished(wrapped.player),
       league: presentAsFinished(wrapped.league)
     },
-    recaps: recaps.map(presentRecapAsFinished)
+    recaps: recaps.map(presentRecapAsFinished),
+    weeklyAwards,
+    stats,
+    market
   };
 }
 
