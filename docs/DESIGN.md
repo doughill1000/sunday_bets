@@ -279,7 +279,7 @@ each. (Component homes live under `src/lib/components/`.)
 | Compare a value to a baseline     | Diverging bar from the market line                 | `/stats` Every split, `/market`              |
 | Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
 | Group related content             | `Card` + header/description                        | everywhere                                   |
-| Announce a form/action outcome    | Persistent inline status note (`role="status"`)    | settings, group (to be extracted)            |
+| Announce a form/action outcome    | Persistent inline status note (`FormNote`)         | `/league/manage`, `/settings` League card    |
 | Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
 | Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/market`, `/stats`        |
 | Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
@@ -294,7 +294,10 @@ to copy markup: as soon as a second surface needs a pattern, extract it into a s
 component under `src/lib/components/` and update its row here to name the import. The
 2026-07-11 audit found three hand-copies of the chip radiogroup — one of which had
 silently lost its keyboard contract — and twelve hand-copies of the status note; copies
-drift, imports don't.
+drift, imports don't. `FormNote` is that extraction, and #660's new `/settings` League card
+imports it — but the rest of `/settings` (profile, avatar, theme, trends, identities,
+notifications) still hand-rolls the border-only div and is the largest remaining cluster.
+Those copies announce nothing to a screen reader, which is the concrete cost.
 
 ### Worked example — chip radiogroup
 

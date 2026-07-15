@@ -48,9 +48,10 @@ test('each tab owns exactly one context control, contained in its own panel', as
   await expect(lb.honors()).toBeHidden();
 });
 
-test('Members & manage is reachable from the League heading action', async ({ page }) => {
+test('the manage console is reachable from the League heading action', async ({ page }) => {
   // #631 lifted this out of a full-width card that rendered after </Tabs> — i.e. under both
-  // tabs — into a heading action, leaving nothing outside the tab group.
+  // tabs — into a heading action, leaving nothing outside the tab group. #660 then gated it on
+  // the commissioner role, which the default E2E_USER holds (global-setup.ts).
   const lb = leaderboardPage(page);
   await lb.goto();
 

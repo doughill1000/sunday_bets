@@ -148,6 +148,18 @@
   // payload instead, which carries it synchronously.
   const championUserId = $derived((leaderboardQuery.data ?? EMPTY_LEADERBOARD).championUserId);
 
+  // Who runs the league (#660) — the Commissioner chip on each standings row. `role` is already
+  // in the shareable cached group payload, so this exposes nothing new and needs no plumbing
+  // (ADR-0017 boundary 3 holds). It's a label for everyone, NOT an authorization signal: the
+  // Manage entry gates on `data.isCommissioner` from the uncached server load.
+  //
+  // `group.members` paginates (`membersCursor`), so a commissioner past the first page wouldn't
+  // be in this set and simply renders unchipped — leagues are far below the page size today,
+  // and marking only what's loaded beats a second fetch to complete a cosmetic label.
+  const commissionerIds = $derived(
+    new Set(group.members.filter((m) => m.role === 'commissioner').map((m) => m.userId))
+  );
+
   // Standings rank movement vs the previous graded week (#561), derived from the season trend on
   // the server load. Positive = climbed. Season-scoped only; the All-time table passes `null`.
   const movements = $derived(rankMovements(pageData.trend ?? []));
@@ -367,6 +379,18 @@
                     <div class="text-xs font-normal tabular-nums text-muted-foreground">
                       {r.wins}-{r.losses}-{r.pushes}
                     </div>
+                    <!-- The Commissioner marker (#660) gets its own line rather than sitting beside
+                         the name or the record. `max-w-0` above shrinks this cell to its minimum so
+                         the Total column can never be pushed off 390px — which leaves ~115px here,
+                         too little to share: beside the name it truncated the name to two
+                         characters, and appended to the record ("0-0-0 · Commissioner") it
+                         truncated itself. Alone on a line it fits whole, and only commissioner
+                         rows pay the extra height. -->
+                    {#if commissionerIds.has(r.user_id)}
+                      <div class="truncate text-xs font-normal text-muted-foreground">
+                        Commissioner
+                      </div>
+                    {/if}
                   </div>
                 </div>
               </TableCell>
@@ -405,21 +429,25 @@
       </p>
     </div>
 
-    <!-- Members & manage (#631): a heading action rather than the full-width card that used to
-         render after `</Tabs>` under every tab. It stays on the page rather than in the global
+    <!-- Manage (#631): a heading action rather than the full-width card that used to render
+         after `</Tabs>` under every tab. It stays on the page rather than in the global
          AppHeader — that header is shared by /picks, /stats and /market and has no room left at
-         390px, while the roster is a League-only destination. The v3.3 commissioner set builds
-         on /league/manage. -->
-    <Button
-      href="/league/manage"
-      data-testid="manage-entry"
-      variant="outline"
-      size="sm"
-      class="shrink-0"
-    >
-      <Users class="size-4" aria-hidden="true" />
-      Manage
-    </Button>
+         390px, while the console is a League-only destination.
+         #660: commissioners only. The page behind it is now their console — a member who
+         followed it saw a roster and two personal toggles that have since moved to /settings,
+         so for them it led nowhere. -->
+    {#if data.isCommissioner}
+      <Button
+        href="/league/manage"
+        data-testid="manage-entry"
+        variant="outline"
+        size="sm"
+        class="shrink-0"
+      >
+        <Users class="size-4" aria-hidden="true" />
+        Manage
+      </Button>
+    {/if}
   </div>
 
   {#if data.latestWrappedSeason != null}

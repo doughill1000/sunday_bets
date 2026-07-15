@@ -47,6 +47,13 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
   // locals.user instead of a second auth.getUser() round-trip.
   const currentUserId = event.locals.user?.id ?? null;
 
+  // Whether to show the "Manage" entry (#660). Read off the memberships the auth hook already
+  // resolved, so this costs no query. It's a UI hint only and may lag a role change by the
+  // auth-context cache TTL (~30s, ADR-0014) — /league/manage's own load re-reads the role
+  // fresh and redirects, so a stale `true` shows a button that bounces, never a leaked control.
+  const isCommissioner =
+    event.locals.memberships.find((m) => m.groupId === groupId)?.role === 'commissioner';
+
   // The season race chart and the standings rank-movement arrows (#561) both read the season
   // trend (`stats_season_trend`): every member's cumulative points and rank by graded week. It's
   // small, shareable, and season-scoped; loaded unconditionally (not just on the standings branch)
@@ -81,6 +88,7 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
       defaultScope,
       latestWrappedSeason,
       currentUserId,
+      isCommissioner,
       trend,
       view: 'standings' as const,
       weeks: null,
@@ -109,6 +117,7 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
     defaultScope,
     latestWrappedSeason,
     currentUserId,
+    isCommissioner,
     trend,
     view: 'weekly' as const,
     weeks,
