@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { leaderboardPage } from './helpers/leaderboard-page';
-import { E2E_USER } from './test-user';
+import { E2E_USER, E2E_MULTIGROUP_USER } from './test-user';
+import { SEASON_YEAR } from './global-setup';
 
 // Primary navigation: four first-class tabs — Picks · League · Stats · Market. The desktop inline
 // nav and the mobile bottom tab bar render the same four destinations. League is the merged
@@ -124,15 +125,15 @@ test('the last commissioner cannot leave the league from /settings', async ({ pa
 });
 
 test('the standings mark who runs the league', async ({ page }) => {
-  // The marker needs the commissioner to HAVE a standings row, which global-setup seeds a
-  // settlement for (#660) — E2E_USER places no picks and would otherwise be absent from the
-  // table entirely, leaving this to pass against a row that never rendered. Asserting a plain
-  // member's row is unmarked is what proves the marker tracks the role and isn't just static.
+  // Both rows here are seeded by global-setup (#660): E2E_USER places no picks, so the sole
+  // commissioner would otherwise be absent from the table entirely and this would assert
+  // against a row that never rendered. The member's row being *unmarked* is what proves the
+  // marker tracks the role rather than decorating every row.
   const lb = leaderboardPage(page);
-  await lb.goto();
+  await lb.goto({ season: SEASON_YEAR });
 
   await expect(lb.standingsRow(`${E2E_USER.displayName} (you)`)).toContainText('Commissioner');
-  await expect(lb.standingsRow('test1')).not.toContainText('Commissioner');
+  await expect(lb.standingsRow(E2E_MULTIGROUP_USER.displayName)).not.toContainText('Commissioner');
 });
 
 test.describe('as a non-commissioner member', () => {
@@ -150,7 +151,7 @@ test.describe('as a non-commissioner member', () => {
     // "Everyone can see who runs the league" is the point of the marker — a member has no
     // Manage entry and no console, so this row is the only place the app tells them.
     const lb = leaderboardPage(page);
-    await lb.goto();
+    await lb.goto({ season: SEASON_YEAR });
 
     await expect(lb.standingsRow(E2E_USER.displayName)).toContainText('Commissioner');
   });

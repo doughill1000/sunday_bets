@@ -7,10 +7,20 @@ import { E2E_USER, E2E_RESET_USER, E2E_MULTIGROUP_USER } from './test-user';
  * `supabase db reset`'s seed.sql; here we add the game data the picks and
  * leaderboard pages render. Idempotent so repeated local runs are safe.
  */
-const SEASON_YEAR = 2026;
+/** The season this fixture seeds. Exported because a spec that asserts against a seeded
+ *  standings row must pin `?season=` to it — a local DB cloned from prod carries later
+ *  seasons that would otherwise win the "newest season with standings" default
+ *  (`resolveSeasonYear`), so an unpinned spec passes in CI and fails locally. */
+export const SEASON_YEAR = 2026;
 const WEEK_NUMBER = 1;
 const GAME_TAG = 'e2e-game-1';
 const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
+
+// A settled week/game kept deliberately apart from the active one above (#660): it exists only
+// to give the commissioner a standings row. The active week is stripped to a single unplayed
+// game for the picks specs, so the graded state the standings need cannot live there.
+const SETTLED_WEEK_NUMBER = 18;
+const SETTLED_GAME_TAG = 'e2e-settled-game';
 
 // Dedicated second group for the group-switcher (#150) multi-group specs. A
 // fixed id/name owned by this setup (not reused from another spec's fixture) so
@@ -66,7 +76,9 @@ export default async function globalSetup() {
   //
   // E2E_USER must stay the league's ONLY commissioner: it is what makes the last-commissioner
   // "Leave league" guard testable at all. Promoting a second member would silently disarm that
-  // spec rather than fail it, so any new commissioner belongs in a different group.
+  // spec rather than fail it, so any new commissioner belongs in a different group. The
+  // `Commissioner` marker needs this user to hold a standings row too — seeded at the bottom
+  // of this file, once the season and teams it depends on exist.
   if (e2eUserId) {
     await supabase.from('users').upsert(
       {
@@ -85,85 +97,6 @@ export default async function globalSetup() {
         { group_id: ORIGINAL_GROUP_ID, user_id: e2eUserId, role: 'commissioner' },
         { onConflict: 'group_id,user_id' }
       );
-
-    // ---------------------------------------------------------------------------
-    // Commissioner standings row (#660)
-    //
-    // The `Commissioner` marker on /league rides a STANDINGS row, and a standings row
-    // exists only for a user with a settled pick (`leaderboard_season_totals` is built
-    // from `pick_settlement`). E2E_USER places no picks, so without this the sole
-    // commissioner never appears in the table and the marker has nothing to render on —
-    // the assertion would pass vacuously against an empty set.
-    //
-    // Mirror the shape the seeded test1-3 already carry (a `missed` settlement, -1) on the
-    // same game, so this adds a row to the standings without inventing new game state. It
-    // must be E2E_USER rather than a promoted test1-3: those are the only members left to
-    // keep the last-commissioner guard live (see above).
-    //
-    // The game must be in the season the standings actually DEFAULT to, which is the newest
-    // one this group has settled rows for — not merely any settled game. Picking an arbitrary
-    // settlement lands the row in an older season, where the League home never looks and the
-    // marker spec fails for a reason that has nothing to do with the marker.
-    const { data: newestRow } = await supabase
-      .from('leaderboard_season_totals')
-      .select('season_year')
-      .eq('group_id', ORIGINAL_GROUP_ID)
-      .order('season_year', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    const seedGameId = newestRow
-      ? await (async () => {
-          const { data: season } = await supabase
-            .from('seasons')
-            .select('id')
-            .eq('year', newestRow.season_year)
-            .maybeSingle();
-          if (!season) return null;
-          const { data: weeks } = await supabase
-            .from('weeks')
-            .select('id')
-            .eq('season_id', season.id)
-            .eq('is_scoring', true);
-          if (!weeks?.length) return null;
-          const { data: settled } = await supabase
-            .from('pick_settlement')
-            .select('game_id, games!inner(week_id)')
-            .eq('group_id', ORIGINAL_GROUP_ID)
-            .in(
-              'games.week_id',
-              weeks.map((w) => w.id)
-            )
-            .limit(1)
-            .maybeSingle();
-          return settled?.game_id ?? null;
-        })()
-      : null;
-
-    if (seedGameId) {
-      await supabase.from('pick_settlement').upsert(
-        {
-          group_id: ORIGINAL_GROUP_ID,
-          user_id: e2eUserId,
-          game_id: seedGameId,
-          pick_id: null, // a `missed` settlement has no pick behind it
-          outcome: 'missed',
-          points_delta: -1
-        },
-        { onConflict: 'group_id,user_id,game_id' }
-      );
-      // The standings read the matview, not the table — without this the new row is invisible.
-      await supabase.rpc('refresh_leaderboard_stats');
-      console.log(
-        `[e2e seed] commissioner standings row seeded in season ${newestRow!.season_year} (#660 marker)`
-      );
-    } else {
-      throw new Error(
-        'seed commissioner standings row (#660): no settled game found in the newest season for ' +
-          'the original group. The Commissioner-marker specs assert against a real standings row, ' +
-          'so failing here beats letting them pass against an empty table.'
-      );
-    }
   }
 
   // E2E password-reset user — kept separate from E2E_USER so the reset test can
@@ -398,6 +331,118 @@ export default async function globalSetup() {
     }
   ]);
   if (lineErr) throw new Error('seed lines: ' + lineErr.message);
+
+  // ---------------------------------------------------------------------------
+  // Commissioner standings row (#660)
+  //
+  // The `Commissioner` marker rides a STANDINGS row, and a standings row exists only for a
+  // user with a settled pick — `leaderboard_season_totals` is built from `pick_settlement`.
+  // E2E_USER places no picks, so without this the league's sole commissioner never appears
+  // in the table and the marker has nothing to render on.
+  //
+  // This seeds its own settled game rather than reusing one. `seed.sql` creates NO seasons,
+  // weeks, or settlements, so on CI's clean database there are no standings at all — which
+  // is why the standings specs are all written `standingsTable().or(standingsEmpty())`. A
+  // fixture that borrows an existing settled game works only on a machine whose local DB was
+  // cloned from prod, and fails in CI.
+  //
+  // It goes in a dedicated PAST scoring week, never the active one: global-setup deliberately
+  // strips the active week down to exactly one game so the picks board matches what those
+  // specs assert, and a second game (or a settlement on the unplayed one) would break that.
+  // Same matchup is safe here — `uq_games_matchup` is scoped per week.
+  if (e2eUserId) {
+    const settledStart = new Date(Date.now() - 30 * DAY).toISOString();
+    const settledEnd = new Date(Date.now() - 24 * DAY).toISOString();
+
+    let settledWeekId: number;
+    {
+      const { data: existing } = await supabase
+        .from('weeks')
+        .select('id')
+        .eq('season_id', seasonId)
+        .eq('week_number', SETTLED_WEEK_NUMBER)
+        .maybeSingle();
+      if (existing) {
+        settledWeekId = existing.id;
+        await supabase
+          .from('weeks')
+          .update({ start_ts: settledStart, end_ts: settledEnd, is_scoring: true })
+          .eq('id', settledWeekId);
+      } else {
+        const { data, error } = await supabase
+          .from('weeks')
+          .insert({
+            season_id: seasonId,
+            week_number: SETTLED_WEEK_NUMBER,
+            start_ts: settledStart,
+            end_ts: settledEnd,
+            is_scoring: true // the matview only counts scoring weeks
+          })
+          .select('id')
+          .single();
+        if (error) throw new Error('seed settled week: ' + error.message);
+        settledWeekId = data.id;
+      }
+    }
+
+    let settledGameId: string;
+    {
+      const { data: existing } = await supabase
+        .from('games')
+        .select('id')
+        .eq('week_id', settledWeekId)
+        .or(
+          `and(home_team_id.eq.${home.id},away_team_id.eq.${away.id}),` +
+            `and(home_team_id.eq.${away.id},away_team_id.eq.${home.id})`
+        )
+        .maybeSingle();
+      const payload = {
+        week_id: settledWeekId,
+        home_team_id: home.id,
+        away_team_id: away.id,
+        external_game_id: SETTLED_GAME_TAG,
+        status: 'final',
+        commence_time: settledStart
+      };
+      if (existing) {
+        settledGameId = existing.id;
+        await supabase.from('games').update(payload).eq('id', settledGameId);
+      } else {
+        const { data, error } = await supabase.from('games').insert(payload).select('id').single();
+        if (error) throw new Error('seed settled game: ' + error.message);
+        settledGameId = data.id;
+      }
+    }
+
+    // A `missed` settlement — the one outcome that needs no pick behind it, so this stays a
+    // standings row and nothing more (no pick, no line, no score to keep consistent).
+    //
+    // Both the commissioner AND a plain member get one. The marker spec asserts the member's
+    // row is *unmarked*, which is what proves the marker tracks the role rather than decorating
+    // every row — and that assertion needs a member actually in the table. Relying on the
+    // seeded test1-3 having rows here would work only on a prod-cloned local DB.
+    const settlers = [e2eUserId, mgUserId].filter((id): id is string => Boolean(id));
+    const { error: settleErr } = await supabase.from('pick_settlement').upsert(
+      settlers.map((userId) => ({
+        group_id: ORIGINAL_GROUP_ID,
+        user_id: userId,
+        game_id: settledGameId,
+        pick_id: null,
+        outcome: 'missed' as const,
+        points_delta: -1
+      })),
+      { onConflict: 'group_id,user_id,game_id' }
+    );
+    if (settleErr) throw new Error('seed commissioner settlement: ' + settleErr.message);
+
+    // The standings read the matview, not the table — without this the row stays invisible.
+    const { error: refreshErr } = await supabase.rpc('refresh_leaderboard_stats');
+    if (refreshErr) throw new Error('refresh leaderboard matviews: ' + refreshErr.message);
+
+    console.log(
+      `[e2e seed] commissioner standings row: season ${SEASON_YEAR} week ${SETTLED_WEEK_NUMBER} (#660 marker)`
+    );
+  }
 
   console.log(
     `[e2e seed] season ${SEASON_YEAR} week ${WEEK_NUMBER} active; game ${away.short_name} @ ${home.short_name} with active line`

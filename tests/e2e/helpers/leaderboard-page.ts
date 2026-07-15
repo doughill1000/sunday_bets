@@ -21,9 +21,12 @@ export function leaderboardPage(page: Page) {
   const api = {
     page,
 
-    /** Navigate to the League home and wait for the standings heading to render. */
-    async goto() {
-      await page.goto('/league');
+    /** Navigate to the League home and wait for the standings heading to render. Pass
+     *  `season` to pin the scope — without it the page shows the newest season the league has
+     *  standings for, which differs between CI's clean DB and a prod-cloned local one. Any
+     *  spec asserting on a seeded row should pin it. */
+    async goto(opts: { season?: number } = {}) {
+      await page.goto(opts.season ? `/league?season=${opts.season}` : '/league');
       await expect(api.heading()).toBeVisible();
       // Dismiss the AI recap flash modal if it auto-opened (localStorage is empty
       // in a fresh e2e context, so the "seen" guard doesn't fire). The modal is a
@@ -88,9 +91,17 @@ export function leaderboardPage(page: Page) {
     /** A single standings row, addressed by the player name rendered in it. Keyed off text
      *  rather than a testid because the row has no per-player anchor — the name IS how a
      *  reader finds their row. The `Commissioner` marker (#660) renders inside this row, on
-     *  the muted record line beneath the name. */
+     *  its own muted line beneath the record.
+     *
+     *  Matched EXACTLY, not by substring: the fixture's names nest ("e2e" is a prefix of
+     *  "e2e-multigroup"), so a substring match would resolve to both rows and quietly assert
+     *  against the wrong one. Pass the name as rendered — a viewer's own row reads
+     *  "<name> (you)". */
     standingsRow(displayName: string): Locator {
-      return api.standingsTable().getByRole('row').filter({ hasText: displayName });
+      return api
+        .standingsTable()
+        .getByRole('row')
+        .filter({ has: page.getByText(displayName, { exact: true }) });
     },
 
     // --- weekly panel --------------------------------------------------------
