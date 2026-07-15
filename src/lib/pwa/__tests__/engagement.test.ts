@@ -21,8 +21,8 @@ describe('chooseEngagementStep — install steps', () => {
     expect(chooseEngagementStep({ ...base, canInstall: true })).toBe('install-prompt');
   });
 
-  it('returns install-fallback when not iOS and no prompt captured', () => {
-    expect(chooseEngagementStep(base)).toBe('install-fallback');
+  it('returns none when not iOS and no prompt captured', () => {
+    expect(chooseEngagementStep(base)).toBe('none');
   });
 
   it('returns none when already standalone', () => {
