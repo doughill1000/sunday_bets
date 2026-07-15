@@ -61,10 +61,10 @@
           variant="outline"
           size="sm"
           class="max-w-[120px] truncate text-xs sm:max-w-[160px] sm:text-sm"
-          aria-label="Switch active group"
+          aria-label="Switch active league"
           data-testid="group-switcher-trigger"
         >
-          {activeGroup?.groupName ?? 'Group'}
+          {activeGroup?.groupName ?? 'League'}
           <svg
             class="ml-1 h-3 w-3 shrink-0 opacity-60"
             xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +82,7 @@
       {/snippet}
     </DropdownMenuTrigger>
     <DropdownMenuContent align="start" class="w-48">
-      <DropdownMenuLabel class="text-xs text-muted-foreground">Switch group</DropdownMenuLabel>
+      <DropdownMenuLabel class="text-xs text-muted-foreground">Switch league</DropdownMenuLabel>
       <DropdownMenuSeparator />
       {#each memberships as membership (membership.groupId)}
         <DropdownMenuItem

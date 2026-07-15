@@ -136,11 +136,11 @@
       });
       const body = (await res.json().catch(() => ({}))) as { reason?: string };
       if (!res.ok) {
-        renameMsg = { kind: 'error', text: body.reason ?? 'Could not rename group.' };
+        renameMsg = { kind: 'error', text: body.reason ?? 'Could not rename league.' };
         return;
       }
       renaming = false;
-      renameMsg = { kind: 'success', text: 'Group renamed.' };
+      renameMsg = { kind: 'success', text: 'League renamed.' };
       await queryClient.invalidateQueries({ queryKey: invalidationKeys.group(pageData.groupId) });
       newGroupName = data.group.name;
     } finally {
@@ -229,7 +229,7 @@
       });
       const body = (await res.json().catch(() => ({}))) as { reason?: string };
       if (!res.ok) {
-        leaveMsg = { kind: 'error', text: body.reason ?? 'Could not leave group.' };
+        leaveMsg = { kind: 'error', text: body.reason ?? 'Could not leave league.' };
         return;
       }
       // After leaving, redirect to join page (hooks.server.ts will redirect).
@@ -381,10 +381,10 @@
 {#snippet errorState()}
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Couldn't load group</CardTitle>
+      <CardTitle class="text-xl font-bold">Couldn't load league</CardTitle>
     </CardHeader>
     <CardContent class="p-0 pt-2 text-sm text-muted-foreground">
-      Something went wrong loading this group. Refresh the page to try again.
+      Something went wrong loading this league. Refresh the page to try again.
     </CardContent>
   </Card>
 {/snippet}
@@ -400,7 +400,7 @@
       <CardTitle class="text-xl font-bold">Members</CardTitle>
     </CardHeader>
     <CardContent class="p-0 pt-2">
-      <ul class="space-y-3" aria-label="Group members">
+      <ul class="space-y-3" aria-label="League members">
         {#each data.members as member (member.userId)}
           {@const isSelf = member.userId === data.currentUserId}
           {@const isOnlyCommissioner = member.role === 'commissioner' && commissionerCount === 1}
@@ -443,7 +443,7 @@
                   size="sm"
                   disabled={memberBusy === member.userId || isOnlyCommissioner}
                   onclick={() => {
-                    if (confirm(`Remove ${member.displayName} from the group?`)) {
+                    if (confirm(`Remove ${member.displayName} from the league?`)) {
                       void removeMember(member.userId);
                     }
                   }}
@@ -496,31 +496,31 @@
     </CardContent>
   </Card>
 
-  <!-- Leave group -->
+  <!-- Leave league -->
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Leave group</CardTitle>
+      <CardTitle class="text-xl font-bold">Leave league</CardTitle>
     </CardHeader>
     <CardContent class="space-y-3 p-0 pt-2">
       {#if isLastCommissioner}
         <p class="text-sm text-muted-foreground">
           You are the only commissioner. Promote another member to commissioner before leaving.
         </p>
-        <Button variant="destructive" disabled>Leave group</Button>
+        <Button variant="destructive" disabled>Leave league</Button>
       {:else}
         <p class="text-sm text-muted-foreground">
-          You will lose access to this group's picks and standings.
+          You will lose access to this league's picks and standings.
         </p>
         <Button
           variant="destructive"
           disabled={leaveBusy}
           onclick={() => {
-            if (confirm('Leave this group? You will lose access to picks and standings.')) {
+            if (confirm('Leave this league? You will lose access to picks and standings.')) {
               void leaveGroup();
             }
           }}
         >
-          {leaveBusy ? 'Leaving…' : 'Leave group'}
+          {leaveBusy ? 'Leaving…' : 'Leave league'}
         </Button>
       {/if}
 
@@ -539,7 +539,7 @@
   <!-- Group name / rename -->
   <Card class="p-6">
     <CardHeader class="mb-2 p-0">
-      <CardTitle class="text-xl font-bold">Group name</CardTitle>
+      <CardTitle class="text-xl font-bold">League name</CardTitle>
     </CardHeader>
     <CardContent class="space-y-4 p-0 pt-2">
       {#if !renaming}
@@ -566,12 +566,12 @@
           }}
         >
           <div class="space-y-1">
-            <Label for="group-name">Group name</Label>
+            <Label for="group-name">League name</Label>
             <Input
               id="group-name"
               bind:value={newGroupName}
               maxlength={60}
-              placeholder="Group name"
+              placeholder="League name"
               disabled={renameBusy}
             />
           </div>
@@ -797,7 +797,7 @@
     </CardHeader>
     <CardContent class="space-y-5 p-0 pt-2">
       <p class="text-sm text-muted-foreground">
-        Control how the weekly AI recap reads for your group.
+        Control how the weekly AI recap reads for your league.
       </p>
       <form
         class="space-y-5"

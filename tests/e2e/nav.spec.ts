@@ -75,7 +75,7 @@ test('League honors live on /league, not /stats or /league/manage', async ({ pag
 
   await page.goto('/league/manage');
   await expect(page).toHaveURL(/\/league\/manage$/);
-  await expect(page.getByRole('list', { name: 'Group members' })).toBeVisible();
+  await expect(page.getByRole('list', { name: 'League members' })).toBeVisible();
   await expect(page.getByTestId('league-honors')).toHaveCount(0);
 
   await page.goto('/league');

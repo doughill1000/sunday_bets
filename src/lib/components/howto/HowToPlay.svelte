@@ -4,7 +4,7 @@
     <p class="text-muted-foreground">
       Each week you pick the side you think beats the spread in a handful of NFL games. Lock your
       picks before kickoff, then watch them grade as games finish. Picks you feel better about are
-      worth more points. You pick once and it counts in every group you belong to.
+      worth more points. You pick once and it counts in every league you belong to.
     </p>
   </section>
 
@@ -106,11 +106,11 @@
 
   <section>
     <h2 class="mb-2 text-xl font-semibold tracking-tight">Beyond the picks</h2>
-    <p class="mb-3 text-muted-foreground">There is more to a group than the weekly board.</p>
+    <p class="mb-3 text-muted-foreground">There is more to a league than the weekly board.</p>
     <ul class="list-disc space-y-1.5 pl-5 text-muted-foreground">
       <li>
-        <span class="font-medium text-foreground">Group</span> is where you find the standings, the member
-        list, and your group's Awards. The reigning champion wears a crown, past champions fill a trophy
+        <span class="font-medium text-foreground">League</span> is where you find the standings, the member
+        list, and your league's Awards. The reigning champion wears a crown, past champions fill a trophy
         case, last place takes the wooden spoon, and players earn title badges for how they play.
       </li>
       <li>
@@ -119,7 +119,7 @@
       </li>
       <li>
         <span class="font-medium text-foreground">Weekly recap</span> is a short, AI written rundown of
-        how the group's week went. It pops up once a week and lives on the group.
+        how the league's week went. It pops up once a week and lives on the league.
       </li>
     </ul>
   </section>
@@ -128,9 +128,9 @@
     <h2 class="mb-2 text-xl font-semibold tracking-tight">The leaderboard and house rules</h2>
     <p class="text-muted-foreground">
       Your weekly points roll up into a season total on the leaderboard, where you can see how you
-      stack up against the group. Your commish sets a few house rules, like which line your picks
+      stack up against the league. Your commish sets a few house rules, like which line your picks
       grade against and the occasional special week such as an unlimited All-In finale. Any twists
-      your group adds show up as you play.
+      your league adds show up as you play.
     </p>
   </section>
 </div>

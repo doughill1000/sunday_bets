@@ -47,7 +47,7 @@ function navToManage(page: Page) {
 }
 
 const statsHeading = (page: Page) => page.getByRole('heading', { name: 'Stats & history' });
-const groupMembers = (page: Page) => page.getByRole('list', { name: 'Group members' });
+const groupMembers = (page: Page) => page.getByRole('list', { name: 'League members' });
 
 test('cached read routes render across client navigation', { tag: '@smoke' }, async ({ page }) => {
   // One initial full load; everything after is client-side navigation.
