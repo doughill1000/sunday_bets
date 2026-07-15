@@ -8,7 +8,12 @@
 // unit test can import it client-side; only types cross the boundary and they are erased.
 import type { PickGame } from '$lib/types/games';
 import type { TeamSide, WeightCode } from '$lib/types/domain';
-import type { LeaderboardCachePayload, AllTimeLeaderboardPayload } from '$lib/query/types';
+import type {
+  LeaderboardCachePayload,
+  AllTimeLeaderboardPayload,
+  StatsCachePayload,
+  LeagueCachePayload
+} from '$lib/query/types';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
 import type { GroupMember } from '$lib/types/group';
 import type { GroupPickEntry } from '$lib/types/picks';
@@ -16,6 +21,7 @@ import type { LiveScoreEntry } from '$lib/live/types';
 import type { WeeklyLiveStanding } from '$lib/types/leaderboard';
 import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
 import type { RecapRow } from '$lib/server/db/queries/recaps';
+import type { SeasonWeeklyAwards } from '$lib/types/server/weeklyAwards';
 
 /**
  * How a demo live-week game reads on the frozen picks screen. The demo bakes a mid-game
@@ -110,4 +116,16 @@ export type DemoSnapshot = {
   };
   /** Recent weekly AI recaps for the completed season, newest first. */
   recaps: RecapRow[];
+  /**
+   * Every fully-graded scoring week's hardware plus the season shelf, identical shape to
+   * `getSeasonWeeklyAwards` (#669) — powers `WeeklyHardware` on the Week tab/recap and
+   * `SeasonShelf` on the recap.
+   */
+  weeklyAwards: SeasonWeeklyAwards;
+  /** The completed season's Stats payload, identical shape to `/api/stats` (#669). Aspirational
+   *  by design (ADR-0026 default): the demo Stats tab shows the persona as champion. */
+  stats: StatsCachePayload;
+  /** The live season's League/Market ATS payload, identical shape to `/api/league` (#669).
+   *  Group-independent, so it matches the live picks week rather than the completed season. */
+  market: LeagueCachePayload;
 };

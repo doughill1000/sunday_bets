@@ -20,6 +20,8 @@
     finalWeekUnlimitedAllin?: boolean;
     /** Season situational ATS lookup for the trend nugget; null when the user has it off. */
     trendLookup?: Map<string, LeagueSituationalRecord> | null;
+    /** Frozen/read-only mode (#669) — see `PicksBoard`'s `readonly` doc. */
+    readonly?: boolean;
   }
   let {
     game,
@@ -27,7 +29,8 @@
     initialized = false,
     isLastWeek = false,
     finalWeekUnlimitedAllin = true,
-    trendLookup = null
+    trendLookup = null,
+    readonly = false
   }: Props = $props();
   const picks = usePicksStore();
 
@@ -35,7 +38,7 @@
   const current = $derived(entry.selected ?? entry.lockedPick);
   const started = $derived(kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
-  const canChange = $derived(initialized && !started && !locked);
+  const canChange = $derived(!readonly && initialized && !started && !locked);
 
   // Undefined when no weight is chosen yet, so no chip looks pre-selected.
   const weightValue = $derived(current?.weight);
@@ -102,7 +105,9 @@
       {finalWeekUnlimitedAllin}
     />
 
-    <LockControls {game} {started} />
+    {#if !readonly}
+      <LockControls {game} {started} />
+    {/if}
 
     {#if started}
       <p class="mt-2 text-xs text-muted-foreground">Kickoff passed — picks locked.</p>

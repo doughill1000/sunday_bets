@@ -1,16 +1,18 @@
 <script lang="ts">
-  // Demo-only top chrome (#460): a "DEMO" wordmark + the mirrored surface nav (Picks →
-  // League → Wrapped → Recap, the "here's how you play → here's what it builds to" arc) +
-  // a persistent sign-up CTA. Replaces the authenticated AppHeader for the /demo route group.
-  // The League tab keeps the /demo/leaderboard route but mirrors the app's #561 label rename.
+  // Demo-only top chrome (#460): a "DEMO" wordmark + a nav that mirrors the real app's four
+  // first-class tabs (Picks · League · Stats · Market, #561/#669) + a persistent sign-up CTA.
+  // Replaces the authenticated AppHeader for the /demo route group. Wrapped and Recap are no
+  // longer permanent tabs here either — same as the real app, they're reached from within
+  // League (WrappedPromo, the honors card's Wrapped/recap links, WeeklyHardware's recap link),
+  // never a fifth door on the nav.
   import { page } from '$app/state';
   import DemoSignupCta from './DemoSignupCta.svelte';
 
   const links = [
     { href: '/demo', label: 'Picks', exact: true },
-    { href: '/demo/leaderboard', label: 'League', exact: false },
-    { href: '/demo/wrapped', label: 'Wrapped', exact: false },
-    { href: '/demo/recap', label: 'Recap', exact: false }
+    { href: '/demo/league', label: 'League', exact: false },
+    { href: '/demo/stats', label: 'Stats', exact: false },
+    { href: '/demo/market', label: 'Market', exact: false }
   ];
 
   function isActive(href: string, exact: boolean): boolean {

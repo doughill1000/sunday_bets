@@ -15,6 +15,7 @@
   import type { LeagueSituationalRecord } from '$lib/types/server/league';
   import type { PickEntry, GroupPickEntry, PickStatusBoardEntry } from '$lib/types/picks';
   import type { Database } from '$lib/types/supabase';
+  import type { LiveScoreEntry } from '$lib/live/types';
   import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
   import GameCard from './GameCard.svelte';
   import PicksSummaryBar from './PicksSummaryBar.svelte';
@@ -42,6 +43,16 @@
     membershipCount?: number;
     situational?: LeagueSituationalRecord[];
     showTrends?: boolean;
+    /** Frozen/read-only mode (#669, ADR-0026): every action control (pick, lock, unlock,
+     *  comment) stays inert and the live feed is never polled — used by the public demo, which
+     *  has no write path and serves only the committed snapshot. `frozenLiveScores` substitutes
+     *  for the live-scores query, and `committedGameIds` substitutes for the kickoff-vs-now split
+     *  (the demo's kickoff timestamps age past "now" in real wall-clock time, but the game's
+     *  frozen status must not). */
+    readonly?: boolean;
+    frozenLiveScores?: Record<string, LiveScoreEntry>;
+    frozenLiveFetchedAt?: string | null;
+    committedGameIds?: ReadonlySet<string>;
   }
   let {
     week = null,
@@ -57,7 +68,11 @@
     finalWeekUnlimitedAllin = true,
     membershipCount = 1,
     situational = [],
-    showTrends = false
+    showTrends = false,
+    readonly = false,
+    frozenLiveScores = {},
+    frozenLiveFetchedAt = null,
+    committedGameIds = new Set()
   }: Props = $props();
 
   // Index the season's situational ATS rows once; each GameCard looks up its two quadrants.
@@ -92,6 +107,10 @@
   let ticker: ReturnType<typeof setInterval>;
 
   onMount(() => {
+    // A frozen/readonly board never hydrates into an interactive state and needs no 1s
+    // ticker — its "now" is fixed at first render, and its committed/upcoming split comes
+    // from `committedGameIds`, not a live kickoff comparison (see `readonly` prop doc above).
+    if (readonly) return;
     initialized = true;
     ticker = setInterval(() => {
       now = Date.now();
@@ -106,12 +125,16 @@
 
   const upcoming = $derived(
     games
-      .filter((g) => !$picks[g.id]?.lockedPick && kickoffMs(g) > now)
+      .filter((g) =>
+        readonly ? !committedGameIds.has(g.id) : !$picks[g.id]?.lockedPick && kickoffMs(g) > now
+      )
       .sort((a, b) => kickoffMs(a) - kickoffMs(b))
   );
 
   const committed = $derived(
-    games.filter((g) => !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now)
+    games.filter((g) =>
+      readonly ? committedGameIds.has(g.id) : !!$picks[g.id]?.lockedPick || kickoffMs(g) <= now
+    )
   );
 
   // Live-derive the current user's "Who's picked" row from the local picks store so
@@ -145,8 +168,12 @@
   // the tab is visible (TanStack pauses `refetchInterval` on a backgrounded tab by default);
   // `refetchOnWindowFocus` fires one immediate refetch on refocus. Display-only — grading is
   // untouched. `['live-scores']` is not a shareable root, so it's never persisted.
-  const liveWindowActive = $derived(games.some((g) => isWithinLiveWindow(kickoffMs(g), now)));
+  const liveWindowActive = $derived(
+    !readonly && games.some((g) => isWithinLiveWindow(kickoffMs(g), now))
+  );
 
+  // Never polled in readonly mode (`enabled` stays false — no fetch is ever issued, per
+  // ADR-0026 §4's "zero per-visitor live calls"); the frozen scores come from the snapshot.
   const liveQuery = createQuery(() => ({
     queryKey: queryKeys.liveScores(),
     queryFn: () => fetchLiveScores(fetch),
@@ -157,13 +184,17 @@
     gcTime: 60_000
   }));
 
-  const liveScores = $derived(liveQuery.data?.scores ?? {});
-  const liveFetchedAt = $derived(liveQuery.data?.fetchedAt ?? null);
+  const liveScores = $derived(readonly ? frozenLiveScores : (liveQuery.data?.scores ?? {}));
+  const liveFetchedAt = $derived(
+    readonly ? frozenLiveFetchedAt : (liveQuery.data?.fetchedAt ?? null)
+  );
 
   // Stale once the honest data age crosses the threshold, or on an errored/never-arrived
   // fetch while a game is live — the board stops asserting a number and shows
   // "Stale · reconnecting". Recomputes on the 1s `now` tick, so the freshness caption is live.
+  // A frozen board is never stale — it has no live feed to lose.
   const liveStale = $derived.by(() => {
+    if (readonly) return false;
     if (!liveWindowActive) return false;
     if (liveQuery.isError) return true;
     if (!liveFetchedAt) return true;
@@ -245,6 +276,7 @@
             {isLastWeek}
             {finalWeekUnlimitedAllin}
             {trendLookup}
+            {readonly}
           />
         </div>
       {/each}
@@ -260,5 +292,6 @@
     {liveStale}
     {userId}
     {currentUserDisplayName}
+    {readonly}
   />
 {/if}

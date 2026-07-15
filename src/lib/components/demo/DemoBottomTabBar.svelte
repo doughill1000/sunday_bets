@@ -1,19 +1,18 @@
 <script lang="ts">
-  // Mobile bottom tab bar for the /demo route group (#460), mirroring the authenticated
-  // app's BottomTabBar so the demo navigates the same way the real product does — fixed
-  // icon tabs instead of a horizontally-scrolling top nav you have to slide to read.
+  // Mobile bottom tab bar for the /demo route group (#460), mirroring the authenticated app's
+  // BottomTabBar — same four tabs (Picks · League · Stats · Market), same order, same icons
+  // (#669) — so the demo navigates exactly the way the real product does.
   import { page } from '$app/state';
   import ListChecks from '@lucide/svelte/icons/list-checks';
   import Trophy from '@lucide/svelte/icons/trophy';
-  import Sparkles from '@lucide/svelte/icons/sparkles';
-  import Newspaper from '@lucide/svelte/icons/newspaper';
+  import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
+  import TrendingUp from '@lucide/svelte/icons/trending-up';
 
   const tabs = [
     { href: '/demo', label: 'Picks', exact: true, Icon: ListChecks },
-    // Keeps the /demo/leaderboard route but mirrors the app's #561 "Leaderboard" → "League" rename.
-    { href: '/demo/leaderboard', label: 'League', exact: false, Icon: Trophy },
-    { href: '/demo/wrapped', label: 'Wrapped', exact: false, Icon: Sparkles },
-    { href: '/demo/recap', label: 'Recap', exact: false, Icon: Newspaper }
+    { href: '/demo/league', label: 'League', exact: false, Icon: Trophy },
+    { href: '/demo/stats', label: 'Stats', exact: false, Icon: BarChart2 },
+    { href: '/demo/market', label: 'Market', exact: false, Icon: TrendingUp }
   ];
 
   function isActive(href: string, exact: boolean): boolean {

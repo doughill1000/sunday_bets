@@ -23,19 +23,11 @@
     CardTitle
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-  } from '$lib/components/ui/table';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import UserAvatar from '$lib/components/UserAvatar.svelte';
   import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
   import WeekNavigator from '$lib/components/leaderboard/WeekNavigator.svelte';
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
+  import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
@@ -45,8 +37,6 @@
   import { weekLabel } from '$lib/utils/weekLabel';
   import { hasGradedWeek, rankMovements } from '$lib/utils/leaderboardTrend';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
-  import ArrowUp from '@lucide/svelte/icons/arrow-up';
-  import ArrowDown from '@lucide/svelte/icons/arrow-down';
   import Users from '@lucide/svelte/icons/users';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -273,141 +263,6 @@
   </Card>
 {/snippet}
 
-<!-- Rank movement vs the previous graded week (#561). `delta` is previousRank − currentRank, so
-     positive = climbed. Absent (undefined) or 0 renders a neutral dash; direction is conveyed by
-     colour + icon and spelled out in the aria-label for screen readers. -->
-{#snippet movement(delta: number | undefined)}
-  {#if delta != null && delta > 0}
-    <span
-      class="flex items-center gap-0.5 text-[10px] font-medium text-success"
-      data-testid="rank-movement"
-      aria-label="up {delta} from last week"
-    >
-      <ArrowUp class="size-2.5" aria-hidden="true" />{delta}
-    </span>
-  {:else if delta != null && delta < 0}
-    <span
-      class="flex items-center gap-0.5 text-[10px] font-medium text-destructive"
-      data-testid="rank-movement"
-      aria-label="down {-delta} from last week"
-    >
-      <ArrowDown class="size-2.5" aria-hidden="true" />{-delta}
-    </span>
-  {:else}
-    <span
-      class="text-[10px] text-muted-foreground"
-      data-testid="rank-movement"
-      aria-label="no rank change from last week">—</span
-    >
-  {/if}
-{/snippet}
-
-<!-- One standings table for both windows (season + All-time), which differ only by title,
-     footnote copy, testid, whether the champion crown shows, and whether rank movement renders
-     (season only) — so they no longer diverge as two hand-copied blocks. `rows` accepts either
-     payload's entries (shared record fields); `movements` is null for the All-time window. -->
-{#snippet standingsTableCard(
-  rows: Array<{
-    user_id: string;
-    display_name: string;
-    avatar_key: string | null;
-    wins: number;
-    losses: number;
-    pushes: number;
-    missed: number;
-    total_points: number;
-    rank: number;
-  }>,
-  title: string,
-  showDropFootnote: boolean,
-  dropCopy: string,
-  tableTestid: string,
-  champion: string | null,
-  movementsByUser: Map<string, number> | null
-)}
-  <Card class="overflow-x-auto">
-    <CardHeader>
-      <CardTitle>{title}</CardTitle>
-    </CardHeader>
-    <CardContent class="px-3 sm:px-6">
-      <Table data-testid={tableTestid}>
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-12 text-center">#</TableHead>
-            <TableHead>Player</TableHead>
-            <!-- Record (W-L-P) rides on a muted line under each name rather than its own column,
-                 so long names keep the full column width and never push the Total column off-screen
-                 at 390px. Rank movement rides inside the existing "#" cell rather than adding a
-                 column. -->
-            <TableHead class="text-right">Total</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each rows as r (r.user_id)}
-            {@const isYou = r.user_id === data.currentUserId}
-            {@const isFirst = r.rank === 1}
-            {@const isChampion = champion != null && r.user_id === champion}
-            <TableRow
-              class={isYou ? 'bg-primary/10 font-semibold' : isFirst ? 'bg-muted/40' : undefined}
-            >
-              <TableCell class="text-center">
-                <div class="flex flex-col items-center leading-tight">
-                  {#if isFirst}
-                    <span class="text-base" aria-label="rank 1">🏆</span>
-                  {:else}
-                    <span class="font-semibold tabular-nums">{r.rank}</span>
-                  {/if}
-                  {#if movementsByUser != null}
-                    {@render movement(movementsByUser.get(r.user_id))}
-                  {/if}
-                </div>
-              </TableCell>
-              <!-- max-w-0 makes this the flexible column: with the table's w-full it absorbs the
-                   leftover width instead of expanding to the (nowrap) name, and the inner truncate
-                   keeps a long name from pushing Total off-screen. The record (W-L-P) sits on a
-                   muted second line under the name so it stays visible without its own column. -->
-              <TableCell class="max-w-0">
-                <div class="flex min-w-0 items-center gap-2">
-                  <UserAvatar
-                    avatarKey={r.avatar_key ?? null}
-                    displayName={r.display_name}
-                    size="xs"
-                    champion={isChampion}
-                  />
-                  <div class="min-w-0 leading-tight">
-                    <div class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</div>
-                    <div class="text-xs font-normal tabular-nums text-muted-foreground">
-                      {r.wins}-{r.losses}-{r.pushes}
-                    </div>
-                    <!-- The Commissioner marker (#660) gets its own line rather than sitting beside
-                         the name or the record. `max-w-0` above shrinks this cell to its minimum so
-                         the Total column can never be pushed off 390px — which leaves ~115px here,
-                         too little to share: beside the name it truncated the name to two
-                         characters, and appended to the record ("0-0-0 · Commissioner") it
-                         truncated itself. Alone on a line it fits whole, and only commissioner
-                         rows pay the extra height. -->
-                    {#if commissionerIds.has(r.user_id)}
-                      <div class="truncate text-xs font-normal text-muted-foreground">
-                        Commissioner
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell class="text-right font-semibold tabular-nums">{r.total_points}</TableCell>
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Table>
-      {#if showDropFootnote}
-        <p class="mt-3 text-xs text-muted-foreground" data-testid="drop-worst-week-footnote">
-          {dropCopy}
-        </p>
-      {/if}
-    </CardContent>
-  </Card>
-{/snippet}
-
 <!-- The League home (#561, re-contained by #631): two self-contained tabs where the tab you're on
      fully governs what's on screen. Only the heading, the Manage action, and the seasonal Wrapped
      promo render outside the tab group — honors and the manage card used to sit after `</Tabs>`
@@ -522,15 +377,15 @@
                  sibling card INSIDE the Standings panel, never outside the tab group and never a
                  fourth column on the three-column table (#631). -->
             <div class="space-y-6">
-              {@render standingsTableCard(
-                allTime.totals,
-                'All-time standings',
-                allTime.dropActive,
-                "Total drops each player's lowest week per season. W-L-P count every week.",
-                'alltime-table',
-                null,
-                null
-              )}
+              <StandingsTable
+                rows={allTime.totals}
+                title="All-time standings"
+                currentUserId={data.currentUserId}
+                showDropFootnote={allTime.dropActive}
+                dropCopy="Total drops each player's lowest week per season. W-L-P count every week."
+                tableTestid="alltime-table"
+                {commissionerIds}
+              />
               <!-- Nobody qualified yet is a legitimate state, not an error: render nothing rather
                    than a card of dashes (ADR-0032 §5 — no number before the gate). -->
               {#if hasRatedMember(allTime.ladder)}
@@ -563,15 +418,17 @@
                    "The race" tells the story below it. The table is always present; the race renders
                    only once a week is graded (the trend is season-scoped), so a pre-grading season
                    shows the table alone. -->
-              {@render standingsTableCard(
-                data.totals,
-                `${data.seasonYear} standings`,
-                data.dropActive,
-                "Total drops each player's lowest week. W-L-P count every week.",
-                'standings-table',
-                championUserId,
-                movements
-              )}
+              <StandingsTable
+                rows={data.totals}
+                title="{data.seasonYear} standings"
+                currentUserId={data.currentUserId}
+                showDropFootnote={data.dropActive}
+                dropCopy="Total drops each player's lowest week. W-L-P count every week."
+                tableTestid="standings-table"
+                champion={championUserId}
+                movementsByUser={movements}
+                {commissionerIds}
+              />
               {#if hasGradedWeek(pageData.trend ?? [])}
                 <Card data-testid="season-race">
                   <CardHeader>

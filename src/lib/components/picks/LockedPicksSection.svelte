@@ -31,6 +31,9 @@
     liveStale?: boolean;
     userId?: string | null;
     currentUserDisplayName?: string | null;
+    /** Frozen/read-only mode (#669) — see `PicksBoard`'s `readonly` doc; hides the Unlock
+     *  action, which would otherwise call the real unlock RPC. */
+    readonly?: boolean;
   }
   let {
     games,
@@ -40,7 +43,8 @@
     liveScores = {},
     liveStale = false,
     userId = null,
-    currentUserDisplayName = null
+    currentUserDisplayName = null,
+    readonly = false
   }: Props = $props();
   const picks = usePicksStore();
 
@@ -188,13 +192,15 @@
                 <span in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}>
                   <Badge variant="secondary">🔒 Locked</Badge>
                 </span>
-                <button
-                  class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  data-testid="unlock-pick"
-                  onclick={() => onEdit(g)}
-                >
-                  🔓 Unlock
-                </button>
+                {#if !readonly}
+                  <button
+                    class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    data-testid="unlock-pick"
+                    onclick={() => onEdit(g)}
+                  >
+                    🔓 Unlock
+                  </button>
+                {/if}
               {/if}
             </div>
           </div>
