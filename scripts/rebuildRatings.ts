@@ -17,29 +17,21 @@
  * Required env (in the chosen --env file): PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE
  * (service-role key — this bypasses RLS, same as the grading path).
  *
- * Why this doesn't just `import { rebuildPlayerRatings } from '../src/lib/server/rating/rebuild'`:
- * rebuild.ts's default client parameter (`= supabaseService`) statically imports
- * $lib/supabase/service, which statically imports $env/static/public and $env/dynamic/private —
- * SvelteKit virtual modules that only exist inside the Vite/SvelteKit plugin pipeline. Confirmed
- * empirically: a plain `tsx`/`node --import tsx` import of rebuild.ts fails immediately with
- * `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '$env'` — the same failure
- * supabase/scripts/demo-snapshot/index.ts's header comment warns about for the same reason
- * ("the real read-model ... layer ... imports $env and so can't be imported here"). rebuild.ts
- * itself is otherwise environment-agnostic and out of scope for this change, so rather than
- * editing it, this script loads it through Vite's own programmatic SSR module runner
- * (`createServer` + `ssrLoadModule`, middleware-mode, no HTTP server actually bound) — the same
- * mechanism SvelteKit's dev server and vitest already use to resolve `$env/*`. The rebuild always
+ * A plain `import { rebuildPlayerRatings } from '../src/lib/server/rating/rebuild'` now works
+ * directly (issue #619): rebuild.ts's client parameter is required, not a `= supabaseService`
+ * default, so the module carries no static import of `$lib/supabase/service` — and therefore no
+ * transitive `$env/*` SvelteKit-virtual-module dependency — at all. This used to fail with
+ * `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '$env'` under plain `tsx`, requiring a Vite
+ * SSR module-loading workaround; that workaround is gone along with the cause. The rebuild always
  * runs against the client THIS script constructs and passes in explicitly (mirroring
  * supabase/scripts/cloneDb.ts and provision-users.ts's env-loading/client-construction
- * convention), so rebuild.ts's own `supabaseService` default is never touched or required to work.
+ * convention).
  */
 import dotenv from 'dotenv';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
-import { createServer } from 'vite';
 import type { Database } from '../src/lib/types/supabase';
-import type { rebuildPlayerRatings as RebuildPlayerRatingsFn } from '../src/lib/server/rating/rebuild';
+import { rebuildPlayerRatings } from '../src/lib/server/rating/rebuild';
 
 const arg = (prefix: string) =>
   process.argv.find((a) => a.startsWith(prefix))?.slice(prefix.length);
@@ -68,30 +60,14 @@ async function main(): Promise<void> {
     auth: { autoRefreshToken: false, persistSession: false }
   });
 
-  // Load rebuild.ts through Vite's SSR module graph (not a static import) — see the file header
-  // for why. logLevel is turned down so this stays a quiet, focused CLI tool.
-  const server = await createServer({
-    configFile: fileURLToPath(new URL('../vite.config.ts', import.meta.url)),
-    server: { middlewareMode: true },
-    appType: 'custom',
-    logLevel: 'warn'
-  });
-
   let failed = false;
-  try {
-    const mod = (await server.ssrLoadModule('/src/lib/server/rating/rebuild.ts')) as {
-      rebuildPlayerRatings: typeof RebuildPlayerRatingsFn;
-    };
-    console.log('Rebuilding public.player_ratings…');
-    await mod.rebuildPlayerRatings(client, {
-      onError: (err) => {
-        failed = true;
-        console.error('rebuildPlayerRatings reported an error:', err);
-      }
-    });
-  } finally {
-    await server.close();
-  }
+  console.log('Rebuilding public.player_ratings…');
+  await rebuildPlayerRatings(client, {
+    onError: (err) => {
+      failed = true;
+      console.error('rebuildPlayerRatings reported an error:', err);
+    }
+  });
 
   const { count, error: countError } = await client
     .from('player_ratings')

@@ -10,6 +10,7 @@
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import postgres from 'postgres';
 import { createServiceClient } from './_auth';
 import { ensureAuthUsers, deleteAuthUsers, ensureGroup, ensureMembership } from './fixtures/db';
 import { rebuildPlayerRatings } from '../../src/lib/server/rating/rebuild';
@@ -17,6 +18,8 @@ import { MIN_QUALIFIED_DECISIONS, RATING_PAR } from '../../src/lib/domain/rating
 import type { TablesInsert } from '../../src/lib/types/supabase';
 
 const admin = createServiceClient();
+const LOCAL_DB_URL =
+  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 
 const PR_SEASON_YEAR = 2087;
 const PR_GROUP_ID = '00000000-0000-4000-8000-000000002087';
@@ -263,5 +266,72 @@ describe('player_ratings read model (#361, ADR-0032 v2)', () => {
       .eq('group_id', OTHER_GROUP_ID);
     expect(error).toBeNull();
     expect(data).toHaveLength(0);
+  });
+});
+
+// Atomic rebuild under real concurrency (#619, ADR-0032 §8 follow-up). Two overlapping full
+// rebuilds against real Postgres — the vitest-mocked interleaving rebuild.test.ts used to exercise
+// (#622's regression) is gone now that upsert+prune is one RPC call; what's left to prove can only
+// be proven against a real DB with two real connections.
+describe('atomic rebuild under concurrency (#619)', () => {
+  test('two real concurrent rebuilds against identical inputs never lose rows', async () => {
+    // Both calls fold the SAME settled decisions (nothing changes between them), so both write
+    // an identical row set — only the winning call's computed_at stamp should remain, and the
+    // full set of players (Alice + Bob-under-gate has no row, so just Alice) survives regardless
+    // of which call's transaction commits last.
+    const [a, b] = await Promise.allSettled([
+      rebuildPlayerRatings(admin),
+      rebuildPlayerRatings(admin)
+    ]);
+    expect(a.status).toBe('fulfilled');
+    expect(b.status).toBe('fulfilled');
+
+    const { data, error } = await admin
+      .from('player_ratings')
+      .select('user_id, rating')
+      .eq('group_id', PR_GROUP_ID)
+      .eq('user_id', ALICE_ID)
+      .single();
+    expect(error).toBeNull();
+    expect(data!.rating).not.toBeNull();
+  });
+
+  test('the RPC serializes on its own advisory lock: a concurrent caller blocks until the holder commits', async () => {
+    // Prove the mechanism directly rather than trying to force the upsert/prune race: acquire the
+    // exact advisory lock key _rebuild_player_ratings takes (hashtext('player_ratings_rebuild'))
+    // in one held-open transaction, then call the real RPC from a second connection and confirm it
+    // stays pending until the first transaction releases the lock. If a future change dropped the
+    // lock from the function, this call would resolve immediately instead of staying pending.
+    const holder = postgres(LOCAL_DB_URL);
+    const caller = postgres(LOCAL_DB_URL);
+    try {
+      let releaseHold!: () => void;
+      const held = new Promise<void>((resolve) => (releaseHold = resolve));
+
+      const holderTx = holder.begin(async (tx) => {
+        await tx`select pg_advisory_xact_lock(hashtext('player_ratings_rebuild'))`;
+        await held;
+      });
+      // Give the holder a moment to actually acquire the lock before racing the caller.
+      await new Promise((r) => setTimeout(r, 50));
+
+      const blockedCall = caller`
+        select public._rebuild_player_ratings('[]'::jsonb, now())
+      `;
+      const raceResult = await Promise.race([
+        blockedCall.then(() => 'resolved' as const),
+        new Promise<'still-pending'>((r) => setTimeout(() => r('still-pending'), 300))
+      ]);
+      expect(raceResult).toBe('still-pending');
+
+      releaseHold();
+      await holderTx;
+      await blockedCall; // now unblocks
+    } finally {
+      await holder.end();
+      await caller.end();
+      // The blocking call above ran with an empty rows array and now() — restore real ratings.
+      await rebuildPlayerRatings(admin);
+    }
   });
 });

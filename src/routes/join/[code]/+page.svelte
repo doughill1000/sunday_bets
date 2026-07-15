@@ -15,7 +15,7 @@
         You're invited{data.groupName ? ` to ${data.groupName}` : ''}
       </h1>
       <p class="text-muted-foreground">
-        Click below to join{data.groupName ? ` ${data.groupName}` : ' the group'} and start picking.
+        Click below to join{data.groupName ? ` ${data.groupName}` : ' the league'} and start picking.
       </p>
     </div>
 
@@ -36,7 +36,7 @@
       }}
     >
       <Button type="submit" disabled={submitting} data-testid="invite-join-button">
-        {submitting ? 'Joining…' : `Join${data.groupName ? ` ${data.groupName}` : ' group'}`}
+        {submitting ? 'Joining…' : `Join${data.groupName ? ` ${data.groupName}` : ' league'}`}
       </Button>
     </form>
   {:else if data.status === 'invalid'}
@@ -49,7 +49,7 @@
   {:else if data.status === 'revoked'}
     <div class="space-y-2" data-testid="invite-revoked-view">
       <h1 class="text-2xl font-bold">Invite revoked</h1>
-      <p class="text-muted-foreground">This invite has been revoked by the group commissioner.</p>
+      <p class="text-muted-foreground">This invite has been revoked by the league commissioner.</p>
     </div>
   {:else if data.status === 'expired'}
     <div class="space-y-2" data-testid="invite-expired-view">
