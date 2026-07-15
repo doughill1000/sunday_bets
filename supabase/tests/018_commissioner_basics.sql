@@ -11,7 +11,7 @@
 
 BEGIN;
 
-SELECT plan(20);
+SELECT plan(22);
 
 -- ── Schema sanity checks ──────────────────────────────────────────────────────
 
@@ -183,6 +183,24 @@ SELECT results_eq(
        AND created_by = tests.get_supabase_uid('cb_commissioner') $$,
   $$ VALUES (1::bigint) $$,
   'mint_invite: one invite row created'
+);
+
+-- ── 9b. mint_invite: a second default-shaped mint reuses the same invite ─────
+
+SELECT results_eq(
+  $$ SELECT public.mint_invite('00000000-0000-4151-8000-000000000001') $$,
+  $$ SELECT code FROM public.group_invites
+     WHERE group_id   = '00000000-0000-4151-8000-000000000001'
+       AND created_by = tests.get_supabase_uid('cb_commissioner') $$,
+  'mint_invite: repeat default mint returns the existing invite code'
+);
+
+SELECT results_eq(
+  $$ SELECT count(*) FROM public.group_invites
+     WHERE group_id   = '00000000-0000-4151-8000-000000000001'
+       AND created_by = tests.get_supabase_uid('cb_commissioner') $$,
+  $$ VALUES (1::bigint) $$,
+  'mint_invite: repeat default mint did not create a second row'
 );
 
 -- ── 10. leave_group: plain member can leave ──────────────────────────────────

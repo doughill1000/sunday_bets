@@ -468,10 +468,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/groups/mint_invite.sql": {
-    "hash": "42c029618f91446146cdc3da1192c1e3cecd0d4cc489a0376da44cf79358421d",
+    "hash": "c97f8545175d647cf0a2f1337218fe48d0aebc78a7d1135aec6b326c39f35dd0",
     "signature": "public.mint_invite(uuid, integer, timestamptz)",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260715000748_mint_invite_reuse_default.sql",
+    "migrationHash": "0cd65c451f399a1694ee8158ed50be85ff5a5ab0e8207560ba782f504eceac21"
   },
   "functions/groups/preview_invite.sql": {
     "hash": "80b787d511162cb395dcd7aeeb44541e186fd9213ca33cb48e8da6007ab0254f",

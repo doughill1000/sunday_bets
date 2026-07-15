@@ -49,8 +49,9 @@ detail lives in each `.claude/skills/<name>/SKILL.md`, so this is a map, not a s
 **Standalone utilities** (not tied to one issue): `ci-triage` (diagnose a red check) ·
 `dependabot-sweep` (clear dependency PRs) · `cleanup-worktrees` (remove merged
 worktrees) · `pattern-audit` (grade repo patterns → `docs/audits/`) · `season-ops`
-(prod cron / odds-quota / matview health) · `refresh-demo-snapshot` (regenerate the
-`/demo` fixture).
+(prod cron / odds-quota / matview health) · `db-deep-scan` (deep read-only
+grading-correctness / RLS / SECURITY DEFINER audit, pre-release) ·
+`refresh-demo-snapshot` (regenerate the `/demo` fixture).
 
 > **TEMPORARY — app not in active use (as of 2026-06-26).** There are no live users
 > right now, so DB migrations and updates (including against prod) need not coordinate
