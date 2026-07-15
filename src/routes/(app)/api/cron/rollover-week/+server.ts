@@ -10,8 +10,7 @@ type WeekStatus =
       week_number: number;
       total_games: number;
       final_games: number;
-      total_picks: number;
-      settled_picks: number;
+      unsettled_final_games: number;
     };
 
 export const POST: RequestHandler = async (event) => {
@@ -26,7 +25,7 @@ export const POST: RequestHandler = async (event) => {
       const s = status as Exclude<WeekStatus, { reason: string }>;
       throw new Error(
         `Week ${s.week_number} incomplete: ${s.final_games}/${s.total_games} games final, ` +
-          `${s.settled_picks}/${s.total_picks} picks settled`
+          `${s.unsettled_final_games} final game(s) still unsettled`
       );
     }
     return status;
