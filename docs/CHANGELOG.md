@@ -68,6 +68,58 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.7.0 — 2026-07-14
+
+- **PR #NNN** Release v3.7.0.
+- **#548** Rebuild RecapFlash/WrappedFlash on the vendored Dialog/Sheet — replaces the two
+  hand-rolled overlays with real modal semantics (focus trap, Escape, no suppressed a11y
+  warnings) and fixes the vendored dialog's edge-to-edge width at 390px. Wrapped's seen-once
+  state moves server-side (mirroring RecapFlash's `#302` marker), which also fixes `/wrapped`
+  double-rendering itself under the old localStorage flash. adr: ADR-0030 · tables:
+  `wrapped_seen` · routes: `/api/wrapped/mark-seen` · files: `RecapFlash.svelte` ·
+  `WrappedFlash.svelte` · `dialog-content.svelte`
+- **#647** Cut four season badges that measured something other than their label — The
+  Homer (a trait the format can't express), The Nemesis (cover rate in disguise), Big Game
+  Hunter (conviction volume, not conviction that paid) and Hot Hand (luck). The catalog
+  drops 19 → 15. files: `src/lib/domain/badges.ts` · `src/lib/types/honors.ts` ·
+  ADR-0035 (amended: badges must be able to say "nobody"; where does your zero come from;
+  one measure, one surface)
+- **#648** The verdict badges get the bar they shipped without, so each can honestly
+  resolve to nobody — The Whale now requires a _winning_ All-In record, The Choker becomes
+  a shutout milestone, The Oracle and The Lemming get rate bars, and The Lemming gets a
+  guard scaled off its own denominator. The Lemming no longer crowns a player with a
+  winning record. files: `src/lib/domain/badges.ts` · ADR-0035 §2
+- **#649** Both lean axes take a league-mean zero, measured against the room that season
+  rather than an invented absolute — Lone Wolf / The Sheep come out of the dark on fade
+  rate, and Dog Lover stops firing every single season. files: `src/lib/domain/badges.ts` ·
+  `src/lib/components/group/LeagueHonors.svelte` · ADR-0035 §4
+- **#651** The Grinder becomes an attendance milestone ("missed nothing all season",
+  gated to seasons that recorded attendance) and tied weeks credit nobody, so the alphabet
+  no longer decides either. files: `src/lib/domain/badges.ts` ·
+  `src/lib/server/recap/badgeFlavorFacts.ts` · ADR-0035 §4
+- **#650** Root-caused a 2025 game with 5 `pick_settlement` rows instead of 6: the
+  pre-#447 missed-penalty pass excluded the app admin via a `users.role='player'` filter,
+  so the one 2025 game the admin skipped got no `missed` row. Adds a mechanism-agnostic
+  completeness guard — `supabase/tests/055_pick_settlement_completeness.sql` — asserting
+  every already-graded scoring game has one settlement row per active member, excluding
+  `grading_locked` seasons.
+- **PR #653** Week tab selector simplified to a plain dropdown — removes the prev/next
+  chevron buttons from `WeekNavigator`, leaving the week-jump dropdown as the single
+  control. files: `WeekNavigator.svelte`
+- **PR #656** `users.role` knowledge-pack warning — documents that `role` is
+  app-access, not league participation, after two independent prod defects (#430 chain,
+  #650/#654) filtered a grading/scoring query on it instead of `group_memberships`.
+  files: `docs/agent-context/database.md` · `docs/agent-context/auth.md`
+- **PR #662** Invites card cleanup — the invite row now stacks on mobile instead of the
+  code overlapping the action buttons, Share is the primary action (Copy demoted to
+  secondary), and `mint_invite` reuses an existing unlimited/no-expiry invite instead of
+  minting a new row every click, so the Active invites list no longer piles up with
+  duplicates. files: `league/manage/+page.svelte` · `mint_invite.sql`
+- **PR #663** Add a `db-deep-scan` skill for deep, read-only pre-release database
+  audits — grading-correctness recomputation, per-policy RLS review, per-function
+  SECURITY DEFINER audit, full referential sweep, DB-size/backup/auth posture.
+  Complements `season-ops`. files: `.claude/skills/db-deep-scan/SKILL.md`
+
 ## v3.6.0 — 2026-07-14
 
 - **PR #645** Release v3.6.0.
