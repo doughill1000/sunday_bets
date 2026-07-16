@@ -33,6 +33,11 @@ governing ADR already settled. Read those, then interview around them.
    - anything whose answer changes sequencing or **removes/adds a dependency**.
      For everything a default or the ADR already settles, pick the obvious option and just
      state it — don't ask.
+   - If a gray area is really a **value/on-brand judgment call** rather than a UX/sequencing
+     detail — a sub-scope item whose worth is genuinely in doubt ("is this piece even worth
+     building?", "does this drift off-brand?") — that's a job for `pressure-test`, not this
+     interview. Run it on that slice before asking Doug to decide by feel; fold the verdict
+     into the essential/nice-to-have table in step 5 instead of treating it as an open question.
 4. **Interview with `AskUserQuestion`.** Lead with the highest-leverage decisions. Give a
    recommendation (first option, "(Recommended)"). Use `preview` ASCII mockups for
    layout/IA/UI choices so Doug can compare side by side. When the open questions are
@@ -63,5 +68,6 @@ governing ADR already settled. Read those, then interview around them.
 
 - `docs/WORKFLOW.md` §"From idea to Ready" and §"ADR timing"
 - Sibling skills: `issue-author` (creates the issue), `design-study` (before/after mockups
-  when the open questions are visual), `new-adr` (if a decision needs one), `start-issue`
-  (begins implementation).
+  when the open questions are visual), `new-adr` (if a decision needs one), `pressure-test`
+  (settle a value/on-brand gray area against `docs/PRODUCT.md` instead of asking Doug by
+  feel), `start-issue` (begins implementation).
