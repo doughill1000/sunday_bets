@@ -135,3 +135,33 @@ export function formatRecapBody(t: RecapTally): string {
 
   return `${record} · ${points}. Tap for standings.`;
 }
+
+/**
+ * Push body for the "recap ready" alert: the AI recap's opening sentence, so the
+ * lock screen shows a real, quotable beat instead of a generic "it dropped". Pure
+ * so it can be unit-tested without a database (mirrors formatRecapBody). The weekly
+ * voice is prompted to open with a self-contained hook, so sentence one is the
+ * teaser; this isolates and length-caps it.
+ */
+export function recapPushBody(prose: string): string {
+  const text = (prose ?? '').trim();
+  // Defensive: prose is NOT NULL and always generated, but never ship an empty push.
+  if (!text) return 'Your league’s AI recap just dropped.';
+
+  // First sentence: up to the first . ! or ? that is followed by whitespace or the
+  // end of the text. Requiring the trailing space keeps decimals ("-3.5") and
+  // percentages intact instead of splitting mid-number.
+  const match = text.match(/[.!?](?=\s|$)/);
+  let sentence = (match?.index != null ? text.slice(0, match.index + 1) : text).trim();
+
+  // Backstop so an unusually long opener stays lock-screen-friendly.
+  const MAX = 150;
+  if (sentence.length > MAX) {
+    sentence =
+      sentence
+        .slice(0, MAX)
+        .replace(/\s+\S*$/, '')
+        .trimEnd() + '…';
+  }
+  return sentence;
+}
