@@ -4,10 +4,11 @@
   // ladder (#637) became a second surface for the same verdict: the tier's loudness ladder is the
   // vocabulary, so it lives in one place rather than being hand-copied per surface.
   //
-  // Loudness mirrors the tiers: Hotshot (the namesake apex) earns the brass fill plus an ink ring
-  // so winning the top tier stands apart; Sharp the plain brass fill; Solid a quiet raised chip;
-  // Square a plain outline; Unrated a dashed outline, to read as "not yet a verdict". All colour is
-  // semantic tokens so it reads correctly under both themes (ADR-0027/0029) — no raw hex.
+  // Loudness mirrors the tiers: Hotshot (the namesake apex, the app's own name) earns the ember
+  // spark fill (#704) so it visibly outranks Sharp instead of wearing the identical brass; Sharp
+  // the plain brass fill; Solid a quiet raised chip; Square a plain outline; Unrated a dashed
+  // outline, to read as "not yet a verdict". All colour is semantic tokens so it reads correctly
+  // under both themes (ADR-0027/0029) — no raw hex.
   import { tierLabel, type RatingTier } from '$lib/domain/rating';
 
   let {
@@ -24,7 +25,8 @@
   } = $props();
 
   function tierClass(t: RatingTier | null): string {
-    if (t === 'hotshot') return 'bg-primary text-primary-foreground ring-2 ring-primary-ink/50';
+    if (t === 'hotshot')
+      return 'bg-ember text-primary-foreground shadow-[0_4px_14px_-6px_var(--ember)] ring-1 ring-ember/40';
     if (t === 'sharp') return 'bg-primary text-primary-foreground';
     if (t === 'solid') return 'border border-border bg-muted text-foreground';
     if (t === 'square') return 'border border-border text-muted-foreground';
