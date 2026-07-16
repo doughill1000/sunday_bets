@@ -64,6 +64,10 @@
 - Clicks on reactive controls can land before hydration — wrap in
   `await expect(async () => { ... }).toPass()` retry blocks.
 - Seeding must be idempotent.
+- **Commissioner invariant:** `E2E_USER` must remain its league's **only**
+  commissioner. If a test or seed promotes a second commissioner, the last-commissioner
+  guard spec in the `/league/manage` suite silently disarms (it early-returns instead
+  of failing) rather than catching the regression. From issue #660 / PR #668.
 
 The E2E suite is governed by five pillars. They exist because a red e2e run was
 historically ignorable (the workflow runs on every PR but the full suite is not a

@@ -14,7 +14,8 @@ The interview earns its keep on what the issue leaves **open** — not on decisi
 governing ADR already settled. Read those, then interview around them.
 
 > **Model & effort.** Scoping a complex, multi-decision issue is the judgment-heavy
-> stage — run it on **Opus with high thinking effort**. A skill can't switch the
+> stage — run it on the **heaviest available model (Opus-class or above — e.g.
+> Fable) with high thinking effort**. A skill can't switch the
 > session's model, so this is advisory: if the current session is on a lighter model,
 > the scope will be shallower than intended. Fast/mechanical issues don't need the
 > interview at all (skip straight to `start-issue`), so if you're here, assume the

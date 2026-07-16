@@ -63,14 +63,21 @@ Match the prototype's spine — every part earns its place:
      PNGs from the scratchpad and let what you see drive the diagnosis.
    - The harness is a **throwaway** — it lives in the scratchpad-pointing spec and is not
      committed. Leave `playwright.capture.config.ts` and `tests/capture/` untracked.
-2. **Pull the live tokens.** Read `src/app.css` `.dark` and copy the current values into the
-   scaffold's token block. Do **not** invent a palette — the app ships **dark-only**
-   (charcoal `--ink` + brass gold `--gold` + warm cream `--cream`, ember `--ember` accent);
-   a study that reads as real screens uses those exact tokens. If a token drifted since the
+2. **Read the governing guide, then pull the live tokens.** Read `docs/DESIGN.md` (the
+   governing design guide, ADR-0030) — in particular its "Hard constraints" checklist —
+   before proposing moves, so the study never proposes something the merge gate would
+   reject. The token vocabulary itself lives in `docs/agent-context/design-system.md`
+   (ADR-0029); don't invent a palette. The app ships **two** themes: `:root` carries the
+   light **Parchment** theme, `.dark` carries the charcoal `--ink` + brass gold `--gold` +
+   warm cream `--cream` (ember `--ember` accent) dark theme, and dark is the default for
+   unauthenticated/unset visitors. The study's mockups use the **dark skin as primary** — sync
+   the scaffold's token block from `src/app.css` `.dark`. If a token drifted since the
    scaffold was written, the live `src/app.css` value wins.
 3. **Diagnose, then decide the moves.** From the screenshots, write the thesis and the named
    symptoms, then the 3–5 moves that answer them. Keep moves small and composable — the
-   pitch is "none of these is a rewrite."
+   pitch is "none of these is a rewrite." Sanity-check each proposed move against the
+   Hard-constraints checklist (from Step 2) as you go — including the "clears AA in both
+   themes" line — so nothing later needs a redo.
 4. **Build the study page.** Copy `references/mockup-scaffold.html` and fill it in: token
    block from Step 2, the narrative sections (hero / diagnosis / moves), and the before/after
    phone mockups assembled from the scaffold's app atoms (`.card`, `.meter`, `.chips`,
@@ -95,8 +102,13 @@ Match the prototype's spine — every part earns its place:
   cites what the pixels actually do at 390 px.
 - **Moves, not a rewrite.** Decompose the redesign into a few independently-shippable moves;
   it makes the issue splittable and the change reversible.
-- **One theme by choice.** The app is dark-only; the study lives entirely in that world.
-  Don't build light-mode variants of dead tokens.
+- **Dark-primary, light-checked.** Mockups render in dark — the app's default skin — so the
+  study lives mostly in that world. But DESIGN.md requires every surface to read correctly
+  under **both** themes, and the PR-template design checklist gates on AA contrast in both;
+  any move that introduces a new colour or contrast decision (not just reusing an existing
+  token pairing) gets sanity-checked against the light Parchment values in `:root` before the
+  issue is filed. That's a check, not a second study — don't build full duplicate light
+  mockups.
 
 ## Assets
 
@@ -111,7 +123,12 @@ Match the prototype's spine — every part earns its place:
 ## See also
 
 - `docs/WORKFLOW.md` §"From idea to Ready" — where a study sits in the pipeline.
+- `docs/DESIGN.md` — the governing design guide (ADR-0030), incl. the "Hard constraints"
+  pre-merge checklist a study should pre-check against; token vocabulary lives in
+  `docs/agent-context/design-system.md` (ADR-0029).
 - Sibling skills: `issue-author` (files the issue the study feeds), `scope-issue` (interviews
-  around the study), `new-adr` (if a UX decision is durable enough to need one).
+  around the study), `new-adr` (if a UX decision is durable enough to need one), `design-review`
+  (the critique-only twin — same capture harness, no mockups, grades the shipped screen instead
+  of proposing one).
 - Prior art: the July 2026 mobile design review (same capture harness, critique only, no
   mockups) and the #502 "Your edge" / #514 situational-drill-downs split the prototype seeded.

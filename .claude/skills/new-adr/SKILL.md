@@ -23,6 +23,12 @@ ADRs record durable technical and fairness decisions. Canonical: `docs/adr/READM
      resolve material design feedback before the change becomes costly to reverse.
    - Accepted ADRs are superseded, not silently rewritten.
 
+## Remember
+
+- **After creating or editing any ADR file, run `pnpm format` then `pnpm lint`
+  before committing** — prettier reflows ADR markdown, and the CI lint job fails on
+  unformatted output.
+
 ## See also
 
 - `docs/adr/README.md` — trigger test and index

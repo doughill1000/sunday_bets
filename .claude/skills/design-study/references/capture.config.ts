@@ -24,6 +24,9 @@ export default defineConfig({
     baseURL,
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
+    // Forces the OS-level color scheme for logged-out/public pages. The app also ships
+    // a light Parchment theme, per-user persisted (`users.theme_pref`, dark for unset) —
+    // the seeded demo user should be left on dark so these captures stay the primary skin.
     colorScheme: 'dark'
   },
   webServer: {

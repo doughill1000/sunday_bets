@@ -39,6 +39,9 @@ test('capture authenticated app screens', async ({ browser }) => {
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
+    // The app also ships a light Parchment theme, per-user persisted (`users.theme_pref`,
+    // dark for unset) — a logged-in capture renders whatever that user's pref is, not this
+    // setting. Keep the seeded demo user on dark so these captures stay the primary skin.
     colorScheme: 'dark'
   });
   const page = await ctx.newPage();

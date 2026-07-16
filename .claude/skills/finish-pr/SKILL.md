@@ -39,15 +39,21 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
    issue-less PR (chore/skill/CI/infra/docs), apply `semver:patch` and attach the active
    milestone. **Do not bump `package.json`** — the version is computed and bumped only by
    `cut-release` at release time, not in feature PRs.
-5. Draft the PR body:
+5. **For PRs that change user-facing UI**, fill in the PR template's **Design
+   checklist** honestly — never delete the section just because the change is small.
+   It is a pass/fail merge gate per `docs/DESIGN.md` (ADR-0030), including AA contrast
+   in **both** themes (dark and Parchment light). If the PR changes a screen
+   `docs/DESIGN.md` names as canonical, update the guide's references in the same PR
+   (per `CLAUDE.md`).
+6. Draft the PR body:
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
    - list the verification that **actually ran** (from step 1)
-6. Push the branch and open the PR with `gh pr create` — both are **pre-authorized**
+7. Push the branch and open the PR with `gh pr create` — both are **pre-authorized**
    (see user `CLAUDE.md` §"GitHub Access"), so do not stop to confirm. Report the PR
    URL afterward.
-7. Move the GitHub Project item to **Review**.
-8. After the branch merges and is no longer needed, clean up:
+8. Move the GitHub Project item to **Review**.
+9. After the branch merges and is no longer needed, clean up:
    ```powershell
    git worktree remove ..\sunday_bets-claude-NNN
    git worktree prune

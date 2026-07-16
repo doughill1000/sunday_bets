@@ -9,7 +9,8 @@ One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.
 §"Claim and isolate work" and `AGENTS.md` §"Delivery workflow".
 
 > **Model & effort.** Implementation quality tracks the model. Run **non-trivial work
-> — real business logic, DB/migration, or a new/reworked UI surface — on Opus**; small
+> — real business logic, DB/migration, or a new/reworked UI surface — on the heaviest
+> available model (Opus-class or above — e.g. Fable)**; small
 > or mechanical changes (copy, single-property style, a contained one-file edit) are
 > fine on Sonnet. A skill can't switch the session's model, so this is advisory: pick
 > the model before invoking based on the issue's difficulty.
@@ -56,9 +57,13 @@ pre-authorized per that section and per `finish-pr` step 6).
 
 ## Remember
 
-- To check whether related work has **already shipped**, read `docs/CHANGELOG.md`
-  first (terse, newest-first, in-context), then `gh` for anything newer — don't
-  reverse-engineer completion from source.
+- To check whether related work has **already shipped**, read both
+  `docs/CHANGELOG.md` and the unreleased `docs/changelog.d/` fragments — merged-but-
+  unreleased work lives only in fragments until `cut-release` assembles them — and
+  read both from **`origin/master`**, never the checked-out branch (the local
+  checkout can be stale or mid-feature): `git show origin/master:docs/CHANGELOG.md`
+  and `git ls-tree origin/master docs/changelog.d/`. Then `gh` for anything newer —
+  don't reverse-engineer completion from source.
 - Branch from a **freshly fetched `origin/master`** — the local clone can be months
   stale (Doug works across machines).
 - **Serialize** work touching the migration ledger, generated types, or shared
