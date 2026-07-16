@@ -288,7 +288,6 @@
   let resultsRecap = $state(data.prefs.results_recap);
   let aiRecap = $state(data.prefs.ai_recap);
   let lineShiftEnabled = $state(data.prefs.line_shift.enabled);
-  let threshold = $state(data.prefs.line_shift.threshold);
 
   let supported = $state(true);
   let permission = $state<NotificationPermission | 'unsupported'>('default');
@@ -316,7 +315,7 @@
         pick_reminders: pickReminders,
         results_recap: resultsRecap,
         ai_recap: aiRecap,
-        line_shift: { enabled: lineShiftEnabled, threshold: Number(threshold) }
+        line_shift: { enabled: lineShiftEnabled }
       })
     });
     if (!res.ok) {
@@ -822,24 +821,10 @@
           <span>
             <span class="font-medium">Line-movement alerts</span>
             <p class="text-sm text-muted-foreground">
-              Get notified when the line on a game you've picked moves past your threshold.
+              Get notified when the line on a game you've picked moves.
             </p>
           </span>
         </label>
-
-        <div class="flex items-center gap-3 pl-7">
-          <Label for="threshold" class="text-sm">Alert threshold (points)</Label>
-          <Input
-            id="threshold"
-            type="number"
-            min="0.5"
-            step="0.5"
-            class="w-24"
-            bind:value={threshold}
-            onchange={onSubPrefChange}
-            disabled={!enabled || !lineShiftEnabled}
-          />
-        </div>
       </div>
 
       {#if msg}

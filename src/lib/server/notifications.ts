@@ -11,6 +11,7 @@ import {
   spreadRelativeToHome,
   formatRecapBody,
   recapPushBody,
+  LINE_SHIFT_THRESHOLD_POINTS,
   type NotificationPrefs,
   type RecapTally
 } from '$lib/domain/notifications';
@@ -169,9 +170,8 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
 
 /**
  * Alert users when the active line on a game they've picked (kicking off within
- * 24h) has moved by at least their per-user threshold versus their snapshot.
- * Capped at one alert per pick per 24h. Intended to run after a near-kickoff
- * odds sync.
+ * 24h) has moved by at least the fixed threshold versus their snapshot. Capped
+ * at one alert per pick per 24h. Intended to run after a near-kickoff odds sync.
  */
 export async function detectLineShifts(now = new Date()): Promise<LineShiftSummary> {
   const week = await findActiveWeek();
@@ -253,7 +253,6 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
     if (
       !shouldNotifyLineShift({
         movement,
-        threshold: prefs.line_shift.threshold,
         lineShiftEnabled: prefs.line_shift.enabled,
         recentlyNotified: recentlyNotified.has(`${pick.user_id}:${pick.game_id}`)
       })
@@ -272,7 +271,7 @@ export async function detectLineShifts(now = new Date()): Promise<LineShiftSumma
       kind: 'line_shift',
       game_id: pick.game_id,
       week_id: week.id,
-      detail: { from, to, threshold: prefs.line_shift.threshold }
+      detail: { from, to, threshold: LINE_SHIFT_THRESHOLD_POINTS }
     });
     // Prevent a second alert for this pick in the same run.
     recentlyNotified.add(`${pick.user_id}:${pick.game_id}`);
