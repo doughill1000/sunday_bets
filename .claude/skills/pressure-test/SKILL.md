@@ -6,9 +6,9 @@ description: Pressure-test a single product idea or decision before building it 
 # Pressure-test a product idea
 
 Triggered when Doug points at a **new** idea or decision and wants to know whether it belongs in
-Hotshot *before* it becomes an issue — "is this a value-add or just noise?", "is this on-brand?",
+Hotshot _before_ it becomes an issue — "is this a value-add or just noise?", "is this on-brand?",
 "worth building?", "gut-check this." The output is a **verdict**, not code and not an issue. This
-is the pre-issue filter: it slots *before* `issue-author` in the pipeline. Canonical rubric:
+is the pre-issue filter: it slots _before_ `issue-author` in the pipeline. Canonical rubric:
 [`docs/PRODUCT.md`](../../../docs/PRODUCT.md) (ratified by ADR-0036, the product twin of
 `DESIGN.md` / ADR-0030).
 
@@ -29,7 +29,9 @@ product opinion, and not a re-litigation of decisions the ADRs already settled.
    itself a finding.
 4. **Stress-test the five judgment lenses.** Run value-vs-noise, on-brand/heart, right-for-~6-
    friends, strategic timing, and lifetime cost/ops drag. For each, name the honest weak point —
-   try to *kill* the idea, don't defend it. No single lens is decisive; weigh them together.
+   try to _kill_ the idea, don't defend it. No single lens is decisive; weigh them together. If
+   the idea lands on an already-dense surface, also run lens 1's **displacement corollary**:
+   additions displace, they don't stack — the idea must name what it replaces.
 5. **Check the two gates explicitly.** Fairness & integrity (could it corrupt pick-locking, reveal
    timing, or grading, or hand an edge?) and reversibility (a persistent data model, external
    dependency, or public surface that's costly to walk back?). A gate is **pass/fail**, not a
@@ -48,7 +50,7 @@ product opinion, and not a re-litigation of decisions the ADRs already settled.
 - **Grade against `docs/PRODUCT.md`, not vibes.** A verdict without a lens anchor is just an
   opinion. If a lens has no basis in the doc, that gap is itself worth surfacing.
 - **Don't re-litigate settled ADRs.** The heart-decisions (ADR-0020/0023/0035, etc.) are the
-  rubric, not the debate — test *against* them.
+  rubric, not the debate — test _against_ them.
 - **Gates escalate, they don't score.** Fairness or reversibility tripping means `new-adr`, not a
   lower number.
 - **Stay fast and scoped.** This is a gut-check filter. A quick UI tweak does not need the full
