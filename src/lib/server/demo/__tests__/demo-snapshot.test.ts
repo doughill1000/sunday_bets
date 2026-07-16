@@ -35,6 +35,30 @@ describe('demo snapshot fixture', () => {
     expect(snapshot.persona.displayName).toBeTruthy();
   });
 
+  // #694: shape/coverage checks alone let a stale-but-well-formed snapshot stay green
+  // (the #607-class blind spot ADR-0026 §6 / #669 flag) — these two assert editorial
+  // freshness against the real calendar, not just against the fixture's own fields.
+  it('has not fallen more than 2 seasons behind the live season (#694)', () => {
+    // Matches the app's own season-year convention (ScheduleSyncCard.svelte): the NFL
+    // season year is simply the calendar year, no month-based rollover.
+    const liveSeasonYear = new Date().getFullYear();
+    expect(
+      snapshot.meta.completedSeasonYear,
+      `demo's completed season (${snapshot.meta.completedSeasonYear}) is more than 2 years behind ` +
+        `the live season (${liveSeasonYear}) — run \`pnpm demo:snapshot\` to curate a fresher one`
+    ).toBeGreaterThanOrEqual(liveSeasonYear - 2);
+  });
+
+  it('was generated within the last 180 days (#694)', () => {
+    const generatedAt = new Date(snapshot.meta.generatedAt);
+    const ageDays = (Date.now() - generatedAt.getTime()) / (1000 * 60 * 60 * 24);
+    expect(
+      ageDays,
+      `demo snapshot was generated ${Math.floor(ageDays)} days ago (> 180) — run ` +
+        '`pnpm demo:snapshot` to regenerate it'
+    ).toBeLessThanOrEqual(180);
+  });
+
   it('carries the two temporal vantage points (frozen live week + completed season)', () => {
     expect(snapshot.liveWeek.games.length).toBeGreaterThan(0);
     expect(snapshot.leaderboard.totals.length).toBeGreaterThan(0);
