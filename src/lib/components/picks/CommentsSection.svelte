@@ -1,12 +1,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
-  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
   interface Props {
     gameId: string;
     comments: CommentRow[];
-    reactions: ReactionRow[];
     currentUserId: string | null;
     currentUserDisplayName?: string | null;
   }
@@ -14,37 +12,17 @@
   let {
     gameId,
     comments: initialComments,
-    reactions: initialReactions,
     currentUserId,
     currentUserDisplayName = null
   }: Props = $props();
 
-  // Local copies so we can update optimistically
+  // Local copy so we can update optimistically
   let comments = $state<CommentRow[]>(untrack(() => initialComments));
-  let reactions = $state<ReactionRow[]>(untrack(() => initialReactions));
 
   let commentInput = $state('');
   let submittingComment = $state(false);
   let commentError = $state('');
   let deletingId = $state<string | null>(null);
-
-  const ALLOWED_EMOJIS = ['👍', '👎', '🔥', '😬', '🎯'];
-
-  const EMOJI_SLUG: Record<string, string> = {
-    '👍': 'thumbsup',
-    '👎': 'thumbsdown',
-    '🔥': 'fire',
-    '😬': 'grimace',
-    '🎯': 'dart'
-  };
-
-  function reactionCount(emoji: string): number {
-    return reactions.filter((r) => r.emoji === emoji).length;
-  }
-
-  function userReacted(emoji: string): boolean {
-    return reactions.some((r) => r.emoji === emoji && r.user_id === currentUserId);
-  }
 
   async function postComment() {
     const body = commentInput.trim();
@@ -112,43 +90,6 @@
     }
   }
 
-  async function toggleReaction(emoji: string) {
-    if (userReacted(emoji)) {
-      // Optimistic remove
-      const prev = reactions;
-      reactions = reactions.filter((r) => !(r.emoji === emoji && r.user_id === currentUserId));
-
-      const res = await fetch(`/api/reactions/${gameId}?emoji=${encodeURIComponent(emoji)}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) reactions = prev; // roll back on failure
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const prev = reactions;
-      reactions = [
-        ...reactions,
-        {
-          id: tempId,
-          user_id: currentUserId ?? '',
-          game_id: gameId,
-          emoji,
-          created_at: new Date().toISOString()
-        }
-      ];
-
-      const res = await fetch(`/api/reactions/${gameId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emoji })
-      });
-      const result = await res.json();
-      if (!result.ok && !result.duplicate) {
-        reactions = prev; // roll back
-      }
-    }
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -158,31 +99,6 @@
 </script>
 
 <div class="border-t pt-3 space-y-3" data-testid="comments-section">
-  <!-- Reactions -->
-  <div class="flex flex-wrap gap-1" aria-label="Reactions">
-    {#each ALLOWED_EMOJIS as emoji (emoji)}
-      {@const count = reactionCount(emoji)}
-      {@const active = userReacted(emoji)}
-      <button
-        type="button"
-        onclick={() => toggleReaction(emoji)}
-        aria-label="{emoji} {count} reaction{count !== 1 ? 's' : ''}"
-        aria-pressed={active}
-        data-testid="comment-reaction-{EMOJI_SLUG[emoji]}"
-        class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm
-               transition-colors
-               {active
-          ? 'border-primary-ink bg-primary/10 font-medium'
-          : 'border-border bg-muted/40 text-muted-foreground hover:border-primary-ink/50'}"
-      >
-        <span>{emoji}</span>
-        {#if count > 0}
-          <span class="tabular-nums">{count}</span>
-        {/if}
-      </button>
-    {/each}
-  </div>
-
   <!-- Comment list -->
   {#if comments.length > 0}
     <ul class="space-y-1.5" aria-label="Comments">

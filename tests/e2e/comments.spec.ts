@@ -1,9 +1,9 @@
 /**
- * E2E: Comments and Reactions
+ * E2E: Comments
  *
  * The global setup seeds a started (past) game so the CommentsSection is visible.
- * These tests verify that: the UI renders post-kickoff, a user can post a comment,
- * and reactions can be toggled.
+ * These tests verify that: the UI renders post-kickoff, and a user can post a
+ * comment.
  *
  * Note: The seeded E2E game uses a future commence_time (to allow pick locking in
  * the picks tests). For CommentsSection to appear, the game must have already
@@ -101,7 +101,6 @@ test('CommentsSection is visible for a kicked-off game', async ({ page }) => {
   const comments = commentsSection(page);
   await comments.goto();
   await comments.openStartedGame();
-  // Reaction buttons are rendered by CommentsSection for started games.
   await comments.expectVisible();
 });
 
@@ -118,23 +117,4 @@ test('user can post a comment on a started game', async ({ page }) => {
 
   // The comment body is real data the test typed — assert on the content itself.
   await comments.expectCommentVisible(uniqueBody);
-});
-
-// SKIPPED (flaky hydration race, separate follow-up): the reaction toggle is a
-// client onclick with no native fallback, so a tap landing before CommentsSection
-// hydrates is silently dropped and the count never increments. Unlike the picks
-// board there's no disabled-until-mounted gate to wait on, and re-clicking would
-// just toggle the reaction back off. Re-enable once the reaction control exposes
-// a hydration signal (or the helper bridges hydration before the first tap).
-test.skip('user can toggle a reaction on a started game', async ({ page }) => {
-  const comments = commentsSection(page);
-  await comments.goto();
-  await comments.openStartedGame();
-
-  // Click the 👍 reaction button
-  await comments.expectVisible();
-  await comments.reactionButton('👍').click();
-
-  // After toggling, the button should show a count ≥ 1
-  await comments.expectReactionCount('👍', /1/);
 });
