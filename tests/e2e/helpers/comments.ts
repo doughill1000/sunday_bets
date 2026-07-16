@@ -12,16 +12,6 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * on it with `getByText` is intentional and kept in `expectCommentVisible`.
  */
 
-const EMOJI_SLUG = {
-  '👍': 'thumbsup',
-  '👎': 'thumbsdown',
-  '🔥': 'fire',
-  '😬': 'grimace',
-  '🎯': 'dart'
-} as const;
-
-export type EmojiName = keyof typeof EMOJI_SLUG;
-
 export function commentsSection(page: Page) {
   const api = {
     page,
@@ -53,14 +43,6 @@ export function commentsSection(page: Page) {
     },
 
     /**
-     * A reaction toggle button by emoji name.
-     * Always rendered once CommentsSection mounts.
-     */
-    reactionButton(emoji: EmojiName): Locator {
-      return api.section().getByTestId(`comment-reaction-${EMOJI_SLUG[emoji]}`);
-    },
-
-    /**
      * The comment text input (composer).
      * Always rendered once CommentsSection mounts.
      */
@@ -86,9 +68,9 @@ export function commentsSection(page: Page) {
 
     // --- assertions -----------------------------------------------------------
 
-    /** Assert that the reaction bar has rendered (CommentsSection is visible). */
+    /** Assert that CommentsSection has rendered (composer is visible). */
     async expectVisible(timeout = 5000) {
-      await expect(api.reactionButton('👍')).toBeVisible({ timeout });
+      await expect(api.commentInput()).toBeVisible({ timeout });
     },
 
     /**
@@ -97,18 +79,6 @@ export function commentsSection(page: Page) {
      */
     async expectCommentVisible(body: string, timeout = 3000) {
       await expect(page.getByText(body)).toBeVisible({ timeout });
-    },
-
-    /**
-     * Assert the reaction button's text content matches `pattern`.
-     * Used to verify a reaction was registered (e.g. count goes to 1).
-     */
-    async expectReactionCount(emoji: EmojiName, pattern: RegExp, timeout = 8000) {
-      const btn = api.reactionButton(emoji);
-      await expect(async () => {
-        const text = await btn.textContent();
-        expect(text).toMatch(pattern);
-      }).toPass({ timeout });
     }
   };
 
