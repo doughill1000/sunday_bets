@@ -1,13 +1,14 @@
 name: CI - Integration (with-auth)
 
+# Triggers on EVERY PR to master (no top-level `paths:` filter) so the `integration-result`
+# wrapper job below always runs and posts a status — a workflow-level path filter means the
+# whole workflow never runs at all for a non-matching PR, so a required check pointed at a
+# raw job name inside it would sit "Expected" forever and block the merge indefinitely
+# (mirrors ci-tests.yml's detect-changes/-result pattern, not ci-pgtap.yml/migrate-dry-run.yml's
+# own copies of the same fix).
 on:
   pull_request:
     branches: [master]
-    paths:
-      - 'supabase/**'
-      - 'src/**'
-      - 'tests/integration/**'
-      - '.github/workflows/ci-integration.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +18,25 @@ permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      relevant: ${{ steps.filter.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            relevant:
+              - 'supabase/**'
+              - 'src/**'
+              - 'tests/integration/**'
+              - '.github/workflows/ci-integration.yml'
+
   integration:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.relevant == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -76,3 +95,20 @@ jobs:
       - name: Stop Supabase
         if: always()
         run: supabase stop || true
+
+  # Required-status-check target: "integration-result", not "integration" — this always
+  # reports (even when the path filter above skips the underlying job), matching the
+  # pgTap-result / dry-run-result / unit-result / build-result pattern.
+  integration-result:
+    needs: integration
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          result="${{ needs.integration.result }}"
+          if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
