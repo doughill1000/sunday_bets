@@ -1,4 +1,4 @@
-- **PR TBD** `CI - Integration (with-auth)` filtered on paths at the workflow-trigger
+- **PR #709** `CI - Integration (with-auth)` filtered on paths at the workflow-trigger
   level, so it never ran at all (no status posted) for PRs outside `supabase/**` ·
   `src/**` · `tests/integration/**` — making its `integration` job unusable as a
   required status check (a PR that doesn't touch those paths would sit "Expected"
