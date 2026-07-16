@@ -80,5 +80,6 @@ current status.
 | [ADR-0033](0033-client-query-data-loading.md)                               | Client-query data loading — move page-load reads behind `+server.ts` (SPA-shell + API consolidation)        |
 | [ADR-0034](0034-simplified-hotshot-logo-mark.md)                            | Simplified Hotshot logo mark — football + rising line, replacing ADR-0027's four-point-spark-and-ember mark |
 | [ADR-0035](0035-badge-boundary-rule.md)                                     | Badge catalog boundary — the credibility rating owns the market, badges own the room                        |
+| [ADR-0036](0036-product-principles.md)                                      | Product principles rubric + pressure-test / product-audit tooling — the product twin of the design layer    |
 
-_The numbering is sequential; the next ADR is 0036._
+_The numbering is sequential; the next ADR is 0037._
