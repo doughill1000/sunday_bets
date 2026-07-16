@@ -1,0 +1,17 @@
+# .github/workflows/cron-weekly-recap.yml
+name: 'Cron: Weekly Recap (push)'
+
+on:
+  schedule:
+    # Tue 14:00 UTC (~9am ET) — after grade's overnight MNF settle runs, so results are
+    # accurate; deliberately later than grading so the push lands at a civilized hour.
+    - cron: '0 14 * * 2'
+  workflow_dispatch:
+
+jobs:
+  weekly_recap:
+    uses: ./.github/workflows/_cron-call.yml
+    with:
+      endpoint: weekly-recap
+      monitor_slug: weekly-recap
+    secrets: inherit
