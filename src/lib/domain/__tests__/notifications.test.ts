@@ -6,7 +6,8 @@ import {
   lineMovementPoints,
   shouldNotifyLineShift,
   formatRecapBody,
-  recapPushBody
+  recapPushBody,
+  LINE_SHIFT_THRESHOLD_POINTS
 } from '../notifications';
 
 describe('parseNotificationPrefs', () => {
@@ -17,15 +18,24 @@ describe('parseNotificationPrefs', () => {
   });
 
   it('merges partial objects over defaults', () => {
-    const p = parseNotificationPrefs({ enabled: true, line_shift: { threshold: 3 } });
+    const p = parseNotificationPrefs({ enabled: true, line_shift: { enabled: false } });
     expect(p.enabled).toBe(true);
     expect(p.pick_reminders).toBe(true);
-    expect(p.line_shift).toEqual({ enabled: true, threshold: 3 });
+    expect(p.line_shift).toEqual({ enabled: false });
   });
 
-  it('rejects non-positive thresholds', () => {
-    expect(parseNotificationPrefs({ line_shift: { threshold: 0 } }).line_shift.threshold).toBe(2);
-    expect(parseNotificationPrefs({ line_shift: { threshold: -5 } }).line_shift.threshold).toBe(2);
+  it('ignores a stale threshold left over from before #693', () => {
+    // Older stored jsonb may still carry `threshold` — it must not resurface.
+    expect(parseNotificationPrefs({ line_shift: { threshold: 5 } }).line_shift).toEqual({
+      enabled: true
+    });
+    expect(
+      (
+        parseNotificationPrefs({ line_shift: { threshold: 5 } }).line_shift as {
+          threshold?: number;
+        }
+      ).threshold
+    ).toBeUndefined();
   });
 
   it('defaults results_recap when absent and parses it when present', () => {
@@ -155,20 +165,20 @@ describe('lineMovementPoints', () => {
 describe('shouldNotifyLineShift', () => {
   const base = {
     movement: 3,
-    threshold: 2,
     lineShiftEnabled: true,
     recentlyNotified: false
   };
 
-  it('fires when over threshold and not recently notified', () => {
+  it('fires when at or over the fixed threshold and not recently notified', () => {
     expect(shouldNotifyLineShift(base)).toBe(true);
+    expect(shouldNotifyLineShift({ ...base, movement: LINE_SHIFT_THRESHOLD_POINTS })).toBe(true);
   });
 
   it('is suppressed when the feature is off', () => {
     expect(shouldNotifyLineShift({ ...base, lineShiftEnabled: false })).toBe(false);
   });
 
-  it('is suppressed below threshold', () => {
+  it('is suppressed below the fixed threshold', () => {
     expect(shouldNotifyLineShift({ ...base, movement: 1 })).toBe(false);
   });
 
