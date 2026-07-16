@@ -1,4 +1,4 @@
-- **PR #NNN** Skills tune-up sweep — refresh `design-study` for the two-theme era
+- **PR #719** Skills tune-up sweep — refresh `design-study` for the two-theme era
   (dark-primary, light-checked, DESIGN.md pre-check), add the new `design-review`
   skill (capture + scorecard critique of shipped screens), and patch five smaller
   gaps: fragments-aware shipped-ness check in `start-issue`, the #660 commissioner
