@@ -8,7 +8,9 @@ description: Pressure-test a single product idea or decision before building it 
 Triggered when Doug points at a **new** idea or decision and wants to know whether it belongs in
 Hotshot _before_ it becomes an issue — "is this a value-add or just noise?", "is this on-brand?",
 "worth building?", "gut-check this." The output is a **verdict**, not code and not an issue. This
-is the pre-issue filter: it slots _before_ `issue-author` in the pipeline. Canonical rubric:
+is the pre-issue filter: it slots _before_ `issue-author` in the pipeline. Also runs mid-interview
+from `scope-issue` when a scoping gray area turns out to be a value/on-brand judgment call on a
+sub-scope item, rather than a UX/sequencing detail. Canonical rubric:
 [`docs/PRODUCT.md`](../../../docs/PRODUCT.md) (ratified by ADR-0036, the product twin of
 `DESIGN.md` / ADR-0030).
 
