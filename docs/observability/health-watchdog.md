@@ -1,10 +1,10 @@
 # Health watchdog — free cron missed-run + stale-data detection
 
-The six GitHub Actions crons already alert on **failure** (a non-2xx response makes
+The seven GitHub Actions crons already alert on **failure** (a non-2xx response makes
 the workflow `exit 1`, which emails via GitHub Actions notifications). They did not
 alert on a **missed run** — a workflow disabled after ~60 days idle, a removed
 schedule, or a GitHub Actions outage. Sentry Cron Monitors would fill that gap, but
-the free tier allows only **one** monitor. This watchdog covers all six for $0, and
+the free tier allows only **one** monitor. This watchdog covers all seven for $0, and
 additionally catches the one stale-data case cron-liveness alone misses (odds sync
 halted at the monthly cap). Issue #206.
 

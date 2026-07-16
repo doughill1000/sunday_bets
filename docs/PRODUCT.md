@@ -75,6 +75,17 @@ market-anchored stat) and badges (the room's fun) in separate lanes so neither b
 [ADR-0022](adr/0022-over-under-totals-market.md) **deferred** the Over/Under market rather than
 bolt on a second market that wasn't yet worth its weight.
 
+**Displacement corollary — additions displace, they don't stack.** On an already-dense surface,
+the kill-question sharpens to _"what does this replace?"_ A new engagement element there must name
+the existing block it displaces; if nothing can move, the addition waits.
+_Why:_ density, not misfit, is how good surfaces die — each block clears the value bar
+individually, and the stack fails collectively (the systemic finding of the 2026-07 product
+audit, where four independent lanes flagged good surfaces accreting blocks). "It's small" is not
+an answer to "what does it replace?"
+_Example:_ the picks screen already composes six elements and sits at the upper bound of busy, and
+`/league`'s Standings tab stacks four — a fifth block on either must displace one of the four, not
+join them.
+
 **2. On-brand / heart.** _"Does this sound and feel like Hotshot — confident, a little swagger,
 the Commissioner's voice — without cheapening the signature moments?"_
 The identity is charcoal-and-gold quiet premium with personality in the copy; the moments that
