@@ -8,6 +8,12 @@ description: Start work on a Ready GitHub issue end-to-end — read the issue an
 One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.md`
 §"Claim and isolate work" and `AGENTS.md` §"Delivery workflow".
 
+> **Model & effort.** Implementation quality tracks the model. Run **non-trivial work
+> — real business logic, DB/migration, or a new/reworked UI surface — on Opus**; small
+> or mechanical changes (copy, single-property style, a contained one-file edit) are
+> fine on Sonnet. A skill can't switch the session's model, so this is advisory: pick
+> the model before invoking based on the issue's difficulty.
+
 This skill runs the full delivery loop in one pass: setup (below), then
 implementation, then the `finish-pr` skill. Don't stop after setup to wait for a
 separate invocation — continue straight into implementing the issue once the
