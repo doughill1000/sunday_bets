@@ -42,6 +42,10 @@ declare global {
   /** Sentry environment injected by Vite `define` (vite.config.ts) from VERCEL_ENV.
    * Sets `environment` in the client Sentry.init (src/hooks.client.ts). */
   const __SENTRY_ENV__: string;
+
+  /** Show Beta tag in header injected by Vite `define` (vite.config.ts).
+   * Gated on SHOW_BETA_TAG env var; defaults to true. Flips off at public launch. */
+  const __SHOW_BETA_TAG__: boolean;
 }
 
 export {};
