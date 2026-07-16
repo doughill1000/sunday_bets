@@ -4,6 +4,7 @@ import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActi
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
+import { getReactionsForComments } from '$lib/server/db/queries/getReactionsForComments';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
 import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
@@ -28,7 +29,9 @@ async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise
 
 // Comments for started games only (RLS also enforces this gate). Depends only on
 // the games, so the caller chains it off the games promise to overlap the other
-// per-week reads rather than running it as a second serial wave.
+// per-week reads rather than running it as a second serial wave. Reactions attach
+// to comments (#689), so they load in a second batched round-trip keyed by the
+// comment ids we just fetched, then hang off each comment.
 async function loadSocial(
   event: Parameters<PageServerLoad>[0],
   groupId: string,
@@ -38,9 +41,19 @@ async function loadSocial(
   const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
 
   const commentsByGame = await getCommentsForGames(event, groupId, startedGameIds);
+  const allCommentIds = [...commentsByGame.values()].flat().map((c) => c.id);
+  const reactionsByComment = await getReactionsForComments(event, groupId, allCommentIds);
 
   return Object.fromEntries(
-    startedGameIds.map((gameId) => [gameId, { comments: commentsByGame.get(gameId) ?? [] }])
+    startedGameIds.map((gameId) => [
+      gameId,
+      {
+        comments: (commentsByGame.get(gameId) ?? []).map((c) => ({
+          ...c,
+          reactions: reactionsByComment.get(c.id) ?? []
+        }))
+      }
+    ])
   );
 }
 

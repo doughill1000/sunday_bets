@@ -1,11 +1,12 @@
 -- 014_comments_reactions_rls.sql
 -- pgTAP tests for group-scoped comments and reactions RLS.
--- Verifies: schema shape, cross-group denial, post-kickoff read gate,
--- and membership-scoped write access.
+-- Verifies: schema shape, cross-group denial, post-kickoff read gate, membership-
+-- scoped write access, and (since #689) comment-scoped reactions: a reaction is
+-- visible only when its comment is, and cascades away when the comment is deleted.
 
 BEGIN;
 
-SELECT plan(25);
+SELECT plan(31);
 
 -- ── Schema checks ─────────────────────────────────────────────────────────────
 
@@ -24,6 +25,11 @@ SELECT col_is_null('public',  'comments', 'deleted_at', 'comments.deleted_at is 
 SELECT has_column('public', 'reactions', 'group_id',  'reactions has group_id');
 SELECT has_column('public', 'reactions', 'emoji',     'reactions has emoji');
 SELECT col_not_null('public', 'reactions', 'group_id','reactions.group_id is not null');
+
+-- #689: reactions now hang off a comment, not a game.
+SELECT has_column('public', 'reactions', 'comment_id', 'reactions has comment_id');
+SELECT col_not_null('public', 'reactions', 'comment_id', 'reactions.comment_id is not null');
+SELECT hasnt_column('public', 'reactions', 'game_id', 'reactions no longer has game_id');
 
 -- ── Seed data (service role) ───────────────────────────────────────────────────
 
@@ -96,16 +102,28 @@ VALUES (
 )
 ON CONFLICT (external_game_id) DO NOTHING;
 
--- Seed a comment in Group B (started game)
-INSERT INTO public.comments (group_id, user_id, game_id, body)
+-- Group B comment on the started game (reactions attach here).
+INSERT INTO public.comments (id, group_id, user_id, game_id, body)
 VALUES (
+  '00000000-0000-4001-8000-0000000000c1',
   '00000000-0000-4001-8000-0000000000b3',
   tests.get_supabase_uid('cr_player_b'),
   '00000000-0000-4001-8000-000000000031',
   'Group B comment on past game'
 );
 
--- Seed a soft-deleted comment in Group B (should be invisible to members)
+-- Group B comment on the future game (pre-kickoff — neither it nor its reactions
+-- should be readable until the game starts).
+INSERT INTO public.comments (id, group_id, user_id, game_id, body)
+VALUES (
+  '00000000-0000-4001-8000-0000000000c2',
+  '00000000-0000-4001-8000-0000000000b3',
+  tests.get_supabase_uid('cr_player_b'),
+  '00000000-0000-4001-8000-000000000032',
+  'Group B comment on future game'
+);
+
+-- Group B soft-deleted comment on the started game (invisible to members).
 INSERT INTO public.comments (group_id, user_id, game_id, body, deleted_at)
 VALUES (
   '00000000-0000-4001-8000-0000000000b3',
@@ -115,22 +133,41 @@ VALUES (
   now()
 );
 
--- Seed a comment in Group B on the future game (should not be readable before kickoff)
-INSERT INTO public.comments (group_id, user_id, game_id, body)
+-- Group B comment used only to prove reactions cascade on comment delete.
+INSERT INTO public.comments (id, group_id, user_id, game_id, body)
 VALUES (
-  '00000000-0000-4001-8000-0000000000b3',
-  tests.get_supabase_uid('cr_player_b'),
-  '00000000-0000-4001-8000-000000000032',
-  'Group B comment on future game'
-);
-
--- Seed a reaction in Group B (started game)
-INSERT INTO public.reactions (group_id, user_id, game_id, emoji)
-VALUES (
+  '00000000-0000-4001-8000-0000000000c3',
   '00000000-0000-4001-8000-0000000000b3',
   tests.get_supabase_uid('cr_player_b'),
   '00000000-0000-4001-8000-000000000031',
+  'Group B comment to be deleted'
+);
+
+-- Reaction on the started-game comment (visible to Group B post-kickoff).
+INSERT INTO public.reactions (group_id, user_id, comment_id, emoji)
+VALUES (
+  '00000000-0000-4001-8000-0000000000b3',
+  tests.get_supabase_uid('cr_player_b'),
+  '00000000-0000-4001-8000-0000000000c1',
   '🔥'
+);
+
+-- Reaction on the future-game comment (must stay hidden until kickoff).
+INSERT INTO public.reactions (group_id, user_id, comment_id, emoji)
+VALUES (
+  '00000000-0000-4001-8000-0000000000b3',
+  tests.get_supabase_uid('cr_player_b'),
+  '00000000-0000-4001-8000-0000000000c2',
+  '😬'
+);
+
+-- Reaction on the to-be-deleted comment (proves cascade).
+INSERT INTO public.reactions (group_id, user_id, comment_id, emoji)
+VALUES (
+  '00000000-0000-4001-8000-0000000000b3',
+  tests.get_supabase_uid('cr_player_b'),
+  '00000000-0000-4001-8000-0000000000c3',
+  '🎯'
 );
 
 -- ── Cross-group read denial (Group A member cannot see Group B content) ────────
@@ -166,12 +203,13 @@ SELECT throws_ok(
   'cross-group comment insert is denied'
 );
 
+-- Group A member tries to react (stamped with group B) onto a group B comment.
 SELECT throws_ok(
-  $$ INSERT INTO public.reactions (group_id, user_id, game_id, emoji)
+  $$ INSERT INTO public.reactions (group_id, user_id, comment_id, emoji)
      VALUES (
        '00000000-0000-4001-8000-0000000000b3',
        tests.get_supabase_uid('cr_player_a'),
-       '00000000-0000-4001-8000-000000000031',
+       '00000000-0000-4001-8000-0000000000c1',
        '👍'
      ) $$,
   '42501',
@@ -198,8 +236,8 @@ SELECT results_eq(
   $$ SELECT count(*) FROM public.comments
      WHERE group_id = '00000000-0000-4001-8000-0000000000b3'
        AND game_id  = '00000000-0000-4001-8000-000000000031' $$,
-  $$ VALUES (1::bigint) $$,
-  'group B member can read own group past-game comment'
+  $$ VALUES (2::bigint) $$,
+  'group B member can read own group past-game comments (visible ones only)'
 );
 
 SELECT results_eq(
@@ -212,10 +250,9 @@ SELECT results_eq(
 
 SELECT results_eq(
   $$ SELECT count(*) FROM public.reactions
-     WHERE group_id = '00000000-0000-4001-8000-0000000000b3'
-       AND game_id  = '00000000-0000-4001-8000-000000000031' $$,
+     WHERE comment_id = '00000000-0000-4001-8000-0000000000c1' $$,
   $$ VALUES (1::bigint) $$,
-  'group B member can read own group past-game reaction'
+  'group B member can read a reaction on a started-game comment'
 );
 
 -- Post-kickoff gate: future game comment is not visible even to own group member
@@ -225,6 +262,14 @@ SELECT results_eq(
        AND game_id  = '00000000-0000-4001-8000-000000000032' $$,
   $$ VALUES (0::bigint) $$,
   'future-game comment not readable before kickoff even by own group member'
+);
+
+-- Transitive gate: a reaction on a pre-kickoff comment is hidden too.
+SELECT results_eq(
+  $$ SELECT count(*) FROM public.reactions
+     WHERE comment_id = '00000000-0000-4001-8000-0000000000c2' $$,
+  $$ VALUES (0::bigint) $$,
+  'reaction on a pre-kickoff comment is not readable before kickoff'
 );
 
 -- ── Member can insert comment and reaction in own group ────────────────────────
@@ -241,20 +286,36 @@ SELECT lives_ok(
 );
 
 SELECT lives_ok(
-  $$ INSERT INTO public.reactions (group_id, user_id, game_id, emoji)
+  $$ INSERT INTO public.reactions (group_id, user_id, comment_id, emoji)
      VALUES (
        '00000000-0000-4001-8000-0000000000b3',
        tests.get_supabase_uid('cr_player_b'),
-       '00000000-0000-4001-8000-000000000031',
+       '00000000-0000-4001-8000-0000000000c1',
        '❤️'
      ) $$,
-  'group B member can insert reaction in own group'
+  'group B member can react on a comment in own group'
+);
+
+-- ── Cascade: deleting a comment removes its reactions ─────────────────────────
+
+SELECT lives_ok(
+  $$ DELETE FROM public.comments
+     WHERE id = '00000000-0000-4001-8000-0000000000c3' $$,
+  'group B member can delete own comment'
+);
+
+SELECT tests.clear_authentication();
+RESET ROLE;
+
+SELECT results_eq(
+  $$ SELECT count(*) FROM public.reactions
+     WHERE comment_id = '00000000-0000-4001-8000-0000000000c3' $$,
+  $$ VALUES (0::bigint) $$,
+  'deleting a comment cascades away its reactions'
 );
 
 -- ── Anon has no access ────────────────────────────────────────────────────────
 
-SELECT tests.clear_authentication();
-RESET ROLE;
 SET ROLE anon;
 
 SELECT throws_ok(

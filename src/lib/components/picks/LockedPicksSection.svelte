@@ -10,7 +10,7 @@
   import { verdictTextClass, verdictLabel } from '$lib/live/display';
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';
-  import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
+  import type { SocialComment } from '$lib/server/db/queries/getCommentsForGame';
   import CommentsSection from './CommentsSection.svelte';
   import type { GroupPickEntry } from '$lib/types/picks';
   import type { LiveScoreEntry } from '$lib/live/types';
@@ -18,7 +18,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import FormNote from '$lib/components/FormNote.svelte';
 
-  type SocialData = { comments: CommentRow[] };
+  type SocialData = { comments: SocialComment[] };
 
   interface Props {
     games: PickGame[];

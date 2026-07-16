@@ -1,4 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
+import type { ReactionRow } from './getReactionsForComments';
 
 export type CommentRow = {
   id: string;
@@ -8,6 +9,12 @@ export type CommentRow = {
   created_at: string;
   display_name: string | null;
 };
+
+/**
+ * A comment plus its reactions, as the picks social loader hands it to the UI
+ * (#689). Reactions hang off the comment so the tapback chips render per comment.
+ */
+export type SocialComment = CommentRow & { reactions: ReactionRow[] };
 
 const COMMENT_COLUMNS = 'id, user_id, game_id, body, created_at, users(display_name)';
 
