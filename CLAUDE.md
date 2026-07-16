@@ -32,6 +32,7 @@ detail lives in each `.claude/skills/<name>/SKILL.md`, so this is a map, not a s
 
 | Stage                             | Skill               | When                                                    |
 | --------------------------------- | ------------------- | ------------------------------------------------------- |
+| Pressure-test an idea pre-issue   | `pressure-test`     | "value-add or noise?", "on-brand?", "worth building?"   |
 | Explore a UI change visually      | `design-study`      | "mock this up", "design study for #NNN"                 |
 | Decide if a decision needs an ADR | `new-adr`           | security / data-model / cross-cutting / fairness change |
 | Create an issue                   | `issue-author`      | "file an issue", "add to the backlog"                   |
@@ -48,7 +49,8 @@ detail lives in each `.claude/skills/<name>/SKILL.md`, so this is a map, not a s
 
 **Standalone utilities** (not tied to one issue): `ci-triage` (diagnose a red check) ·
 `dependabot-sweep` (clear dependency PRs) · `cleanup-worktrees` (remove merged
-worktrees) · `pattern-audit` (grade repo patterns → `docs/audits/`) · `season-ops`
+worktrees) · `pattern-audit` (grade repo patterns → `docs/audits/`) · `product-audit`
+(grade shipped features against `docs/PRODUCT.md` → `docs/audits/`) · `season-ops`
 (prod cron / odds-quota / matview health) · `db-deep-scan` (deep read-only
 grading-correctness / RLS / SECURITY DEFINER audit, pre-release) ·
 `refresh-demo-snapshot` (regenerate the `/demo` fixture).
