@@ -1,0 +1,1 @@
+- **#698** Onboarding copy drift-guard — a unit test ties `HowToPlay.svelte` to the real credibility-tier catalog (`src/lib/domain/rating.ts`) plus the All-In/sweat-board/Weekly Hardware and "League" (not "Group") vocabulary, so the copy can't silently rot the way #633 found it.
