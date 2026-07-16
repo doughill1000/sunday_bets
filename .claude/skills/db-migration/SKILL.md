@@ -41,8 +41,17 @@ agent-facing rules in `docs/agent-context/database.md` and `AGENTS.md`
 
 - Hand-edit `supabase/migrations/**`, `supabase/.migration-hash.json`, or
   `src/lib/types/supabase.ts` — all generated.
-- Rename or move files under `supabase/src/` — the generator treats a rename as a
-  drop + new object and re-emits brand-new DDL, breaking idempotency.
+- Rename, move, or delete a file under `supabase/src/` without going through
+  `--retire=<key>`. Just deleting/renaming leaves a stale ledger entry the generator
+  rejects. Instead: `pnpm db:migration --retire=<old_key> --name=describe_the_change`
+  (repeatable for multiple keys). It recovers the file's last-committed content via
+  `git show`, emits the matching drop for whatever it defined (or a no-op marker
+  comment if the file was alter-only), and removes its ledger entry. A rename is a
+  `--retire` of the old key plus a normal new file at the new key in the same run.
+  If you edited `supabase/src/**` again after already generating a migration but
+  before committing, use `pnpm db:migration --amend --name=...` rather than
+  hand-reverting the ledger (see `docs/agent-context/database.md` "Re-generating a
+  not-yet-committed migration").
 
 ## Conflicts / parallel work
 

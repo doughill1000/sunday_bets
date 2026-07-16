@@ -68,6 +68,76 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.8.0 — 2026-07-16
+
+- **PR #715** Release v3.8.0.
+- **#689** Emoji reactions on comments — reactions now attach to a specific comment (iMessage-style tapbacks) instead of a game, making comments the social surface so we can see whether the group actually uses them. Per-comment reaction chips render only for emojis someone used; a compact picker adds one, and tapping a chip reveals who reacted. Repoints the `reactions` table onto `comments` (clean cutover, no backfill) with a comment-scoped read gate and cascade-on-delete; retires the orphaned game-reaction endpoint and query left by #688.
+- **#698** Onboarding copy drift-guard — a unit test ties `HowToPlay.svelte` to the real credibility-tier catalog (`src/lib/domain/rating.ts`) plus the All-In/sweat-board/Weekly Hardware and "League" (not "Group") vocabulary, so the copy can't silently rot the way #633 found it.
+- **PR #708** `badgeFlavor.test.ts`'s cross-group isolation and grade-cron suites assumed the shared two-group fixture's all-losing group (group B) always earns at least one badge — true until the badge catalog trim (#634-#655) removed every badge that used to fire for an all-losing 2-person room. The fixture now adds a member who never picks, scoped to this file only, so group B earns The Grinder and the isolation assertions have something real to check against.
+- **PR #709** `CI - Integration (with-auth)` filtered on paths at the workflow-trigger
+  level, so it never ran at all (no status posted) for PRs outside `supabase/**` ·
+  `src/**` · `tests/integration/**` — making its `integration` job unusable as a
+  required status check (a PR that doesn't touch those paths would sit "Expected"
+  forever). Now triggers on every PR and gates the job internally via
+  `dorny/paths-filter`, adding an `integration-result` wrapper job that always
+  reports — mirroring `unit-result` / `build-result` / `pgTap-result` /
+  `dry-run-result`. Also backfills four changelog gaps the governance-freshness gate
+  had flagged (#693, PR #706, PR #700, PR #691). files:
+  `.github/workflows/ci-integration.yml`
+- **#693** Trim line-movement alerts — dropped the per-user points-threshold knob from
+  `/settings`; the alert now fires on a single fixed move so the room keeps the signal
+  without a bettor's configuration surface. files: `src/lib/domain/notifications.ts` ·
+  `src/lib/server/notifications.ts` · `src/routes/(app)/settings/+page.svelte`
+- **#694** The `/demo` CI drift-guard now checks editorial freshness, not just shape —
+  it fails when the snapshot's completed season falls more than 2 years behind the
+  live season, or when the snapshot is older than 180 days, closing the coverage gap
+  ADR-0026 §6 / #669 flagged behind #607. files:
+  `src/lib/server/demo/__tests__/demo-snapshot.test.ts`
+- **PR #706** `scope-issue`'s gray-area step now routes value/on-brand judgment calls
+  (e.g. "is this sub-piece even worth building?") to `pressure-test` against
+  `docs/PRODUCT.md` instead of asking Doug to decide by feel; the verdict folds into
+  the essential/nice-to-have table rather than becoming its own interview question.
+  files: `.claude/skills/scope-issue` · `.claude/skills/pressure-test`
+- **#697** Config-gate the header Beta tag — a build-time flag (`SHOW_BETA_TAG`,
+  defaulting to shown) now controls the feedback-sheet Beta tag instead of it being
+  implicitly tied to sign-in state, so it can flip off in one change at the public
+  epoch. ADR-0028 follow-up. files: `vite.config.ts` · `src/app.d.ts` ·
+  `src/lib/components/app-header/AppHeader.svelte` · `.env.example`
+- **#688** Retire the game-level emoji reaction bar — removes the standalone 👍👎🔥😬🎯
+  reaction row above the comment thread on kicked-off games, clearing the way for the
+  comment-reactions sibling to make commenting the place people react. UI-only removal;
+  the `reactions` table/API retire alongside that sibling's migration. files:
+  `src/lib/components/picks/CommentsSection.svelte` ·
+  `src/lib/components/picks/LockedPicksSection.svelte` ·
+  `src/routes/(app)/picks/+page.server.ts`
+- **PR #700** Product audit (2026-07): graded shipped features against
+  `docs/PRODUCT.md`'s seven lenses — 11 Keep / 1 Reshape (`/market`). Findings filed as
+  issues #692-#698; a v3.9 milestone was created for the follow-up work. files:
+  `docs/audits/2026-07-16-product-audit.md`
+- **#695** Displacement tenet added to `docs/PRODUCT.md` — on already-dense surfaces, additions must name what they replace (they displace, they don't stack), per the 2026-07 product audit's density finding; the `pressure-test` skill now runs the corollary explicitly.
+- **PR #686** Rework the grade cron's schedule to settle TNF, MNF, and late-season
+  Saturday finals within about an hour of the game ending instead of waiting for Sunday,
+  and split the weekly results-recap / AI-recap-ready pushes into a new `weekly-recap`
+  cron (Tue ~9am ET) so they land at a normal hour instead of ~4am. files:
+  `.github/workflows/cron-grade.yml` · `.github/workflows/cron-weekly-recap.yml` ·
+  `src/routes/(app)/api/cron/weekly-recap/` · `src/lib/server/cronHealth.ts`
+- **PR #691** `scope-issue` and `start-issue` get advisory banners recommending
+  Opus/high thinking effort for judgment-heavy scoping and non-trivial implementation
+  work; `issue-author` gets a pointer to the `scope-issue` note. Docs-only — a skill
+  can't switch the running session's model. files: `.claude/skills/scope-issue` ·
+  `.claude/skills/start-issue` · `.claude/skills/issue-author`
+- **#683** Put the recap's opening line in the "recap ready" push — the weekly AI-recap
+  notification now teases the recap's actual first sentence instead of a generic "it
+  dropped", so it pulls members in and gives the group chat something worth screenshotting.
+  The weekly voice is also nudged to open with a self-contained hook. files:
+  `src/lib/server/notifications.ts` · `src/lib/server/recap/voice.ts`
+- **PR #685** Add a product-judgment layer — the twin of the design layer. A canonical
+  product-principles rubric (`docs/PRODUCT.md`) crystallises the app's "heart" into seven
+  grounded lenses (five judgment lenses + two escalation gates), and two skills operationalise
+  it: `pressure-test` (steelman one idea → Build/Reshape/Drop → hand off) and `product-audit`
+  (grade shipped surfaces into a keep/reshape/retire report). files: `docs/PRODUCT.md` ·
+  `.claude/skills/pressure-test/` · `.claude/skills/product-audit/` · `CLAUDE.md` · ADR-0036
+
 ## v3.7.0 — 2026-07-14
 
 - **PR #664** Release v3.7.0.
@@ -119,6 +189,58 @@ of the time.
   audits — grading-correctness recomputation, per-policy RLS review, per-function
   SECURITY DEFINER audit, full referential sweep, DB-size/backup/auth posture.
   Complements `season-ops`. files: `.claude/skills/db-deep-scan/SKILL.md`
+- **#625** Add a `concurrency:` guard to the `grade` cron so overlapping runs queue
+  instead of racing — defense in depth alongside the refresh-once race fix in #622.
+  files: `.github/workflows/cron-grade.yml`
+- **#669** Bring `/demo` to parity with the shipped app — same four tabs (Picks · League ·
+  Stats · Market), the credibility rating, and weekly hardware, instead of the superseded
+  Picks/League/Wrapped/Recap mirror. Extracted a shared `StandingsTable` and a `readonly` mode
+  on the real `PicksBoard` so the demo and the authed app render identical components instead of
+  hand-mirrors; extended the snapshot with `weeklyAwards`/`stats`/`market`; hardened the CI
+  drift-guard to catch badge-catalog staleness. Amends ADR-0026 with the IA-mirror rule. files:
+  `src/lib/components/leaderboard/StandingsTable.svelte` · `src/routes/demo/`
+- **#619** Harden the credibility-rating rebuild — the upsert-and-prune that rebuilds
+  `player_ratings` now runs as one atomic RPC serialized by a transaction-scoped advisory
+  lock, closing the last concurrent-rebuild gap #622 only mitigated. The rebuild is also
+  wired into every settlement-writing path that isn't a live grade (demo seed, prod-clone,
+  historical import), and the one-shot `pnpm ratings:rebuild` entrypoint is simplified and
+  proven end-to-end. files: `supabase/src/functions/_private/rebuild_player_ratings.sql` ·
+  `src/lib/server/rating/rebuild.ts` · `scripts/rebuildRatings.ts` ·
+  `supabase/scripts/{cloneDb,seed-demo/index}.ts` · ADR-0032 / ADR-0013
+- **#657** Fix grading preset freeze to be per-game-cohort, not per-row — a settlement
+  row born into an already-graded game (a new active member, or a backfilled gap) now
+  adopts the preset its game's existing rows were already frozen under, instead of
+  falling through to the group's current config. ADR-0007 (2026-07-15 amendment).
+  files: `supabase/src/functions/_private/grade_games_by_ids.sql`
+- **#633** Refreshed the "How to Play" onboarding guide to match the shipped app —
+  "Group" replaced with "League" throughout, the two-tab League (Standings · Week),
+  Weekly Hardware / season shelf, the credibility rating and its tiers, the live
+  sweat board, and a `Market` bullet covering all four nav destinations. files:
+  `src/lib/components/howto/HowToPlay.svelte`
+- **#666** Fixed stray "Group" copy still shown to users instead of "League" — the join
+  flow, league manage screen, and admin surfaces now consistently say "League" to match
+  the renamed routes and nav (see the League vs Market naming decision). Copy/aria-label
+  only, no route or identifier renames. files: `GroupSwitcher.svelte` · `routes/join/**` ·
+  `routes/(app)/league/manage/+page.svelte` · `AddMemberCard.svelte` ·
+  `routes/(app)/admin/feedback/+page.svelte`
+- **#674** Restore the PWA install/notification banner to in-flow rendering — split
+  the install decision (synchronous) from the notification decision (awaits push
+  subscription state) so the banner no longer needs to float as a fixed overlay to
+  avoid layout shift. files: `src/lib/pwa/engagement.ts` ·
+  `src/lib/components/pwa/EngagementBanner.svelte`
+- **#660** Re-organize `/league/manage` by audience — it becomes a commissioner-only
+  console (one flat scroll, no tab bar) and the personal knobs (AI recap opt-out, Leave
+  league) move to `/settings`, beside the other per-user preferences. The Members/Manage
+  tabs split the page by audience rather than topic, so members were sent to a page that
+  had nothing for them. A `Commissioner` marker on the `/league` standings row now tells
+  everyone who runs the league. routes: `/league`, `/league/manage`, `/settings` ·
+  ADR-0017 / ADR-0030
+- **#658** Fix `rollover-week`'s completeness check, which compared
+  `pick_settlement` row counts to raw pick counts and could never pass once
+  anyone missed a pick (confirmed failing every run on prod since
+  2026-06-23). Now mirrors `find_unsettled_weeks`' predicate: complete once
+  every final game has been graded. files:
+  `supabase/src/functions/grade/advance_week_if_complete.sql`
 
 ## v3.6.0 — 2026-07-14
 
