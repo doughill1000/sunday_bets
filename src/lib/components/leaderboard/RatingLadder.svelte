@@ -51,6 +51,7 @@
     {#each rows as row (row.user_id)}
       {@const entry = row.entry}
       {@const rated = entry.rating != null}
+      {@const tier = rated && entry.rating != null ? ratingTier(entry.rating) : null}
       {@const isYou = row.user_id === currentUserId}
       <div
         class="rounded-lg px-2 py-2 {isYou ? 'bg-primary/10 font-semibold' : ''}"
@@ -89,14 +90,14 @@
               {entry.decisionsToQualify} to go
             </span>
           {/if}
-          <RatingTierPill tier={rated && entry.rating != null ? ratingTier(entry.rating) : null} />
+          <RatingTierPill {tier} />
         </div>
         <!-- Rated: the meter's midpoint tick is par, so above/below the market reads from the shape
              before the number. Unrated: progress toward the gate instead, so the row still says
              something true rather than rendering an empty track at par. -->
         <div class="mt-1.5 pl-7">
           {#if rated && entry.rating != null}
-            <CoverMeter pct={meterPct(entry.rating) / 100} />
+            <CoverMeter pct={meterPct(entry.rating) / 100} hot={tier === 'hotshot'} />
           {:else}
             <div class="h-2 w-full overflow-hidden rounded-full bg-foreground/10">
               <div

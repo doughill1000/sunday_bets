@@ -37,13 +37,26 @@
   const fillPct = $derived(
     rating != null ? meterPct(rating) : (decisions / MIN_QUALIFIED_DECISIONS) * 100
   );
+  const isHotshot = $derived(tier === 'hotshot');
+  // Same background-size trick as CoverMeter's `hot` variant (#704): the gradient's own 0–100%
+  // coordinate is stretched to the track's full width, not the fill span's, so its 50% stop always
+  // lands on the par tick regardless of how wide the fill is.
+  const meterHot = $derived(isHotshot && fillPct > 50);
+  const meterFillStyle = $derived(
+    `width: ${Math.max(0, Math.min(100, fillPct))}%;` +
+      (meterHot
+        ? ` background-image: linear-gradient(to right, var(--primary) 0%, var(--primary) 50%, var(--ember) 100%); background-size: ${(10000 / fillPct).toFixed(2)}% 100%;`
+        : '')
+  );
 </script>
 
 <div
   data-testid="rating-band"
-  class="rounded-xl border p-4 {rated
-    ? 'border-primary-ink/40 bg-primary/5'
-    : 'border-dashed border-border bg-muted/30'}"
+  class="rounded-xl border p-4 {isHotshot
+    ? 'border-ember/50 bg-ember/5 shadow-[0_10px_28px_-18px_var(--ember)]'
+    : rated
+      ? 'border-primary-ink/40 bg-primary/5'
+      : 'border-dashed border-border bg-muted/30'}"
 >
   <div class="flex items-center justify-between gap-3">
     <span class="text-eyebrow {rated ? 'text-primary-ink' : 'text-muted-foreground'}"
@@ -54,7 +67,10 @@
 
   {#if rated && rating != null}
     <div class="mt-1.5 flex items-baseline gap-2">
-      <span class="text-stat tabular-nums" data-testid="rating-value">{rating}</span>
+      <span
+        class="text-stat tabular-nums {isHotshot ? 'text-ember' : ''}"
+        data-testid="rating-value">{rating}</span
+      >
       {#if seasonDelta != null && seasonDelta !== 0}
         <span
           class="text-sm font-semibold tabular-nums {seasonDelta > 0
@@ -81,8 +97,12 @@
   <!-- Meter: par sits at the midpoint for a rated player; for Unrated it fills toward the gate. -->
   <div class="relative mt-2 h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
     <div
-      class="absolute inset-y-0 left-0 rounded-full {rated ? 'bg-primary' : 'bg-muted-foreground'}"
-      style="width: {Math.max(0, Math.min(100, fillPct))}%"
+      class="absolute inset-y-0 left-0 rounded-full {rated
+        ? meterHot
+          ? ''
+          : 'bg-primary'
+        : 'bg-muted-foreground'}"
+      style={meterFillStyle}
     ></div>
     {#if rated}
       <div class="absolute inset-y-0 left-1/2 w-px bg-foreground/30"></div>

@@ -147,6 +147,12 @@ Disabled Lock in is deliberately flat/muted (cream at low opacity), never a dimm
 brass, so it never reads as "kind of active". A save in flight stays ember (only the
 label changes) — the flat inert style is reserved for an _incomplete_ pick.
 
+`--ember` has a second, deliberate home: the credibility rating's apex tier, Hotshot
+(`RatingTierPill`, `RatingBand`, `RatingLadder` — #704), where it marks the one verdict
+the app is named after instead of the same brass as Sharp. The two never share a screen
+(picks board vs. /stats · /league), so Lock in keeps its crown as the loudest ember on
+any given page.
+
 ## Elevation layering
 
 Surfaces stack `background → card → popover`, and the shadow tier tracks that stack:
