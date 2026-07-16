@@ -17,7 +17,11 @@ export default defineConfig(({ mode }) => ({
     // instrumentation.server.ts. Without this the client's Sentry.init falls back to
     // Sentry's default ('production'), so local-dev/preview browser errors were being
     // mislabeled 'production'. Vercel sets VERCEL_ENV on deploys; unset locally.
-    __SENTRY_ENV__: JSON.stringify(process.env.VERCEL_ENV ?? 'development')
+    __SENTRY_ENV__: JSON.stringify(process.env.VERCEL_ENV ?? 'development'),
+    // Show the Beta tag in the header (ADR-0028 follow-up / issue #697): an invitation
+    // to report issues, gated on a config flag so it flips off in one change at public launch.
+    // Defaults to true; set SHOW_BETA_TAG=false to hide.
+    __SHOW_BETA_TAG__: JSON.stringify(process.env.SHOW_BETA_TAG !== 'false')
   },
   plugins: [
     sentrySvelteKit({
