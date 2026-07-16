@@ -1,7 +1,9 @@
 # Hotshot Roadmap
 
-This file communicates product direction and release order. It is deliberately
-not a task tracker.
+This file communicates durable product direction — the boundary the product is built
+around and the constraints that don't change release to release. It is deliberately
+not a task tracker and does not track release status: GitHub Milestones are the
+source of truth for release order and what shipped in which version.
 
 - GitHub Issues define executable work and acceptance criteria.
 - The GitHub Project shows priority, ownership, and current status.
@@ -13,64 +15,19 @@ See the [delivery workflow](docs/WORKFLOW.md) for the complete process. The
 [detailed prior roadmap](docs/archive/ROADMAP-2026-06-22.md) is preserved as
 migration material only.
 
-## Release direction
-
-| Release | Outcome                                                     | State   |
-| ------- | ----------------------------------------------------------- | ------- |
-| v1.2    | Reliability, cleanup, auth unification, and quota tracking  | Shipped |
-| v1.3    | E2E safety net and Svelte 5 migration                       | Shipped |
-| v1.4    | Automated odds sync, grading, and week rollover             | Shipped |
-| v1.5    | Push notifications and player notification preferences      | Shipped |
-| v1.6    | Stats, history, and operational cleanup                     | Shipped |
-| v1.7    | Group tenancy foundation (internal; original group only)    | Shipped |
-| v1.8    | Season launch — social play and configurable gameplay rules | Shipped |
-| v1.9    | New-player onboarding and a pre-v2 regression safety net    | Now     |
-| v2.0    | Self-service groups (create, join, invite, switch)          | Next    |
-| v2.1    | Commissioner depth, House grading, and engagement polish    | Planned |
-
-Dates belong on milestones and issues, where they can be revised without turning
-this strategy document into a second project board.
+## The defining boundary
 
 The product's defining boundary is single-group → multi-group, not the version
-number. The tenancy foundation (v1.7) lands first and invisibly so that the social
-and gameplay-rule features in v1.8 are built group-aware from the start and never
-need a later `group_id` retrofit. v2.0 marks the groups epoch, where members
-create, join, and switch between groups; v1.9 is the deliberate on-ramp that ships
-a regression safety net and onboarding before those access paths change.
-
-## Now
-
-### v1.9 - Onboarding and a pre-v2 safety net
-
-Ship the two safe, self-contained pieces before the multi-group access paths change: a
-new-player "How to Play" onboarding guide, and a regression test suite that locks in
-current gameplay, group-isolation, and self-sign-up behavior. This is the on-ramp — it
-gives the v2.0 refactor a net to land on.
-
-## Next
-
-### v2.0 - Self-service groups
-
-Add create, join, invite, and group-switching flows now that the tenancy foundation is
-proven, using expiring single-use tokens or shareable codes rather than exposed user
-IDs. A user may belong to multiple groups; commissioners manage their group's name and
-members. Because v1.7 already established the data model, the remaining work is UI and
-access, not a schema retrofit: one invite table, the create/redeem RPCs, commissioner
-write policies, and a persisted active-group selection.
-
-## Planned
-
-### v2.1 - Commissioner depth, House grading, and engagement
-
-Give commissioners per-group rules editing and the membership/RLS hardening that v2.0
-deferred; add the House closing-line grading preset (every member graded on the same
-number) once its decision is Accepted; and layer in engagement polish (install and
-notification nudges, pick-and-results reminders).
+number. The tenancy foundation (v1.7) landed first and invisibly so that the social
+and gameplay-rule features in v1.8 were built group-aware from the start and never
+needed a later `group_id` retrofit. v2.0 marked the groups epoch, where members
+create, join, and switch between groups. Any change that touches group membership,
+ownership, or scoping should be read against this boundary first.
 
 ## Off the dated roadmap
 
-These tracks are real work but are deliberately not tied to a version, so the release
-line stays honest about what is committed.
+These tracks are real work but are deliberately not tied to a version, so milestone
+sequencing stays honest about what is committed.
 
 - **Scaling (measurement-gated).** Observability first to define "measured scale," then
   response caching, bounded and paginated leaderboards, and operational alerts and

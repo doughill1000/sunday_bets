@@ -1,14 +1,15 @@
 ---
 name: release-status
-description: Report whether a version/milestone is actually done before moving to the next one — reconcile the authoritative roadmap against GitHub milestones, releases, tags, package.json, and the changelog, then surface what shipped, what was deferred to the next version, and what is blocked. Use when Doug asks "is vX done?", "anything left for vX?", "what shipped in milestone Y?", or "release readiness" — read-only; it does not author issues (issue-author), start work (start-issue), or cut the release.
+description: Report whether a version/milestone is actually done before moving to the next one — reconcile the GitHub milestone (the version→scope source of truth) against releases, tags, package.json, and the changelog, then surface what shipped, what was deferred to the next version, and what is blocked. Use when Doug asks "is vX done?", "anything left for vX?", "what shipped in milestone Y?", or "release readiness" — read-only; it does not author issues (issue-author), start work (start-issue), or cut the release.
 ---
 
 # Release / milestone status check
 
 Triggered when Doug is about to move between versions and asks what is left: "is v2.0
 done?", "anything I'm missing before I start v2.1?", "what shipped in vX?". The output
-is a reconciled status report — **read-only, no state changes**. Canonical product
-direction: `ROADMAP.md`; shipped history: `docs/CHANGELOG.md`.
+is a reconciled status report — **read-only, no state changes**. Canonical version→scope
+source: GitHub Milestones; shipped history: `docs/CHANGELOG.md`; durable direction (not
+version-scoped): `ROADMAP.md`.
 
 A clean milestone count alone is a trap. The value of this skill is reconciling several
 sources that can each lie on their own, and surfacing the **deferred** and **blocked**
@@ -16,13 +17,14 @@ work that "0 open issues" hides.
 
 ## Steps
 
-1. **Resolve intended scope from the authoritative roadmap.** Read `ROADMAP.md` — the
-   release-direction table plus the per-version section. **Ignore
-   `docs/archive/ROADMAP-2026-06-22.md`**: its version→scope mapping is stale and was
-   reorganized (e.g. it maps v2.0 to "Social + Week 1", but the shipped v2.0 is
-   "self-service groups"). While there, note what the roadmap says the **next** version
-   explicitly defers _from_ this one (phrasing like "the membership/RLS hardening that
-   vN deferred") — those are your prime leftover candidates.
+1. **Resolve intended scope from the target milestone.** GitHub Milestones are the
+   version→scope source of truth (`ROADMAP.md` no longer tracks release status or a
+   version table — it only holds durable direction: the single→multi-group boundary and
+   the architectural guardrails). Read the milestone's issue list and each issue's Scope
+   for what the version is actually scoped to include. **Ignore
+   `docs/archive/ROADMAP-2026-06-22.md`** entirely — it is historical migration material,
+   not a version→scope mapping. Note any open issue or PR that explicitly defers work to
+   the **next** milestone — those are your prime leftover candidates.
 2. **Pull the GitHub milestone truth.** PowerShell mangles `--jq` expressions that
    contain spaces, so fetch `--json` and process with `ConvertFrom-Json` instead:
    ```powershell
@@ -48,7 +50,7 @@ work that "0 open issues" hides.
 4. **Look past "0 open."** Build three buckets, not one count:
    - **Shipped** — closed issues in the milestone (cross-referenced with `docs/CHANGELOG.md`
      and the unreleased `docs/changelog.d/` fragments).
-   - **Deferred** — work the roadmap/issues explicitly punted to the next milestone. Name it
+   - **Deferred** — work the issues explicitly punted to the next milestone. Name it
      and say why (often an intentional scope cut), so Doug decides consciously rather than
      discovering it later.
    - **Blocked** — open issues carrying the `blocked` label, _with what unblocks them_. The
@@ -60,8 +62,8 @@ work that "0 open issues" hides.
 
 ## Remember
 
-- `ROADMAP.md` is authoritative for version→scope; the **archived** roadmap is stale —
-  never map versions from it.
+- GitHub Milestones are authoritative for version→scope; `ROADMAP.md` no longer tracks
+  release status. The **archived** roadmap is stale — never map versions from it.
 - In PowerShell, fetch `--json` and use `ConvertFrom-Json` — `--jq` strings with spaces
   get split and fail.
 - **"0 open issues" ≠ "nothing missing."** Always surface deferred-to-next and blocked work.
@@ -70,8 +72,8 @@ work that "0 open issues" hides.
 
 ## See also
 
-- `ROADMAP.md` (release direction), `docs/CHANGELOG.md` (shipped history),
-  `docs/WORKFLOW.md` (delivery process)
+- GitHub Milestones (release direction and version→scope), `docs/CHANGELOG.md` (shipped
+  history), `ROADMAP.md` (durable direction only), `docs/WORKFLOW.md` (delivery process)
 - Sibling skills: `cut-release` (the **write** counterpart — actually cuts the release
   once this read-only check says a version is done), `start-issue` (begin the next
   piece), `finish-pr` (close one out), `scope-issue` (triage a leftover issue).
