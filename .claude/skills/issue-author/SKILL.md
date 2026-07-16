@@ -44,7 +44,9 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
 7. Create via `gh` (apply the milestone and `semver:` label on creation) and report the
    issue URL. For **complex, multi-decision** work, offer to run `scope-issue` next (an
    interview that settles essential vs nice-to-have and splits off follow-ups) before any
-   implementation — skip the offer for small or already-unambiguous issues. Then **stop** —
+   implementation — skip the offer for small or already-unambiguous issues. `scope-issue`
+   carries its own **Model & effort** note (run scoping on Opus/high); flag that when you
+   offer it if the current session is on a lighter model. Then **stop** —
    do not implement unless implementation was also requested (then hand off to `start-issue`).
 
 ## See also

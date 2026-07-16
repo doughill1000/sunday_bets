@@ -177,6 +177,10 @@ function buildSystemPrompt(spice: SpiceLevel, isFinalWeek: boolean): string {
   return [
     PERSONA,
     "Narrate this week's results in a short, punchy paragraph (3-5 sentences) for the group chat.",
+    'Open with a self-contained hook sentence — the single juiciest beat of the week, naming the ' +
+      'player(s) and the key number — that reads as a one-line teaser on its own, because it doubles ' +
+      'as the push-notification preview. Vary which beat you lead on week to week; then carry on with ' +
+      'the rest of the paragraph.',
     spiceInstruction(spice),
     CRAFT_RULES,
     // Data dictionary so the model reads each fact key correctly.

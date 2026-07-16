@@ -10,6 +10,7 @@ import {
   shouldNotifyLineShift,
   spreadRelativeToHome,
   formatRecapBody,
+  recapPushBody,
   type NotificationPrefs,
   type RecapTally
 } from '$lib/domain/notifications';
@@ -417,11 +418,16 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
 
   const { data: recaps, error: recapErr } = await supabaseService
     .from('ai_recaps')
-    .select('group_id')
+    .select('group_id, prose')
     .eq('season_year', seasonYear)
     .eq('week_number', weekNumber);
   if (recapErr) throw recapErr;
-  const groupIds = [...new Set((recaps ?? []).map((r) => r.group_id))];
+  // One recap row per (group, season, week); keep each group's prose for the push body.
+  const proseByGroup = new Map<string, string>();
+  for (const r of recaps ?? []) {
+    if (!proseByGroup.has(r.group_id)) proseByGroup.set(r.group_id, r.prose);
+  }
+  const groupIds = [...proseByGroup.keys()];
   if (groupIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
 
   const { data: memberships, error: memErr } = await supabaseService
@@ -460,7 +466,7 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
 
     await sendToUser(user_id, {
       title: `Week ${weekNumber} recap is ready`,
-      body: 'Your league’s AI recap just dropped.',
+      body: recapPushBody(proseByGroup.get(group_id) ?? ''),
       url: '/recap',
       tag: `ai-recap-${group_id}-week-${weekId}`
     });
