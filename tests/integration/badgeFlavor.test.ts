@@ -14,14 +14,28 @@
  * Fixture ownership: this suite owns the ai_badge_flavors rows for the two fixture groups and
  * clears them before each test.
  */
-import { describe, beforeAll, beforeEach, it, expect } from 'vitest';
+import { describe, beforeAll, afterAll, beforeEach, it, expect } from 'vitest';
 import { createServiceClient } from './_auth';
-import { seedTwoGroupSettlements, type TwoGroupSettlementsResult } from './fixtures/db';
+import {
+  seedTwoGroupSettlements,
+  ensureAuthUsers,
+  ensureMembership,
+  deleteAuthUsers,
+  type TwoGroupSettlementsResult
+} from './fixtures/db';
 import { generateBadgeFlavors, sendBadgeFlavors } from '$lib/server/badgeFlavor';
 import { getGroupCachePayload } from '$lib/server/readModels/groupCache';
 
 const admin = createServiceClient();
 let fx: TwoGroupSettlementsResult;
+
+// Group B's two fixture members both picked the losing side, and the badge catalog trim
+// (#634-#655) removed every badge that used to fire for an all-losing 2-person room (The
+// Fool is gone) — so group B legitimately earns zero badges under today's catalog. Add a
+// third member who never picks the fixture game: their 'missed' settlement crowns The
+// Grinder for the two who didn't miss, giving group B a badge to isolate against. Cleaned
+// up in afterAll so later suites still see group B's original 2-member shape.
+const GHOST_B_USER_ID = '00000000-0000-0000-0000-000000002999';
 
 async function clearFlavors(groupIds: string[], seasonYear: number) {
   await admin
@@ -43,7 +57,36 @@ async function flavorRows(groupId: string, seasonYear: number) {
 
 beforeAll(async () => {
   fx = await seedTwoGroupSettlements(admin);
+
+  await ensureAuthUsers([
+    { id: GHOST_B_USER_ID, email: 'ghost-b-badgeflavor@example.com', displayName: 'GhostB' }
+  ]);
+  const { error: userErr } = await admin
+    .from('users')
+    .upsert({ id: GHOST_B_USER_ID, display_name: 'GhostB', role: 'player' }, { onConflict: 'id' });
+  if (userErr) throw userErr;
+  await ensureMembership(admin, fx.groupBId, [GHOST_B_USER_ID]);
+
+  const { error: gradeErr } = await admin.rpc('grade_game', { p_game_id: fx.gameId });
+  if (gradeErr) throw gradeErr;
+  const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');
+  if (refreshErr) throw refreshErr;
 }, 60_000);
+
+afterAll(async () => {
+  await admin
+    .from('pick_settlement')
+    .delete()
+    .eq('group_id', fx.groupBId)
+    .eq('user_id', GHOST_B_USER_ID);
+  await admin
+    .from('group_memberships')
+    .delete()
+    .eq('group_id', fx.groupBId)
+    .eq('user_id', GHOST_B_USER_ID);
+  await deleteAuthUsers([GHOST_B_USER_ID]);
+  await admin.rpc('refresh_leaderboard_stats');
+});
 
 describe('generateBadgeFlavors', () => {
   beforeEach(async () => {
