@@ -98,9 +98,34 @@ production deploys.
 
 Caveats of the hash-ledger approach:
 
+- A migration name is now **required** whenever a migration is actually written:
+  `pnpm db:migration --name=describe_the_change`. (`--check`, `--bootstrap`, and a
+  no-op run with no source changes don't need one.) A bare `--name` with no value is
+  a hard error — use `--name=...`.
 - Don't rename, move, or delete files under `supabase/src/` casually. The generator
-  rejects stale ledger entries. Object removal needs explicit `DROP` SQL before its
-  ledger entry is intentionally removed.
+  rejects stale ledger entries that aren't explicitly accounted for. To delete or
+  rename a source file, use `--retire=<key>` (repeatable): it recovers the file's
+  last-committed content via `git show`, synthesizes the matching `drop table` /
+  `drop type` / `drop view` / `drop function` for the retired object (using the
+  ledger's recorded signature for functions), and removes its ledger entry — e.g.
+  `pnpm db:migration --retire=schemas/0217_old_table.sql --name=drop_old_table`. If
+  the retired file only ever contained `alter` statements (no primary object — the
+  file-consolidation case), no drop is emitted, just a marker comment. `--retire`
+  works with zero other changed files (a drops-only migration) but can't be combined
+  with `--check` or `--bootstrap`.
+- If you edit `supabase/src/**` again after already running `pnpm db:migration` but
+  before committing, run `pnpm db:migration --amend --name=describe_the_change`
+  instead of hand-reverting the ledger — it reverts the newest **uncommitted**
+  migration and its ledger entries back to their last-committed (`HEAD`) state, then
+  regenerates a single clean migration from the current source tree. It refuses to
+  touch a migration that's already committed.
+- A source file may declare `-- @phase: <folder>` (any `SOURCE_ORDER` folder name,
+  e.g. `schemas`, `functions`) on its own line to override which emission phase it
+  sorts into, independent of which folder it physically lives in — useful when one
+  file's dependencies live in a later phase than its own folder.
+- Two files in the same directory whose basenames share a leading numeric prefix
+  (e.g. `schemas/0215_a.sql` and `schemas/0215_b.sql`) are flagged: a warning if both
+  already have ledger entries (grandfathered), a hard error if either is new.
 - `create table if not exists` does not alter an existing table. Schema evolution
   needs explicit, idempotent `alter table` SQL in a new logically named source file;
   changing only the original `create table` statement is insufficient.
@@ -108,10 +133,12 @@ Caveats of the hash-ledger approach:
   generator enforces this and only grandfathers the unchanged legacy bundles.
   Policies and grants may remain grouped as table-scoped access contracts. Function
   signature changes are safest with an explicit
-  `-- @signature: schema.function(argument_types)` header.
+  `-- @signature: schema.function(argument_types)` header — a changed function file
+  with no extractable signature and no `@signature` header only warns (no automatic
+  drop can be emitted for a later signature change).
 - `--bootstrap` stamps current hashes without writing a migration; only use it
   when the DB already matches the sources. A missing or malformed ledger otherwise
-  fails closed.
+  fails closed. It skips the duplicate-numeric-prefix guard.
 
 ## Deploys
 

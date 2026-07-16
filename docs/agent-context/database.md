@@ -34,12 +34,27 @@ For Codex on Windows: use `corepack pnpm db:migration --name=<name>`.
 ### Re-generating a not-yet-committed migration
 
 If you edit `supabase/src/**` **after** already running `pnpm db:migration` (e.g. to fix a
-view before the PR is up), don't stack a second migration on top. Reset to one clean
-migration: revert the ledger (`git checkout -- supabase/.migration-hash.json`), delete the
-just-generated migration file, then re-run `pnpm db:migration --name=…`. Replay it onto the
-local DB with `supabase db reset --local` — the raw CLI reset just replays migrations,
-whereas the pnpm `db:reset:*` wrappers add a prod-clone/demo-seed step — then regenerate
-types with `pnpm db:types`.
+view before the PR is up), don't stack a second migration on top. Run
+`pnpm db:migration --amend --name=describe_the_change` instead of hand-reverting the
+ledger: it reverts the newest **uncommitted** migration (verified via `git status`) and
+restores the ledger entries it touched back to their `HEAD` state, deletes that migration
+file, then regenerates one clean migration from the current source tree. It refuses to
+amend a migration that's already committed, and requires a committed ledger (`HEAD`) to
+restore from. Replay the result onto the local DB with `supabase db reset --local` — the
+raw CLI reset just replays migrations, whereas the pnpm `db:reset:*` wrappers add a
+prod-clone/demo-seed step — then regenerate types with `pnpm db:types`.
+
+### Retiring a source file
+
+To delete or rename a file under `supabase/src/`, don't just delete it — the generator
+rejects stale ledger entries it can't account for. Use `--retire=<key>` (repeatable):
+`pnpm db:migration --retire=schemas/0217_old_table.sql --name=drop_old_table`. It recovers
+the file's last-committed content via `git show HEAD:...`, synthesizes the matching
+`drop table` / `drop type` / `drop view` / `drop function` (using the ledger's recorded
+signature for functions), and removes the ledger entry. A rename is a `--retire` of the
+old key plus a normal new file at the new key in the same migration. If the retired file
+only ever contained `alter` statements (no primary object — the file-consolidation case),
+no drop is emitted, just a marker comment.
 
 ## Every new public table needs three things
 
