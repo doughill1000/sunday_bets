@@ -1,7 +1,6 @@
 import type { RequestHandler } from './$types';
 import * as Sentry from '@sentry/sveltekit';
 import { gradeWeek, refreshReadModels } from '$lib/server/grading';
-import { sendResultsRecap, sendAIRecapPushes } from '$lib/server/notifications';
 import { sendAIRecaps } from '$lib/server/aiRecap';
 import { sendSeasonWrappeds } from '$lib/server/seasonWrapped';
 import { sendBadgeFlavors } from '$lib/server/badgeFlavor';
@@ -61,25 +60,11 @@ export const POST: RequestHandler = async (event) => {
     // AI recap reads the freshly-refreshed leaderboard/stats matviews (ADR-0008).
     await refreshReadModels();
 
-    // After grading, recap any week that is now fully settled. The completeness
-    // gate + per-(user, week) dedup inside sendResultsRecap make this a no-op on
-    // partial weeks and safe to re-run. A recap failure must not fail grading.
-    const recaps = await Promise.all(
-      weeks.map(async (w) => {
-        try {
-          return { weekId: w.id, ...(await sendResultsRecap(w.id)) };
-        } catch (e) {
-          Sentry.captureException(e);
-          return {
-            weekId: w.id,
-            error: e instanceof Error ? e.message : 'results recap failed'
-          };
-        }
-      })
-    );
-
-    // After push recaps, generate AI recaps for each enabled group (ADR-0008).
-    // Runs post-grade + post the single refreshReadModels() above (leaderboard/stats matviews).
+    // Generate AI recap content for each enabled group (ADR-0008). Runs post-grade +
+    // post the single refreshReadModels() above (leaderboard/stats matviews). This only
+    // generates the recap row; the "recap ready" push (and the results-recap push) are
+    // sent separately by the weekly-recap cron so they land at a civilized hour instead
+    // of whenever grading happens to settle the week (see docs/changelog.d for why).
     // Errors → Sentry only; never fail grading.
     const aiRecaps = await Promise.all(
       weeks.map(async (w) => {
@@ -90,24 +75,6 @@ export const POST: RequestHandler = async (event) => {
           return {
             weekId: w.id,
             error: e instanceof Error ? e.message : 'ai recap failed'
-          };
-        }
-      })
-    );
-
-    // After AI recaps generate, push a "recap ready" notification per opted-in
-    // member (#302, reuses the results-recap dedup shape). Evaluates whichever
-    // ai_recaps rows now exist, so it's a no-op for groups that didn't generate
-    // one. Errors → Sentry only; never fail grading.
-    const aiRecapPushes = await Promise.all(
-      weeks.map(async (w) => {
-        try {
-          return { weekId: w.id, ...(await sendAIRecapPushes(w.id)) };
-        } catch (e) {
-          Sentry.captureException(e);
-          return {
-            weekId: w.id,
-            error: e instanceof Error ? e.message : 'ai recap push failed'
           };
         }
       })
@@ -150,9 +117,7 @@ export const POST: RequestHandler = async (event) => {
     return {
       weekIds: weeks.map((w) => w.id),
       results,
-      recaps,
       aiRecaps,
-      aiRecapPushes,
       seasonWrappeds,
       badgeFlavors,
       reconcile

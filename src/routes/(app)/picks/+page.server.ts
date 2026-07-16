@@ -4,7 +4,6 @@ import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActi
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
-import { getReactionsForGames } from '$lib/server/db/queries/getReactionsForGame';
 import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
 import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
@@ -27,9 +26,8 @@ async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise
   return data?.week_number === weekNumber;
 }
 
-// Comments/reactions for started games only (RLS also enforces this gate). Two
-// batched queries (one per table) instead of a per-game N+1. Depends only on the
-// games, so the caller chains it off the games promise to overlap the other
+// Comments for started games only (RLS also enforces this gate). Depends only on
+// the games, so the caller chains it off the games promise to overlap the other
 // per-week reads rather than running it as a second serial wave.
 async function loadSocial(
   event: Parameters<PageServerLoad>[0],
@@ -39,19 +37,10 @@ async function loadSocial(
   const now = Date.now();
   const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
 
-  const [commentsByGame, reactionsByGame] = await Promise.all([
-    getCommentsForGames(event, groupId, startedGameIds),
-    getReactionsForGames(event, groupId, startedGameIds)
-  ]);
+  const commentsByGame = await getCommentsForGames(event, groupId, startedGameIds);
 
   return Object.fromEntries(
-    startedGameIds.map((gameId) => [
-      gameId,
-      {
-        comments: commentsByGame.get(gameId) ?? [],
-        reactions: reactionsByGame.get(gameId) ?? []
-      }
-    ])
+    startedGameIds.map((gameId) => [gameId, { comments: commentsByGame.get(gameId) ?? [] }])
   );
 }
 

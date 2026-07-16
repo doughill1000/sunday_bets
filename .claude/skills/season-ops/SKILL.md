@@ -1,27 +1,28 @@
 ---
 name: season-ops
-description: Read-only operational check across the six production cron jobs, odds-API quota, matview freshness, and schedule sync — two modes, "readiness" (pre-season dry-run) and "week-health" (in-season, did everything run this week). Use when Doug asks "are we ready for the season", "is everything running", "check the crons", or wants a weekly operational health check. Does not fix anything itself — surfaces findings for a human or a follow-up fix.
+description: Read-only operational check across the seven production cron jobs, odds-API quota, matview freshness, and schedule sync — two modes, "readiness" (pre-season dry-run) and "week-health" (in-season, did everything run this week). Use when Doug asks "are we ready for the season", "is everything running", "check the crons", or wants a weekly operational health check. Does not fix anything itself — surfaces findings for a human or a follow-up fix.
 ---
 
 # Season operations check
 
-Sunday Bets runs on six scheduled GitHub Actions crons hitting production endpoints,
+Sunday Bets runs on seven scheduled GitHub Actions crons hitting production endpoints,
 plus event-driven matview refresh. Nothing here is exercised meaningfully in the
 off-season, so drift (a disabled workflow, an expired secret, a quota near its cap) is
 invisible until the first real Sunday exposes it. This skill is the read-only check
 that catches that drift **before** or **during** the season instead of after a missed
 grade. It never writes anything — findings go back to Doug or a follow-up fix.
 
-## The six crons (`.github/workflows/cron-*.yml` → `_cron-call.yml` → `/api/cron/<endpoint>`)
+## The seven crons (`.github/workflows/cron-*.yml` → `_cron-call.yml` → `/api/cron/<endpoint>`)
 
-| Workflow                    | Schedule (UTC)               | Endpoint           | Sentry monitor slug |
-| --------------------------- | ---------------------------- | ------------------ | ------------------- |
-| `cron-pregame.yml`          | hourly                       | `pregame`          | `pregame`           |
-| `cron-sync-odds.yml`        | 14:00 Tue–Sat                | `sync-odds`        | `sync-odds`         |
-| `cron-sync-schedule.yml`    | 15:00 Tue                    | `sync-schedule`    | `sync-schedule`     |
-| `cron-grade.yml`            | 21–23h Sun, 0–6h Mon, 9h Tue | `grade`            | `grade`             |
-| `cron-rollover-week.yml`    | 10:00 Tue                    | `rollover-week`    | `rollover-week`     |
-| `cron-reset-odds-usage.yml` | 00:05, 1st of month          | `reset-odds-usage` | `reset-odds-usage`  |
+| Workflow                    | Schedule (UTC)                                  | Endpoint           | Sentry monitor slug |
+| --------------------------- | ----------------------------------------------- | ------------------ | ------------------- |
+| `cron-pregame.yml`          | hourly                                          | `pregame`          | `pregame`           |
+| `cron-sync-odds.yml`        | 14:00 Tue–Sat                                   | `sync-odds`        | `sync-odds`         |
+| `cron-sync-schedule.yml`    | 15:00 Tue                                       | `sync-schedule`    | `sync-schedule`     |
+| `cron-grade.yml`            | 4h Sun, 21–23h Sun, 0–6h Mon, 5h Fri, 5h+9h Tue | `grade`            | `grade`             |
+| `cron-weekly-recap.yml`     | 14:00 Tue                                       | `weekly-recap`     | `weekly-recap`      |
+| `cron-rollover-week.yml`    | 10:00 Tue                                       | `rollover-week`    | `rollover-week`     |
+| `cron-reset-odds-usage.yml` | 00:05, 1st of month                             | `reset-odds-usage` | `reset-odds-usage`  |
 
 Each POSTs to `${DEPLOY_URL}/api/cron/<endpoint>` with a `CRON_SECRET` bearer token and
 an optional Sentry Cron Monitor check-in (best-effort, only fires if
@@ -45,7 +46,7 @@ a green grade.
    ```powershell
    gh workflow list --repo doughill1000/sunday_bets --all
    ```
-   Confirm all six `cron-*.yml` show `active`, not `disabled_manually` (GitHub
+   Confirm all seven `cron-*.yml` show `active`, not `disabled_manually` (GitHub
    auto-disables scheduled workflows after ~60 days of repo inactivity — a real risk
    after an off-season).
 2. **Production secrets/vars exist.**
@@ -113,7 +114,7 @@ a green grade.
 ## See also
 
 - `.github/workflows/_cron-call.yml` (the shared caller), `.github/workflows/cron-*.yml`
-  (the six schedules)
+  (the seven schedules)
 - `docs/adr/0013-materialized-leaderboard-stats.md` (matview refresh contract)
 - `src/routes/(app)/admin/+page.server.ts` (the human-facing view of the same data)
 - Could be wired to a recurring check (e.g. the `loop`/`schedule` skills) for a Monday

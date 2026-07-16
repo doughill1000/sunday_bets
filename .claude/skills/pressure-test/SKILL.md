@@ -31,7 +31,9 @@ product opinion, and not a re-litigation of decisions the ADRs already settled.
    itself a finding.
 4. **Stress-test the five judgment lenses.** Run value-vs-noise, on-brand/heart, right-for-~6-
    friends, strategic timing, and lifetime cost/ops drag. For each, name the honest weak point —
-   try to _kill_ the idea, don't defend it. No single lens is decisive; weigh them together.
+   try to _kill_ the idea, don't defend it. No single lens is decisive; weigh them together. If
+   the idea lands on an already-dense surface, also run lens 1's **displacement corollary**:
+   additions displace, they don't stack — the idea must name what it replaces.
 5. **Check the two gates explicitly.** Fairness & integrity (could it corrupt pick-locking, reveal
    timing, or grading, or hand an edge?) and reversibility (a persistent data model, external
    dependency, or public surface that's costly to walk back?). A gate is **pass/fail**, not a

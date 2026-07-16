@@ -11,7 +11,6 @@
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
-  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
   import CommentsSection from './CommentsSection.svelte';
   import type { GroupPickEntry } from '$lib/types/picks';
   import type { LiveScoreEntry } from '$lib/live/types';
@@ -19,7 +18,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import FormNote from '$lib/components/FormNote.svelte';
 
-  type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
+  type SocialData = { comments: CommentRow[] };
 
   interface Props {
     games: PickGame[];
@@ -248,7 +247,6 @@
             <CommentsSection
               gameId={g.id}
               comments={social[g.id].comments}
-              reactions={social[g.id].reactions}
               currentUserId={userId}
               {currentUserDisplayName}
             />

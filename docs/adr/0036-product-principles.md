@@ -32,7 +32,7 @@ skills that operationalise it, mirroring the design layer one-for-one.
    weighed together, and **two gates** (fairness & integrity, reversibility) that are pass/fail.
 2. **The gates restate existing law, they do not create it.** Fairness/scoring changes and
    costly-to-reverse changes already require an ADR under the `docs/adr/README.md` trigger test.
-   The gates simply make that requirement fire at the *idea* stage: a tripped gate escalates to
+   The gates simply make that requirement fire at the _idea_ stage: a tripped gate escalates to
    `new-adr` before any build, rather than surfacing late in a PR.
 3. **`pressure-test`** (forward) steelmans one idea, stress-tests it against the lenses, and
    returns a **Build / Reshape / Drop** verdict, handing survivors to `issue-author` (or `new-adr`
@@ -47,7 +47,7 @@ exactly as `DESIGN.md` does.
 ## Consequences
 
 - **Helpful:** one shared, grounded answer to "does this belong in Hotshot," reusable by humans
-  and agents; bad ideas are killed or reshaped cheaply *before* they become issues and code; the
+  and agents; bad ideas are killed or reshaped cheaply _before_ they become issues and code; the
   product's heart becomes explicit and tunable instead of tacit; the two layers (design, product)
   now read and govern the same way.
 - **Harmful / cost:** another governing doc to keep current as the product evolves; product
@@ -63,12 +63,12 @@ exactly as `DESIGN.md` does.
   scattered sources on every run, drift silently, and be untunable in one place — the exact
   problem this solves.
 - **A doc but no ADR.** Rejected: it would leave the product layer governed differently from the
-  design layer (which *is* ADR-ratified), and the trigger test already calls for an ADR here.
+  design layer (which _is_ ADR-ratified), and the trigger test already calls for an ADR here.
 - **One skill with prospective/retrospective modes.** Rejected: the forward gate (interactive,
   per-idea, no file) and the backward audit (fan-out, read-only, report) are genuinely different
   shapes, just as `design-study` and `design-review` are split.
 - **Grade against generic product "best practices."** Rejected: generic advice produces noise for
-  a private six-person app; the value is grading against *this* product's documented heart.
+  a private six-person app; the value is grading against _this_ product's documented heart.
 
 ## Follow-up
 
