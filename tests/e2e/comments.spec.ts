@@ -118,3 +118,37 @@ test('user can post a comment on a started game', async ({ page }) => {
   // The comment body is real data the test typed — assert on the content itself.
   await comments.expectCommentVisible(uniqueBody);
 });
+
+test('user can react to a comment, reveal reactors, then remove the reaction', async ({ page }) => {
+  const comments = commentsSection(page);
+  await comments.goto();
+  await comments.openStartedGame();
+  await expect(comments.commentInput()).toBeVisible({ timeout: 5000 });
+
+  // Post a fresh comment to react to (isolated from other specs by its body).
+  const uniqueBody = `E2E reaction target ${Date.now()}`;
+  await comments.commentInput().fill(uniqueBody);
+  await comments.submitButton().click();
+  await comments.expectCommentVisible(uniqueBody);
+
+  const row = comments.rowWithText(uniqueBody);
+
+  // No chip until someone reacts.
+  await expect(comments.reactionChip(row, 'fire')).toHaveCount(0);
+
+  // Open the picker and add 🔥 — a chip with count 1 should appear.
+  await comments.reactionAdd(row).click();
+  await comments.reactionPick(row, 'fire').click();
+  const chip = comments.reactionChip(row, 'fire');
+  await expect(chip).toBeVisible();
+  await expect(chip).toContainText('1');
+
+  // Tapping the chip reveals who reacted.
+  await chip.click();
+  await expect(comments.reactionReactors(row)).toBeVisible();
+
+  // Toggling 🔥 off via the picker removes the chip.
+  await comments.reactionAdd(row).click();
+  await comments.reactionPick(row, 'fire').click();
+  await expect(comments.reactionChip(row, 'fire')).toHaveCount(0);
+});

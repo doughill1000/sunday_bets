@@ -4,10 +4,10 @@ import * as Sentry from '@sentry/sveltekit';
 
 type PostBody = { emoji: string };
 
-// POST /api/reactions/:gameId — add a reaction (idempotent via unique constraint)
+// POST /api/reactions/:commentId — react to a comment (idempotent via unique constraint)
 export const POST: RequestHandler = async (event) => {
   const { supabase } = event.locals;
-  const gameId = event.params.gameId!;
+  const commentId = event.params.commentId!;
   const payload = (await event.request.json()) as PostBody;
 
   if (!payload.emoji?.trim()) {
@@ -22,7 +22,12 @@ export const POST: RequestHandler = async (event) => {
 
   const { data, error } = await supabase
     .from('reactions')
-    .insert({ group_id: groupId, game_id: gameId, emoji: payload.emoji.trim(), user_id: userId })
+    .insert({
+      group_id: groupId,
+      comment_id: commentId,
+      emoji: payload.emoji.trim(),
+      user_id: userId
+    })
     .select('id, emoji, created_at')
     .single();
 
@@ -41,24 +46,30 @@ export const POST: RequestHandler = async (event) => {
   return json({ ok: true, reaction: data });
 };
 
-// DELETE /api/reactions/:gameId?emoji=<emoji> — toggle reaction off
+// DELETE /api/reactions/:commentId?emoji=<emoji> — toggle your own reaction off
 export const DELETE: RequestHandler = async (event) => {
   const { supabase } = event.locals;
-  const gameId = event.params.gameId!;
+  const commentId = event.params.commentId!;
   const emoji = event.url.searchParams.get('emoji');
 
   if (!emoji) {
     return json({ ok: false, reason: 'emoji query param is required.' }, { status: 400 });
   }
 
+  const userId = event.locals.user?.id;
+  if (!userId) return json({ ok: false, reason: 'Not authenticated.' }, { status: 401 });
+
   const groupId = event.locals.groupId;
   if (!groupId) return json({ ok: false, reason: 'No active group.' }, { status: 400 });
 
+  // Scope the delete to the caller's own row. RLS already restricts it to
+  // user_id = auth.uid(), but filtering explicitly keeps the toggle unambiguous.
   const { error } = await supabase
     .from('reactions')
     .delete()
     .eq('group_id', groupId)
-    .eq('game_id', gameId)
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
     .eq('emoji', emoji);
 
   if (error) {
