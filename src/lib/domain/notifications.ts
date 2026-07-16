@@ -3,9 +3,13 @@
 
 export type LineShiftPrefs = {
   enabled: boolean;
-  /** Minimum absolute line movement (in points) that triggers an alert. */
-  threshold: number;
 };
+
+/**
+ * Fixed line-movement alert threshold (#693 dropped the per-user points knob
+ * — the casual room doesn't need a bettor's configuration surface).
+ */
+export const LINE_SHIFT_THRESHOLD_POINTS = 2;
 
 export type NotificationPrefs = {
   /** Master switch — when false, no notifications of any kind are sent. */
@@ -23,7 +27,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   pick_reminders: true,
   results_recap: true,
   ai_recap: true,
-  line_shift: { enabled: true, threshold: 2 }
+  line_shift: { enabled: true }
 };
 
 /** Shape delivered to the service worker and shown via showNotification(). */
@@ -46,6 +50,8 @@ export function parseNotificationPrefs(raw: unknown): NotificationPrefs {
     return { ...base, line_shift: { ...base.line_shift } };
   }
   const obj = raw as Record<string, unknown>;
+  // `threshold` may still be present in older stored jsonb (#693 dropped the
+  // knob) — deliberately ignored rather than parsed.
   const lsRaw =
     obj.line_shift && typeof obj.line_shift === 'object'
       ? (obj.line_shift as Record<string, unknown>)
@@ -58,11 +64,7 @@ export function parseNotificationPrefs(raw: unknown): NotificationPrefs {
     results_recap: typeof obj.results_recap === 'boolean' ? obj.results_recap : base.results_recap,
     ai_recap: typeof obj.ai_recap === 'boolean' ? obj.ai_recap : base.ai_recap,
     line_shift: {
-      enabled: typeof lsRaw.enabled === 'boolean' ? lsRaw.enabled : base.line_shift.enabled,
-      threshold:
-        typeof lsRaw.threshold === 'number' && lsRaw.threshold > 0
-          ? lsRaw.threshold
-          : base.line_shift.threshold
+      enabled: typeof lsRaw.enabled === 'boolean' ? lsRaw.enabled : base.line_shift.enabled
     }
   };
 }
@@ -91,19 +93,17 @@ export function lineMovementPoints(args: {
 
 /**
  * Decide whether a line-shift alert should fire. Returns false when the feature
- * is off, the move is under threshold, or this user was already alerted for this
- * game recently (the once-per-pick-per-day cap).
+ * is off, the move is under the fixed threshold, or this user was already
+ * alerted for this game recently (the once-per-pick-per-day cap).
  */
 export function shouldNotifyLineShift(args: {
   movement: number;
-  threshold: number;
   lineShiftEnabled: boolean;
   /** True if a line-shift alert was already sent for this pick within the cap window. */
   recentlyNotified: boolean;
 }): boolean {
   if (!args.lineShiftEnabled) return false;
-  if (!(args.threshold > 0)) return false;
-  if (args.movement < args.threshold) return false;
+  if (args.movement < LINE_SHIFT_THRESHOLD_POINTS) return false;
   if (args.recentlyNotified) return false;
   return true;
 }
