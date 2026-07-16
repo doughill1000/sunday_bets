@@ -1,0 +1,1 @@
+- **#695** Displacement tenet added to `docs/PRODUCT.md` — on already-dense surfaces, additions must name what they replace (they displace, they don't stack), per the 2026-07 product audit's density finding; the `pressure-test` skill now runs the corollary explicitly.

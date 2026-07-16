@@ -1,7 +1,7 @@
 // src/lib/server/cronHealth.ts
 //
 // Pure, dependency-free logic for the free cron missed-run watchdog (issue #206).
-// The six GitHub Actions crons each write a success row to cron_run_log; this
+// The seven GitHub Actions crons each write a success row to cron_run_log; this
 // module decides, per job, whether a scheduled run is *overdue* — the most recent
 // expected fire time has passed (by more than a grace margin) without a
 // successful run landing after it. Being schedule-aware (not just "age of last
@@ -36,11 +36,13 @@ export type CronSchedule = {
   marginMinutes: number;
 };
 
-// The six production crons and their GitHub Actions schedules (UTC), mirroring
-// .github/workflows and issue #206. `grade` fires on three triggers; the Tue
-// 09:00 catch-all is the representative one. Margins are generous by design (see
-// marginMinutes above) — they are NOT the tight Sentry check-in margins from the
-// retired plan, because external polling + GitHub scheduler jitter needs slack.
+// The seven production crons and their GitHub Actions schedules (UTC), mirroring
+// .github/workflows and issue #206. `grade` fires on six triggers across the week; the
+// Tue 09:00 backstop is the representative one (it still fires every week regardless of
+// the other game-night runs, so it's the right floor for "did grade run at all this
+// week"). Margins are generous by design (see marginMinutes above) — they are NOT the
+// tight Sentry check-in margins from the retired plan, because external polling +
+// GitHub scheduler jitter needs slack.
 export const CRON_SCHEDULES: readonly CronSchedule[] = [
   { job: 'pregame', kind: 'hourly', minute: 0, marginMinutes: 45 },
   {
@@ -54,6 +56,14 @@ export const CRON_SCHEDULES: readonly CronSchedule[] = [
   { job: 'grade', kind: 'weekly', weekdays: [2], hour: 9, minute: 0, marginMinutes: 60 },
   { job: 'rollover-week', kind: 'weekly', weekdays: [2], hour: 10, minute: 0, marginMinutes: 60 },
   { job: 'sync-schedule', kind: 'weekly', weekdays: [2], hour: 15, minute: 0, marginMinutes: 60 },
+  {
+    job: 'weekly-recap',
+    kind: 'weekly',
+    weekdays: [2],
+    hour: 14,
+    minute: 0,
+    marginMinutes: 60
+  },
   {
     job: 'reset-odds-usage',
     kind: 'monthly',

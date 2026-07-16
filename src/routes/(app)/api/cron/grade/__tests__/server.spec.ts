@@ -15,13 +15,6 @@ vi.mock('$lib/server/grading', () => ({
   })
 }));
 
-vi.mock('$lib/server/notifications', () => ({
-  sendResultsRecap: vi.fn(async () => ({})),
-  sendAIRecapPushes: vi.fn(async () => {
-    calls.push('sendAIRecapPushes');
-    return {};
-  })
-}));
 vi.mock('$lib/server/aiRecap', () => ({
   sendAIRecaps: vi.fn(async () => {
     calls.push('sendAIRecaps');
