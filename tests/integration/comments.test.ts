@@ -162,12 +162,25 @@ describe('comments RLS — post-kickoff read gate', () => {
   });
 });
 
+// Reactions now hang off a comment (#689). Each test seeds the comment it needs
+// via service role, then exercises the comment-scoped RLS from a user client.
+async function seedComment(groupId: string, userId: string, gameId: string): Promise<string> {
+  const { data, error } = await admin
+    .from('comments')
+    .insert({ group_id: groupId, user_id: userId, game_id: gameId, body: 'reaction target' })
+    .select('id')
+    .single();
+  if (error || !data) throw new Error(`seedComment failed: ${error?.message}`);
+  return data.id;
+}
+
 describe('reactions RLS — cross-group denial', () => {
   it('user A cannot read reactions in group B', async () => {
+    const commentBId = await seedComment(GROUP_B_ID, userBId, pastGameId);
     await admin.from('reactions').insert({
       group_id: GROUP_B_ID,
       user_id: userBId,
-      game_id: pastGameId,
+      comment_id: commentBId,
       emoji: '🔥'
     });
 
@@ -176,17 +189,18 @@ describe('reactions RLS — cross-group denial', () => {
       .from('reactions')
       .select('id')
       .eq('group_id', GROUP_B_ID)
-      .eq('game_id', pastGameId);
+      .eq('comment_id', commentBId);
 
     expect(data).toHaveLength(0);
   });
 
-  it('user A cannot insert a reaction into group B', async () => {
+  it('user A cannot react to a comment in group B', async () => {
+    const commentBId = await seedComment(GROUP_B_ID, userBId, pastGameId);
     const asUserA = createUserClient(userAId);
     const { error } = await asUserA.from('reactions').insert({
       group_id: GROUP_B_ID,
       user_id: userAId,
-      game_id: pastGameId,
+      comment_id: commentBId,
       emoji: '👍'
     });
     expect(error).not.toBeNull();
@@ -195,11 +209,12 @@ describe('reactions RLS — cross-group denial', () => {
 });
 
 describe('reactions RLS — post-kickoff gate', () => {
-  it('member cannot read reactions on a future game', async () => {
+  it('member cannot read a reaction on a pre-kickoff comment', async () => {
+    const futureCommentId = await seedComment(GROUP_A_ID, userAId, futureGameId);
     await admin.from('reactions').insert({
       group_id: GROUP_A_ID,
       user_id: userAId,
-      game_id: futureGameId,
+      comment_id: futureCommentId,
       emoji: '😬'
     });
 
@@ -208,18 +223,19 @@ describe('reactions RLS — post-kickoff gate', () => {
       .from('reactions')
       .select('id')
       .eq('group_id', GROUP_A_ID)
-      .eq('game_id', futureGameId);
+      .eq('comment_id', futureCommentId);
 
     expect(data).toHaveLength(0);
   });
 
-  it('member can read and toggle reactions on a started game', async () => {
+  it('member can read and toggle reactions on a started-game comment', async () => {
+    const pastCommentId = await seedComment(GROUP_A_ID, userAId, pastGameId);
     const asUserA = createUserClient(userAId);
 
     const { error: insErr } = await asUserA.from('reactions').insert({
       group_id: GROUP_A_ID,
       user_id: userAId,
-      game_id: pastGameId,
+      comment_id: pastCommentId,
       emoji: '🎯'
     });
     expect(insErr).toBeNull();
@@ -228,8 +244,23 @@ describe('reactions RLS — post-kickoff gate', () => {
       .from('reactions')
       .select('emoji')
       .eq('group_id', GROUP_A_ID)
-      .eq('game_id', pastGameId);
+      .eq('comment_id', pastCommentId);
 
     expect(data?.some((r) => r.emoji === '🎯')).toBe(true);
+  });
+
+  it('deleting a comment cascades away its reactions', async () => {
+    const commentId = await seedComment(GROUP_A_ID, userAId, pastGameId);
+    await admin.from('reactions').insert({
+      group_id: GROUP_A_ID,
+      user_id: userAId,
+      comment_id: commentId,
+      emoji: '🔥'
+    });
+
+    await admin.from('comments').delete().eq('id', commentId);
+
+    const { data } = await admin.from('reactions').select('id').eq('comment_id', commentId);
+    expect(data).toHaveLength(0);
   });
 });

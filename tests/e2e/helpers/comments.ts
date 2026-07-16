@@ -66,6 +66,37 @@ export function commentsSection(page: Page) {
       return api.section().getByTestId('comment-row').nth(index);
     },
 
+    /**
+     * The comment row whose body matches `body` — the row a test just posted.
+     * Scoping reaction locators to this row keeps them unambiguous when several
+     * comments are present.
+     */
+    rowWithText(body: string): Locator {
+      return api.section().getByTestId('comment-row').filter({ hasText: body });
+    },
+
+    // --- reactions (tapbacks, #689) -------------------------------------------
+
+    /** The compact "＋" button that opens a row's frozen 5-emoji picker. */
+    reactionAdd(row: Locator): Locator {
+      return row.getByTestId('reaction-add');
+    },
+
+    /** An emoji button inside an open picker (by slug, e.g. "fire"). */
+    reactionPick(row: Locator, slug: string): Locator {
+      return row.getByTestId(`reaction-pick-${slug}`);
+    },
+
+    /** A rendered tapback chip (only present for an emoji with ≥1 reaction). */
+    reactionChip(row: Locator, slug: string): Locator {
+      return row.getByTestId(`reaction-chip-${slug}`);
+    },
+
+    /** The revealed reactor-names line (present only after tapping a chip). */
+    reactionReactors(row: Locator): Locator {
+      return row.getByTestId('reaction-reactors');
+    },
+
     // --- assertions -----------------------------------------------------------
 
     /** Assert that CommentsSection has rendered (composer is visible). */

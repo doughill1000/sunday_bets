@@ -22,10 +22,10 @@
   import LockedPicksSection from './LockedPicksSection.svelte';
   import AllInDeclarations from './AllInDeclarations.svelte';
   import PicksStatusBoard from './PicksStatusBoard.svelte';
-  import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
+  import type { SocialComment } from '$lib/server/db/queries/getCommentsForGame';
 
   type Week = Database['public']['Tables']['weeks']['Row'];
-  type SocialData = { comments: CommentRow[] };
+  type SocialData = { comments: SocialComment[] };
 
   interface Props {
     week?: Week | null;

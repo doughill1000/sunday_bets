@@ -1000,56 +1000,35 @@ export type Database = {
       };
       reactions: {
         Row: {
+          comment_id: string;
           created_at: string;
           emoji: string;
-          game_id: string;
           group_id: string;
           id: string;
           user_id: string;
         };
         Insert: {
+          comment_id: string;
           created_at?: string;
           emoji: string;
-          game_id: string;
           group_id: string;
           id?: string;
           user_id: string;
         };
         Update: {
+          comment_id?: string;
           created_at?: string;
           emoji?: string;
-          game_id?: string;
           group_id?: string;
           id?: string;
           user_id?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'reactions_game_id_fkey';
-            columns: ['game_id'];
+            foreignKeyName: 'reactions_comment_id_fkey';
+            columns: ['comment_id'];
             isOneToOne: false;
-            referencedRelation: 'games';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'reactions_game_id_fkey';
-            columns: ['game_id'];
-            isOneToOne: false;
-            referencedRelation: 'league_ats_base';
-            referencedColumns: ['game_id'];
-          },
-          {
-            foreignKeyName: 'reactions_game_id_fkey';
-            columns: ['game_id'];
-            isOneToOne: false;
-            referencedRelation: 'player_rating_inputs';
-            referencedColumns: ['game_id'];
-          },
-          {
-            foreignKeyName: 'reactions_game_id_fkey';
-            columns: ['game_id'];
-            isOneToOne: false;
-            referencedRelation: 'ui_games';
+            referencedRelation: 'comments';
             referencedColumns: ['id'];
           },
           {
