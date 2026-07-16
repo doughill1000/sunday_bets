@@ -1,0 +1,1 @@
+- **#718** Issue authoring now places new issues on the Project board at `Status: Backlog` — the `gh` token gained `project` scope and the `issue-author` skill adds each new issue and sets Backlog on creation, so nothing Ready is ever missing from the board; field triage (Agent/Priority/Area/Risk) stays human. files: `.claude/skills/issue-author/SKILL.md` · `docs/WORKFLOW.md`

@@ -46,8 +46,24 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
    target repo. Issue creation is **pre-authorized** (see user `CLAUDE.md`
    §"GitHub Access") — do **not** present a draft or wait for approval; proceed
    straight to creating it.
-7. Create via `gh` (apply the milestone and `semver:` label on creation) and report the
-   issue URL. For **complex, multi-decision** work, offer to run `scope-issue` next (an
+7. Create via `gh` (apply the milestone and `semver:` label on creation), then **add the
+   new issue to the Project board at `Status: Backlog`** so nothing Ready is ever missing
+   from the board (the `gh` token carries `project` scope):
+
+   ```powershell
+   $itemId = (gh project item-add 1 --owner doughill1000 --url <issue-url> --format json |
+     ConvertFrom-Json).id
+   gh project item-edit --id $itemId --project-id PVT_kwHOAGAfqM4BbXA1 `
+     --field-id PVTSSF_lAHOAGAfqM4BbXA1zhWIDLs --single-select-option-id 72968049
+   ```
+
+   Set **only** `Status: Backlog`. The `Agent`, `Priority`, `Area`, and `Risk` fields are
+   human-triage calls (`docs/WORKFLOW.md` §"Claim and isolate work") — leave them unset. The
+   Project/field/option ids are this repo's Project #1 (Status field
+   `PVTSSF_lAHOAGAfqM4BbXA1zhWIDLs`, Backlog option `72968049`); re-derive with
+   `gh project field-list 1 --owner doughill1000` if the Project is ever recreated.
+
+   Report the issue URL. For **complex, multi-decision** work, offer to run `scope-issue` next (an
    interview that settles essential vs nice-to-have and splits off follow-ups) before any
    implementation — skip the offer for small or already-unambiguous issues. `scope-issue`
    carries its own **Model & effort** note (run scoping on Opus/high); flag that when you
