@@ -10,8 +10,12 @@
     4. MOVES   — 3–5 named/categorized moves, each with a from→to and a LIVE demo atom.
     5. MOCKUPS — before/after phone frames assembled from the app atoms at the bottom.
 
-  The app ships DARK-ONLY by design — single theme is correct here. Use the real
-  tokens/atoms so the mockups read as screenshots, not wireframes.
+  The app ships TWO themes — dark (default) and Parchment light (PR #573) — with tokens
+  maintained in both `.dark` and `:root` in src/app.css. This scaffold renders the DARK
+  skin as the study's primary — dark is the default theme, so mockups read truest to what
+  most users see. Sync the token block below from src/app.css `.dark`. Any move that
+  introduces a new colour/contrast decision should also be sanity-checked against the
+  light `:root` values before the issue is filed (not built out as a second mockup here).
 -->
 <style>
   :root {
