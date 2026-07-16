@@ -5,7 +5,8 @@ import {
   spreadRelativeToHome,
   lineMovementPoints,
   shouldNotifyLineShift,
-  formatRecapBody
+  formatRecapBody,
+  recapPushBody
 } from '../notifications';
 
 describe('parseNotificationPrefs', () => {
@@ -65,6 +66,43 @@ describe('formatRecapBody', () => {
     expect(formatRecapBody({ wins: 1, losses: 0, pushes: 0, missed: 0, net: 1 })).toBe(
       '1-0 · +1 point this week. Tap for standings.'
     );
+  });
+});
+
+describe('recapPushBody', () => {
+  it('uses the first sentence of the recap as the teaser', () => {
+    expect(recapPushBody('Kefke ran the table this week. Nobody else came close.')).toBe(
+      'Kefke ran the table this week.'
+    );
+  });
+
+  it('keeps decimals and percentages intact (no mid-number split)', () => {
+    expect(
+      recapPushBody('Doug leaned on Chiefs -3.5 and 62% consensus, then got cooked. Brutal.')
+    ).toBe('Doug leaned on Chiefs -3.5 and 62% consensus, then got cooked.');
+  });
+
+  it('handles ? and ! sentence enders', () => {
+    expect(recapPushBody('What was Sam thinking? The fade backfired hard.')).toBe(
+      'What was Sam thinking?'
+    );
+  });
+
+  it('returns the whole line when there is no sentence break', () => {
+    expect(recapPushBody('A quiet week, nothing much to report')).toBe(
+      'A quiet week, nothing much to report'
+    );
+  });
+
+  it('caps an overly long opener with an ellipsis', () => {
+    const out = recapPushBody('A'.repeat(200) + '. Second.');
+    expect(out.length).toBeLessThanOrEqual(151);
+    expect(out.endsWith('…')).toBe(true);
+  });
+
+  it('falls back to a generic line for empty/whitespace prose', () => {
+    expect(recapPushBody('')).toBe('Your league’s AI recap just dropped.');
+    expect(recapPushBody('   ')).toBe('Your league’s AI recap just dropped.');
   });
 });
 
