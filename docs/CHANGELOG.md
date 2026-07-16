@@ -70,7 +70,7 @@ of the time.
 
 ## v3.8.0 — 2026-07-16
 
-- **PR #NNN** Release v3.8.0.
+- **PR #715** Release v3.8.0.
 - **#689** Emoji reactions on comments — reactions now attach to a specific comment (iMessage-style tapbacks) instead of a game, making comments the social surface so we can see whether the group actually uses them. Per-comment reaction chips render only for emojis someone used; a compact picker adds one, and tapping a chip reveals who reacted. Repoints the `reactions` table onto `comments` (clean cutover, no backfill) with a comment-scoped read gate and cascade-on-delete; retires the orphaned game-reaction endpoint and query left by #688.
 - **#698** Onboarding copy drift-guard — a unit test ties `HowToPlay.svelte` to the real credibility-tier catalog (`src/lib/domain/rating.ts`) plus the All-In/sweat-board/Weekly Hardware and "League" (not "Group") vocabulary, so the copy can't silently rot the way #633 found it.
 - **PR #708** `badgeFlavor.test.ts`'s cross-group isolation and grade-cron suites assumed the shared two-group fixture's all-losing group (group B) always earns at least one badge — true until the badge catalog trim (#634-#655) removed every badge that used to fire for an all-losing 2-person room. The fixture now adds a member who never picks, scoped to this file only, so group B earns The Grinder and the isolation assertions have something real to check against.
