@@ -1,5 +1,4 @@
-- **#693** Drop the per-user points-threshold knob from line-move alerts — the on/off
-  toggle stays, but `detectLineShifts` now compares against a single fixed constant
-  (`LINE_SHIFT_THRESHOLD_POINTS = 2`) instead of a per-user preference. Per the
-  2026-07-16 product audit's smaller of two options (drop the knob vs. retire the
-  alert). files: `src/lib/server/notifications.ts` · `src/routes/(app)/settings`
+- **#693** Trim line-movement alerts — dropped the per-user points-threshold knob from
+  `/settings`; the alert now fires on a single fixed move so the room keeps the signal
+  without a bettor's configuration surface. files: `src/lib/domain/notifications.ts` ·
+  `src/lib/server/notifications.ts` · `src/routes/(app)/settings/+page.svelte`
