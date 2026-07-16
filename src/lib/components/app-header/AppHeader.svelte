@@ -90,10 +90,11 @@
     </a>
   </div>
 
-  {#if user}
+  {#if user && __SHOW_BETA_TAG__}
     <!-- "Beta" is an invitation to report, not a quality disclaimer (ADR-0028 / #500):
          it opens the same feedback sheet. Sits just left of the avatar, away from
-         scores/standings/money. -->
+         scores/standings/money. Config-gated (__SHOW_BETA_TAG__, vite.config.ts) so it
+         flips off in one change at the public epoch (issue #697). -->
     <button
       type="button"
       data-testid="beta-tag"
