@@ -23,10 +23,9 @@
   import AllInDeclarations from './AllInDeclarations.svelte';
   import PicksStatusBoard from './PicksStatusBoard.svelte';
   import type { CommentRow } from '$lib/server/db/queries/getCommentsForGame';
-  import type { ReactionRow } from '$lib/server/db/queries/getReactionsForGame';
 
   type Week = Database['public']['Tables']['weeks']['Row'];
-  type SocialData = { comments: CommentRow[]; reactions: ReactionRow[] };
+  type SocialData = { comments: CommentRow[] };
 
   interface Props {
     week?: Week | null;
