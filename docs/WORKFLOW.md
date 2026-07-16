@@ -43,7 +43,9 @@ systems cannot disagree.
 2. Create an issue from the feature, bug, or decision template.
 3. Split work when pieces can merge independently, have different dependencies, or
    would make file ownership clearer. Use a parent issue for the shared outcome.
-4. Apply a milestone, Project fields, and dependencies.
+4. Apply a milestone and dependencies. Issue authoring places the new item on the
+   Project at `Status: Backlog`; the `Agent`, `Priority`, `Area`, and `Risk` fields are
+   set at human triage (§"Claim and isolate work"), not at authoring.
 5. Use `docs/adr/README.md` to decide whether an ADR is required.
 
 An issue is Ready only when it has:
