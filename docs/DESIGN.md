@@ -365,12 +365,13 @@ exception, raw hex / off-palette scales, is already guarded by `check-brand-colo
 ## How to check your work
 
 - **Before building** a new or reworked surface, run the `design-study` skill — it captures
-  the current screen at 390px dark, names the structural problems, and mocks before/after in
-  the real skin.
+  the current screen at 390px dark (the primary capture skin), names the structural
+  problems, and mocks before/after in the real skin. Any new colour or contrast decision the
+  study proposes is also checked against the light Parchment theme, not just dark.
 - **To critique** a shipped screen, run a `design-review` (screenshot + scorecard at 390px
   dark, no mockups).
 - Both share the throwaway Playwright capture harness (390px, `deviceScaleFactor: 2`,
-  `colorScheme: 'dark'`) — see the skills for the config.
+  `colorScheme: 'dark'` as the primary skin) — see the skills for the config.
 - **When this guide names a screen as canonical, re-verify that screen in the same PR** —
   the guide originally shipped citing `/stats` as the exemplar while `/stats` carried the
   guide's own named anti-pattern (the nested drawer).

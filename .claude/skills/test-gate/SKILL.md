@@ -43,6 +43,10 @@ first; if it's not up, start it (don't skip the tests).
 - **Unit mock fragility:** unit tests mock `fetch` without `headers` and stub `$env`
   with only the keys each spec needs — server code touching response headers or new
   env vars must be defensive (see `recordUsage()` in `src/lib/server/odds.ts`).
+- **E2E commissioner invariant:** `E2E_USER` must remain its league's **only**
+  commissioner — if a test or seed promotes a second one, the last-commissioner guard
+  spec in the `/league/manage` suite silently disarms (it early-returns instead of
+  failing) rather than catching the regression. From issue #660 / PR #668.
 
 ## See also
 

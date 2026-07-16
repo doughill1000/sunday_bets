@@ -12,6 +12,11 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
 
 ## Steps
 
+0. **Unvetted-bet gate.** If this is a **product bet nobody has vetted** — a new
+   feature idea arriving as "add this to the backlog" with no prior pressure-test,
+   design study, or roadmap grounding — offer to run `pressure-test` first (it slots
+   before this skill and returns a Build/Reshape/Drop verdict). Skip the offer for
+   bugs, chores, follow-ups split from existing work, or ideas Doug has already vetted.
 1. Choose the matching template under `.github/ISSUE_TEMPLATE/`:
    `feature.yml`, `bug.yml`, or `decision.yml`.
 2. Inspect enough repository context to fill the template credibly — likely files,
@@ -53,7 +58,8 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
 
 - `docs/WORKFLOW.md` §"From idea to Ready", §"ADR timing", and §"Versioning"
 - `docs/adr/0015-versioning-and-release-policy.md` (the `semver:` label policy)
-- Sibling skills: `design-study` (visual proposal for a non-trivial UI feature — the
-  UI-study gate), `scope-issue` (interview to triage essential vs nice-to-have for complex
-  work), `new-adr` (if the trigger test requires one), `start-issue`, `cut-release`
-  (consumes the `semver:` labels at release time).
+- Sibling skills: `pressure-test` (settle whether an unvetted product bet is worth
+  building — runs before this skill), `design-study` (visual proposal for a non-trivial
+  UI feature — the UI-study gate), `scope-issue` (interview to triage essential vs
+  nice-to-have for complex work), `new-adr` (if the trigger test requires one),
+  `start-issue`, `cut-release` (consumes the `semver:` labels at release time).
