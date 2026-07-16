@@ -17,7 +17,7 @@ let db: {
   users: { id: string; notification_prefs: unknown }[];
   recapLogs: { user_id: string; group_id?: string }[];
   settlements: { user_id: string; outcome: string; points_delta: number }[];
-  aiRecapRows: { group_id: string }[];
+  aiRecapRows: { group_id: string; prose?: string }[];
   memberships: { group_id: string; user_id: string }[];
   insertedLogs: Array<Record<string, unknown>>;
 };
@@ -216,7 +216,9 @@ describe('sendAIRecapPushes', () => {
   });
 
   it('sends one push per opted-in group member and logs it with group_id', async () => {
-    db.aiRecapRows = [{ group_id: 'g1' }];
+    db.aiRecapRows = [
+      { group_id: 'g1', prose: 'Kefke ran the table this week. Nobody else was close.' }
+    ];
     db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
     db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
 
@@ -226,7 +228,7 @@ describe('sendAIRecapPushes', () => {
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Week 5 recap is ready',
-      body: 'Your league’s AI recap just dropped.',
+      body: 'Kefke ran the table this week.',
       url: '/recap',
       tag: 'ai-recap-g1-week-5'
     });
