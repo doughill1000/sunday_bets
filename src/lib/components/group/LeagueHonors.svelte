@@ -136,33 +136,19 @@
   </ul>
 {/snippet}
 
-<!-- Render once there's a champion or awarded badges. A multi-season league is no longer a
-     reason on its own: that only ever justified showing the awards SeasonPicker, which #631
-     deleted (honors now follows the season its host tab already selected). -->
-{#if reigning || shown.length > 0}
+<!-- Render once there's a completed season (trophy case) or awarded badges. A multi-season
+     league is no longer a reason on its own: that only ever justified showing the awards
+     SeasonPicker, which #631 deleted (honors now follows the season its host tab already
+     selected). The reigning champion itself lives outside this card now, in the evergreen
+     banner above the /league tabs (#727) — this card opens on the trophy case instead. -->
+{#if trophyCase.length > 0 || shown.length > 0}
   <Card data-testid="league-honors">
     <CardHeader>
       <CardTitle>League honors</CardTitle>
-      <CardDescription>Champions, the trophy case, the wooden spoon, and awards.</CardDescription>
+      <CardDescription>The trophy case, the wooden spoon, and awards.</CardDescription>
     </CardHeader>
     <CardContent class="space-y-6">
-      {#if reigning}
-        <!-- Reigning champion -->
-        <div class="flex items-center gap-3" data-testid="reigning-champion">
-          <UserAvatar
-            avatarKey={reigning.avatar_key}
-            displayName={reigning.display_name}
-            size="md"
-            champion
-          />
-          <div>
-            <p class="text-lg font-bold tracking-tight">
-              {nameFor(reigning.user_id, reigning.display_name)}
-            </p>
-            <p class="text-sm text-muted-foreground">{reigning.season_year} champion</p>
-          </div>
-        </div>
-
+      {#if trophyCase.length > 0}
         <!-- Trophy case: every completed season's champion, newest first -->
         <div class="space-y-2" data-testid="trophy-case">
           <p class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -275,9 +261,9 @@
            Season recaps is the week-by-week archive that also holds the trophy shelf (#631) —
            neither has a nav tab, so this card is where they stay reachable. -->
       <div class="space-y-2">
-        {#if reigning}
-          <!-- A reigning champion implies at least one finalised season, which is exactly
-               when a Wrapped exists. -->
+        {#if trophyCase.length > 0}
+          <!-- A completed season in the trophy case implies at least one finalised season,
+               which is exactly when a Wrapped exists. -->
           <a
             href={wrappedHref}
             data-testid="wrapped-honors-link"

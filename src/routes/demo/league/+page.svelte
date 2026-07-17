@@ -13,6 +13,7 @@
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
 
   let { data }: { data: PageData } = $props();
@@ -57,6 +58,16 @@
       groupId={data.groupId}
       seasonYear={data.completedSeasonYear}
       href="/demo/wrapped"
+    />
+  {/if}
+
+  <!-- Reigning-champion banner (#727): mirrors the real /league placement above the tabs, so
+       the demo shows it for free as a shared component (ADR-0026 parity). -->
+  {#if data.honors.honors.reigningChampion}
+    <ReigningChampionBanner
+      reigningChampion={data.honors.honors.reigningChampion}
+      currentUserId={data.persona.userId}
+      wrappedHref="/demo/wrapped"
     />
   {/if}
 
