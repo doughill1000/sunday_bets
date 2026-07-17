@@ -44,6 +44,14 @@ function renderCard(badges: BadgeAward[]) {
   return render(LeagueHonors, { props: { honors: HONORS, badges, selectedSeason: 2025 } });
 }
 
+describe('LeagueHonors — reigning champion hoisted out (#727)', () => {
+  it('renders no reigning-champion block; the card opens on the trophy case', () => {
+    const { queryByTestId, getByTestId } = renderCard([]);
+    expect(queryByTestId('reigning-champion')).toBeNull();
+    expect(getByTestId('trophy-case')).toBeTruthy();
+  });
+});
+
 describe('LeagueHonors — axis grouping', () => {
   it('groups both faces of an axis under one heading', () => {
     const { getByTestId, getByText } = renderCard([
