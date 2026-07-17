@@ -8,12 +8,15 @@ description: Start work on a Ready GitHub issue end-to-end — read the issue an
 One issue → one branch → one worktree → one PR. Canonical: `docs/WORKFLOW.md`
 §"Claim and isolate work" and `AGENTS.md` §"Delivery workflow".
 
-> **Model & effort.** Implementation quality tracks the model. Run **non-trivial work
-> — real business logic, DB/migration, or a new/reworked UI surface — on the heaviest
-> available model (Opus-class or above — e.g. Fable)**; small
-> or mechanical changes (copy, single-property style, a contained one-file edit) are
-> fine on Sonnet. A skill can't switch the session's model, so this is advisory: pick
-> the model before invoking based on the issue's difficulty.
+> **Model & effort.** Implementation quality tracks the model. Check the issue body for
+> an **Execution (model / effort)** section first — `issue-author` sets one on every
+> issue it creates, and `scope-issue` updates it if the interview changed the picture —
+> and use that recommendation. If the issue predates that convention and carries none,
+> fall back to the same bar: run **non-trivial work — real business logic, DB/migration,
+> or a new/reworked UI surface — on the heaviest available model (Opus-class or
+> above — e.g. Fable)**; small or mechanical changes (copy, single-property style, a
+> contained one-file edit) are fine on Sonnet. A skill can't switch the session's model,
+> so this is advisory: pick the model before invoking based on the issue's difficulty.
 
 This skill runs the full delivery loop in one pass: setup (below), then
 implementation, then the `finish-pr` skill. Don't stop after setup to wait for a

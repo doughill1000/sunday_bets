@@ -31,6 +31,7 @@
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
   import { seasonScopeOptions } from '$lib/utils/stats';
@@ -309,6 +310,17 @@
     <WrappedPromo groupId={data.groupId} seasonYear={data.latestWrappedSeason} />
   {/if}
 
+  <!-- Reigning-champion banner (#727): evergreen, rendered above the tab group so it shows on
+       both Standings and Week — unlike the old LeagueHonors placement, which only reached the
+       Standings-season branch. Stacking order (decided): WrappedPromo (ember/action) on top,
+       this banner (gold/identity) directly above the tabs. -->
+  {#if group.honors.reigningChampion}
+    <ReigningChampionBanner
+      reigningChampion={group.honors.reigningChampion}
+      currentUserId={data.currentUserId}
+    />
+  {/if}
+
   <Tabs bind:value={activeTab} class="w-full space-y-4">
     <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
       <TabsTrigger
@@ -447,10 +459,11 @@
               {/if}
             {/if}
 
-            <!-- Honors (#561): champion, trophy case, wooden spoon, and awards — the league's
-                 emotional payoff, sitting with the standings it belongs to. Keyed on the page's
-                 resolved season (shared cache with /league/manage), and following the scope
-                 selector above rather than carrying a second picker of its own (#631). -->
+            <!-- Honors (#561): trophy case, wooden spoon, and awards — the reigning champion
+                 itself lives outside this card now, in the evergreen banner above the tabs
+                 (#727). Keyed on the page's resolved season (shared cache with /league/manage),
+                 and following the scope selector above rather than carrying a second picker of
+                 its own (#631). -->
             <LeagueHonors
               honors={group.honors}
               badges={group.badges}
