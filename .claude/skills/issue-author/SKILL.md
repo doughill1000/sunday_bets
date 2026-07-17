@@ -37,16 +37,29 @@ issue requests" and `AGENTS.md` §"Delivery workflow".
    `docs/adr/0015-versioning-and-release-policy.md` (major = removed/breaking/epoch
    shift · minor = new user-facing feature · patch = fix/perf/infra/docs/chore). The
    label is the durable carrier of version impact that `cut-release` later consumes.
-5. A Ready issue has: one independently mergeable outcome + explicit exclusions;
+5. **Add an Execution (model / effort) note.** Every issue gets one — this is what
+   `start-issue` should read instead of guessing cold. Apply the same bar `start-issue`
+   uses to pick its own session model: **the heaviest available model (Opus-class or
+   above — e.g. Fable) @ high** for non-trivial work (real business logic, DB/migration,
+   a new/reworked UI surface, or anything with a `design-study` attached); **Sonnet @
+   medium** for small or mechanical changes (copy,
+   single-property style, a contained one-file edit); note **Haiku** only for
+   near-mechanical, fully-specified changes. Write one sentence naming the model/effort
+   and the concrete reason (size, judgment calls, DB risk, UI surface) as its own
+   `### Execution (model / effort)` section in the issue body — see #692 or #727 for the
+   shape. If a later `scope-issue` interview changes the picture (splits off a
+   mechanical follow-up, surfaces hidden judgment calls), update this note then rather
+   than leaving the original guess stale.
+6. A Ready issue has: one independently mergeable outcome + explicit exclusions;
    observable acceptance criteria; resolved dependencies or a documented integration
    order; an ADR link / governing ADR / credible reason none is needed; likely paths
-   and shared-or-generated ownership called out; a target milestone and `semver:` label
-   (plus a design-study link if one was produced).
-6. **Finalize** the title, body, target milestone, `semver:` label, and the exact
+   and shared-or-generated ownership called out; a target milestone and `semver:` label;
+   an Execution (model / effort) note (plus a design-study link if one was produced).
+7. **Finalize** the title, body, target milestone, `semver:` label, and the exact
    target repo. Issue creation is **pre-authorized** (see user `CLAUDE.md`
    §"GitHub Access") — do **not** present a draft or wait for approval; proceed
    straight to creating it.
-7. Create via `gh` (apply the milestone and `semver:` label on creation), then **add the
+8. Create via `gh` (apply the milestone and `semver:` label on creation), then **add the
    new issue to the Project board at `Status: Backlog`** so nothing Ready is ever missing
    from the board (the `gh` token carries `project` scope):
 

@@ -54,7 +54,8 @@ An issue is Ready only when it has:
 - observable acceptance criteria;
 - resolved dependencies or a documented integration order;
 - an ADR link, governing ADR, or credible reason that no ADR is required;
-- likely paths and shared/generated ownership called out; and
+- likely paths and shared/generated ownership called out;
+- an Execution (model / effort) note recommending a model and effort level; and
 - a verification plan appropriate to its risk.
 
 ## Natural-language issue requests
