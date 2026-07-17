@@ -35,6 +35,15 @@ Everything below is downstream of what Hotshot _is_:
   real winner. Recognition, catch-up, and side-games celebrate the room _without_ flattening the
   standings. ([ADR-0020](adr/0020-catch-up-mechanics.md): catch-up is "recognition, **not** a
   scoring equalizer".)
+- **A quiet second layer — how good am I, really?** Under the trash-talk, the app keeps an honest,
+  market-anchored answer to that question: the cross-season credibility rating and its
+  Square → Solid → Sharp → Hotshot climb ([ADR-0032](adr/0032-cross-season-credibility-rating.md)).
+  The standings are the headline; this is the _sneaky second_ that, for some players, becomes the
+  real draw — and it still ultimately feeds the group chat ("I finally made Hotshot" is trash-talk
+  too). It earns its weight by deepening the game for the serious few without changing what the app
+  is for the casual many. It stays **singular** — [ADR-0035](adr/0035-badge-boundary-rule.md) keeps
+  every market-skill claim in this one place, never sprawled across badges — and it must never tip
+  the app toward a sportsbook or reward a seriousness the room doesn't have.
 - **Signature moments earn their weight through restraint.** All-In, The Whale, a live streak,
   the Wrapped champion reveal land _because_ the rest of the app is quiet premium — charcoal and
   gold, the data leading. Spend the ember sparingly or it stops meaning anything.

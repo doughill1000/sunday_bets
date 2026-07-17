@@ -77,3 +77,10 @@ exactly as `DESIGN.md` does.
   product analogue of the Design checklist gate — deferred until the rubric proves out.
 - Re-run `product-audit` each offseason or roughly every ten feature PRs (the UI-re-audit cadence);
   its findings, and new product ADRs, are the signals that could revise this rubric.
+- **Heart amendment (post-ratification-draft):** `PRODUCT.md`'s heart now names the **credibility
+  layer** — the "how good am I, really?" question answered by the ADR-0032 rating, a bounded _sneaky
+  second_ to the social core — as an explicit tenet. It was added after a `pressure-test` (#732)
+  exposed that the rubric had no heart-level lens for credibility-layer questions, so a legitimate
+  signal (closing-line value) had nowhere to be judged. Recorded here rather than via supersession
+  because this ADR is still **Proposed**; if it is Accepted with the tenet in place, no supersession
+  is owed.
