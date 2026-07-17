@@ -41,7 +41,7 @@ Everything below is downstream of what Hotshot _is_:
   ([ADR-0023](adr/0023-all-in-signature-moment.md); `DESIGN.md` §"The stance", principle 13.)
 - **The arc is single-group → multi-group.** The defining product boundary — and the current
   direction — is moving from the one original group to self-service groups. An idea's timing is
-  measured against that arc, not against a wishlist. (`ROADMAP.md` §"Release direction".)
+  measured against that arc, not against a wishlist. (`ROADMAP.md` §"The defining boundary".)
 - **Infrastructure is earned by measurement, not by ambition.** Scale, caching, and new pipelines
   are revisited when a metric crosses a threshold — not because a feature would be cool at scale.
   The same discipline applies to product: cost is real and the room is small.
@@ -109,8 +109,9 @@ A good idea at the wrong time is still a wrong build. The current arc is the on-
 self-service groups (onboarding → create/join/invite/switch); work that pulls focus off it needs
 a strong reason.
 _Why:_ a small team ships the arc or ships the tangent, rarely both.
-_Example:_ `ROADMAP.md` sequences v1.9 onboarding + a regression net **before** v2.0 self-service
-groups on purpose — the net lands first so the access-path refactor has something to catch it.
+_Example:_ v1.9's onboarding guide and regression net shipped **before** v2.0 self-service groups
+on purpose — the net landed first so the access-path refactor had something to catch it. Check
+the GitHub Milestones for the current arc's sequencing; `ROADMAP.md` no longer tracks it.
 
 **5. Lifetime cost / ops drag.** _"What does this cost forever — a cron, odds-API quota, a
 matview, ongoing maintenance — and is the value worth that tail?"_

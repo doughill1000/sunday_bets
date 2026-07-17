@@ -196,12 +196,13 @@ is the working backlog for planned features, architecture work, and parked clean
 Project items use the `Status` field to track delivery and the `Agent` field to show
 who owns the next action.
 
-`ROADMAP.md` remains the longer-form product and technical plan: it records phase
-goals, version targets, dependencies, design decisions, and acceptance details.
-Use the GitHub Project for day-to-day prioritization and progress; update the roadmap
-when the underlying plan or sequencing changes.
+`ROADMAP.md` holds durable product direction only — the single→multi-group boundary
+and the architectural guardrails — not release status or a version table. GitHub
+Milestones are the source of truth for release order and what shipped in which
+version. Use the GitHub Project for day-to-day prioritization and progress; update
+the roadmap only when the underlying direction changes.
 
-## Operations (currently manual, automation planned — see ROADMAP.md)
+## Operations (currently manual, automation planned)
 
 Admins trigger from the `/admin` page:
 
