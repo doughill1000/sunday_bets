@@ -119,3 +119,5 @@ a green grade.
 - `src/routes/(app)/admin/+page.server.ts` (the human-facing view of the same data)
 - Could be wired to a recurring check (e.g. the `loop`/`schedule` skills) for a Monday
   morning in-season habit — not set up automatically here.
+- Found a problem that needs a prod write to fix (not just a flag/report)? That's
+  `prod-backfill`, not this skill — this one stays read-only.

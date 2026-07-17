@@ -53,6 +53,7 @@ worktrees) · `pattern-audit` (grade repo patterns → `docs/audits/`) · `produ
 (grade shipped features against `docs/PRODUCT.md` → `docs/audits/`) · `season-ops`
 (prod cron / odds-quota / matview health) · `db-deep-scan` (deep read-only
 grading-correctness / RLS / SECURITY DEFINER audit, pre-release) ·
+`prod-backfill` (announce/confirm/verify runbook for a one-off prod data write) ·
 `refresh-demo-snapshot` (regenerate the `/demo` fixture).
 
 > **TEMPORARY — app not in active use (as of 2026-06-26).** There are no live users

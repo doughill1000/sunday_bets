@@ -113,3 +113,5 @@ re-deriving the advisor list, and the read-only ground rules verbatim.
 - `docs/agent-context/database.md` — schema conventions and review checklist.
 - `docs/adr/0024-*.md` (frozen/locked-season semantics) — relevant when a finding
   touches a locked season, since the normal grading pipeline no-ops there.
+- `prod-backfill` — the runbook for actually fixing a finding that needs a prod
+  data write; this skill stays read-only and hands writes off to it.
