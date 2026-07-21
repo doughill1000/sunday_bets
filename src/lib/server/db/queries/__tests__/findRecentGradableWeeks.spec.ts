@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // --- supabaseService mock (must be defined before module imports) ---
 
 let mockFrom: ReturnType<typeof vi.fn>;
+let mockRpc: ReturnType<typeof vi.fn>;
 
 vi.mock('$lib/supabase/service', () => ({
   supabaseService: new Proxy(
@@ -10,6 +11,7 @@ vi.mock('$lib/supabase/service', () => ({
     {
       get(_: object, prop: string) {
         if (prop === 'from') return mockFrom;
+        if (prop === 'rpc') return mockRpc;
         return undefined;
       }
     }
@@ -71,36 +73,37 @@ function buildGamesStub(result: Result<GameRow[]>) {
   return { select };
 }
 
-function buildSettlementStub(result: Result<{ game_id: string }[]>) {
-  const inFn = vi.fn().mockResolvedValue(result);
-  const select = vi.fn().mockReturnValue({ in: inFn });
-  return { select };
-}
-
 /**
  * Routes `.from(table)` to the right stub by table name, so a single test can
- * mock the 'weeks' prior-week lookup alongside the 'games'/'pick_settlement'
- * queries the excludeSettledPriorWeek gate issues.
+ * mock the 'weeks' prior-week lookup alongside the 'games' query the
+ * excludeSettledPriorWeek gate issues.
  */
-function buildFromRouter(opts: {
-  weeks: Result<WeekRow>;
-  games?: Result<GameRow[]>;
-  settlements?: Result<{ game_id: string }[]>;
-}) {
+function buildFromRouter(opts: { weeks: Result<WeekRow>; games?: Result<GameRow[]> }) {
   const weeksStub = buildWeeksStub(opts.weeks);
   const gamesStub = opts.games ? buildGamesStub(opts.games) : null;
-  const settlementStub = opts.settlements ? buildSettlementStub(opts.settlements) : null;
 
   return vi.fn((table: string) => {
     if (table === 'weeks') return weeksStub;
     if (table === 'games' && gamesStub) return gamesStub;
-    if (table === 'pick_settlement' && settlementStub) return settlementStub;
     throw new Error(`unexpected table access in test: ${table}`);
+  });
+}
+
+/**
+ * Stubs the `find_unsettled_weeks()` RPC the settledness gate now defers to (#724). Omitting
+ * `unsettledWeeks` from a test leaves the stub throwing, which proves the gate never reached
+ * the RPC in that branch.
+ */
+function buildRpcStub(unsettledWeeks?: Result<{ id: number }[]>) {
+  return vi.fn(async (fn: string) => {
+    if (fn === 'find_unsettled_weeks' && unsettledWeeks) return unsettledWeeks;
+    throw new Error(`unexpected rpc call in test: ${fn}`);
   });
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockRpc = buildRpcStub();
 });
 
 describe('findRecentGradableWeeks', () => {
@@ -205,13 +208,32 @@ describe('findRecentGradableWeeks', () => {
             { id: 'g2', final_scores: { home: 7, away: 14 } }
           ],
           error: null
-        },
-        settlements: { data: [{ game_id: 'g1' }, { game_id: 'g2' }], error: null }
+        }
       });
+      mockRpc = buildRpcStub({ data: [], error: null });
 
       const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
 
       expect(result).toEqual([]);
+    });
+
+    it('drops a prior week whose final games owe no settlement at all (ADR-0037, #724)', async () => {
+      // A league created after these games were played owes zero pick_settlement rows for
+      // them, so the old row-presence mirror would have held this week open forever. The
+      // sweep's own predicate (find_unsettled_weeks) knows better and returns nothing.
+      const priorWeek = makeWeek({ id: 14, week_number: 18 });
+
+      findActiveWeekImpl = async () => null;
+      mockFrom = buildFromRouter({
+        weeks: { data: priorWeek, error: null },
+        games: { data: [{ id: 'g1', final_scores: { home: 20, away: 10 } }], error: null }
+      });
+      mockRpc = buildRpcStub({ data: [], error: null });
+
+      const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
+
+      expect(result).toEqual([]);
+      expect(mockRpc).toHaveBeenCalledWith('find_unsettled_weeks');
     });
 
     it('keeps the prior week when a non-postponed game has no final score yet', async () => {
@@ -227,7 +249,7 @@ describe('findRecentGradableWeeks', () => {
           ],
           error: null
         }
-        // settlements stub intentionally omitted: must not even be queried in this branch
+        // rpc stub intentionally left throwing: must not even be queried in this branch
       });
 
       const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
@@ -248,10 +270,10 @@ describe('findRecentGradableWeeks', () => {
             { id: 'g2', final_scores: { home: 7, away: 14 } }
           ],
           error: null
-        },
-        // g2's Monday-night final arrived after end_ts but hasn't been settled yet
-        settlements: { data: [{ game_id: 'g1' }], error: null }
+        }
       });
+      // g2's Monday-night final arrived after end_ts but hasn't been settled yet
+      mockRpc = buildRpcStub({ data: [{ id: 14 }], error: null });
 
       const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
 
@@ -266,7 +288,7 @@ describe('findRecentGradableWeeks', () => {
       mockFrom = buildFromRouter({
         weeks: { data: priorWeek, error: null },
         games: { data: [], error: null }
-        // settlements stub intentionally omitted: must not be queried when there are no final games
+        // rpc stub intentionally left throwing: must not be queried when there are no final games
       });
 
       const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
@@ -295,9 +317,9 @@ describe('findRecentGradableWeeks', () => {
       findActiveWeekImpl = async () => activeWeek;
       mockFrom = buildFromRouter({
         weeks: { data: priorWeek, error: null },
-        games: { data: [{ id: 'g1', final_scores: { home: 20, away: 10 } }], error: null },
-        settlements: { data: [{ game_id: 'g1' }], error: null }
+        games: { data: [{ id: 'g1', final_scores: { home: 20, away: 10 } }], error: null }
       });
+      mockRpc = buildRpcStub({ data: [], error: null });
 
       const result = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
 

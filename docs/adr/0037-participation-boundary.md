@@ -150,9 +150,19 @@ untouched. No new status enum, interval model, or "rejoin" concept is introduced
   (rulings 4 and 5) moved to **Issue C**: the column's `default now()` already satisfies
   ruling 5 for every newly created league, and nothing calls either RPC until the start-week
   picker ships, so Issue A changes no RPC signature.
-- **Issue B (read-surface audit):** verify/patch surfaces that enumerate membership × games
-  independently of `pick_settlement`.
+- **Issue B (read-surface audit):** #724 — verify/patch surfaces that enumerate membership ×
+  games independently of `pick_settlement`. Shipped; full inventory in
+  `docs/audits/2026-07-21-participation-read-surface-audit.md`. It found one shape this ADR did
+  not anticipate: the **negative space**. The completeness pair (`find_unsettled_weeks`,
+  `advance_week_if_complete`) tests for a final game with ZERO settlement rows, which assumed
+  grading always owes at least one row per game — under the boundary a game can legitimately owe
+  nothing, so those surfaces would flag such a week as unsettled forever.
+  `public._settlement_owed` is the guard, and it calls `_participation_start` like everything
+  else.
 - **Issue C (creation/onboarding UI):** start-week control + partial-season copy
-  (`docs/DESIGN.md` / ADR-0030).
+  (`docs/DESIGN.md` / ADR-0030). Carries one obligation inherited from Issue B: the
+  pick-reminder fan-out (`sendPickReminders`) has no group scoping or boundary check, which is
+  harmless only while every league's competition start is in the past. Shipping a future
+  start-week makes it bite, so it must be scoped in the same change.
 - **ADR-0009 join-time backfill** (separate, deferred): copying a joiner's still-open
   current-week picks into a newly joined league — this ADR is its temporal safety floor.

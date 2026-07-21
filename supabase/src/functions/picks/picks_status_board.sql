@@ -30,6 +30,17 @@
 -- locked" — it never leaves a member stuck at 12/13 for a game they missed. Once every
 -- game has started the slate is 0/0 and everyone is trivially complete (nothing left to
 -- wait on).
+--
+-- PER-MEMBER denominator (ADR-0037, #724): the slate is scoped to each member's
+-- participation boundary, public._participation_start(group, member), so a member is never
+-- shown as owing a game that starts before their participation begins. This is the read-side
+-- twin of the boundary the grading choke point carries — the board enumerates membership x
+-- games itself rather than reading pick_settlement, so it does not inherit that correctness.
+-- The still-open filter already neutralises the joined_at term (a member cannot join after a
+-- game that has not kicked off yet), so in practice the binding term here is the league's
+-- competition_starts_at: a league that starts next week must not read as 0/13 behind on this
+-- week's slate. Calling the shared helper rather than re-deriving greatest(...) keeps this
+-- board and grading from ever disagreeing about who owed a pick.
 create or replace function public.picks_status_board(
   p_group_id uuid,
   p_week_id  integer
@@ -48,40 +59,54 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-  with slate as (
-    select count(*)::integer as games_available
+  with members as (
+    select
+      gm.user_id,
+      u.display_name,
+      u.avatar_key,
+      public._participation_start(p_group_id, gm.user_id) as participation_start
+    from public.group_memberships gm
+    join public.users u on u.id = gm.user_id
+    where gm.group_id = p_group_id
+      and gm.status = 'active'
+  ),
+  open_games as (
+    select g.id, g.commence_time
     from public.games g
     where g.week_id = p_week_id
       and now() < g.commence_time
   ),
+  member_slate as (
+    select m.user_id, count(og.id)::integer as games_available
+    from members m
+    left join open_games og on og.commence_time >= m.participation_start
+    group by m.user_id
+  ),
   member_counts as (
     select p.user_id, count(*)::integer as picks_made
     from public.picks p
-    join public.games g on g.id = p.game_id
+    join open_games og on og.id = p.game_id
+    join members m on m.user_id = p.user_id
     where p.group_id = p_group_id
-      and g.week_id = p_week_id
-      and now() < g.commence_time
+      and og.commence_time >= m.participation_start
     group by p.user_id
   )
   select
     p_group_id as group_id,
-    u.id as user_id,
-    u.display_name,
-    u.avatar_key,
+    m.user_id,
+    m.display_name,
+    m.avatar_key,
     coalesce(mc.picks_made, 0) as picks_made,
-    s.games_available,
-    (coalesce(mc.picks_made, 0) >= s.games_available) as is_complete
-  from public.group_memberships gm
-  join public.users u on u.id = gm.user_id
-  cross join slate s
-  left join member_counts mc on mc.user_id = gm.user_id
-  where gm.group_id = p_group_id
-    and gm.status = 'active'
-    and public.is_member(p_group_id);
+    ms.games_available,
+    (coalesce(mc.picks_made, 0) >= ms.games_available) as is_complete
+  from members m
+  join member_slate ms on ms.user_id = m.user_id
+  left join member_counts mc on mc.user_id = m.user_id
+  where public.is_member(p_group_id);
 $$;
 
 comment on function public.picks_status_board(uuid, integer) is
-  'ADR-0019 counts-only status board: per active group member for a week, picks_made / games_available / is_complete over games STILL OPEN to pick (now() < commence_time) — remaining picks, not missed or already-started games. Counts only, no side/team/weight/game. SECURITY DEFINER + is_member() gate; base-table picks RLS is untouched so no pick content is revealed pre-kickoff. See docs/adr/0019-pick-reveal-timing-model.md.';
+  'ADR-0019 counts-only status board: per active group member for a week, picks_made / games_available / is_complete over games STILL OPEN to pick (now() < commence_time) — remaining picks, not missed or already-started games. The slate is PER MEMBER, scoped by _participation_start (ADR-0037): a member never owes a game that starts before their participation begins. Counts only, no side/team/weight/game. SECURITY DEFINER + is_member() gate; base-table picks RLS is untouched so no pick content is revealed pre-kickoff. See docs/adr/0019-pick-reveal-timing-model.md.';
 
 -- Closed-by-default (ADR-0011): the baseline revokes EXECUTE from PUBLIC; this
 -- read-only RPC self-grants in its own source file, per house convention

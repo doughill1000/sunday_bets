@@ -1,6 +1,13 @@
 import type { GameResult, TeamSide, WeightCode } from './domain';
 
-export type LeaderboardPlayer = { id: string; display_name: string; avatar_key?: string | null };
+export type LeaderboardPlayer = {
+  id: string;
+  display_name: string;
+  avatar_key?: string | null;
+  /** ADR-0037 participation boundary as epoch ms (see `$lib/domain/participation`). Omitted or
+   *  `null` means the caller resolved no boundary, and none is applied. */
+  participation_start?: number | null;
+};
 
 /** Non-null application contract shaped from leaderboard_season_totals. */
 export type SeasonLeaderboardEntry = {

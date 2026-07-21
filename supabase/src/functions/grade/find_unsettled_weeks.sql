@@ -18,6 +18,14 @@
 -- never be healed and would re-fire forever. Excluding them here keeps the sweep
 -- idempotent.
 --
+-- Games nobody is participating in are excluded for exactly the same "can never be healed"
+-- reason (ADR-0037, #724). The participation boundary means a game that starts before every
+-- league's competition start / every member's join legitimately owes ZERO settlement rows,
+-- so the finals-present-but-unsettled test above would flag it on every tick forever.
+-- _settlement_owed() is the guard: it asks whether grading owes a row at all, using the
+-- same public._participation_start the grading choke point does, so the sweep and grading
+-- can never disagree about what is still outstanding.
+--
 -- SECURITY DEFINER + service-role-only (like the grade_* functions): this reads across
 -- all groups' pick_settlement rows and is only ever called by the grade cron.
 create or replace function public.find_unsettled_weeks()
@@ -33,6 +41,7 @@ as $$
   join public.games g on g.week_id = w.id
   where not s.grading_locked
     and (g.final_scores->>'home') is not null
+    and public._settlement_owed(g.id)
     and not exists (
       select 1
       from public.pick_settlement ps

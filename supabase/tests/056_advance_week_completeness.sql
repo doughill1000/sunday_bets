@@ -16,10 +16,24 @@
 -- single globally most-recently-concluded week (max end_ts < now()). Each scenario
 -- below is staged with a strictly later end_ts than the last, so it becomes "the"
 -- target week at the moment its assertions run, without disturbing earlier scenarios.
+--
+-- PARTICIPATION (ADR-0037, added by #724): every game below is staged in the PAST, so this
+-- fixture must say explicitly that its league was competing for them -- both
+-- groups.competition_starts_at and group_memberships.joined_at default to now(), which would
+-- put the whole slate before the league's participation began. That would make the league owe
+-- nothing, and the completeness check (correctly) stops counting an unowed game as unsettled.
+-- The include-all sentinel below is the same value the #722 backfill gave every pre-existing
+-- league, so this fixture now describes the real production shape rather than a league that
+-- sprang into existence after its own games were played.
+--
+-- This was not cosmetic: without the sentinel, #722's boundary silently suppressed the
+-- skipper's 'missed' row, so the "2 settlement rows against 1 real pick" shape this file was
+-- built to reproduce had quietly stopped happening. Assertion (8) pins that shape so the
+-- fixture cannot drift out from under its own premise again.
 
 begin;
 
-select plan(7);
+select plan(8);
 
 -- Seed: one group, a picker + a non-picker (both active members) ----------------
 select tests.create_supabase_user('awc_picker');
@@ -31,12 +45,14 @@ insert into public.users (id, role, display_name) values
 on conflict (id) do update
   set role = excluded.role, display_name = excluded.display_name;
 
-insert into public.groups (id, name) values
-  ('00000000-0000-4000-8000-000000000a61', 'AWC Group');
+insert into public.groups (id, name, competition_starts_at) values
+  ('00000000-0000-4000-8000-000000000a61', 'AWC Group', '2000-01-01 00:00:00+00');
 
-insert into public.group_memberships (group_id, user_id, role, status) values
-  ('00000000-0000-4000-8000-000000000a61', tests.get_supabase_uid('awc_picker'),  'member', 'active'),
-  ('00000000-0000-4000-8000-000000000a61', tests.get_supabase_uid('awc_skipper'), 'member', 'active');
+insert into public.group_memberships (group_id, user_id, role, status, joined_at) values
+  ('00000000-0000-4000-8000-000000000a61', tests.get_supabase_uid('awc_picker'),
+   'member', 'active', '2000-01-01 00:00:00+00'),
+  ('00000000-0000-4000-8000-000000000a61', tests.get_supabase_uid('awc_skipper'),
+   'member', 'active', '2000-01-01 00:00:00+00');
 
 insert into public.teams (external_key, name, short_name) values
   ('AWCH', 'AWC Home', 'AWCH'),
@@ -142,6 +158,29 @@ select is(
   (public.advance_week_if_complete()->>'final_games')::int,
   0,
   '(7) Week C: final_games=0 -- the one counted game is still scheduled'
+);
+
+-- ── (8) The premise: Week A really does carry more settlement rows than real picks ──
+-- The whole reason #658 existed. If the participation sentinels above ever go missing, the
+-- skipper's synthetic 'missed' row silently vanishes and this file starts asserting against a
+-- shape it no longer reproduces -- which is exactly what happened between #722 and #724.
+--
+-- Scoped to THIS group on purpose: _grade_games_by_ids grades awc-a for every eligible league
+-- in the database, so an unscoped count reads 2 against a seed-only CI database but far more
+-- against a prod-cloned local one. Scoping is what makes the assertion mean the same thing in
+-- both places.
+select results_eq(
+  $$ select
+       (select count(*) from public.pick_settlement ps
+          join public.games g on g.id = ps.game_id
+          where g.external_game_id = 'awc-a'
+            and ps.group_id = '00000000-0000-4000-8000-000000000a61'),
+       (select count(*) from public.picks p
+          join public.games g on g.id = p.game_id
+          where g.external_game_id = 'awc-a'
+            and p.group_id = '00000000-0000-4000-8000-000000000a61') $$,
+  $$ values (2::bigint, 1::bigint) $$,
+  '(8) Week A really is the #658 shape: 2 settlement rows (win + synthetic missed) vs 1 real pick'
 );
 
 select * from finish();

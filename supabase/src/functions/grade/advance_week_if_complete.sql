@@ -33,11 +33,17 @@ begin
   -- synthetic "missed" rows for every active member who didn't pick a game (see
   -- _grade_games_by_ids), so settled rows almost always outnumber real picks
   -- and a raw count-equality check can never be satisfied once anyone misses.
+  --
+  -- _settlement_owed() carries the boundary half of that mirror (ADR-0037, #724): under the
+  -- participation boundary a game can legitimately owe zero rows (a league created after it
+  -- was played), and without this guard such a week could never report complete -- which
+  -- would strand the grade cron's #744 settled-prior-week gate on it forever.
   select count(*) into v_unsettled_final_games
   from public.games g
   where g.week_id = v_week.id
     and g.status != 'postponed'
     and (g.final_scores->>'home') is not null
+    and public._settlement_owed(g.id)
     and not exists (
       select 1 from public.pick_settlement ps where ps.game_id = g.id
     );

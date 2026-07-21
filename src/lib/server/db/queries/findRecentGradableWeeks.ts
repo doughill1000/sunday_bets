@@ -1,5 +1,6 @@
 import { supabaseService } from '$lib/supabase/service';
 import { findActiveWeek } from './findActiveWeek';
+import { findUnsettledGradableWeeks } from './findUnsettledGradableWeeks';
 
 export interface FindRecentGradableWeeksOptions {
   /**
@@ -69,10 +70,20 @@ export async function findRecentGradableWeeks(opts?: FindRecentGradableWeeksOpti
 }
 
 /**
- * A week has no grading work left once every non-postponed game is final AND every
- * final game has at least one pick_settlement row. Mirrors advance_week_if_complete's
- * completeness predicate (#658) rather than calling it directly: that function always
- * targets the single globally most-recently-concluded week, not an arbitrary id.
+ * A week has no grading work left once every non-postponed game is final AND no final game is
+ * still owed a settlement.
+ *
+ * The "still owed" half defers to `find_unsettled_weeks()` — the reconcile sweep's own
+ * predicate — rather than re-deriving it here. This used to be a hand-rolled mirror ("every
+ * final game has at least one pick_settlement row"), and ADR-0037 made that mirror wrong:
+ * under the participation boundary a game can legitimately owe ZERO rows (a league created
+ * after it was played), so the row-presence test would keep reporting the week unsettled
+ * forever and the #744 gate would never release it (#724). The SQL function now carries the
+ * boundary via `_settlement_owed`, and calling it means the cron gate and the sweep cannot
+ * drift again.
+ *
+ * `advance_week_if_complete()` is still not called directly: it always targets the single
+ * globally most-recently-concluded week, not an arbitrary id.
  */
 async function isWeekFullySettled(weekId: number): Promise<boolean> {
   const { data: games, error: gamesError } = await supabaseService
@@ -89,14 +100,8 @@ async function isWeekFullySettled(weekId: number): Promise<boolean> {
   if (finalGameIds.length !== rows.length) return false;
   if (finalGameIds.length === 0) return true;
 
-  const { data: settlements, error: settleError } = await supabaseService
-    .from('pick_settlement')
-    .select('game_id')
-    .in('game_id', finalGameIds);
-  if (settleError) throw settleError;
-
-  const settledIds = new Set((settlements ?? []).map((s) => s.game_id));
-  return finalGameIds.every((id) => settledIds.has(id));
+  const unsettled = await findUnsettledGradableWeeks();
+  return !unsettled.some((w) => w.id === weekId);
 }
 
 function isFinalScore(finalScores: unknown): boolean {
