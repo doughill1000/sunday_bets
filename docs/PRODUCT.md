@@ -5,10 +5,10 @@ value-add or just noise, and is it on-brand?" stops being re-argued one feature 
 and so a new idea is tested against the app's actual heart instead of whatever felt exciting
 that afternoon.
 
-> **Draft — pending ratification.** This guide's standing decision is recorded in
-> [ADR-0036](adr/0036-product-principles.md) (currently **Proposed**), mirroring how
+> **Ratified.** This guide's standing decision is recorded in
+> [ADR-0036](adr/0036-product-principles.md) (**Accepted** 2026-07-21), mirroring how
 > [ADR-0030](adr/0030-mobile-first-design-principles.md) ratifies [`docs/DESIGN.md`](DESIGN.md).
-> Treat it as the working rubric now; treat it as law once ADR-0036 is Accepted.
+> A material change to the rubric goes through ADR supersession, exactly as `DESIGN.md` does.
 
 **This is the product-judgment layer.** Where [`DESIGN.md`](DESIGN.md) governs _how a screen
 is built_ and [`ROADMAP.md`](../ROADMAP.md) sets _release order_, this guide governs _whether a

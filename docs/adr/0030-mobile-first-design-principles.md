@@ -1,9 +1,27 @@
 # ADR-0030: Mobile-first design principles
 
-- Status: Accepted
+- Status: Accepted (amended 2026-07-21)
 - Date: 2026-07-11
 - Issue: No issue — approved plan (design-philosophy direction approved by Doug 2026-07-11)
 - Supersedes: None
+
+## Amendment (2026-07-21): two themes, dark by default
+
+The Decision below adopted "mobile-first, **dark-only**" principles. Two days later #532
+(PR #573) shipped the light **Parchment** theme with a dark/light/system toggle stored on
+`users.theme_pref`, and [`docs/DESIGN.md`](../DESIGN.md) — the guide this ADR ratifies —
+now reads "**Two themes**, dark by default." The word `dark-only` is simply no longer true,
+and it sat inside a pass/fail merge gate contradicting its own guide.
+
+**Read "dark-only" as "dark-by-default, two-theme" throughout.** Every surface must read
+correctly under both themes; dark remains the default for unauthenticated/unset visitors.
+
+This is recorded as an amendment rather than a superseding ADR because the _stance_ was not
+reversed. None of the interaction principles below depends on the theme count — the
+mechanism that made a second theme possible is [ADR-0029](0029-design-system-token-architecture.md)'s
+dual light/dark token decision, which named a light theme as the follow-up it was unblocking.
+"Dark-only" was a description of the app as it then stood, not a principle being defended.
+A future change to the _principles_ still gets a superseding ADR, per the last bullet below.
 
 ## Context
 
@@ -30,6 +48,9 @@ of the token layer.
 Adopt **mobile-first, dark-only** design principles as the standing interaction standard,
 detailed in the living guide [`docs/DESIGN.md`](../DESIGN.md). It sits above, and defers
 to, ADR-0029 for token values. Boundaries future work must preserve:
+
+> **Amended 2026-07-21** — read "dark-only" as **"dark-by-default, two-theme"**; see the
+> Amendment section above. The principles below are unchanged.
 
 - **The mobile decision is the default decision.** Phone leads every layout; a desktop
   divergence must name the user, task, and viewport that justify it (admin is the one

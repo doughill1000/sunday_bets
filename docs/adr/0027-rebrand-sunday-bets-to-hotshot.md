@@ -10,6 +10,25 @@
   name, domain-only "Calls" rule, and charcoal/brass-gold/cream palette below are
   unchanged.
 
+> **⚠ Contested as of 2026-07-21 — do not read this ADR as settled. See #677.**
+> Two of this ADR's clauses are under active review and are expected to be replaced by a
+> superseding ADR out of issue #677:
+>
+> - **The name.** This ADR's central justification is that "Hotshot" **de-gambles the
+>   identity (unblocks store/ad policy)**. Scoping #661 surfaced evidence cutting against
+>   exactly that claim — `HOT SHOT` is an active Light & Wonder federal registration
+>   covering casino-game contests and social/mobile game delivery, and "Hotshot"/"Hot Shot"
+>   are phonetically identical. The bare name is also unavailable on the App Store. A
+>   2026-07-16 review concluded **Hotshot stays** for now, with plan-B "Laces Out" and
+>   plan-C "Pecking Order" held in reserve; the name is **not trademark-cleared**.
+> - **The domain.** The `hotshotcalls.com` domain named throughout this ADR (and in the
+>   "Calls" rule) is being replaced by **`hotshotpickem.com`** (#678, not yet purchased).
+>   A stale `mailto:admin@hotshotcalls.com` VAPID fallback remains in
+>   `src/lib/server/push.ts`; note that `VAPID_SUBJECT` is set in prod, so the fallback is
+>   cosmetic. [ADR-0034](0034-simplified-hotshot-logo-mark.md) restates the old domain too.
+>
+> The charcoal / brass-gold / cream palette and the de-gambling _intent_ are unaffected.
+
 ## Context
 
 The app shipped under the working name **Sunday Bets**. Two problems forced a naming

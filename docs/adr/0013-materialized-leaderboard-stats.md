@@ -28,6 +28,25 @@ This decision is that Tier B, and #191 is repurposed to track it.
 Convert the eight leaderboard/stats aggregation views to **materialized views** and
 refresh them at the **end of every grading run**.
 
+> **Amended 2026-07-21 — what "the end of every grading run" now means.** Two things
+> changed after this ADR and are recorded here so §1 is not read too literally:
+>
+> - **A second read model shares the hook.** The post-grade refresh is now
+>   `refreshReadModels()` (`src/lib/server/grading.ts`), which calls
+>   `refreshLeaderboardStats()` **and** `rebuildRatings()` — the whole-table
+>   `player_ratings` rebuild ([ADR-0032](0032-cross-season-credibility-rating.md), made an
+>   atomic RPC by #619/PR #673). "Refresh the matviews" below should be read as "refresh
+>   the read models".
+> - **Refresh is batched per cron run, not per graded week.** `gradeWeek` takes
+>   `skipReadModelRefresh` so a caller grading several weeks hoists the global work into a
+>   single trailing `refreshReadModels()` call. The grade cron uses it: the per-week
+>   fan-out previously double-refreshed the matviews and raced two concurrent ratings
+>   rebuilds, which could transiently empty `player_ratings` (#622/PR #627). Single-
+>   invocation admin graders (`gradeGame`/`gradeSeason`) still refresh inline.
+>
+> The §1 obligation is unchanged in substance — any path that writes a leaderboard input
+> must still leave the read models refreshed before it returns.
+
 Boundaries future work must preserve:
 
 1. **Any path that changes a leaderboard input must refresh.** The inputs are
@@ -44,7 +63,11 @@ Boundaries future work must preserve:
    carries a unique index on its natural key so `REFRESH MATERIALIZED VIEW CONCURRENTLY`
    can run (it keeps the view readable during refresh and is transaction-safe inside the
    function). A refresh error is logged (Sentry + console) but **not** thrown: the grade
-   has already committed and the matview self-heals on the next grade.
+   has already committed and the matview self-heals on the next grade. _Known open gaps in
+   this swallow-and-self-heal posture (2026-07-21): #623 (a silent matview/ratings refresh
+   failure is not surfaced out of the grade cron), #624 (timeout-headroom signal not
+   pointed at the grade cron), #744 (the cron re-grades a finished season's final week on
+   every run, re-doing this refresh for nothing)._
 3. **Reads stay service-role only.** Materialized views cannot carry RLS. All
    leaderboard/stats reads already go through the service-role client, which bypasses RLS
    and filters by `group_id`; cross-group isolation is enforced by that `group_id` filter

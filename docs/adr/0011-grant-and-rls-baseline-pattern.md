@@ -119,6 +119,20 @@ core-table grants centralized only where the legacy guard forces it.
 
    This single file removes the need for any later blanket revoke.
 
+   > **Amended 2026-07-21 — the enum-lockdown clause was deliberately not implemented.**
+   > The per-enum `revoke usage on type … from public;` reconcile above was dropped during
+   > implementation and the rationale lived only in a code comment
+   > (`supabase/src/schemas/0001_role_baseline.sql`), never here. Recorded now so this ADR
+   > stops describing a lockdown the database does not have: enum/type `USAGE` is left at
+   > the built-in `PUBLIC` default because it was empirically verified inert at runtime in
+   > this schema (column reads/writes, casts, and enum-argument function calls all succeed
+   > with `USAGE` stripped from both `PUBLIC` and the role), `authenticated`/`anon` hold no
+   > `CREATE` on `public` to exploit it at DDL time, and — lacking a
+   > `REVOKE … ON ALL TYPES` form — the per-enum reconcile would have to be hand-extended
+   > for every new enum forever, breaking the from-empty squash for no security gain. The
+   > closed-by-default posture for **tables and functions** (the clauses that carry the
+   > actual reachable data) is unaffected and is enforced by pgTAP `019`/`021`.
+
 2. **Functions and views co-locate their grants.** Each function/view file owns its
    `grant execute`/`grant select`. With the baseline closing the default door these
    grants are the sole source of truth and survive because nothing re-revokes them —
