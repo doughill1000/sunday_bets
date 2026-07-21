@@ -45,8 +45,8 @@ insert into public.teams (external_key, name, short_name) values
   ('CFA', 'CF Away', 'CFA')
 on conflict (external_key) do nothing;
 
--- home=14 away=9, margin=5. Gamer at -3 (locked) -> +2 -> win.
--- House at -6 (closing)   -> -1 -> loss. The two presets must diverge on this game
+-- home=14 away=9, margin=5. Gamer at 3 (locked) -> +2 -> win.
+-- House at 6 (closing)   -> -1 -> loss. The two presets must diverge on this game
 -- so a wrongly-resolved preset is visible in the outcome, not just the label.
 insert into public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id, status, final_scores)
 select g.week_id, g.ext, g.commence, home.id, away.id, 'final', '{"home": 14, "away": 9}'::jsonb
@@ -58,14 +58,14 @@ cross join public.teams away
 where home.external_key = 'CFH' and away.external_key = 'CFA'
 on conflict (external_game_id) do nothing;
 
--- Closing line: -6 (captured by _capture_closing_line during the first grade).
+-- Closing line: 6 (captured by _capture_closing_line during the first grade).
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
-select g.id, 'fanduel', home.id, -6, g.commence_time - interval '30 minutes'
+select g.id, 'fanduel', home.id, 6, g.commence_time - interval '30 minutes'
 from public.games g
 cross join public.teams home
 where g.external_game_id = 'cf-cohort' and home.external_key = 'CFH';
 
--- cf_first locks at -3, picks home.
+-- cf_first locks at 3, picks home.
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -74,7 +74,7 @@ select
   '00000000-0000-4000-8000-000000000f11',
   tests.get_supabase_uid('cf_first'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -3,
+  g.commence_time - interval '1 hour', home.id, 3,
   tests.get_supabase_uid('cf_first')
 from public.games g cross join public.teams home
 where g.external_game_id = 'cf-cohort' and home.external_key = 'CFH'
@@ -92,7 +92,7 @@ select results_eq(
        and game_id  = (select id from public.games where external_game_id = 'cf-cohort')
        and user_id  = tests.get_supabase_uid('cf_first') $$,
   $$ values ('gamer', 'win') $$,
-  'cf_first freezes graded_preset=gamer (locked -3, margin +2) on first grade'
+  'cf_first freezes graded_preset=gamer (locked 3, margin +2) on first grade'
 );
 
 -- Config now flips to 'house' -- simulating the commissioner changing it after the
@@ -101,7 +101,7 @@ update public.group_config set grading_preset = 'house'
 where group_id = '00000000-0000-4000-8000-000000000f11';
 
 -- Two new active members join the group AFTER the config flip, into the SAME
--- already-graded game. cf_late_pick locks at -3 (matches cf_first); cf_late_missed
+-- already-graded game. cf_late_pick locks at 3 (matches cf_first); cf_late_missed
 -- never picks.
 insert into public.group_memberships (group_id, user_id, role, status) values
   ('00000000-0000-4000-8000-000000000f11', tests.get_supabase_uid('cf_late_pick'),   'member', 'active'),
@@ -115,7 +115,7 @@ select
   '00000000-0000-4000-8000-000000000f11',
   tests.get_supabase_uid('cf_late_pick'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -3,
+  g.commence_time - interval '1 hour', home.id, 3,
   tests.get_supabase_uid('cf_late_pick')
 from public.games g cross join public.teams home
 where g.external_game_id = 'cf-cohort' and home.external_key = 'CFH'
@@ -172,14 +172,14 @@ from public.teams home cross join public.teams away
 where home.external_key = 'CFH' and away.external_key = 'CFA'
 on conflict (external_game_id) do nothing;
 
--- Closing line -6, same shape as cf-cohort. This game grades House, and House has no
+-- Closing line 6, same shape as cf-cohort. This game grades House, and House has no
 -- pick-time fallback (#735) -- it grades on the closing line or raises. Before #735 this
 -- fixture had no game_lines row at all and the old coalesce quietly settled it at the
--- locked -3, so the test asserted the right preset label on a line House should never
+-- locked 3, so the test asserted the right preset label on a line House should never
 -- have used. Every gradable game reaches here with a pre-kickoff row in reality: that is
 -- what a locked pick is snapshotted from.
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
-select g.id, 'fanduel', home.id, -6, g.commence_time - interval '30 minutes'
+select g.id, 'fanduel', home.id, 6, g.commence_time - interval '30 minutes'
 from public.games g
 cross join public.teams home
 where g.external_game_id = 'cf-cohort-2' and home.external_key = 'CFH';
@@ -192,7 +192,7 @@ select
   '00000000-0000-4000-8000-000000000f11',
   tests.get_supabase_uid('cf_first'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -3,
+  g.commence_time - interval '1 hour', home.id, 3,
   tests.get_supabase_uid('cf_first')
 from public.games g cross join public.teams home
 where g.external_game_id = 'cf-cohort-2' and home.external_key = 'CFH'
@@ -203,8 +203,8 @@ select public._grade_games_by_ids(
 );
 
 -- Outcome is asserted alongside the preset so this proves House graded on the CLOSING
--- line, not just that it wrote the label: closing -6 gives margin 5-6 = -1 -> loss,
--- whereas the locked -3 would have given +2 -> win.
+-- line, not just that it wrote the label: closing 6 gives margin 5-6 = -1 -> loss,
+-- whereas the locked 3 would have given +2 -> win.
 select results_eq(
   $$ select graded_preset, outcome::text from public.pick_settlement
      where group_id = '00000000-0000-4000-8000-000000000f11'

@@ -37,7 +37,9 @@ describe('setActiveLine command', () => {
             game_id: 'g1',
             source: 'odds',
             spread_team_id: 1,
-            spread_value: -3.5,
+            // set_active_line normalizes every line to favorite + non-negative magnitude, so a
+            // negative value here would be a response the real RPC cannot return (#734).
+            spread_value: 3.5,
             is_active_line: true,
             fetched_at: '2024-01-01T00:00:00Z'
           }
@@ -45,6 +47,9 @@ describe('setActiveLine command', () => {
       ],
       error: null
     });
+    // A negative INPUT is legitimate -- set_active_line accepts either sign and normalizes.
+    // What it returns is always the canonical form: the favorite plus a non-negative
+    // magnitude (#734), which is what the mocked response above and this assertion encode.
     const res = await setActiveLine({
       gameId: 'g1',
       spreadTeamId: 1,
@@ -52,6 +57,6 @@ describe('setActiveLine command', () => {
       source: 'odds'
     });
     expect(res.ok).toBe(true);
-    expect(res.line.spread_value).toBe(-3.5);
+    expect(res.line.spread_value).toBe(3.5);
   });
 });

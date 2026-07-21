@@ -317,7 +317,7 @@ export default async function globalSetup() {
       game_id: gameId,
       source: 'fanduel',
       spread_team_id: home.id,
-      spread_value: -3.5,
+      spread_value: 3.5,
       is_active_line: true,
       fetched_at: now
     },

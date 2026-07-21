@@ -86,7 +86,7 @@ async function createGameWithActiveLine(opts: {
       game_id: gameId,
       source: 'fanduel',
       spread_team_id: homeTeamId,
-      spread_value: -2.5,
+      spread_value: 2.5,
       is_active_line: true,
       fetched_at: now
     },

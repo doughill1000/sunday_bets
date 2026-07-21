@@ -14,12 +14,23 @@
 -- asymmetric cut carrying that season's real home-side ATS lean.
 --
 -- A plain view over the service_role-only league_ats_base matview (no duplicated aggregation):
--- matches that grant, carries no RLS (ADR-0013). New file, so it sorts after league_ats_base and
--- league_situational_baseline within views/ and the generator emits the base first (see the
--- emit-order note in database.md). It only READS league_ats_base, so -- like
--- league_situational_baseline itself -- it is not a pre-existing cascade dependent the base's
--- re-emit must re-touch.
-
+-- matches that grant, carries no RLS (ADR-0013). It sorts after league_ats_base within views/,
+-- so the generator emits the base first (see the emit-order note in database.md).
+--
+-- THIS VIEW *IS* A CASCADE DEPENDENT OF league_ats_base -- corrected in #734. This header used
+-- to claim the opposite: that because it "only READS league_ats_base" it was "not a
+-- pre-existing cascade dependent the base's re-emit must re-touch". That is exactly backwards.
+-- Selecting from a matview IS a hard pg_depend edge, which is what makes
+-- `drop materialized view ... cascade` drop this view; reading is the dependency, not an
+-- exemption from it. The claim was self-concealing while the file was new (the generator
+-- always emits a new file, so the view got recreated anyway) and became wrong the moment it
+-- landed, since from then on it only re-emits when its own hash changes. #734 re-emitted the
+-- base and would have silently dropped this view and league_situational_baseline for good.
+-- Both are now listed in the DEPENDENTS block in league_ats_base.sql.
+--
+-- Re-touched for #734 (ATS favorite-sign fix): definition AND output are unchanged -- this
+-- view reads only abs(spread_value) / ats_result / is_home, never is_favorite, so the
+-- inversion never reached it.
 create or replace view public.league_situational_baseline_season as
 with classified as (
   select

@@ -139,9 +139,9 @@ beforeAll(async () => {
     homePts: 28,
     awayPts: 14,
     spreadTeamId: teamId.KC,
-    spreadValue: -7
+    spreadValue: 7
   });
-  // g2: DAL (away) favored -3, wins 30-20 -> away favorite covers ATS + SU; PHI (home dog) loses.
+  // g2: DAL (away) favored by 3, wins 30-20 -> away favorite covers ATS + SU; PHI (home dog) loses.
   await insertGameWithLine({
     externalId: G2,
     homeId: teamId.PHI,
@@ -149,7 +149,7 @@ beforeAll(async () => {
     homePts: 20,
     awayPts: 30,
     spreadTeamId: teamId.DAL,
-    spreadValue: -3
+    spreadValue: 3
   });
 
   const { error: refreshErr } = await admin.rpc('refresh_leaderboard_stats');

@@ -163,7 +163,7 @@ beforeAll(async () => {
     home: 27,
     away: 20
   });
-  await insertLine(gA, teamId.KC, -3.5);
+  await insertLine(gA, teamId.KC, 3.5);
   await insertPick(ALICE, gA, teamId.KC, teamId.KC, 3.5); // win
   await insertPick(BOB, gA, teamId.BUF, teamId.KC, 3.5); // loss, cover -3.5 (the bad beat)
   await insertPick(CAROL, gA, teamId.KC, teamId.KC, 3.5); // win
@@ -173,7 +173,7 @@ beforeAll(async () => {
     home: 24,
     away: 10
   });
-  await insertLine(gB, teamId.PHI, -7);
+  await insertLine(gB, teamId.PHI, 7);
   await insertPick(ALICE, gB, teamId.PHI, teamId.PHI, 7); // win (minority: only Alice on PHI)
   await insertPick(BOB, gB, teamId.DAL, teamId.PHI, 7); // loss, cover -7
   await insertPick(CAROL, gB, teamId.DAL, teamId.PHI, 7); // loss, cover -7
@@ -184,7 +184,7 @@ beforeAll(async () => {
     home: 30,
     away: 10
   });
-  await insertLine(gC, teamId.KC, -3.5);
+  await insertLine(gC, teamId.KC, 3.5);
   await insertPick(ALICE, gC, teamId.KC, teamId.KC, 3.5); // win
   await insertPick(BOB, gC, teamId.BUF, teamId.KC, 3.5); // loss
   const gD = await insertGame(week2Id, teamId.PHI, teamId.DAL, 'wa-2093-w2-d', null); // NO final

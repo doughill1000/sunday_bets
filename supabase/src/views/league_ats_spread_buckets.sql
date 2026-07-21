@@ -14,6 +14,10 @@
 -- Plain view over the service_role-only league_ats_base matview (no duplicated aggregation);
 -- matches that grant and carries no RLS. New file for #425, so the generator emits it after
 -- league_ats_base (alphabetically later in views/) in the same migration.
+-- Re-touched for #734 (ATS favorite-sign fix): this view's own definition is unchanged, but
+-- its OUTPUT changes, because league_ats_base.is_favorite was inverted on every row until
+-- #734. The re-touch is also what makes the generator recreate this view after that matview's
+-- cascade drop -- see the DEPENDENTS list in league_ats_base.sql.
 create or replace view public.league_ats_spread_buckets as
 with per_game as (
   -- One row per game: the favorite's row where a favorite exists; for a pick'em (no favorite)

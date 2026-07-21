@@ -153,7 +153,7 @@ beforeAll(async () => {
       weight,
       locked_at: now,
       locked_spread_team_id: homeTeam,
-      locked_spread_value: -3.5,
+      locked_spread_value: 3.5,
       locked_by: userId
     });
     settlementRows.push({

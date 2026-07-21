@@ -11,6 +11,10 @@
 --
 -- Plain view over the service_role-only league_ats_base matview (no duplicated aggregation);
 -- matches that grant and carries no RLS. New file for #425.
+-- Re-touched for #734 (ATS favorite-sign fix): definition AND output are unchanged -- this
+-- view reads only abs(spread_value) / ats_result / is_home, never is_favorite, so the
+-- inversion never reached it. The re-touch exists solely so the generator recreates this view
+-- after league_ats_base's cascade drop -- see the DEPENDENTS list in league_ats_base.sql.
 create or replace view public.league_ats_streaks as
 with ordered as (
   select

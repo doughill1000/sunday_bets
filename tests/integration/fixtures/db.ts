@@ -428,7 +428,7 @@ export async function seedTwoGroupSettlements(
   // 6. Clear stale games from this week (handles crashed prior runs)
   await clearWeekGames(supabase, weekId);
 
-  // 7. Insert game with final scores already set (home wins 34-24 → Chiefs cover -6.5)
+  // 7. Insert game with final scores already set (home wins 34-24 → Chiefs cover 6.5)
   const EXTERNAL_ID = 'two-group-settlements-fixture-v1';
   let gameId: string;
   {
@@ -450,12 +450,12 @@ export async function seedTwoGroupSettlements(
     gameId = ins.id as string;
   }
 
-  // 8. Active line (home/Chiefs -6.5; Chiefs cover by 10 → home wins ATS)
+  // 8. Active line (home/Chiefs favored by 6.5; Chiefs cover by 10 → home wins ATS)
   const { error: lineErr } = await supabase.from('game_lines').insert({
     game_id: gameId,
     source: 'fanduel',
     spread_team_id: homeTeamId,
-    spread_value: -6.5,
+    spread_value: 6.5,
     is_active_line: true
   });
   if (lineErr) throw new Error(`seedTwoGroupSettlements: insert line: ${lineErr.message}`);

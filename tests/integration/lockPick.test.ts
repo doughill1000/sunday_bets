@@ -46,7 +46,7 @@ async function createGameWithActiveLine(
       game_id: gameId,
       source: 'fanduel',
       spread_team_id: homeTeamId,
-      spread_value: -6.5,
+      spread_value: 6.5,
       is_active_line: true,
       fetched_at: now
     },
@@ -290,7 +290,7 @@ describe('All-In constraint — within-group and cross-group independence', () =
       game_id: id,
       source: 'fanduel',
       spread_team_id: home,
-      spread_value: -6.5,
+      spread_value: 6.5,
       is_active_line: true,
       fetched_at: now
     });

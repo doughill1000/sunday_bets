@@ -115,15 +115,19 @@ INSERT INTO public.game_lines (
 )
 SELECT g.id, 'fanduel', st.id, ln.sv, true, true, '2024-09-14 17:00:00+00'
 FROM (VALUES
-  ('s76-g1', 'S2_AE1', -3), ('s76-g2', 'S2_NW1', -7),
-  ('s77-g1', 'S2_AE1', -3), ('s77-g2', 'S2_NW2', -10)
+  ('s76-g1', 'S2_AE1', 3), ('s76-g2', 'S2_NW1', 7),
+  ('s77-g1', 'S2_AE1', 3), ('s77-g2', 'S2_NW2', 10)
 ) ln(ext, spread_key, sv)
 JOIN public.games g ON g.external_game_id = ln.ext
 JOIN public.teams st ON st.external_key = ln.spread_key;
 
 -- ── Picks (line at pick time = locked_spread_*) ─────────────────────────────────
--- Alice (group A): 2076 backs home AE1 (-3, WIN) + away AW1 (+7, LOSS); 2077 backs home AE1 (-3, WIN).
--- Carol (group B): 2076 backs home AE1 (-3, WIN) -- for the cross-group isolation check.
+-- Alice (group A): 2076 backs favorite AE1 (line 3, WIN) + underdog AW1 (line 7, LOSS);
+-- 2077 backs favorite AE1 (line 3, WIN).
+-- Carol (group B): 2076 backs favorite AE1 (line 3, WIN) -- for the cross-group isolation check.
+-- locked_spread_team_id names the FAVORITE and locked_spread_value is a positive magnitude
+-- (#734), so the underdog row below points at S2_NW1 -- the favorite of s76-g2 -- not at the
+-- side Alice actually backed.
 INSERT INTO public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -132,10 +136,10 @@ SELECT
   p.group_id, p.user_id, g.id, pick.id, 'M'::public.weight_enum,
   g.commence_time - interval '1 hour', spread.id, p.spread_value, p.user_id
 FROM (VALUES
-  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's76-g1', 'S2_AE1', 'S2_AE1', -3.0),
-  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's76-g2', 'S2_AW1', 'S2_AW1',  7.0),
-  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's77-g1', 'S2_AE1', 'S2_AE1', -3.0),
-  ('00000000-0000-4000-8000-000000004902'::uuid, tests.get_supabase_uid('sit2_carol'), 's76-g1', 'S2_AE1', 'S2_AE1', -3.0)
+  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's76-g1', 'S2_AE1', 'S2_AE1', 3.0),
+  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's76-g2', 'S2_AW1', 'S2_NW1', 7.0),
+  ('00000000-0000-4000-8000-000000004901'::uuid, tests.get_supabase_uid('sit2_alice'), 's77-g1', 'S2_AE1', 'S2_AE1', 3.0),
+  ('00000000-0000-4000-8000-000000004902'::uuid, tests.get_supabase_uid('sit2_carol'), 's76-g1', 'S2_AE1', 'S2_AE1', 3.0)
 ) p(group_id, user_id, game_key, picked_key, spread_key, spread_value)
 JOIN public.games g ON g.external_game_id = p.game_key
 JOIN public.teams pick ON pick.external_key = p.picked_key

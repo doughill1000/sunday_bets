@@ -103,7 +103,7 @@ describe('picks reveal after kickoff (picks_group_view RLS)', () => {
       weight: 'H',
       locked_at: now,
       locked_spread_team_id: homePastId,
-      locked_spread_value: -6.5,
+      locked_spread_value: 6.5,
       locked_by: userBId
     });
 
@@ -116,7 +116,7 @@ describe('picks reveal after kickoff (picks_group_view RLS)', () => {
       weight: 'M',
       locked_at: now,
       locked_spread_team_id: homeFutureId,
-      locked_spread_value: -6.5,
+      locked_spread_value: 6.5,
       locked_by: userBId
     });
 
@@ -129,7 +129,7 @@ describe('picks reveal after kickoff (picks_group_view RLS)', () => {
       weight: 'L',
       locked_at: now,
       locked_spread_team_id: homePastId,
-      locked_spread_value: -6.5,
+      locked_spread_value: 6.5,
       locked_by: userBId
     });
   });

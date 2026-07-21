@@ -108,7 +108,7 @@ describe('picks_status_board RPC (ADR-0019 counts-only carve-out)', () => {
         weight: 'M',
         locked_at: now,
         locked_spread_team_id: h1,
-        locked_spread_value: -3.5,
+        locked_spread_value: 3.5,
         locked_by: userAId
       },
       {
@@ -119,7 +119,7 @@ describe('picks_status_board RPC (ADR-0019 counts-only carve-out)', () => {
         weight: 'M',
         locked_at: now,
         locked_spread_team_id: h1,
-        locked_spread_value: -3.5,
+        locked_spread_value: 3.5,
         locked_by: userBId
       },
       {
@@ -130,7 +130,7 @@ describe('picks_status_board RPC (ADR-0019 counts-only carve-out)', () => {
         weight: 'M',
         locked_at: now,
         locked_spread_team_id: h2,
-        locked_spread_value: -3.5,
+        locked_spread_value: 3.5,
         locked_by: userBId
       }
     ]);

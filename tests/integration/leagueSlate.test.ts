@@ -91,7 +91,7 @@ async function insertGradedGame(externalId: string, weekId: number): Promise<voi
     game_id: game.id as string,
     source: 'fanduel',
     spread_team_id: teamId.KC,
-    spread_value: -7,
+    spread_value: 7,
     is_active_line: true,
     is_closing_line: true
   });
@@ -120,7 +120,7 @@ async function insertUpcomingGame(weekId: number, commenceTs: string): Promise<v
     game_id: game.id as string,
     source: 'fanduel',
     spread_team_id: teamId.KC,
-    spread_value: -7,
+    spread_value: 7,
     is_active_line: true,
     is_closing_line: false
   });

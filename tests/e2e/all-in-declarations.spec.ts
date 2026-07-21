@@ -53,7 +53,7 @@ test("a co-member's locked All-In is revealed on the board pre-kickoff", async (
     locked_at: new Date().toISOString(),
     locked_by: coMemberId,
     locked_spread_team_id: pickedTeamId,
-    locked_spread_value: -3.5
+    locked_spread_value: 3.5
   });
   if (error) throw new Error('seed co-member All-In: ' + error.message);
 
