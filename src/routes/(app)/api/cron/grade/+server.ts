@@ -12,7 +12,9 @@ export const POST: RequestHandler = async (event) => {
   const guard = requireCronSecret(event);
   if (guard) return guard;
   const jobResult = await withCronLog('grade', async () => {
-    const weeks = await findRecentGradableWeeks();
+    // #744: don't reselect the most-recently-concluded week once it has no grading
+    // work left, or a finished season's final week regrades on every tick forever.
+    const weeks = await findRecentGradableWeeks({ excludeSettledPriorWeek: true });
     // Grade each target week but SUPPRESS the whole-table stats/ratings refresh (#622): the two
     // globals are hoisted into one refreshReadModels() call below, after every week (recent +
     // reconcile) is settled. Doing it per-week fanned out into concurrent full ratings rebuilds
