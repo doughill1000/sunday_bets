@@ -190,8 +190,15 @@ ladder" on `/league` is a **Wave-2 follow-up**, out of this ADR and issue.
 - Final constants (K / shrink prior, season-regression fraction, minimum sample, tier
   cutoffs and labels) are tuned inside #361 within the bounds above; promoting any to a
   per-group commissioner setting later is a separate change.
-- **Cross-player "Credibility ladder" on `/league`** — a Wave-2 follow-up issue (blocked
-  on #361) giving long-tenured players a public thing to defend.
+- ~~**Cross-player "Credibility ladder" on `/league`** — a Wave-2 follow-up issue (blocked
+  on #361) giving long-tenured players a public thing to defend.~~ **Shipped** as #637
+  (PR #644): the all-time ladder renders on `/league`'s Standings tab. Note that at ship
+  time it was gated to the All-time scope only; the 2026-07-21 IA review
+  (`docs/audits/2026-07-21-ia-review.md`, Rule 3) directs hoisting it to **always-on** in
+  both scopes with mandatory grain copy, and adds a career-rating chip to the `/stats`
+  season hero so the rating is default-visible year-round — tracked as #737 / #738. The
+  §9 ban on conflating the rating with standings points (never a standings-table column)
+  is unchanged by that move and still binds.
 - Totals-market inclusion when ADR-0022 ships; AI narration of the rating stays with #283
   and remains voice-only (ADR-0008) — it may describe the number, never decide it.
 - Design study (surfacing):

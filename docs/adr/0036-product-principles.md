@@ -1,6 +1,6 @@
 # ADR-0036: Product principles rubric and pressure-test tooling
 
-- Status: Proposed
+- Status: Accepted (2026-07-21)
 - Date: 2026-07-16
 - Issue: None — approved plan (product-principles layer); introduced with this PR
 - Supersedes: None
@@ -30,6 +30,10 @@ skills that operationalise it, mirroring the design layer one-for-one.
    kill-question grounded in a real ADR or feature — **five judgment lenses** (value-vs-noise,
    on-brand/heart, right-for-~6-friends, strategic timing, lifetime cost/ops drag) that are
    weighed together, and **two gates** (fairness & integrity, reversibility) that are pass/fail.
+   The value-vs-noise lens carries a **displacement corollary** (added by #695 before
+   acceptance): on an already-dense surface the kill-question sharpens to _"what does this
+   replace?"_ — a new element must name the block it displaces, or it waits. Density, not
+   misfit, is how good surfaces die; "it's small" is not an answer.
 2. **The gates restate existing law, they do not create it.** Fairness/scoring changes and
    costly-to-reverse changes already require an ADR under the `docs/adr/README.md` trigger test.
    The gates simply make that requirement fire at the _idea_ stage: a tripped gate escalates to
