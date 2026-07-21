@@ -45,9 +45,11 @@ vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 
 import { POST } from '../+server';
 import { gradeWeek, refreshReadModels } from '$lib/server/grading';
+import { findRecentGradableWeeks } from '$lib/server/db/queries/findRecentGradableWeeks';
 
 const mockGradeWeek = gradeWeek as ReturnType<typeof vi.fn>;
 const mockRefresh = refreshReadModels as ReturnType<typeof vi.fn>;
+const mockFindRecentGradableWeeks = findRecentGradableWeeks as ReturnType<typeof vi.fn>;
 
 function makeEvent(): Parameters<typeof POST>[0] {
   return {
@@ -108,5 +110,13 @@ describe('POST /api/cron/grade — hoisted read-model refresh (#622)', () => {
     await POST(makeEvent());
 
     expect(mockRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('opts into the settled-prior-week gate (#744) so a finished season stops regrading', async () => {
+    recentWeeks = [];
+
+    await POST(makeEvent());
+
+    expect(mockFindRecentGradableWeeks).toHaveBeenCalledWith({ excludeSettledPriorWeek: true });
   });
 });

@@ -633,16 +633,19 @@ export type Database = {
       };
       groups: {
         Row: {
+          competition_starts_at: string;
           created_at: string;
           id: string;
           name: string;
         };
         Insert: {
+          competition_starts_at?: string;
           created_at?: string;
           id?: string;
           name: string;
         };
         Update: {
+          competition_starts_at?: string;
           created_at?: string;
           id?: string;
           name?: string;
@@ -2458,6 +2461,10 @@ export type Database = {
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] };
         Returns: undefined;
+      };
+      _participation_start: {
+        Args: { p_group_id: string; p_user_id: string };
+        Returns: string;
       };
       _rebuild_player_ratings: {
         Args: { p_computed_at: string; p_rows: Json };

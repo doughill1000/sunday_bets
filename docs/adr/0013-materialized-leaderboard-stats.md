@@ -66,8 +66,10 @@ Boundaries future work must preserve:
    has already committed and the matview self-heals on the next grade. _Known open gaps in
    this swallow-and-self-heal posture (2026-07-21): #623 (a silent matview/ratings refresh
    failure is not surfaced out of the grade cron), #624 (timeout-headroom signal not
-   pointed at the grade cron), #744 (the cron re-grades a finished season's final week on
-   every run, re-doing this refresh for nothing)._
+   pointed at the grade cron). #744 (the cron re-graded a finished season's final week,
+   and re-ran this refresh for nothing, on every run) shipped 2026-07-21: the grade cron
+   now drops a fully-settled prior week from its candidates instead of reselecting it
+   forever._
 3. **Reads stay service-role only.** Materialized views cannot carry RLS. All
    leaderboard/stats reads already go through the service-role client, which bypasses RLS
    and filters by `group_id`; cross-group isolation is enforced by that `group_id` filter
