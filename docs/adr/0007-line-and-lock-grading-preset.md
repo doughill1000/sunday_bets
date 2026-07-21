@@ -1,7 +1,7 @@
 # ADR-0007: Line and lock grading preset (House vs Gamer)
 
 - Status: Accepted
-- Amended: 2026-06-26 (#177), 2026-07-15 (#657) — see "Amendment" below
+- Amended: 2026-06-26 (#177), 2026-07-15 (#657), 2026-07-21 (#735) — see "Amendment" below
 - Date: 2026-06-24
 - Issue: #108
 - Supersedes: None
@@ -179,3 +179,35 @@ game_id)` — i.e. the game's cohort, sourced from any member already graded, no
   `ps_cohort` and `ps_prior` agree, so the coalesce chain resolves identically to before.
   The gap is specific to a **partial** re-grade of an already-settled game, which only
   #654's completeness guard newly makes reachable.
+
+## Amendment (2026-07-21, issue #735)
+
+The original Decision let House fall back to the pick-time line when no closing line had
+been captured: the grader resolved the graded number as
+`coalesce(cl.spread_value, p.locked_spread_value)`. That fallback was **silent** — a House
+group with no captured closing line graded as Gamer and nothing said so.
+
+It fired at scale. The 2025 season carries a flagged closing line for only **16 of its 272
+games**, so House quietly graded 256 games on the pick-time line. The root cause is not the
+capture predicate: `_capture_closing_line` only ever runs on the grade path, so it reaches a
+game exactly once, at its first grade. It shipped with the 2026-06-26 amendment (#177),
+months after the 2025 season finished grading on 2026-01-03, so those games were already
+past the only moment it could fire. The 16 that succeeded are week 18, which the grade cron
+regraded on 2026-07-21 and captured correctly — the predicate, ordering, and call placement
+all work.
+
+**The fallback is removed.** Under House the closing line _is_ the graded line, so grading
+now raises `P0001` naming the offending games rather than substituting a different number
+(`supabase/src/functions/_private/grade_games_by_ids.sql`, shipped in #745). The guard runs
+_after_ capture, so it can only fire when no pre-kickoff row ever existed to flag. A House
+group whose closing line is genuinely missing now fails loudly instead of grading on a
+number this ADR says it must not use.
+
+**The durable rule this establishes:** a capture rule introduced mid-life only ever sees
+data from its ship date forward. Adding one is not complete until it is paired with a
+backfill for the history it cannot reach — otherwise the gap hides behind whatever fallback
+the consumer happens to have.
+
+Still outstanding: the 2025 closing lines themselves are not backfilled, so re-grading 2025
+under House will now raise rather than silently mis-grade. That backfill is a `prod-backfill`
+runbook item, not a migration.

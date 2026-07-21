@@ -1,10 +1,27 @@
 # ADR-0021: Caller-scoped `SECURITY DEFINER` standings RPC for non-web clients
 
-- Status: Proposed
+- Status: Rejected (2026-07-21) — see "Rejection" below
 - Date: 2026-07-06
 - Issue: None — approved plan (parks the mobile-app graduation path; the driving
   experiment is PR #394, "Expo companion app")
 - Supersedes: None
+
+## Rejection (2026-07-21)
+
+Rejected under this ADR's own Follow-up clause: "If the mobile experiment is abandoned,
+mark this ADR `Rejected` rather than leaving it `Proposed` indefinitely." PR #394 was
+**closed without merging on 2026-07-11**; `mobile/` never landed on `master`, and the
+standings RPC this ADR describes was never built (no `SECURITY DEFINER` matview-reader
+exists in `supabase/src/functions/`).
+
+Nothing here is retracted as _wrong_ — the analysis of why matviews cannot carry RLS, and
+why a caller-scoped `SECURITY DEFINER` RPC is the right shape for a non-web client, stands
+and is the reason to reread this file if a second client ever appears. It is rejected only
+in the sense that the decision was never adopted and has no implementation pending. The
+service-role standings path (ADR-0013 §3) remains the only reader.
+
+**Revisit if** a native/offline client is greenlit again, or a future client genuinely
+needs client-side standings computation — the one case this decision forecloses.
 
 ## Context
 

@@ -49,6 +49,17 @@ Closing bookend of the delivery loop. Canonical: `docs/WORKFLOW.md`
    - `Closes #NNN`
    - link the governing or proposed ADR; explain any deviation from it
    - list the verification that **actually ran** (from step 1)
+
+   **Then keep the governing ADR true.** Open each linked ADR and check its **Follow-up**
+   section for this issue number. If the work you are shipping is listed there as pending
+   or blocked, update that line **in this PR** — strike it and note what shipped. An ADR
+   whose Follow-up still lists shipped work sends the next agent to build it twice; this
+   is the single cheapest place to catch it, and skipping it is what the `adr-audit` skill
+   exists to clean up later. Same rule if the PR changes behaviour an ADR _describes_
+   (a refresh model, a fallback, a default): amend the ADR here rather than letting the
+   record drift. Accepted ADRs are amended or superseded, never silently rewritten — see
+   ADR-0010 / ADR-0026 for the house amendment-section shape.
+
 7. Push the branch and open the PR with `gh pr create` — both are **pre-authorized**
    (see user `CLAUDE.md` §"GitHub Access"), so do not stop to confirm. Report the PR
    URL afterward.
