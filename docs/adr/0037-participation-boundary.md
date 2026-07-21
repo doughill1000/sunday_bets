@@ -74,6 +74,18 @@ the pick-write path.
 `joined_at` term alone governs them and **no currently-settled game becomes ineligible**.
 `grading_locked` seasons remain inert to all grade paths regardless (ADR-0024).
 
+_Amended during implementation (#712/#722):_ sentinelling only `groups` does not achieve this
+ruling's own goal against the real data. Every production `group_memberships.joined_at` is
+`2026-06-23` — the instant an earlier backfill created those rows, which post-dates the entire
+2025 season those members actually played — so `greatest('2000-01-01Z', '2026-06-23')` would
+make all 272 already-settled rows per member retroactively ineligible, precisely what this
+ruling exists to prevent. The same include-all sentinel therefore applies to the **`joined_at`
+term** as well, targeted at memberships already settled for a game predating their own
+`joined_at` (a self-evident contradiction: you cannot have been graded for a game played before
+you joined). A genuine late joiner keeps their real `joined_at`, so the boundary still binds for
+them. Deliberately not restricted to unlocked seasons, so a member whose only history is an
+imported `grading_locked` season is not stranded by the boundary-aware read surfaces of Issue B.
+
 **4. Editable only until the first eligible kickoff.** The commissioner may change
 `competition_starts_at` until the first game at or after it kicks off; thereafter it is
 permanently frozen (no forward or backward move), because competition has begun and moving the
@@ -131,10 +143,13 @@ untouched. No new status enum, interval model, or "rejoin" concept is introduced
 ## Follow-up
 
 - #711 — this decision.
-- **Issue A (grading-integrity boundary):** the column + sentinel backfill, the missed-pass
-  predicate, `create_group` start-week arg, `set_competition_start` guard RPC, type regen,
-  RLS/grants, and pgTAP (both worked examples + re-grade idempotency + the `055` completeness
-  update). Ships Ready.
+- **Issue A (grading-integrity boundary):** #722 — the column + both sentinel backfills, the
+  shared `_participation_start` helper, the missed-pass predicate, type regen, and pgTAP (both
+  worked examples + within-week join + re-grade idempotency + the `055` completeness update).
+  Shipped. `create_group`'s start-week argument and the `set_competition_start` guard RPC
+  (rulings 4 and 5) moved to **Issue C**: the column's `default now()` already satisfies
+  ruling 5 for every newly created league, and nothing calls either RPC until the start-week
+  picker ships, so Issue A changes no RPC signature.
 - **Issue B (read-surface audit):** verify/patch surfaces that enumerate membership × games
   independently of `pick_settlement`.
 - **Issue C (creation/onboarding UI):** start-week control + partial-season copy
