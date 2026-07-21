@@ -172,6 +172,18 @@ from public.teams home cross join public.teams away
 where home.external_key = 'CFH' and away.external_key = 'CFA'
 on conflict (external_game_id) do nothing;
 
+-- Closing line -6, same shape as cf-cohort. This game grades House, and House has no
+-- pick-time fallback (#735) -- it grades on the closing line or raises. Before #735 this
+-- fixture had no game_lines row at all and the old coalesce quietly settled it at the
+-- locked -3, so the test asserted the right preset label on a line House should never
+-- have used. Every gradable game reaches here with a pre-kickoff row in reality: that is
+-- what a locked pick is snapshotted from.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
+select g.id, 'fanduel', home.id, -6, g.commence_time - interval '30 minutes'
+from public.games g
+cross join public.teams home
+where g.external_game_id = 'cf-cohort-2' and home.external_key = 'CFH';
+
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -190,13 +202,16 @@ select public._grade_games_by_ids(
   array[(select id from public.games where external_game_id = 'cf-cohort-2')]
 );
 
+-- Outcome is asserted alongside the preset so this proves House graded on the CLOSING
+-- line, not just that it wrote the label: closing -6 gives margin 5-6 = -1 -> loss,
+-- whereas the locked -3 would have given +2 -> win.
 select results_eq(
-  $$ select graded_preset from public.pick_settlement
+  $$ select graded_preset, outcome::text from public.pick_settlement
      where group_id = '00000000-0000-4000-8000-000000000f11'
        and game_id  = (select id from public.games where external_game_id = 'cf-cohort-2')
        and user_id  = tests.get_supabase_uid('cf_first') $$,
-  $$ values ('house') $$,
-  'isolation: an unrelated game in the same group grades house (its own cohort is empty)'
+  $$ values ('house', 'loss') $$,
+  'isolation: an unrelated game in the same group grades house on its closing line (cohort is empty)'
 );
 
 -- Sanity: re-grading cf-cohort-2 a second time is stable (ps_prior now exists).

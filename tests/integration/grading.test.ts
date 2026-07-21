@@ -56,13 +56,15 @@ describe('Grading Integration Flow', () => {
     );
     if (membershipErr) throw new Error(`Failed to upsert memberships: ${membershipErr.message}`);
 
+    const commenceTime = new Date().toISOString();
+
     const { data: game, error: gameErr } = await supabase
       .from('games')
       .insert({
         week_id: weekId,
         home_team_id: chiefsId,
         away_team_id: billsId,
-        commence_time: new Date().toISOString(),
+        commence_time: commenceTime,
         external_game_id: 'test-grading-game-123'
       })
       .select('id')
@@ -71,6 +73,19 @@ describe('Grading Integration Flow', () => {
 
     const gameId = game.id;
     const lockedAt = new Date().toISOString();
+
+    // The original group grades House, which reads the flagged closing line and has no
+    // pick-time fallback (#735) -- so the fixture needs a pre-kickoff line row for
+    // _capture_closing_line to flag. Chiefs 6.5 matches both picks' locked line, and
+    // ats_margin_at_lock uses abs(spread_value), so every expectation below is unchanged.
+    const { error: lineErr } = await supabase.from('game_lines').insert({
+      game_id: gameId,
+      source: 'fanduel',
+      spread_team_id: chiefsId,
+      spread_value: 6.5,
+      fetched_at: new Date(Date.parse(commenceTime) - 30 * 60 * 1000).toISOString()
+    });
+    if (lineErr) throw new Error(`Failed to create game line: ${lineErr.message}`);
 
     const { error: pickErr } = await supabase.from('picks').insert([
       {
@@ -188,13 +203,15 @@ describe('Grade-cron reconcile sweep', () => {
     );
     if (membershipErr) throw new Error(`Failed to upsert memberships: ${membershipErr.message}`);
 
+    const commenceTime = new Date().toISOString();
+
     const { data: game, error: gameErr } = await supabase
       .from('games')
       .insert({
         week_id: weekId,
         home_team_id: chiefsId,
         away_team_id: billsId,
-        commence_time: new Date().toISOString(),
+        commence_time: commenceTime,
         external_game_id: SWEEP_GAME_EXT,
         final_scores: { home: 34, away: 24 }
       })
@@ -202,6 +219,17 @@ describe('Grade-cron reconcile sweep', () => {
       .single();
     if (gameErr) throw new Error(`Failed to create game: ${gameErr.message}`);
     gameId = game.id;
+
+    // Pre-kickoff line for the House closing-line capture (#735) -- see the note in the
+    // grading-flow fixture above. Matches the picker's locked Chiefs 6.5.
+    const { error: lineErr } = await supabase.from('game_lines').insert({
+      game_id: gameId,
+      source: 'fanduel',
+      spread_team_id: chiefsId,
+      spread_value: 6.5,
+      fetched_at: new Date(Date.parse(commenceTime) - 30 * 60 * 1000).toISOString()
+    });
+    if (lineErr) throw new Error(`Failed to create game line: ${lineErr.message}`);
 
     // Picker picks the Chiefs -6.5 (34-24 = +3.5 cover -> win). Skipper makes no pick.
     const { error: pickErr } = await supabase.from('picks').insert([
