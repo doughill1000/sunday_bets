@@ -372,10 +372,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/_private/grade_games_by_ids.sql": {
-    "hash": "db6b39bd8cd2a739149e715fb62707e0c4c31bf901222a4a00585a020562276e",
+    "hash": "06b81209ccb984a47cbc7ba5c7a58a5effdd700c587db4ad15faa9addd6d28b9",
     "signature": "public._grade_games_by_ids(uuid[])",
-    "migration": "20260715135531_fix_graded_preset_cohort_freeze.sql",
-    "migrationHash": "f28f3843f7557038043c86921735bcf9771df6c48b132ed81f3100c720c25f48"
+    "migration": "20260721143444_house_preset_requires_closing_line.sql",
+    "migrationHash": "b0733e41a6ffd3aaf5bcc92d491aefd6efbff88b3f9a078124fccc5f7eafa54b"
   },
   "functions/_private/resolve_missed_penalty.sql": {
     "hash": "07b53c5384738da54de036156b15b57a5c2e9230875253059490414a3bb90a06",
@@ -614,10 +614,10 @@
     "migrationHash": "85c67c9536bc88dcf69eb4bd4ee15d9ee56f830ba99954e412e236cc527c3bfb"
   },
   "functions/_private/capture_closing_line.sql": {
-    "hash": "2ebf7db4f020f56cbab1fa206dd9660b75ca3330210b3bf8c3603aab99ad2707",
+    "hash": "187b0d7bf161920f98911dd4203069fce3547722edab3d20cb3977b2af48f73a",
     "signature": "public._capture_closing_line(uuid[])",
-    "migration": "20260627001610_house_grading_preset.sql",
-    "migrationHash": "b50cb6d40b31b7b1e6f00a142aaa2bb2b2668b5a63937f5b428fd6ecfc0f8815"
+    "migration": "20260721143444_house_preset_requires_closing_line.sql",
+    "migrationHash": "b0733e41a6ffd3aaf5bcc92d491aefd6efbff88b3f9a078124fccc5f7eafa54b"
   },
   "functions/stats/refresh_leaderboard_stats.sql": {
     "hash": "fa8f0ac935eabf88157235d6caaafe69ba18a435dcd47b05a3951b71c21c0420",
