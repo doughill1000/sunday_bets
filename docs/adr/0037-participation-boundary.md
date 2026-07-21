@@ -1,6 +1,6 @@
 # ADR-0037: Participation boundary — a member is graded only for games that start after they join
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-16
 - Issue: #711
 - Supersedes: None
