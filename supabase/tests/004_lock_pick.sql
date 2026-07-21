@@ -95,7 +95,7 @@ ON CONFLICT (external_game_id) DO NOTHING;
 
 -- Active line for all games except lp_noline.
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
-SELECT g.id, 'fanduel', g.home_team_id, -6.5, true, now()
+SELECT g.id, 'fanduel', g.home_team_id, 6.5, true, now()
 FROM public.games g
 WHERE g.external_game_id IN ('lp_future','lp_future2','lp_past','lp_final_1','lp_final_2');
 
@@ -141,7 +141,7 @@ SELECT results_eq(
        FROM public.picks
       WHERE game_id = (SELECT id FROM public.games WHERE external_game_id = 'lp_future')
         AND user_id = tests.get_supabase_uid('picker') $$,
-  $$ VALUES ('M'::public.weight_enum, (-6.5)::numeric) $$,
+  $$ VALUES ('M'::public.weight_enum, (6.5)::numeric) $$,
   'lock_pick snapshots the active line spread onto the pick'
 );
 

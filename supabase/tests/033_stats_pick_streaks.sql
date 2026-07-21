@@ -99,7 +99,7 @@ JOIN public.teams away ON away.external_key = 'SK_AWAY'
 ON CONFLICT (external_game_id) DO NOTHING;
 
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line)
-SELECT g.id, 'fanduel', home.id, -3.5, true
+SELECT g.id, 'fanduel', home.id, 3.5, true
 FROM public.games g
 JOIN public.teams home ON home.external_key = 'SK_HOME'
 WHERE g.external_game_id IN ('sk-033-g1','sk-033-g2','sk-033-g3','sk-033-g4','sk-033-g5')

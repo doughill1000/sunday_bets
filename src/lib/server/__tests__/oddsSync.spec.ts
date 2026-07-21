@@ -92,7 +92,7 @@ describe('syncOddsForActiveWeek', () => {
     ]);
     (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
       spreadTeamName: 'Team A',
-      spreadValue: -3.5
+      spreadValue: 3.5
     });
     (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({ data: null });
@@ -102,7 +102,7 @@ describe('syncOddsForActiveWeek', () => {
     expect(setActiveLine).toHaveBeenCalledWith({
       gameId: 'game-uuid-1',
       spreadTeamId: 10,
-      spreadValue: -3.5,
+      spreadValue: 3.5,
       source: 'fanduel'
     });
     expect(result).toEqual(
@@ -158,7 +158,7 @@ describe('syncOddsForActiveWeek', () => {
     ]);
     (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
       spreadTeamName: 'Team A',
-      spreadValue: -3.5
+      spreadValue: 3.5
     });
     // No pre-seeded game — attach returns null
     (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue(null);
@@ -190,11 +190,11 @@ describe('syncOddsForActiveWeek', () => {
     ]);
     (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
       spreadTeamName: 'Team A',
-      spreadValue: -3.5
+      spreadValue: 3.5
     });
     (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
-      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
+      data: { id: 'line-1', spread_team_id: 10, spread_value: 3.5 }
     });
 
     const result = await syncOddsForActiveWeek();
@@ -224,11 +224,11 @@ describe('syncOddsForActiveWeek', () => {
     ]);
     (extractFanduelSpread as ReturnType<typeof vi.fn>).mockReturnValue({
       spreadTeamName: 'Team A',
-      spreadValue: -4.0
+      spreadValue: 4.0
     });
     (attachLineToMatchup as ReturnType<typeof vi.fn>).mockResolvedValue('game-uuid-1');
     mockMaybeSingle.mockResolvedValue({
-      data: { id: 'line-1', spread_team_id: 10, spread_value: -3.5 }
+      data: { id: 'line-1', spread_team_id: 10, spread_value: 3.5 }
     });
 
     const result = await syncOddsForActiveWeek();
@@ -236,7 +236,7 @@ describe('syncOddsForActiveWeek', () => {
     expect(setActiveLine).toHaveBeenCalledWith({
       gameId: 'game-uuid-1',
       spreadTeamId: 10,
-      spreadValue: -4.0,
+      spreadValue: 4.0,
       source: 'fanduel'
     });
     expect(result).toEqual(expect.objectContaining({ ok: true, count: 1, unchanged: 0 }));

@@ -88,7 +88,7 @@ describe('lock_pick_all_groups / unlock_pick_all_groups integration', () => {
       game_id: gameId,
       source: 'fanduel',
       spread_team_id: homeTeamId,
-      spread_value: -6.5,
+      spread_value: 6.5,
       is_active_line: true,
       fetched_at: now
     });

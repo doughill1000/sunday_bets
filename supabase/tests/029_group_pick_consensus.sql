@@ -91,7 +91,7 @@ WHERE w.season_id = (SELECT id FROM public.seasons WHERE league = 'NFL' AND year
 ON CONFLICT (external_game_id) DO NOTHING;
 
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line)
-SELECT g.id, 'fanduel', home.id, -3.5, true
+SELECT g.id, 'fanduel', home.id, 3.5, true
 FROM public.games g
 JOIN public.teams home ON home.external_key = 'CS_HOME'
 WHERE g.external_game_id = 'cs-029-game-a'
@@ -117,7 +117,7 @@ WHERE w.season_id = (SELECT id FROM public.seasons WHERE league = 'NFL' AND year
 ON CONFLICT (external_game_id) DO NOTHING;
 
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line)
-SELECT g.id, 'fanduel', home.id, -3.5, true
+SELECT g.id, 'fanduel', home.id, 3.5, true
 FROM public.games g
 JOIN public.teams home ON home.external_key = 'CS_HOME'
 WHERE g.external_game_id = 'cs-029-game-b'

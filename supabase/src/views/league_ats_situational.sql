@@ -19,6 +19,10 @@
 -- Re-touched unchanged for #425 (League tab v2): the definition below is identical to #406,
 -- but this file's hash must change so the generator recreates the view after league_ats_base's
 -- cascade drop (see the dependents note in league_ats_base.sql).
+-- Re-touched for #734 (ATS favorite-sign fix): this view's own definition is unchanged, but
+-- its OUTPUT changes, because league_ats_base.is_favorite was inverted on every row until
+-- #734. The re-touch is also what makes the generator recreate this view after that matview's
+-- cascade drop -- see the DEPENDENTS list in league_ats_base.sql.
 create or replace view public.league_ats_situational as
 select
   b.season_year,

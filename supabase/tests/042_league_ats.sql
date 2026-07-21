@@ -23,6 +23,12 @@
 --      read correctly (a home-favorite and an away-favorite quadrant), and a pick'em-only
 --      team has no quadrant row (is_favorite null is excluded).
 --
+-- Line convention (#734): fixtures state lines the way production does -- spread_team_id IS
+-- the favorite and spread_value is a POSITIVE magnitude. They previously used the opposite
+-- ("negative = favorite"), a form public.set_active_line never emits, which is why this
+-- suite stayed green while every fav/dog label in the app was inverted. The check
+-- constraint game_lines_spread_value_non_negative now rejects the old form outright.
+--
 -- League-wide + group-independent: this surface has no group_id / user_id, so unlike the
 -- stats matviews there are no players, picks, or settlements in the fixture -- only
 -- games + game_lines + final scores. Owns NFL season year 2090 to avoid colliding with
@@ -30,7 +36,7 @@
 
 BEGIN;
 
-SELECT plan(68);
+SELECT plan(72);
 
 -- ── Structural checks ─────────────────────────────────────────────────────────
 
@@ -92,13 +98,17 @@ ON CONFLICT (external_key) DO NOTHING;
 -- Games. final_scores null for the no-score exclusion (g6). g8 sits in the non-scoring
 -- week. Hand-checked margins (ats_margin_at_lock = (home-away) then -abs(spread) if the
 -- favorite is home, +abs(spread) if away):
---   g1 home -7, 28-14: +14-7=+7  -> home (fav) covers
---   g2 home -7, 20-17: +3-7=-4   -> away (dog) covers
---   g3 home -3, 24-21: +3-3=0    -> push
---   g4 away -6, 10-27: -17+6=-11 -> away (fav) covers
+-- Lines are stated the way production stores them (#734): spread_team_id IS the favorite
+-- and spread_value is a POSITIVE magnitude. "home 7" below therefore means the home team is
+-- favored by 7, and the margin arithmetic subtracts that magnitude from the home-relative
+-- score difference when the favorite is home and adds it when the favorite is away.
+--   g1 home 7, 28-14: +14-7=+7  -> home (fav) covers
+--   g2 home 7, 20-17: +3-7=-4   -> away (dog) covers
+--   g3 home 3, 24-21: +3-3=0    -> push
+--   g4 away 6, 10-27: -17+6=-11 -> away (fav) covers
 --   g5 pick'em 0, 30-20: +10     -> home covers, is_favorite null
---   g9 closing -1 (vs active -10), 24-21: +3-1=+2 -> home covers (proves closing wins)
---   g10 active-only -3, 28-14: +14-3=+11 -> home covers (proves active fallback)
+--   g9 closing 1 (vs active 10), 24-21: +3-1=+2 -> home covers (proves closing wins)
+--   g10 active-only 3, 28-14: +14-3=+11 -> home covers (proves active fallback)
 INSERT INTO public.games (
   week_id, external_game_id, commence_time, home_team_id, away_team_id, status, final_scores
 )
@@ -130,26 +140,26 @@ INSERT INTO public.game_lines (
 )
 SELECT g.id, 'fanduel', st.id, ln.spread_value, true, true, '2090-09-13 17:00:00+00'
 FROM (VALUES
-  ('lat-g1', 'LAT_H1', -7),
-  ('lat-g2', 'LAT_H2', -7),
-  ('lat-g3', 'LAT_H3', -3),
-  ('lat-g4', 'LAT_A4', -6),
+  ('lat-g1', 'LAT_H1', 7),
+  ('lat-g2', 'LAT_H2', 7),
+  ('lat-g3', 'LAT_H3', 3),
+  ('lat-g4', 'LAT_A4', 6),
   ('lat-g5', 'LAT_H5',  0),
-  ('lat-g6', 'LAT_H6', -3),
-  ('lat-g8', 'LAT_H8', -7)
+  ('lat-g6', 'LAT_H6', 3),
+  ('lat-g8', 'LAT_H8', 7)
 ) ln(ext, spread_key, spread_value)
 JOIN public.games g ON g.external_game_id = ln.ext
 JOIN public.teams st ON st.external_key = ln.spread_key;
 
--- g9: divergent active (-10, earlier) vs closing (-1, later) line, both fanduel. The view
+-- g9: divergent active (10, earlier) vs closing (1, later) line, both fanduel. The view
 -- must prefer the closing line, which flips g9's home result from loss to win.
 INSERT INTO public.game_lines (
   game_id, source, spread_team_id, spread_value, is_active_line, is_closing_line, fetched_at
 )
 SELECT g.id, 'fanduel', st.id, v.spread_value, v.is_active, v.is_closing, v.fetched_at::timestamptz
 FROM (VALUES
-  (-10::numeric, true,  false, '2090-09-10 12:00:00+00'),
-  (-1::numeric,  false, true,  '2090-09-13 17:30:00+00')
+  (10::numeric, true,  false, '2090-09-10 12:00:00+00'),
+  (1::numeric,  false, true,  '2090-09-13 17:30:00+00')
 ) v(spread_value, is_active, is_closing, fetched_at)
 JOIN public.games g ON g.external_game_id = 'lat-g9'
 JOIN public.teams st ON st.external_key = 'LAT_H8';
@@ -159,7 +169,7 @@ JOIN public.teams st ON st.external_key = 'LAT_H8';
 INSERT INTO public.game_lines (
   game_id, source, spread_team_id, spread_value, is_active_line, is_closing_line, fetched_at
 )
-SELECT g.id, 'fanduel', st.id, -3, true, false, '2090-09-13 17:00:00+00'
+SELECT g.id, 'fanduel', st.id, 3, true, false, '2090-09-13 17:00:00+00'
 FROM public.games g
 JOIN public.teams st ON st.external_key = 'LAT_H9'
 WHERE g.external_game_id = 'lat-g10';
@@ -255,7 +265,7 @@ SELECT is(
      JOIN public.teams t ON t.id = b.team_id
     WHERE g.external_game_id = 'lat-g9' AND t.external_key = 'LAT_H8'),
   'win',
-  '25. g9 uses the closing line (-1), not the active line (-10): home covers'
+  '25. g9 uses the closing line (1), not the active line (10): home covers'
 );
 
 SELECT is(
@@ -409,7 +419,7 @@ FROM (VALUES
 ) AS v(external_key, division, conference)
 WHERE t.external_key = v.external_key;
 
--- Season 2091: primetime slots. Six home-favorite (-7) games that all cover, one per slot
+-- Season 2091: primetime slots. Six home-favorite (7) games that all cover, one per slot
 -- (incl. a Saturday-night game), plus a second Sunday-night game kicking off in January to
 -- prove DST-safe classification.
 INSERT INTO public.teams (external_key, name, short_name) VALUES
@@ -457,7 +467,7 @@ ON CONFLICT (external_game_id) DO NOTHING;
 INSERT INTO public.game_lines (
   game_id, source, spread_team_id, spread_value, is_active_line, is_closing_line, fetched_at
 )
-SELECT g.id, 'fanduel', g.home_team_id, -7, true, true, g.commence_time - interval '1 hour'
+SELECT g.id, 'fanduel', g.home_team_id, 7, true, true, g.commence_time - interval '1 hour'
 FROM public.games g
 WHERE g.external_game_id IN ('pt-tnf', 'pt-sat', 'pt-snf', 'pt-mnf', 'pt-day', 'pt-jan');
 
@@ -510,8 +520,8 @@ INSERT INTO public.game_lines (
 )
 SELECT g.id, 'fanduel', g.home_team_id, ln.sv, true, true, '2092-09-14 17:00:00+00'
 FROM (VALUES
-  ('sa-w1', -3), ('sa-w2', -3), ('sa-w3', -3), ('sa-w4', -10), ('sa-w5', -3),
-  ('sb-w1', -10), ('sb-w2', -3), ('sb-w3', -3), ('sb-w4', -3), ('sb-w5', -3)
+  ('sa-w1', 3), ('sa-w2', 3), ('sa-w3', 3), ('sa-w4', 10), ('sa-w5', 3),
+  ('sb-w1', 10), ('sb-w2', 3), ('sb-w3', 3), ('sb-w4', 3), ('sb-w5', 3)
 ) ln(ext, sv)
 JOIN public.games g ON g.external_game_id = ln.ext;
 
@@ -548,8 +558,8 @@ SELECT is(
 );
 
 -- ── Spread buckets (season 2090) ───────────────────────────────────────────────────
--- Favorite line sizes: g3/g9/g10 in 1-3 (g9 -1, g3 -3 push, g10 -3), g4 in 3.5-6.5 (-6),
--- g1/g2 in 7-9.5 (both -7), and the pick'em g5 in its own bucket.
+-- Favorite line sizes: g3/g9/g10 in 1-3 (g9 1, g3 3 push, g10 3), g4 in 3.5-6.5 (6),
+-- g1/g2 in 7-9.5 (both 7), and the pick'em g5 in its own bucket.
 SELECT results_eq(
   $$ SELECT bucket, games, favorite_covers, underdog_covers, pushes
        FROM public.league_ats_spread_buckets
@@ -689,6 +699,127 @@ SELECT is(
   (SELECT division FROM public.teams WHERE external_key = 'SEEDT_XFL'),
   NULL,
   '68. seed: a non-NFL team keeps a null division'
+);
+
+-- ══════════════════════════════════════════════════════════════════════════════════
+-- #734: assertions anchored to REALITY rather than to a fixture convention
+-- ══════════════════════════════════════════════════════════════════════════════════
+--
+-- Why these exist. Every assertion above passed both before and after #734, because each was
+-- self-consistent with whichever convention the fixtures encoded: the fixtures stored
+-- "negative = favorite" (a form set_active_line never produces), the view read the sign the
+-- same way, and the two agreed with each other while disagreeing with production on every
+-- row. A green suite proved only that the fixture and the view shared a belief. The tests
+-- below cannot be satisfied by a shared belief: 69 checks the view against the line row's own
+-- spread_team_id, 70 checks it against a fact about football, 71 pins the sign that reaches
+-- the UI, and 72 proves the convention is enforced rather than merely documented.
+
+-- 69. is_favorite must agree with the line row's spread_team_id on every row, because
+-- set_active_line guarantees that column names the favorite. Under the pre-#734 sign test
+-- this is false for EVERY non-pick'em row once fixtures use the real convention.
+SELECT is(
+  (SELECT count(*)::int
+     FROM public.league_ats_base b
+     CROSS JOIN LATERAL (
+       SELECT gl.spread_team_id
+       FROM public.game_lines gl
+       WHERE gl.game_id = b.game_id
+         AND (gl.is_closing_line OR gl.is_active_line)
+       ORDER BY (gl.source = 'fanduel') DESC, gl.is_closing_line DESC, gl.fetched_at DESC
+       LIMIT 1
+     ) cl
+    WHERE b.is_favorite IS NOT NULL
+      AND b.is_favorite <> (b.team_id = cl.spread_team_id)),
+  0,
+  '69. is_favorite always matches the line''s spread_team_id (no row disagrees)'
+);
+
+-- 70. Straight-up sanity: double-digit favorites win outright far more often than they lose.
+-- This is the assertion that would have caught the original defect from the outside -- prod
+-- reported a 2.7% SU win rate for 10+ favorites in 2025, which is not a thing that happens in
+-- the NFL. Season 2093 is four 10+ favorites (two home, two road) who all win outright.
+INSERT INTO public.teams (external_key, name, short_name) VALUES
+  ('SU_H1', 'SU Home 1', 'UH1'), ('SU_A1', 'SU Away 1', 'UA1'),
+  ('SU_H2', 'SU Home 2', 'UH2'), ('SU_A2', 'SU Away 2', 'UA2'),
+  ('SU_H3', 'SU Home 3', 'UH3'), ('SU_A3', 'SU Away 3', 'UA3'),
+  ('SU_H4', 'SU Home 4', 'UH4'), ('SU_A4', 'SU Away 4', 'UA4')
+ON CONFLICT (external_key) DO NOTHING;
+
+INSERT INTO public.seasons (league, year) VALUES ('NFL', 2093)
+ON CONFLICT (league, year) DO NOTHING;
+
+INSERT INTO public.weeks (season_id, week_number, start_ts, end_ts, is_scoring)
+VALUES ((SELECT id FROM public.seasons WHERE league = 'NFL' AND year = 2093),
+  1, '2093-09-10 00:00:00+00', '2093-09-17 00:00:00+00', true)
+ON CONFLICT (season_id, week_number) DO NOTHING;
+
+INSERT INTO public.games (
+  week_id, external_game_id, commence_time, home_team_id, away_team_id, status, final_scores
+)
+SELECT w.id, gk.ext, '2093-09-13 18:00:00+00', home.id, away.id, 'final', gk.fs::jsonb
+FROM (VALUES
+  ('su-g1', 'SU_H1', 'SU_A1', '{"home":34,"away":10}'),
+  ('su-g2', 'SU_H2', 'SU_A2', '{"home":31,"away":13}'),
+  ('su-g3', 'SU_H3', 'SU_A3', '{"home":10,"away":30}'),
+  ('su-g4', 'SU_H4', 'SU_A4', '{"home":14,"away":38}')
+) gk(ext, home_key, away_key, fs)
+JOIN public.weeks w
+  ON w.week_number = 1
+  AND w.season_id = (SELECT id FROM public.seasons WHERE league = 'NFL' AND year = 2093)
+JOIN public.teams home ON home.external_key = gk.home_key
+JOIN public.teams away ON away.external_key = gk.away_key
+ON CONFLICT (external_game_id) DO NOTHING;
+
+-- su-g1/su-g2: home laying 13.5 / 10 and winning. su-g3/su-g4: road team laying 12 / 14.5
+-- and winning. In every case spread_team_id is the side that was favored AND won.
+INSERT INTO public.game_lines (
+  game_id, source, spread_team_id, spread_value, is_active_line, is_closing_line, fetched_at
+)
+SELECT g.id, 'fanduel', st.id, ln.sv, true, true, '2093-09-13 17:00:00+00'
+FROM (VALUES
+  ('su-g1', 'SU_H1', 13.5), ('su-g2', 'SU_H2', 10.0),
+  ('su-g3', 'SU_A3', 12.0), ('su-g4', 'SU_A4', 14.5)
+) ln(ext, spread_key, sv)
+JOIN public.games g ON g.external_game_id = ln.ext
+JOIN public.teams st ON st.external_key = ln.spread_key;
+
+SELECT public.refresh_leaderboard_stats();
+
+SELECT results_eq(
+  $$ SELECT count(*) FILTER (WHERE su_result = 'win'),
+            count(*) FILTER (WHERE su_result = 'loss')
+       FROM public.league_ats_base
+      WHERE season_year = 2093
+        AND is_favorite IS TRUE
+        AND abs(spread_value) >= 10 $$,
+  $$ VALUES (4::bigint, 0::bigint) $$,
+  '70. SU sanity: 10+ favorites win outright, they do not lose (catches an inverted label)'
+);
+
+-- 71. The team-relative spread_value is rendered as a signed line in the /league game-log
+-- drilldown (src/lib/utils/leagueGameLog.ts formats it directly), so pin its sign: the
+-- favorite's row reads negative, the underdog's positive.
+SELECT results_eq(
+  $$ SELECT t.external_key, b.is_favorite, b.spread_value
+       FROM public.league_ats_base b
+       JOIN public.games g ON g.id = b.game_id
+       JOIN public.teams t ON t.id = b.team_id
+      WHERE g.external_game_id = 'su-g1'
+      ORDER BY t.external_key $$,
+  $$ VALUES ('SU_A1', false, 13.5::numeric),
+            ('SU_H1', true, -13.5::numeric) $$,
+  '71. team-relative spread_value is negative for the favorite, positive for the underdog'
+);
+
+-- 72. The convention is enforced, not merely documented: a direct insert of the old
+-- "negative = favorite" form is rejected. This is what stops a future fixture or backfill
+-- from quietly reintroducing the inversion the way the original fixtures did.
+SELECT throws_ok(
+  $$ INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
+     SELECT g.id, 'fanduel', g.home_team_id, -7, now()
+     FROM public.games g WHERE g.external_game_id = 'su-g1' $$,
+  '23514', null,
+  '72. a negative spread_value is rejected by game_lines_spread_value_non_negative'
 );
 
 SELECT * FROM finish();

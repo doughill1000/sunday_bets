@@ -89,13 +89,14 @@ WHERE w.season_id = (SELECT id FROM public.seasons WHERE league = 'NFL' AND year
   AND w.week_number = 5
 ON CONFLICT (external_game_id) DO NOTHING;
 
--- Active line: home team favoured by -6.5 (home covers)
+-- Active line: home team favoured by 6.5 (home covers). spread_team_id IS the favorite and
+-- spread_value is a positive magnitude (#734).
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line)
 SELECT
   g.id,
   'fanduel',
   home.id,
-  -6.5,
+  6.5,
   true
 FROM public.games g
 JOIN public.teams home ON home.external_key = 'ISO_HOME'

@@ -463,10 +463,22 @@ function leagueMean<Row extends { user_id: string; display_name: string }>(
  *
  * **The zero is the league, not an even split.** This axis shipped with `zero: () => 0`,
  * an absolute 50/50, and the room is never at zero because the lines aren't: the league
- * mean ran -9.4 (2025), -13.3 (2024), -11.3 (2023), -5.6 (2022) — dog-side every single
- * year. Measuring against an absolute therefore measured *the schedule*, and Dog Lover
- * fired 4 seasons out of 4 while Chalk Eater fired 1. An axis where one end is an annual
- * gift and the other is nearly unreachable is not an axis.
+ * mean ran +9.4 (2025), +13.3 (2024), +11.3 (2023), +5.6 (2022) — chalk-side every single
+ * year. Measuring against an absolute therefore measured *the schedule*, and one end fired
+ * 4 seasons out of 4 while the other fired 1. An axis where one end is an annual gift and
+ * the other is nearly unreachable is not an axis.
+ *
+ * Those means are stated with their signs CORRECTED in #734. The figures recorded here
+ * originally read dog-side (-9.4, -13.3, …) because `stats_accuracy_by_line_side` had
+ * `chalk_picks` and `dog_picks` swapped on every row: it classified on the sign of the
+ * locked spread, and locked spreads are always non-negative magnitudes. The room leans
+ * chalk, not dog — it was Chalk Eater, not Dog Lover, that was the annual gift.
+ *
+ * The axis itself needed no change. It measures each player's deviation from the league
+ * mean, and inverting every value and the mean together preserves the ordering, so the
+ * shape of #649's argument survives its numbers being backwards. What did change is who
+ * stands at which end: every player the app crowned Chalk Eater is a Dog Lover on the
+ * corrected data, and vice versa.
  *
  * Note this deliberately breaks step with `lineSideTendency`'s ±10 dead zone on `/stats`:
  * that tile answers "does this player take dogs or chalk", an absolute question with an

@@ -2,13 +2,19 @@
 -- badges (issue #317). One row per (group_id, user_id, season_year) summarising how
 -- often a player backs the spread favorite versus the underdog.
 --
--- Favorite/underdog is read off the LINE AT PICK TIME (picks.locked_spread_value,
--- negative = the locked_spread_team is favored), so it never re-derives from the
--- closing line and needs no re-grade. For the team the player actually picked:
---   picked_spread < 0  -> they backed the favorite  (chalk)
---   picked_spread > 0  -> they backed the underdog  (dog)
---   picked_spread = 0  -> pick'em; neither, but still counted in `decisions`
+-- Favorite/underdog is read off the LINE AT PICK TIME (picks.locked_spread_team_id, which
+-- lock_pick copies from the canonical game_lines row and which therefore names the
+-- FAVORITE), so it never re-derives from the closing line and needs no re-grade:
+--   picked_team_id  = locked_spread_team_id -> they backed the favorite  (chalk)
+--   picked_team_id <> locked_spread_team_id -> they backed the underdog  (dog)
+--   locked_spread_value = 0                 -> pick'em; neither, but still in `decisions`
 -- so chalk_picks + dog_picks <= decisions and each ratio is a share of all picks.
+--
+-- #734: this previously classified on the SIGN of the picked-side spread
+-- (`... < 0` = chalk), inherited from the stale "negative = favorite" comment on
+-- game_lines.spread_value. Locked values are always non-negative magnitudes, so that test
+-- swapped chalk_picks and dog_picks on every row -- inverting the /stats line-side tendency
+-- and handing Chalk Eater to every Dog Lover and vice versa. Classify on team identity.
 --
 -- Matviews don't support RLS; all reads are service-role-only (ADR-0013).
 -- Non-scoring rounds excluded per ADR-0016 (WHERE w.is_scoring).
@@ -23,16 +29,12 @@ select
   s.year as season_year,
   count(*)::int as decisions,
   count(*) filter (
-    where case
-            when p.picked_team_id = p.locked_spread_team_id then p.locked_spread_value
-            else -p.locked_spread_value
-          end < 0
+    where p.locked_spread_value <> 0
+      and p.picked_team_id = p.locked_spread_team_id
   )::int as chalk_picks,
   count(*) filter (
-    where case
-            when p.picked_team_id = p.locked_spread_team_id then p.locked_spread_value
-            else -p.locked_spread_value
-          end > 0
+    where p.locked_spread_value <> 0
+      and p.picked_team_id <> p.locked_spread_team_id
   )::int as dog_picks,
   ps.group_id
 from public.pick_settlement ps

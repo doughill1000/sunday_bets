@@ -109,9 +109,9 @@ ON CONFLICT (external_game_id) DO NOTHING;
 INSERT INTO public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
 SELECT g.id, l.source, home.id, l.spread, true, now()
 FROM (VALUES
-  ('fa_g1', 'fanduel', 'FA_A', -6.5),
-  ('fa_g3', 'fanduel', 'FA_E', -4.5),
-  ('fa_g4', 'fanduel', 'FA_A', -2.5)
+  ('fa_g1', 'fanduel', 'FA_A', 6.5),
+  ('fa_g3', 'fanduel', 'FA_E', 4.5),
+  ('fa_g4', 'fanduel', 'FA_A', 2.5)
 ) l(eid, source, hk, spread)
 JOIN public.games g ON g.external_game_id = l.eid
 JOIN public.teams home ON home.external_key = l.hk;
@@ -161,14 +161,14 @@ SELECT results_eq(
   'pending membership (group D) receives no pick row'
 );
 
--- 6) Group A snapshotted fanduel spread (-6.5)
+-- 6) Group A snapshotted fanduel spread (6.5)
 SELECT results_eq(
   $$ SELECT locked_spread_value FROM public.picks
       WHERE game_id = (SELECT id FROM public.games WHERE external_game_id = 'fa_g1')
         AND user_id = tests.get_supabase_uid('mg_picker')
         AND group_id = '00000000-0000-4000-8000-000000002001' $$,
-  $$ VALUES ((-6.5)::numeric) $$,
-  'group A snapshots fanduel spread -6.5'
+  $$ VALUES ((6.5)::numeric) $$,
+  'group A snapshots fanduel spread 6.5'
 );
 
 -- 7) game2 has no fanduel line → all 3 groups skip (0 ok)

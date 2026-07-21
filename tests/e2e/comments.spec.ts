@@ -86,7 +86,7 @@ test.beforeAll(async () => {
     game_id: insertedGame.id,
     source: 'fanduel',
     spread_team_id: homeTeam.id,
-    spread_value: -3.5,
+    spread_value: 3.5,
     is_active_line: true,
     fetched_at: new Date().toISOString()
   });

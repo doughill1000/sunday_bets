@@ -13,8 +13,13 @@
 -- when a game has lines from more than one book, so the whole surface reads one book.
 --
 -- Cover math: `margin` is home-relative (>0 home covered, <0 away covered, =0 push), so
--- each perspective row flips the sign. is_favorite is read off the sign of the closing
--- spread (NULL for a pick'em, spread_value = 0). Only is_scoring weeks (ADR-0016) with
+-- each perspective row flips the sign. is_favorite is read off the IDENTITY of the line's
+-- spread_team_id -- public.set_active_line guarantees that column names the FAVORITE and
+-- that game_lines.spread_value is a non-negative magnitude (a check constraint enforces it
+-- since #734). It is never read off the sign of spread_value: doing so is what inverted
+-- every fav/dog label in the app until #734. NULL for a pick'em (spread_value = 0), so
+-- pick'ems drop out of fav/dog splits but still count in overall and home/away splits.
+-- Only is_scoring weeks (ADR-0016) with
 -- BOTH final scores and a usable line are included; games missing a score or a line are
 -- dropped (the "~17% missing scores" in older imports render as thinner samples, surfaced
 -- via the n= caveat in the UI).
@@ -45,11 +50,25 @@
 -- views select from it (a hard pg_depend edge), so re-emitting this file drops them too --
 -- every migration that re-emits this file must also re-touch each pre-existing dependent so
 -- the generator bundles its recreate into the same migration (same rule as
--- league_completed_standings). Dependents as of #425: league_ats_team, league_ats_fav_dog,
--- league_ats_home_away, league_ats_situational (the four recreated unchanged) plus the five
--- #425 aggregates (league_ats_spread_buckets, _quadrants, _primetime, _divisional, _streaks).
--- The five #425 views are new files, so the generator always emits them; the four pre-existing
--- dependents only recreate when their own file hash changes -- which is why each is re-touched.
+-- league_completed_standings).
+--
+-- DEPENDENTS -- ELEVEN as of #734. Do not trust a stale list here: re-derive it before
+-- re-emitting this file with
+--   grep -rn "from public.league_ats_base" supabase/src/views/
+-- and re-touch every hit (this file self-matches on the line above -- ignore that one).
+-- The list read "nine" from #425 until #734, because
+-- league_situational_baseline and league_situational_baseline_season were added later
+-- (#502/#564) without updating it. A dependent that is NOT re-touched is CASCADE-dropped
+-- here and never recreated -- the migration applies clean and the view is simply gone, so
+-- only the ADR-0012 from-empty drift guard stands between that and a silent prod outage.
+--   1. league_ats_team                     7. league_ats_primetime
+--   2. league_ats_fav_dog                   8. league_ats_divisional
+--   3. league_ats_home_away                 9. league_ats_streaks
+--   4. league_ats_situational              10. league_situational_baseline
+--   5. league_ats_spread_buckets           11. league_situational_baseline_season
+--   6. league_ats_quadrants
+-- The generator only recreates a dependent when its own file hash changes, which is why
+-- each carries a "re-touched for #NNN" line in its header.
 drop materialized view if exists public.league_ats_base cascade;
 
 create materialized view public.league_ats_base as
@@ -99,21 +118,33 @@ select
   persp.team_id,
   persp.opponent_team_id,
   persp.is_home,
-  -- Favored per the closing spread: spread_value < 0 favors spread_team_id, so this team
-  -- is favored when it IS the spread team on a negative line, or the OTHER team on a
-  -- positive line. NULL on a pick'em (spread_value = 0) so it is excluded from fav/dog
-  -- splits but still counted in overall and home/away splits.
+  -- Favored per the closing spread. sc.spread_team_id IS the favorite (set_active_line
+  -- normalizes every line to that form and game_lines.spread_value carries a non-negative
+  -- magnitude), so this is an identity test, not a sign test. NULL on a pick'em
+  -- (spread_value = 0) so it is excluded from fav/dog splits but still counted in overall
+  -- and home/away splits.
+  --
+  -- #734: this previously tested `sc.spread_value < 0`, inheriting the stale
+  -- "negative = favorite" comment on game_lines.spread_value. Because stored values are
+  -- always positive, that marked the UNDERDOG as the favorite on every row and inverted
+  -- every fav/dog label downstream. Do not reintroduce a sign test here.
   case
     when sc.spread_value = 0 then null
-    when persp.team_id = sc.spread_team_id then sc.spread_value < 0
-    else sc.spread_value > 0
+    else persp.team_id = sc.spread_team_id
   end as is_favorite,
-  -- Team-relative spread (#425): sc.spread_value is stated on sc.spread_team_id, so flip it
-  -- for the other side. Negative = this team favored, positive = underdog, 0 = pick'em;
+  -- Team-relative spread (#425): stated from THIS team's point of view in the way a line is
+  -- conventionally written and displayed -- negative = this team favored, positive =
+  -- underdog, 0 = pick'em. sc.spread_value is a positive magnitude on sc.spread_team_id (the
+  -- favorite), so the favorite's perspective negates it and the underdog's keeps it.
   -- abs() is the line magnitude league_ats_spread_buckets groups by.
+  --
+  -- #734: the two branches were previously the other way round, which emitted +7 for the
+  -- favorite and contradicted the header comment above. That sign is user-visible -- it is
+  -- formatted straight into the /league game-log drilldown by
+  -- src/lib/utils/leagueGameLog.ts -- so the game log printed every favorite as a dog.
   case
-    when persp.team_id = sc.spread_team_id then sc.spread_value
-    else -sc.spread_value
+    when persp.team_id = sc.spread_team_id then -sc.spread_value
+    else sc.spread_value
   end as spread_value,
   -- Team-relative cover margin (#425): sc.margin is home-relative, so the away perspective
   -- flips the sign. > 0 this team covered by that many points, = 0 push, < 0 did not cover

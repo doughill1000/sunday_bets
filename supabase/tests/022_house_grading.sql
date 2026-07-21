@@ -63,8 +63,8 @@ on conflict (external_key) do nothing;
 
 -- Three games: parity/divergence, freeze re-grade, new-week House.
 -- Final score home=14 away=9 for all three; line math:
---   at -3 (Gamer, early lock): margin = (14-9) - 3 =  2 → home covers → win,  L=+1
---   at -6 (closing line):      margin = (14-9) - 6 = -1 → home fails  → loss, L=-1
+--   at 3 (Gamer, early lock): margin = (14-9) - 3 =  2 → home covers → win,  L=+1
+--   at 6 (closing line):      margin = (14-9) - 6 = -1 → home fails  → loss, L=-1
 insert into public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id, status, final_scores)
 select
   g.week_id,
@@ -84,27 +84,27 @@ cross join public.teams away
 where home.external_key = 'HGH' and away.external_key = 'HGA'
 on conflict (external_game_id) do nothing;
 
--- hg-parity lines: early (-3), closing (-6), and post-kickoff (-7, must be ignored).
--- Closing line = last row with fetched_at <= commence_time, so -6 wins.
+-- hg-parity lines: early (3), closing (6), and post-kickoff (7, must be ignored).
+-- Closing line = last row with fetched_at <= commence_time, so 6 wins.
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
 select g.id, 'fanduel', home.id, l.spread_value, l.fetched_at
 from public.games g
 cross join public.teams home
 cross join (values
-  (-3::numeric, '2051-09-07 15:00:00+00'::timestamptz),
-  (-6::numeric, '2051-09-07 16:30:00+00'::timestamptz),
-  (-7::numeric, '2051-09-07 17:01:00+00'::timestamptz)
+  (3::numeric, '2051-09-07 15:00:00+00'::timestamptz),
+  (6::numeric, '2051-09-07 16:30:00+00'::timestamptz),
+  (7::numeric, '2051-09-07 17:01:00+00'::timestamptz)
 ) l(spread_value, fetched_at)
 where g.external_game_id = 'hg-parity' and home.external_key = 'HGH';
 
 -- hg-freeze and hg-new each get a single closing-eligible line.
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
-select g.id, 'fanduel', home.id, -6, g.commence_time - interval '30 minutes'
+select g.id, 'fanduel', home.id, 6, g.commence_time - interval '30 minutes'
 from public.games g
 cross join public.teams home
 where g.external_game_id in ('hg-freeze', 'hg-new') and home.external_key = 'HGH';
 
--- Picks for parity/divergence: alice locked early (-3), bob locked late (-6).
+-- Picks for parity/divergence: alice locked early (3), bob locked late (6).
 -- Both in house_group (House) and gamer_group (Gamer).
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
@@ -121,17 +121,17 @@ select
   p.locked_spread,
   tests.get_supabase_uid(p.user_name)
 from (values
-  ('00000000-0000-4000-8000-000000000e01'::uuid, 'hg_alice', -3::numeric),
-  ('00000000-0000-4000-8000-000000000e01'::uuid, 'hg_bob',   -6::numeric),
-  ('00000000-0000-4000-8000-000000000e02'::uuid, 'hg_alice', -3::numeric),
-  ('00000000-0000-4000-8000-000000000e02'::uuid, 'hg_bob',   -6::numeric)
+  ('00000000-0000-4000-8000-000000000e01'::uuid, 'hg_alice', 3::numeric),
+  ('00000000-0000-4000-8000-000000000e01'::uuid, 'hg_bob',   6::numeric),
+  ('00000000-0000-4000-8000-000000000e02'::uuid, 'hg_alice', 3::numeric),
+  ('00000000-0000-4000-8000-000000000e02'::uuid, 'hg_bob',   6::numeric)
 ) p(group_id, user_name, locked_spread)
 cross join public.games g
 cross join public.teams home
 where g.external_game_id = 'hg-parity' and home.external_key = 'HGH'
 on conflict (group_id, user_id, game_id) do nothing;
 
--- Freeze pick: hg_freeze_user in house_group, locked at -3 (early line).
+-- Freeze pick: hg_freeze_user in house_group, locked at 3 (early line).
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -140,13 +140,13 @@ select
   '00000000-0000-4000-8000-000000000e01',
   tests.get_supabase_uid('hg_freeze_user'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -3,
+  g.commence_time - interval '1 hour', home.id, 3,
   tests.get_supabase_uid('hg_freeze_user')
 from public.games g cross join public.teams home
 where g.external_game_id = 'hg-freeze' and home.external_key = 'HGH'
 on conflict (group_id, user_id, game_id) do nothing;
 
--- New-week pick: hg_new_user in house_group, locked at -6.
+-- New-week pick: hg_new_user in house_group, locked at 6.
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -155,13 +155,13 @@ select
   '00000000-0000-4000-8000-000000000e01',
   tests.get_supabase_uid('hg_new_user'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -6,
+  g.commence_time - interval '1 hour', home.id, 6,
   tests.get_supabase_uid('hg_new_user')
 from public.games g cross join public.teams home
 where g.external_game_id = 'hg-new' and home.external_key = 'HGH'
 on conflict (group_id, user_id, game_id) do nothing;
 
--- Pre-seed the freeze settlement as graded_preset='gamer' (win, +1 — matches Gamer at -3).
+-- Pre-seed the freeze settlement as graded_preset='gamer' (win, +1 — matches Gamer at 3).
 -- The re-grade must leave this settlement byte-identical even though the group is House.
 insert into public.pick_settlement (
   group_id, user_id, game_id, pick_id, points_delta, outcome, graded_at, graded_preset
@@ -182,15 +182,15 @@ select public._grade_games_by_ids(
   array[(select id from public.games where external_game_id = 'hg-parity')]
 );
 
--- House parity: alice (locked -3) and bob (locked -6) both graded on closing
--- line -6 → identical loss outcomes. Proves pick-timing luck is eliminated.
+-- House parity: alice (locked 3) and bob (locked 6) both graded on closing
+-- line 6 → identical loss outcomes. Proves pick-timing luck is eliminated.
 select results_eq(
   $$ select outcome::text from public.pick_settlement
      where group_id = '00000000-0000-4000-8000-000000000e01'
        and game_id  = (select id from public.games where external_game_id = 'hg-parity')
        and user_id  = tests.get_supabase_uid('hg_alice') $$,
   $$ values ('loss') $$,
-  'House: alice (locked -3) graded on closing line (-6) → loss'
+  'House: alice (locked 3) graded on closing line (6) → loss'
 );
 
 select results_eq(
@@ -199,7 +199,7 @@ select results_eq(
        and game_id  = (select id from public.games where external_game_id = 'hg-parity')
        and user_id  = tests.get_supabase_uid('hg_bob') $$,
   $$ values ('loss') $$,
-  'House: bob (locked -6) graded on closing line (-6) → loss (same as alice)'
+  'House: bob (locked 6) graded on closing line (6) → loss (same as alice)'
 );
 
 select results_eq(
@@ -212,14 +212,14 @@ select results_eq(
   'House: alice and bob pick settlements both record graded_preset=house'
 );
 
--- Gamer divergence: alice (locked -3) wins but bob (locked -6) loses.
+-- Gamer divergence: alice (locked 3) wins but bob (locked 6) loses.
 select results_eq(
   $$ select outcome::text from public.pick_settlement
      where group_id = '00000000-0000-4000-8000-000000000e02'
        and game_id  = (select id from public.games where external_game_id = 'hg-parity')
        and user_id  = tests.get_supabase_uid('hg_alice') $$,
   $$ values ('win') $$,
-  'Gamer: alice (locked -3, margin +2) → win'
+  'Gamer: alice (locked 3, margin +2) → win'
 );
 
 select results_eq(
@@ -228,7 +228,7 @@ select results_eq(
        and game_id  = (select id from public.games where external_game_id = 'hg-parity')
        and user_id  = tests.get_supabase_uid('hg_bob') $$,
   $$ values ('loss') $$,
-  'Gamer: bob (locked -6, margin -1) → loss (diverges from alice on same pick side)'
+  'Gamer: bob (locked 6, margin -1) → loss (diverges from alice on same pick side)'
 );
 
 -- Capture: last pre-kickoff row flagged; post-kickoff row not.
@@ -236,18 +236,18 @@ select results_eq(
   $$ select is_closing_line from public.game_lines
      where game_id    = (select id from public.games where external_game_id = 'hg-parity')
        and source     = 'fanduel'
-       and spread_value = -6 $$,
+       and spread_value = 6 $$,
   $$ values (true) $$,
-  'capture: last pre-kickoff row (spread_value=-6) flagged is_closing_line=true'
+  'capture: last pre-kickoff row (spread_value=6) flagged is_closing_line=true'
 );
 
 select results_eq(
   $$ select is_closing_line from public.game_lines
      where game_id    = (select id from public.games where external_game_id = 'hg-parity')
        and source     = 'fanduel'
-       and spread_value = -7 $$,
+       and spread_value = 7 $$,
   $$ values (false) $$,
-  'capture: post-kickoff row (spread_value=-7) has is_closing_line=false'
+  'capture: post-kickoff row (spread_value=7) has is_closing_line=false'
 );
 
 -- Capture write-once: calling _capture_closing_line again must not add a second flag.
@@ -286,7 +286,7 @@ select results_eq(
        and game_id  = (select id from public.games where external_game_id = 'hg-freeze')
        and user_id  = tests.get_supabase_uid('hg_freeze_user') $$,
   $$ values (1) $$,
-  'freeze: points_delta stays 1 (gamer win at -3) after re-grade against house group'
+  'freeze: points_delta stays 1 (gamer win at 3) after re-grade against house group'
 );
 
 -- Tests: New-week House -------------------------------------------------------
@@ -321,12 +321,12 @@ select results_eq(
 -- Tests: closing-line write-once STABILITY (#735) -----------------------------
 -- The write-once check above proved a repeated capture call adds no second flag on an
 -- unchanged table. This proves the harder case the live path actually produces: a
--- pre-kickoff line row that lands AFTER the game was first graded. -5 @ 16:45 is later
--- than the flagged -6 @ 16:30 and still pre-kickoff, so a "latest pre-kickoff row"
+-- pre-kickoff line row that lands AFTER the game was first graded. 5 @ 16:45 is later
+-- than the flagged 6 @ 16:30 and still pre-kickoff, so a "latest pre-kickoff row"
 -- rule with no write-once guard would move the flag to it (and trip ux_game_lines_closing
 -- on the way). ADR-0007 pins the closing line as a write-once artifact: first grade wins.
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
-select g.id, 'fanduel', home.id, -5, '2051-09-07 16:45:00+00'
+select g.id, 'fanduel', home.id, 5, '2051-09-07 16:45:00+00'
 from public.games g
 cross join public.teams home
 where g.external_game_id = 'hg-parity' and home.external_key = 'HGH';
@@ -339,16 +339,16 @@ select results_eq(
   $$ select spread_value from public.game_lines
      where game_id = (select id from public.games where external_game_id = 'hg-parity')
        and is_closing_line $$,
-  $$ values (-6::numeric) $$,
-  'write-once stability: a later pre-kickoff row arriving post-grade does not move the flag off -6'
+  $$ values (6::numeric) $$,
+  'write-once stability: a later pre-kickoff row arriving post-grade does not move the flag off 6'
 );
 
 select results_eq(
   $$ select is_closing_line from public.game_lines
      where game_id = (select id from public.games where external_game_id = 'hg-parity')
-       and spread_value = -5 $$,
+       and spread_value = 5 $$,
   $$ values (false) $$,
-  'write-once stability: the late-arriving pre-kickoff row (-5) is never flagged'
+  'write-once stability: the late-arriving pre-kickoff row (5) is never flagged'
 );
 
 select results_eq(
@@ -385,7 +385,7 @@ on conflict (external_game_id) do nothing;
 
 -- Only line row postdates kickoff, so _capture_closing_line has nothing to flag.
 insert into public.game_lines (game_id, source, spread_team_id, spread_value, fetched_at)
-select g.id, 'fanduel', home.id, -7, g.commence_time + interval '1 minute'
+select g.id, 'fanduel', home.id, 7, g.commence_time + interval '1 minute'
 from public.games g
 cross join public.teams home
 where g.external_game_id = 'hg-noclose' and home.external_key = 'HGH';
@@ -398,7 +398,7 @@ select
   '00000000-0000-4000-8000-000000000e01',
   tests.get_supabase_uid('hg_noclose_user'),
   g.id, home.id, 'L'::public.weight_enum,
-  g.commence_time - interval '1 hour', home.id, -3,
+  g.commence_time - interval '1 hour', home.id, 3,
   tests.get_supabase_uid('hg_noclose_user')
 from public.games g cross join public.teams home
 where g.external_game_id = 'hg-noclose' and home.external_key = 'HGH'
@@ -419,7 +419,7 @@ select throws_like(
 );
 
 -- The guard fires before either settlement pass, so the failed grade leaves nothing
--- behind -- no half-graded game, and specifically no pick settled at the locked -3.
+-- behind -- no half-graded game, and specifically no pick settled at the locked 3.
 select results_eq(
   $$ select count(*) from public.pick_settlement
      where game_id = (select id from public.games where external_game_id = 'hg-noclose') $$,

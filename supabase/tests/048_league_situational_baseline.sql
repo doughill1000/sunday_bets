@@ -81,8 +81,8 @@ INSERT INTO public.game_lines (
 )
 SELECT g.id, 'fanduel', st.id, ln.sv, true, true, '2094-09-10 17:00:00+00'
 FROM (VALUES
-  ('lsb-g1', 'LSB_H1', -7), ('lsb-g2', 'LSB_H2', -3), ('lsb-g3', 'LSB_H3', -10),
-  ('lsb-g4', 'LSB_H4', -1), ('lsb-g5', 'LSB_H5', 0)
+  ('lsb-g1', 'LSB_H1', 7), ('lsb-g2', 'LSB_H2', 3), ('lsb-g3', 'LSB_H3', 10),
+  ('lsb-g4', 'LSB_H4', 1), ('lsb-g5', 'LSB_H5', 0)
 ) ln(ext, spread_key, sv)
 JOIN public.games g ON g.external_game_id = ln.ext
 JOIN public.teams st ON st.external_key = ln.spread_key;

@@ -567,6 +567,11 @@ async function ensureGame(
   return data.id as string;
 }
 
+// spreadTeamId is the FAVORITE and spreadValue is a NON-NEGATIVE MAGNITUDE, matching what
+// public.set_active_line produces and what game_lines_spread_value_non_negative now enforces
+// (#734). Callers used to pass -Math.abs(line) here while writing picks.locked_spread_value as
+// +Math.abs(line) for the same game — the seeder disagreed with itself, and the game_lines half
+// encoded a "negative = favorite" form production has never stored.
 async function ensureLine(
   supabase: SupabaseClient,
   gameId: string,
@@ -590,6 +595,13 @@ async function ensureLine(
     if (updErr) throw new Error(`update line for ${gameId} failed: ${updErr.message}`);
     return existing.id as number;
   }
+  // is_closing_line: the demo season is fully historical -- this single line IS the line the
+  // games settled on, so it is the closing line by definition. Flagging it is also what keeps
+  // the seeder runnable at all: #735 made the House preset (the group_config default) REFUSE to
+  // grade a game with no closing line rather than fall back to the pick-time line, and the
+  // seeder grades every demo game. Without this flag `pnpm db:reset:demo` dies partway through
+  // the 2024 season with "House preset requires a closing line". Follow-on to #735, carried
+  // here because #734 needs a seedable demo league to regenerate the snapshot fixture.
   const { data, error } = await supabase
     .from('game_lines')
     .insert({
@@ -597,7 +609,8 @@ async function ensureLine(
       source: 'fanduel',
       spread_team_id: spreadTeamId,
       spread_value: spreadValue,
-      is_active_line: true
+      is_active_line: true,
+      is_closing_line: true
     })
     .select('id')
     .single();
@@ -1028,7 +1041,7 @@ async function run() {
           commence,
           finalScores: { home, away }
         });
-        const lineId = await ensureLine(supabase, gameId, favId, -Math.abs(line));
+        const lineId = await ensureLine(supabase, gameId, favId, Math.abs(line));
         gameIds.push(gameId);
 
         for (const group of GROUPS) {
@@ -1133,7 +1146,7 @@ async function run() {
         commence,
         finalScores: { home, away }
       });
-      const lineId = await ensureLine(supabase, gameId, favId, -Math.abs(line));
+      const lineId = await ensureLine(supabase, gameId, favId, Math.abs(line));
       curGradedGameIds.push(gameId);
 
       for (const group of GROUPS) {
@@ -1203,7 +1216,7 @@ async function run() {
         commence,
         finalScores: { home: g.finalHome, away: g.finalAway }
       });
-      const lineId = await ensureLine(supabase, gameId, favId, -Math.abs(g.line));
+      const lineId = await ensureLine(supabase, gameId, favId, Math.abs(g.line));
       curGradedGameIds.push(gameId);
 
       // --- Group A: legacy deterministic pattern (unchanged behavior) ---
@@ -1293,7 +1306,7 @@ async function run() {
       commence,
       finalScores
     });
-    const lineId = await ensureLine(supabase, gameId, favId, -Math.abs(g.line));
+    const lineId = await ensureLine(supabase, gameId, favId, Math.abs(g.line));
     if (finalScores) curGradedGameIds.push(gameId);
 
     // Group A: the carefully tuned active-week states.
