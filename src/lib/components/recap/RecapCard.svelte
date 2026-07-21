@@ -16,11 +16,11 @@
 <Card class="border-border/50 bg-card">
   <CardHeader class="pb-2">
     <CardTitle class="flex items-center gap-2 text-base font-semibold">
-      <Sparkles class="h-4 w-4 text-primary-ink shrink-0" />
+      <Sparkles class="h-4 w-4 shrink-0 text-primary-ink" />
       {weekLabel}
       {#if compact}
         <button
-          class="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+          class="ml-auto text-muted-foreground transition-colors hover:text-foreground"
           onclick={() => (expanded = !expanded)}
           aria-label={expanded ? 'Collapse recap' : 'Expand recap'}
         >
@@ -36,7 +36,7 @@
 
   {#if expanded}
     <CardContent>
-      <p class="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{recap.prose}</p>
+      <p class="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{recap.prose}</p>
       {#if isFallback}
         <p class="mt-2 text-xs text-muted-foreground italic">
           AI commentary unavailable this week — deterministic summary shown.

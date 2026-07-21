@@ -47,14 +47,14 @@
 <!-- Fills the h-14 container row provided by +layout.svelte -->
 <div class="relative flex w-full items-center">
   <!-- Desktop inline nav (hidden on mobile — bottom tab bar takes over) -->
-  <nav data-testid="primary-nav" class="hidden sm:flex items-center gap-1 text-sm font-medium">
+  <nav data-testid="primary-nav" class="hidden items-center gap-1 text-sm font-medium sm:flex">
     {#each navLinks as { href, label } (href)}
       {@const pendingPath = navigating?.to?.url.pathname ?? page.url.pathname}
       {@const active = pendingPath.startsWith(href)}
       <a
         {href}
-        class="px-3 py-1.5 rounded-md transition-colors {active
-          ? 'bg-accent text-foreground font-semibold'
+        class="rounded-md px-3 py-1.5 transition-colors {active
+          ? 'bg-accent font-semibold text-foreground'
           : 'hover:bg-accent'}"
         aria-current={active ? 'page' : undefined}>{label}</a
       >
@@ -68,7 +68,7 @@
                    and this keeps the multi-group chip from colliding with the centered
                    logo); `mr-auto` pushes the avatar to the far right.
          desktop — grouped on the right next to the avatar (`sm:ml-auto` + `sm:mr-2`). -->
-  <div class="mr-auto sm:ml-auto sm:mr-2">
+  <div class="mr-auto sm:mr-2 sm:ml-auto">
     <GroupSwitcher {memberships} {activeGroupId} />
   </div>
 

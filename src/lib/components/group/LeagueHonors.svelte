@@ -165,7 +165,7 @@
                   displayName={champ.display_name}
                   size="xs"
                 />
-                <span class="font-medium tabular-nums text-muted-foreground"
+                <span class="font-medium text-muted-foreground tabular-nums"
                   >{champ.season_year}</span
                 >
                 <span>{nameFor(champ.user_id, champ.display_name)}</span>
@@ -202,7 +202,7 @@
       <div class="space-y-3 border-t pt-5" data-testid="badge-chips">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-3">
-            <p class="text-xs font-semibold uppercase tracking-wide text-primary-ink">Awards</p>
+            <p class="text-xs font-semibold tracking-wide text-primary-ink uppercase">Awards</p>
             <!-- Provisional/crowned lifecycle indicator (#296). -->
             {#if shown.length > 0}
               {#if isSeasonComplete}

@@ -160,7 +160,7 @@
     variant="ghost"
     size="sm"
     class="h-auto px-2 py-1 text-xs font-medium text-muted-foreground {align === 'right'
-      ? 'ml-auto -mr-2'
+      ? '-mr-2 ml-auto'
       : '-ml-2'}"
     aria-label={dir === null
       ? `Sort by ${label}`

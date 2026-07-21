@@ -55,7 +55,7 @@
       onclick={dismiss}
       aria-label="Dismiss Season Wrapped promo"
       data-testid="wrapped-promo-dismiss"
-      class="absolute right-3 top-3 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      class="absolute top-3 right-3 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
     >
       <X class="size-4" />
     </button>

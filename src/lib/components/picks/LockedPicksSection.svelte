@@ -116,7 +116,7 @@
   <details bind:open={sectionOpen} class="group mt-4" data-testid="committed-section">
     <summary
       data-testid="committed-summary"
-      class="flex cursor-pointer select-none list-none items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+      class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-muted-foreground select-none hover:text-foreground"
     >
       <svg
         class="size-4 transition-transform group-open:rotate-90"
@@ -193,7 +193,7 @@
                 </span>
                 {#if !readonly}
                   <button
-                    class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     data-testid="unlock-pick"
                     onclick={() => onEdit(g)}
                   >
@@ -208,7 +208,7 @@
             {@const cover = myCover(g)}
             {#if cover}
               <div class="mt-1 flex items-center gap-2 text-xs" data-testid="live-cover">
-                <span class="tabular-nums text-muted-foreground">
+                <span class="text-muted-foreground tabular-nums">
                   {g.away}
                   {cover.score.awayScore}–{cover.score.homeScore}
                   {g.home}

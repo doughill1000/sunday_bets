@@ -112,7 +112,7 @@
   {#if playerFacts && playerFacts.badges.length > 0}
     <div class="space-y-3" data-testid="wrapped-badges">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
           Your Badges
         </h3>
         <AwardsGuide />
@@ -125,7 +125,7 @@
             title={badge.label}
           >
             <span class="text-3xl leading-none" aria-hidden="true">{badge.emoji}</span>
-            <span class="text-xs font-medium leading-tight">{badge.label}</span>
+            <span class="text-xs leading-tight font-medium">{badge.label}</span>
           </li>
         {/each}
       </ul>
@@ -136,7 +136,7 @@
   {#if leagueFacts && leagueFacts.title_badges.length > 0}
     <div class="space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-2">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
           Season Titles
         </h3>
         <AwardsGuide />
@@ -161,9 +161,9 @@
       </CardTitle>
     </CardHeader>
     <CardContent>
-      <p class="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{row.prose}</p>
+      <p class="text-sm leading-relaxed whitespace-pre-wrap text-foreground">{row.prose}</p>
       {#if row.is_fallback}
-        <p class="mt-2 text-xs italic text-muted-foreground">
+        <p class="mt-2 text-xs text-muted-foreground italic">
           AI commentary unavailable — deterministic summary shown.
         </p>
       {/if}
@@ -174,7 +174,7 @@
        celebratory cards, titles, and recap. -->
   {#if leagueFacts && leagueFacts.standings.length > 0}
     <div class="space-y-2">
-      <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      <h3 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
         Season Standings
       </h3>
       <div class="overflow-hidden rounded-lg border border-border">
@@ -184,7 +184,7 @@
           >
             <span class="text-sm text-muted-foreground">{entry.rank}.</span>
             <span class="flex-1 px-3 text-sm font-medium">{entry.display_name}</span>
-            <span class="text-sm tabular-nums text-muted-foreground">{entry.total_points} pts</span>
+            <span class="text-sm text-muted-foreground tabular-nums">{entry.total_points} pts</span>
           </div>
         {/each}
       </div>

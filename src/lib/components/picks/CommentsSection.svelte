@@ -191,7 +191,7 @@
   }
 </script>
 
-<div class="border-t pt-3 space-y-3" data-testid="comments-section">
+<div class="space-y-3 border-t pt-3" data-testid="comments-section">
   <!-- Comment list -->
   {#if comments.length > 0}
     <ul class="space-y-2.5" aria-label="Comments">
@@ -313,9 +313,9 @@
       maxlength="500"
       aria-label="Comment text"
       data-testid="comment-composer"
-      class="flex-1 min-w-0 rounded-md border border-input bg-background px-3 py-1.5
-             text-sm placeholder:text-muted-foreground focus-visible:outline-none
-             focus-visible:ring-1 focus-visible:ring-ring"
+      class="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-1.5
+             text-sm placeholder:text-muted-foreground focus-visible:ring-1
+             focus-visible:ring-ring focus-visible:outline-none"
     />
     <button
       type="submit"

@@ -194,7 +194,7 @@
                   {p.displayName}{p.isYou ? ' (you)' : ''}
                 </span>
                 <span
-                  class="rounded bg-muted px-1 text-[10px] font-medium leading-tight text-muted-foreground"
+                  class="rounded bg-muted px-1 text-[10px] leading-tight font-medium text-muted-foreground"
                 >
                   {p.weight ?? '—'}
                 </span>

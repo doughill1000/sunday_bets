@@ -36,7 +36,7 @@
   <Button
     variant="ghost"
     size="sm"
-    class={align === 'right' ? 'ml-auto -mr-2 px-2' : '-ml-2 px-2'}
+    class={align === 'right' ? '-mr-2 ml-auto px-2' : '-ml-2 px-2'}
     aria-label={actionLabel}
     title={actionLabel}
     onclick={onsort}

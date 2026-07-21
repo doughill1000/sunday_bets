@@ -68,7 +68,7 @@
     <ul class="space-y-2">
       {#each groups as group (group.gameId)}
         <li>
-          <p class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <p class="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
             {group.label}
           </p>
           <ul class="mt-1 flex flex-wrap gap-x-3 gap-y-1">
@@ -82,7 +82,7 @@
                 <span class="text-muted-foreground">on</span>
                 <span class="font-semibold">{d.pickedTeamShort ?? '—'}</span>
                 <span
-                  class="rounded bg-primary/10 px-1 text-[10px] font-semibold uppercase leading-tight text-primary-ink"
+                  class="rounded bg-primary/10 px-1 text-[10px] leading-tight font-semibold text-primary-ink uppercase"
                 >
                   All-In
                 </span>
