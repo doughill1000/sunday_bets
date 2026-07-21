@@ -24,16 +24,20 @@
 --   - a game with no final score yet is excluded -- it has not been graded, so an
 --     active member having no row for it is expected, not a defect.
 --   - w.is_scoring, matching the acceptance criteria's "every scoring game" wording.
+--   - a game that started before a member's participation began (ADR-0037) -- the gap
+--     query carries the same boundary the grading choke point does, by calling the same
+--     public._participation_start(group, member). A member who joined after an older game
+--     was played correctly has no row for it, and that is not a gap.
 --
--- Known, accepted limitation: this predicate assumes a stable membership within a
--- season (true of this app's actual usage -- a private, invite-capped league). A
--- member who joins a group strictly after an old game was already graded would be
--- flagged even though that is not a bug; this product does not exercise that path
--- today, and the false-positive cost is a noisy assertion, not a silent gap.
+-- That last exclusion REPLACES this file's former "assumes stable membership" limitation,
+-- which read: a late joiner "would be flagged even though that is not a bug ... this product
+-- does not exercise that path today". Midseason league creation and invite redemption make it
+-- a real path (#712), so the boundary is now enforced rather than tolerated. Because grading
+-- and this guard call the same function, the two can never disagree about who owed a pick.
 
 begin;
 
-select plan(4);
+select plan(5);
 
 -- Seed: one group, three active members (an app admin + two players) -----------
 select tests.create_supabase_user('psc_admin');
@@ -119,7 +123,9 @@ select is_empty(
   from public.games g
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
-  join public.group_memberships gm on gm.status = 'active'
+  join public.group_memberships gm
+    on gm.status = 'active'
+   and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
   where g.external_game_id = 'psc-live'
     and w.is_scoring
     and not s.grading_locked
@@ -152,7 +158,9 @@ select results_eq(
   from public.games g
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
-  join public.group_memberships gm on gm.status = 'active'
+  join public.group_memberships gm
+    on gm.status = 'active'
+   and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
   where g.external_game_id = 'psc-live'
     and w.is_scoring
     and not s.grading_locked
@@ -177,7 +185,9 @@ select is_empty(
   from public.games g
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
-  join public.group_memberships gm on gm.status = 'active'
+  join public.group_memberships gm
+    on gm.status = 'active'
+   and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
   where g.external_game_id = 'psc-locked'
     and w.is_scoring
     and not s.grading_locked
@@ -201,7 +211,9 @@ select is_empty(
   from public.games g
   join public.weeks w on w.id = g.week_id
   join public.seasons s on s.id = w.season_id
-  join public.group_memberships gm on gm.status = 'active'
+  join public.group_memberships gm
+    on gm.status = 'active'
+   and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
   where g.external_game_id = 'psc-not-final'
     and w.is_scoring
     and not s.grading_locked
@@ -216,6 +228,49 @@ select is_empty(
     )
   $$,
   '(4) a game with no final score yet is excluded -- not graded, not a gap'
+);
+
+-- ── (5) A member who joined AFTER the game is not a gap (ADR-0037) ───────────────
+-- The former "assumes stable membership" limitation in this file's header: this member is
+-- active and has no row for psc-live, which is exactly the shape assertion (2) flags -- but
+-- here it is correct, because psc-live kicked off before they joined. The admin's genuinely
+-- missing row (deleted in (2)) must STILL be flagged, so this proves the boundary silences
+-- only the false positive and not the real defect.
+select tests.create_supabase_user('psc_latecomer');
+
+insert into public.users (id, role, display_name) values
+  (tests.get_supabase_uid('psc_latecomer'), 'player', 'PSC Latecomer')
+on conflict (id) do update
+  set role = excluded.role, display_name = excluded.display_name;
+
+insert into public.group_memberships (group_id, user_id, role, status, joined_at) values
+  ('00000000-0000-4000-8000-000000000f21', tests.get_supabase_uid('psc_latecomer'),
+   'member', 'active', '2056-09-10 00:00:00+00');  -- psc-live kicked off 2056-09-07
+
+select results_eq(
+  $$
+  select gm.user_id
+  from public.games g
+  join public.weeks w on w.id = g.week_id
+  join public.seasons s on s.id = w.season_id
+  join public.group_memberships gm
+    on gm.status = 'active'
+   and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
+  where g.external_game_id = 'psc-live'
+    and w.is_scoring
+    and not s.grading_locked
+    and (g.final_scores->>'home') is not null
+    and exists (
+      select 1 from public.pick_settlement ps2
+      where ps2.game_id = g.id and ps2.group_id = gm.group_id
+    )
+    and not exists (
+      select 1 from public.pick_settlement ps
+      where ps.game_id = g.id and ps.group_id = gm.group_id and ps.user_id = gm.user_id
+    )
+  $$,
+  $$ values (tests.get_supabase_uid('psc_admin')) $$,
+  '(5) a member who joined after kickoff is not a gap, while the real gap stays flagged'
 );
 
 select * from finish();
