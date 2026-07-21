@@ -7,7 +7,10 @@
  * (release/dependabot/hotfix PRs, or a patch cluster). This script is that backstop:
  *
  *   1. ADR staleness — an ADR still `Status: Proposed` whose linked `Issue: #NNN` is
- *      already closed on GitHub means the ratification step was missed.
+ *      already closed on GitHub means the ratification step was missed. Since the
+ *      2026-07-21 ADR audit this also flags any ADR left `Proposed` beyond
+ *      PROPOSED_MAX_AGE_DAYS even when it links no issue, which is the blind spot that
+ *      let ADR-0021 and ADR-0036 sit unresolved (see checkAdrFreshness).
  *   2. Changelog gaps (retroactive) — a merged PR (to `master`, non-bot, merged
  *      on/after the enforcement cutoff below) with neither its own PR number nor a
  *      closed-issue number it references anywhere in the changelog corpus
@@ -94,6 +97,7 @@ type AdrRecord = {
   file: string;
   status: string;
   issueNumber: number | null;
+  date: string | null;
 };
 
 function parseAdr(file: string): AdrRecord | null {
@@ -101,27 +105,64 @@ function parseAdr(file: string): AdrRecord | null {
   const content = readFileSync(path.join(ADR_DIR, file), 'utf8');
   const statusMatch = content.match(/^- Status:\s*(.+)$/m);
   const issueMatch = content.match(/^- Issue:\s*.*?#(\d+)/m);
+  const dateMatch = content.match(/^- Date:\s*(\d{4}-\d{2}-\d{2})/m);
   if (!statusMatch) throw new Error(`${file}: no "- Status:" line found`);
   return {
     file,
     status: statusMatch[1].trim(),
-    issueNumber: issueMatch ? Number(issueMatch[1]) : null
+    issueNumber: issueMatch ? Number(issueMatch[1]) : null,
+    date: dateMatch ? dateMatch[1] : null
   };
 }
 
+/**
+ * A `Proposed` ADR older than this is treated as forgotten rather than in-flight, and must
+ * be resolved to Accepted or Rejected. This backstops the `Issue: None` blind spot below.
+ */
+const PROPOSED_MAX_AGE_DAYS = 30;
+
+function ageInDays(isoDate: string): number {
+  return (Date.now() - Date.parse(isoDate)) / 86_400_000;
+}
+
+/**
+ * Two checks, because one alone leaves a hole the 2026-07 ADR audit fell into:
+ *
+ *   a. A `Proposed` ADR whose linked issue has closed — the ratification step was missed.
+ *   b. A `Proposed` ADR older than PROPOSED_MAX_AGE_DAYS, *regardless of whether it links
+ *      an issue*. Check (a) can only see ADRs with a parseable `Issue: #NNN`, so an
+ *      `Issue: None — approved plan` ADR was structurally invisible to this gate and could
+ *      sit `Proposed` indefinitely. ADR-0021 did exactly that: its driving experiment
+ *      (PR #394) was closed unmerged on 2026-07-11 and the ADR still read `Proposed` when
+ *      the 2026-07-21 audit found it. ADR-0036 was in the same blind spot.
+ */
 async function checkAdrFreshness(): Promise<string[]> {
-  const adrs = readdirSync(ADR_DIR)
+  const proposed = readdirSync(ADR_DIR)
     .filter((f) => f.endsWith('.md'))
     .map(parseAdr)
     .filter((a): a is AdrRecord => a !== null)
-    .filter((a) => a.status === 'Proposed' && a.issueNumber !== null);
+    .filter((a) => a.status.startsWith('Proposed'));
 
   const failures: string[] = [];
-  for (const adr of adrs) {
-    const issue = await githubApi<GitHubIssue>(`/repos/${githubRepo()}/issues/${adr.issueNumber}`);
-    if (issue.state === 'closed') {
+  for (const adr of proposed) {
+    // (a) linked issue already closed — ratification missed.
+    if (adr.issueNumber !== null) {
+      const issue = await githubApi<GitHubIssue>(
+        `/repos/${githubRepo()}/issues/${adr.issueNumber}`
+      );
+      if (issue.state === 'closed') {
+        failures.push(
+          `docs/adr/${adr.file}: Status is "Proposed" but linked issue #${adr.issueNumber} is closed — flip to Accepted (or Rejected) per docs/adr/README.md's lifecycle.`
+        );
+        continue; // Already failing; don't also report it as merely old.
+      }
+    }
+
+    // (b) aged out — catches the `Issue: None` ADRs check (a) cannot see.
+    if (adr.date !== null && ageInDays(adr.date) > PROPOSED_MAX_AGE_DAYS) {
+      const days = Math.floor(ageInDays(adr.date));
       failures.push(
-        `docs/adr/${adr.file}: Status is "Proposed" but linked issue #${adr.issueNumber} is closed — flip to Accepted (or Rejected) per docs/adr/README.md's lifecycle.`
+        `docs/adr/${adr.file}: Status has been "Proposed" for ${days} days (limit ${PROPOSED_MAX_AGE_DAYS}) — resolve it to Accepted or Rejected per docs/adr/README.md's lifecycle, or restate the date if it is genuinely still under review.`
       );
     }
   }
