@@ -44,7 +44,7 @@
   <div class="space-y-4">
     {#if axes.length > 0}
       <div class="space-y-2" data-testid="awards-guide-axes">
-        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Paired titles — earned at either end, or by nobody
         </p>
         <ul class="space-y-3">
@@ -62,7 +62,7 @@
                 <!-- The zero sits literally between the two faces: the dead zone is the
                      point of the whole row, not a footnote under it. -->
                 {#if i === 0}
-                  <p class="pl-6 text-xs italic text-muted-foreground">
+                  <p class="pl-6 text-xs text-muted-foreground italic">
                     {axis.zeroLabel} — no award
                   </p>
                 {/if}
@@ -73,7 +73,7 @@
       </div>
     {/if}
     <div class="space-y-2">
-      <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Titles — one holder per season
       </p>
       <ul class="space-y-2">
@@ -89,7 +89,7 @@
       </ul>
     </div>
     <div class="space-y-2">
-      <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Milestones — anyone who hits the mark
       </p>
       <ul class="space-y-2">

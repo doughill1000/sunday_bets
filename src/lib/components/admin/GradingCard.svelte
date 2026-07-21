@@ -185,7 +185,7 @@
           type="checkbox"
           bind:checked={refreshFinals}
           disabled={grading}
-          class="border-input h-4 w-4 rounded border"
+          class="h-4 w-4 rounded border border-input"
         />
         Pull latest finals from the Odds API first
       </label>

@@ -121,13 +121,13 @@
           data-testid={`weight-item-${code}`}
           disabled={code === 'A' && allInBlocked}
           class="weight-btn flex-1 rounded-md px-2 py-[6px] leading-none transition
-                 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50
+                 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none
                  disabled:pointer-events-none disabled:opacity-70"
         >
           <div class="flex flex-col items-center gap-1">
-            <span class="text-sm font-semibold leading-none">{w.label}</span>
+            <span class="text-sm leading-none font-semibold">{w.label}</span>
             <span
-              class="rounded-full bg-foreground/10 px-1.5 py-px text-[11px] font-semibold leading-none tabular-nums"
+              class="rounded-full bg-foreground/10 px-1.5 py-px text-[11px] leading-none font-semibold tabular-nums"
             >
               {w.points}
             </span>

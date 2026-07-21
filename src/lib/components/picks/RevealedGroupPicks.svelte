@@ -77,7 +77,7 @@
 
 {#if picks.length > 0}
   <div class="mt-2 border-t pt-2">
-    <p class="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <p class="mb-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
       Group picks
     </p>
     <div class="space-y-1.5">
@@ -106,7 +106,7 @@
                   {p.displayName ?? p.userId}{isMe ? ' (you)' : ''}
                 </span>
                 <span
-                  class="rounded bg-muted px-1 text-[10px] font-medium leading-tight text-muted-foreground"
+                  class="rounded bg-muted px-1 text-[10px] leading-tight font-medium text-muted-foreground"
                 >
                   {p.weight ?? '—'}
                 </span>

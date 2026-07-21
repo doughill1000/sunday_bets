@@ -487,7 +487,7 @@
               onclick={() => selectAvatar(preset.key)}
               onkeydown={onAvatarKeydown}
               title={preset.key}
-              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
               class:ring-2={avatarKey === preset.key}
               class:ring-offset-2={avatarKey === preset.key}
               class:ring-foreground={avatarKey === preset.key}
@@ -501,7 +501,7 @@
               type="button"
               onclick={() => selectAvatar(null)}
               title="Remove avatar"
-              class="flex size-10 items-center justify-center rounded-full border text-xs text-muted-foreground transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              class="flex size-10 items-center justify-center rounded-full border text-xs text-muted-foreground transition-transform hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
             >
               ✕
             </button>

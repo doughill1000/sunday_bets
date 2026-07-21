@@ -64,7 +64,7 @@
           <span class="truncate text-sm font-semibold">
             {nameFor(award.holder.user_id, award.holder.display_name)}
           </span>
-          <span class="text-xs tabular-nums text-muted-foreground">{detailText(award)}</span>
+          <span class="text-xs text-muted-foreground tabular-nums">{detailText(award)}</span>
         </li>
       {/each}
     </ul>

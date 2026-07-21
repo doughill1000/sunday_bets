@@ -94,7 +94,7 @@
               ? 'bg-muted/40'
               : ''}"
         >
-          <span class="text-center text-xs tabular-nums text-muted-foreground">{s.rank}</span>
+          <span class="text-center text-xs text-muted-foreground tabular-nums">{s.rank}</span>
           <UserAvatar size="xs" avatarKey={s.avatarKey} displayName={s.displayName} />
           <div class="min-w-0 leading-tight">
             <div class="truncate text-sm">{s.isYou ? `${s.displayName} (you)` : s.displayName}</div>

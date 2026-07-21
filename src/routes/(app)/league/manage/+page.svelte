@@ -596,7 +596,7 @@
             id="grading-preset"
             bind:value={preset}
             disabled={configBusy || data.presetLocked}
-            class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="house">House — everyone graded on the closing line (fair)</option>
             <option value="gamer">Gamer — each pick graded on its own locked line</option>
@@ -618,7 +618,7 @@
               type="checkbox"
               bind:checked={dropWorst}
               disabled={configBusy}
-              class="border-input mt-1 h-4 w-4 rounded border"
+              class="mt-1 h-4 w-4 rounded border border-input"
             />
             <div class="space-y-0.5">
               <Label for="drop-worst-week">Drop each player's worst week</Label>
@@ -636,7 +636,7 @@
                 id="drop-worst-week-start-year"
                 bind:value={dropWorstStartYear}
                 disabled={configBusy}
-                class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-40"
+                class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-40"
               >
                 {#each startYearOptions as year (year)}
                   <option value={year}>{year}</option>
@@ -687,7 +687,7 @@
             type="checkbox"
             bind:checked={aiRecapsEnabled}
             disabled={recapSettingsBusy}
-            class="border-input mt-1 h-4 w-4 rounded border"
+            class="mt-1 h-4 w-4 rounded border border-input"
           />
           <div class="space-y-0.5">
             <Label for="ai-recaps-enabled">Enable weekly AI recap</Label>
@@ -708,7 +708,7 @@
             id="spice"
             bind:value={spice}
             disabled={recapSettingsBusy || !aiRecapsEnabled}
-            class="border-input bg-background ring-offset-background focus-visible:ring-ring h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="mild">Mild — light ribbing, low-key commentary</option>
             <option value="medium">Medium — playful trash talk and hype (default)</option>

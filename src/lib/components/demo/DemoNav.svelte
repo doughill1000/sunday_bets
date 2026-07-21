@@ -33,7 +33,7 @@
       <img src="/logo-mark.svg" alt="" class="brand-chip h-6 w-6 shrink-0" />
       Hotshot
       <span
-        class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-ink"
+        class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-ink uppercase"
       >
         Demo
       </span>

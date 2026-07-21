@@ -132,7 +132,7 @@
                 />
                 <div class="min-w-0 leading-tight">
                   <div class="truncate">{isYou ? `${r.display_name} (you)` : r.display_name}</div>
-                  <div class="text-xs font-normal tabular-nums text-muted-foreground">
+                  <div class="text-xs font-normal text-muted-foreground tabular-nums">
                     {r.wins}-{r.losses}-{r.pushes}
                   </div>
                   <!-- The Commissioner marker (#660) gets its own line rather than sitting beside

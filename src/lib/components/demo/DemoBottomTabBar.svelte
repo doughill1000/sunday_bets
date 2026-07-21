@@ -23,7 +23,7 @@
 
 <nav
   data-testid="demo-bottom-tab-bar"
-  class="fixed bottom-0 left-0 right-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
+  class="fixed right-0 bottom-0 left-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
   style="padding-bottom: env(safe-area-inset-bottom)"
   aria-label="Demo sections"
 >

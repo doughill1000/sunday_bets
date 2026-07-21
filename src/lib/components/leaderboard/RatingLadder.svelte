@@ -60,7 +60,7 @@
         <div class="flex items-center gap-2">
           <!-- Rank sits in a fixed-width slot so the names line up; an Unrated player has no rank
                (no verdict yet), and shows a dash rather than a rank they haven't earned. -->
-          <span class="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+          <span class="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">
             {row.rank ?? '—'}
           </span>
           <UserAvatar avatarKey={row.avatar_key} displayName={row.display_name} size="xs" />
@@ -86,7 +86,7 @@
               </span>
             {/if}
           {:else}
-            <span class="text-xs text-muted-foreground whitespace-nowrap">
+            <span class="text-xs whitespace-nowrap text-muted-foreground">
               {entry.decisionsToQualify} to go
             </span>
           {/if}
