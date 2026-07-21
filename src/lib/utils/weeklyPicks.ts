@@ -7,6 +7,7 @@ import type {
 } from '$lib/types/leaderboard';
 import type { GroupPickEntry } from '$lib/types/picks';
 import { liveCoverState, weekSoFarPoints, type WeekSoFarPick } from '$lib/domain/liveCover';
+import { isWithinParticipation } from '$lib/domain/participation';
 import type { LiveScoreEntry } from '$lib/live/types';
 
 export type GameInputRow = {
@@ -19,6 +20,19 @@ export type GameInputRow = {
   away: { short_name: string } | null;
 };
 
+/**
+ * The Weekly tab's per-game × per-member grid.
+ *
+ * `outcome` prefers the graded `pick_settlement` row; before the grade cron settles a final
+ * game it falls back to synthesising `'missed'` for a member with no pick, so the grid is not
+ * blank for the hours between the final whistle and grading.
+ *
+ * That fallback is the one place this read surface can manufacture an obligation grading never
+ * wrote, so it carries the ADR-0037 participation boundary (#724): a game that kicked off
+ * before a member joined — or before their league's competition started — is not theirs to
+ * miss, and reads as a neutral blank rather than a red `missed`. A graded row always wins, so
+ * a genuine pre-removal history (ADR-0037 ruling 6) still displays.
+ */
 export function assembleWeeklyBreakdown(
   games: GameInputRow[],
   groupPicks: GroupPickEntry[],
@@ -47,7 +61,11 @@ export function assembleWeeklyBreakdown(
       let outcome: WeeklyPickRow['outcome'] = null;
       if (settlement) {
         outcome = settlement.outcome;
-      } else if (!pick && isFinal) {
+      } else if (
+        !pick &&
+        isFinal &&
+        isWithinParticipation(game.commence_time, player.participation_start)
+      ) {
         outcome = 'missed';
       }
 

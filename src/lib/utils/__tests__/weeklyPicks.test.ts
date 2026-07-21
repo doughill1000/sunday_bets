@@ -110,6 +110,57 @@ describe('assembleWeeklyBreakdown', () => {
     expect(bob.outcome).toBe('missed');
   });
 
+  it('does not manufacture missed for a game that kicked off before the member joined (#724)', () => {
+    // ADR-0037: the Weekly grid enumerates roster x games itself, so it must carry the same
+    // participation boundary the grading choke point does. Alice was there all along; Bob's
+    // league/join postdates this kickoff, so grading wrote him no row and neither may the UI.
+    const game = makeGame({
+      commence_time: '2025-09-07T17:00:00Z',
+      final_scores: { home: 10, away: 7 }
+    });
+    const roster = [
+      { ...makePlayer(USER_A, 'Alice'), participation_start: Date.parse('2000-01-01T00:00:00Z') },
+      { ...makePlayer(USER_B, 'Bob'), participation_start: Date.parse('2025-09-10T00:00:00Z') }
+    ];
+
+    const result = assembleWeeklyBreakdown([game], [], [], roster, null);
+    const alice = result[0].picks.find((r) => r.userId === USER_A)!;
+    const bob = result[0].picks.find((r) => r.userId === USER_B)!;
+
+    expect(alice.outcome).toBe('missed');
+    expect(bob.outcome).toBeNull();
+  });
+
+  it('still marks missed for a game at or after the member participation start (#724)', () => {
+    const game = makeGame({
+      commence_time: '2025-09-14T17:00:00Z',
+      final_scores: { home: 10, away: 7 }
+    });
+    const roster = [
+      { ...makePlayer(USER_B, 'Bob'), participation_start: Date.parse('2025-09-14T17:00:00Z') }
+    ];
+
+    const result = assembleWeeklyBreakdown([game], [], [], roster, null);
+    expect(result[0].picks[0].outcome).toBe('missed');
+  });
+
+  it('a graded settlement still wins over the boundary (pre-removal history, ADR-0037 ruling 6)', () => {
+    const game = makeGame({
+      commence_time: '2025-09-07T17:00:00Z',
+      final_scores: { home: 10, away: 7 }
+    });
+    // Re-joined member: fresh joined_at postdates the game, but their pre-removal graded row
+    // survives and must keep displaying.
+    const roster = [
+      { ...makePlayer(USER_A, 'Alice'), participation_start: Date.parse('2025-12-01T00:00:00Z') }
+    ];
+    const settlement = makeSettlement({ outcome: 'missed', points_delta: -1 });
+
+    const result = assembleWeeklyBreakdown([game], [], [settlement], roster, null);
+    expect(result[0].picks[0].outcome).toBe('missed');
+    expect(result[0].picks[0].pointsDelta).toBe(-1);
+  });
+
   it('does not mark missed for no-pick on an in-progress game', () => {
     const result = assembleWeeklyBreakdown([makeGame()], [], [], players, null);
     expect(result[0].picks[0].outcome).toBeNull();

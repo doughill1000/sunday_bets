@@ -2470,6 +2470,7 @@ export type Database = {
         Args: { p_computed_at: string; p_rows: Json };
         Returns: undefined;
       };
+      _settlement_owed: { Args: { p_game_id: string }; Returns: boolean };
       advance_week_if_complete: { Args: never; Returns: Json };
       all_in_declarations: {
         Args: { p_group_id: string; p_week_id: number };

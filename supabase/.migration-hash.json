@@ -426,10 +426,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/grade/advance_week_if_complete.sql": {
-    "hash": "f4c007d198bc77f42335c2838f8bdbf674f1105596b4813e029f1d66838eb298",
+    "hash": "cf2531feff378fce3fef5c317aedd10fe75297b2af2dab482f5df6ab4d66566e",
     "signature": "public.advance_week_if_complete()",
-    "migration": "20260715002552_fix_advance_week_completeness_check.sql",
-    "migrationHash": "4a551585cd04b42037c82d43ca3f830e1497b7d8e818e30a4176499e5b551e83"
+    "migration": "20260721220214_participation_boundary_read_surfaces.sql",
+    "migrationHash": "7564ffe267e22294153b16406707232f443fc0a31d92fd78da3b31128ab674bb"
   },
   "functions/grade/grade_game.sql": {
     "hash": "62b9dba22ffed92be25d3ea5a1b1dfc9acab61ee6aa56949d0b6635bc9653667",
@@ -764,10 +764,10 @@
     "migrationHash": "2bc3d09e139097357a1638e314c7d65737f6edcb91eb8a2bf25cfb2435acc22c"
   },
   "functions/picks/picks_status_board.sql": {
-    "hash": "2ae08c03fc70c7ca636663721e8ae40b5ca51a4a5f77a726a85a8b6928efc3ca",
+    "hash": "fe7757f359965a78de3e5993c55ad1516d5d7f550ef30d7805dfd43eae4b04ff",
     "signature": "public.picks_status_board(uuid, integer)",
-    "migration": "20260710004313_picks_status_board_remaining_only.sql",
-    "migrationHash": "6d54c2ec8040d08f089aeda498dc242e7579e0cb6a9ac530b8d1ccb9faa5a8a3"
+    "migration": "20260721220214_participation_boundary_read_surfaces.sql",
+    "migrationHash": "7564ffe267e22294153b16406707232f443fc0a31d92fd78da3b31128ab674bb"
   },
   "views/league_ats_base.sql": {
     "hash": "fd5bbc3c775b3ed0f86f7c706fc538f63f5f2d9a55db858e794c4fa6f978b308",
@@ -835,10 +835,10 @@
     "migrationHash": "8f7472dd0a19b3500cc961fb6361a90fe19636ec35917ded25f2a01b5853999a"
   },
   "functions/grade/find_unsettled_weeks.sql": {
-    "hash": "8e3caf5f1e1f474de152b12930d9c516c24747b48a9cee50c81d37f0313bf0bd",
+    "hash": "a0e64459e4f8f828f5f3311af674110f5790a833a99f3787bc6f0d5283c6b667",
     "signature": "public.find_unsettled_weeks()",
-    "migration": "20260708174903_find_unsettled_weeks_reconcile_sweep.sql",
-    "migrationHash": "b54e1d3b008ce3e45e97b46e9f861c410d063f97cf497c2c8a628a26f7943c83"
+    "migration": "20260721220214_participation_boundary_read_surfaces.sql",
+    "migrationHash": "7564ffe267e22294153b16406707232f443fc0a31d92fd78da3b31128ab674bb"
   },
   "schemas/0230_feedback.sql": {
     "hash": "b6e94adc237b5ecadec728123a8155ea267fb6af49db51e7bb906563f574d67d",
@@ -946,5 +946,11 @@
     "signature": "public._participation_start(uuid, uuid)",
     "migration": "20260721205823_participation_boundary.sql",
     "migrationHash": "afab1a1580599a74841e82a425a403f8e90d020be268a9760988fab3c37099c3"
+  },
+  "functions/_private/settlement_owed.sql": {
+    "hash": "7fa8579b6de5ee7923c171dd94112a9d0e26b76b5340c4af15db79a8920daac9",
+    "signature": "public._settlement_owed(uuid)",
+    "migration": "20260721220214_participation_boundary_read_surfaces.sql",
+    "migrationHash": "7564ffe267e22294153b16406707232f443fc0a31d92fd78da3b31128ab674bb"
   }
 }
