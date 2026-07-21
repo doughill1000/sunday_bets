@@ -68,6 +68,39 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.9.0 — 2026-07-21
+
+- **PR #736** Release v3.9.0.
+- **#711** (PR #733, PR #721) ADR-0037 accepted — participation boundary: a member is
+  graded only for games that kick off at or after
+  `greatest(groups.competition_starts_at, joined_at)`. Decision only; implementation
+  follows in #722 (grading), #724 (read surfaces), #725 (creation UI).
+- **#716** Add `prod-backfill` skill — a written runbook (announce → go-ahead →
+  baseline → execute → verify → record) for one-off production data writes;
+  `season-ops` and `db-deep-scan` now cross-link to it.
+- **PR #729** `issue-author` now writes an `Execution (model / effort)`
+  recommendation into every issue it creates, and `start-issue` reads it instead of
+  guessing cold; `docs/WORKFLOW.md`'s Ready-issue checklist requires it too.
+- **#727** Hoist the reigning champion into an evergreen banner above the `/league`
+  tabs — it used to render only at the bottom of Standings and was absent from Week
+  entirely.
+- **#717** `ROADMAP.md` no longer tracks release status — the stale release table and
+  Now/Next/Planned sections are retired; GitHub Milestones are now the sole
+  version→scope source of truth. One-time hygiene: closed 12 fully-shipped milestones
+  (v2.9–v2.13, v3.2–v3.8) that were never closed.
+- **#704** Ember accent for the apex Hotshot credibility tier — `RatingTierPill`,
+  `RatingBand`, and `RatingLadder` swap the Hotshot fill for `--ember`; presentation
+  only, no rating math or tier thresholds changed.
+- **#718** Issue authoring now places new issues on the Project board at
+  `Status: Backlog`, so nothing Ready is ever missing from the board; field triage
+  stays human.
+- **PR #719** Skills tune-up sweep — refresh `design-study` for the two-theme era, add
+  the new `design-review` skill, and patch five smaller gaps across `start-issue`,
+  `test-gate`, `finish-pr`, `issue-author`, and `new-adr`.
+- **#710** Migration generator improvements — `--retire=<key>` delete/rename path,
+  duplicate-numeric-prefix guard, `-- @phase:` override, `--amend`, and required
+  migration names with signature-extraction warnings. Tooling/tests/docs only.
+
 ## v3.8.0 — 2026-07-16
 
 - **PR #715** Release v3.8.0.
