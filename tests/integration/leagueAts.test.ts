@@ -16,7 +16,6 @@ import {
   getLeagueAts,
   getLeagueSeasons,
   getLeagueSituational,
-  getLeagueTeamGameLog,
   getLeagueSpreadBuckets,
   getLeagueQuadrants,
   getLeagueTrends
@@ -217,26 +216,6 @@ describe('league ATS read path (#406)', () => {
     expect(buf.streakResult).toBe('loss');
     expect(buf.streakLength).toBe(1);
     expect(buf.last4).toEqual({ wins: 0, losses: 1, pushes: 0 });
-  });
-
-  test('getLeagueTeamGameLog returns the team-relative per-game log (#428)', async () => {
-    // KC (home) favored -7 and won 28-14 -> covered by 7 against the line.
-    const log = await getLeagueTeamGameLog(SEASON_YEAR, teamId.KC);
-    expect(log.games).toHaveLength(1);
-    const g = log.games[0];
-    expect(g.weekNumber).toBe(1);
-    expect(g.opponentTeamId).toBe(teamId.BUF);
-    expect(g.isHome).toBe(true);
-    expect(g.spreadValue).toBe(-7); // team-relative: negative = favored
-    expect(g.margin).toBe(7); // team-relative cover margin
-    expect(g.atsResult).toBe('win');
-
-    // BUF (away) was the +7 underdog and did not cover.
-    const buf = await getLeagueTeamGameLog(SEASON_YEAR, teamId.BUF);
-    expect(buf.games[0].isHome).toBe(false);
-    expect(buf.games[0].spreadValue).toBe(7);
-    expect(buf.games[0].margin).toBe(-7);
-    expect(buf.games[0].atsResult).toBe('loss');
   });
 
   test('getLeagueSituational returns crossed home/away × favorite/underdog quadrants', async () => {

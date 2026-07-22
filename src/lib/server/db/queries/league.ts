@@ -12,13 +12,11 @@ import type {
   LeagueSlate,
   LeagueSpreadBucket,
   LeagueTeamAts,
-  LeagueTeamGameLog,
-  LeagueTeamGameLogEntry,
   LeagueTeamStreak,
   LeagueTrends,
   PrimetimeSlot
 } from '$lib/types/server/league';
-import { buildSlateGames } from '$lib/utils/leagueSlate';
+import { buildSlateGames, type TeamDivisionLookup } from '$lib/utils/leagueSlate';
 import { PRIMETIME_SLOT_ORDER } from '$lib/utils/leagueAts';
 import {
   deriveFavDogHeadline,
@@ -35,7 +33,6 @@ type TeamRow = Tables<'league_ats_team'>;
 type FavDogRow = Tables<'league_ats_fav_dog'>;
 type HomeAwayRow = Tables<'league_ats_home_away'>;
 type StreakRow = Tables<'league_ats_streaks'>;
-type BaseRow = Tables<'league_ats_base'>;
 type SpreadBucketRow = Tables<'league_ats_spread_buckets'>;
 type QuadrantRow = Tables<'league_ats_quadrants'>;
 type PrimetimeRow = Tables<'league_ats_primetime'>;
@@ -461,69 +458,31 @@ export async function getLeagueSlate(seasonYear: number): Promise<LeagueSlate> {
     return { seasonYear, weekNumber: null, games: [] };
   }
 
-  const [games, situational] = await Promise.all([
+  const [games, situational, divisions] = await Promise.all([
     getGamesWithActiveLines(week.id),
-    getLeagueSituational(seasonYear)
+    getLeagueSituational(seasonYear),
+    getTeamDivisions()
   ]);
 
-  const slateGames = buildSlateGames(games, situational, Date.now());
+  const slateGames = buildSlateGames(games, situational, Date.now(), divisions);
   // A bye / mid-week gap (every game already kicked off) collapses to the empty state.
   if (slateGames.length === 0) return { seasonYear, weekNumber: null, games: [] };
 
   return { seasonYear, weekNumber: week.week_number, games: slateGames };
 }
 
-type BaseGameLogRow = Pick<
-  BaseRow,
-  'week_number' | 'opponent_team_id' | 'is_home' | 'spread_value' | 'margin' | 'ats_result'
->;
-
-function toGameLogEntry(row: BaseGameLogRow): LeagueTeamGameLogEntry | null {
-  const atsResult = asOutcome(row.ats_result);
-  if (
-    row.week_number == null ||
-    row.opponent_team_id == null ||
-    row.is_home == null ||
-    row.spread_value == null ||
-    row.margin == null ||
-    atsResult == null
-  ) {
-    return null;
-  }
-  return {
-    weekNumber: row.week_number,
-    opponentTeamId: row.opponent_team_id,
-    isHome: row.is_home,
-    spreadValue: row.spread_value,
-    margin: row.margin,
-    atsResult
-  };
-}
-
 /**
- * One team's full season ATS game log for the /league drill-down (issue #428). Reads the
- * per-perspective league_ats_base matview directly — no new view or aggregation — filtered to
- * this team and season and ordered by week (a team plays at most once per scoring week; game_id
- * breaks the rare tie deterministically). Each row is already team-relative (spread_value < 0 =
- * favored, margin > 0 = covered), so the UI renders it without re-deriving cover math.
- * Group-independent (service-role read, ADR-0013). Opponent names are resolved client-side from
- * the team list already loaded on /league, so no teams join is needed here.
+ * Team-id → "conference division" identity map for the slate's divisional tag (#692). Only
+ * teams with both fields set (the 32 NFL teams, seeded by 0229) appear, so a matchup with an
+ * unseeded team can never be marked divisional — the same same-conference-and-same-division
+ * rule league_ats_divisional applies.
  */
-export async function getLeagueTeamGameLog(
-  seasonYear: number,
-  teamId: number
-): Promise<LeagueTeamGameLog> {
-  const { data, error } = await supabaseService
-    .from('league_ats_base')
-    .select('week_number, opponent_team_id, is_home, spread_value, margin, ats_result, game_id')
-    .eq('season_year', seasonYear)
-    .eq('team_id', teamId)
-    .order('week_number')
-    .order('game_id');
+async function getTeamDivisions(): Promise<TeamDivisionLookup> {
+  const { data, error } = await supabaseService.from('teams').select('id, conference, division');
   if (error) throw error;
-  const games = (data ?? []).flatMap((row) => {
-    const entry = toGameLogEntry(row);
-    return entry ? [entry] : [];
-  });
-  return { seasonYear, teamId, games };
+  return new Map(
+    (data ?? []).flatMap((t) =>
+      t.conference != null && t.division != null ? [[t.id, `${t.conference} ${t.division}`]] : []
+    )
+  );
 }

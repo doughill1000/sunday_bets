@@ -20,21 +20,16 @@ async function loadTeams(event: Parameters<PageServerLoad>[0]) {
     getLeagueSeasons()
   ]);
 
-  // One page-level season dropdown now drives both the by-team roster and the situational
-  // cuts (#529), so there is a single resolved `seasonYear` — the `?season=` param, defaulting
-  // to the most recent season with data. The old split, where the Trends tab pinned its own
-  // `defaultSeasonYear` independent of the Teams picker, is gone: that decoupling was the
-  // silent season desync this redesign removes.
+  // The lean page (#692) has no scope control: the team book reads the last graded thing —
+  // the most recent season with data (the DESIGN.md rule #737 named) — and the caption states
+  // the window instead of a dropdown offering five. `?season=` stays as the one explicit,
+  // URL-addressable alternate window.
   const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
 
-  // #638: default the page-level scope to 'pooled' (Last 5) instead of preselecting a season
-  // that has already concluded (off-season) — mirrors the "This season" pin fix on
-  // /league and /stats. An explicit `?season=` always wins the initial scope regardless.
-  const latestSeasonInProgress = await isSeasonInProgress(
-    Math.max(seasonYear, ...availableSeasons)
-  );
-  const defaultScope: 'season' | 'pooled' =
-    seasonParam != null || latestSeasonInProgress ? 'season' : 'pooled';
+  // Whether the season in view is still being played, for the honest caption ("through
+  // Week N" vs "final") — not for any scope-flipping logic (#638's defaultScope died with
+  // the dropdown).
+  const seasonInProgress = await isSeasonInProgress(seasonYear);
 
-  return { currentSeasonYear, seasonYear, availableSeasons, latestSeasonInProgress, defaultScope };
+  return { currentSeasonYear, seasonYear, seasonInProgress };
 }
