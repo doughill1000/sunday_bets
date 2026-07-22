@@ -31,6 +31,7 @@
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
@@ -663,14 +664,20 @@
                tight and the archive remains the one place the prose lives. Hardware exists only for
                fully-graded scoring weeks, so an in-progress week shows the breakdown alone. -->
           {#if selectedHardware}
-            <WeeklyHardware
-              hardware={selectedHardware}
-              currentUserId={data.currentUserId}
-              recapHref="/recap?season={data.seasonYear}#week-{selectedHardware.week_number}"
-              recapLabel={selectedWeekRecap
-                ? `Read the ${weekLabel(data.selectedWeek)} recap`
-                : 'Season recaps'}
-            />
+            <div class="space-y-2">
+              <WeeklyHardware
+                hardware={selectedHardware}
+                currentUserId={data.currentUserId}
+                recapHref="/recap?season={data.seasonYear}#week-{selectedHardware.week_number}"
+                recapLabel={selectedWeekRecap
+                  ? `Read the ${weekLabel(data.selectedWeek)} recap`
+                  : 'Season recaps'}
+              />
+              <!-- The tiles' descriptions used to be a desktop-only `title=` tooltip (#771). The
+                   legend sits directly under the hardware it explains, on every surface that
+                   renders it — here, /recap, and their demo mirrors. -->
+              <AwardsGuide />
+            </div>
           {/if}
 
           <WeeklyPicksBreakdown

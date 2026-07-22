@@ -52,10 +52,12 @@
   <CardContent class="space-y-3">
     <ul class="grid grid-cols-2 gap-2" data-testid="weekly-hardware">
       {#each hardware.awards as award (award.id)}
+        <!-- No `title=` here: a hover tooltip is not a mechanism a phone has (ADR-0030), and it
+             hid the flavour text from every mobile reader. The Awards legend, mounted by each
+             surface that renders these tiles, is now the one place the descriptions live (#771). -->
         <li
           class="flex flex-col gap-0.5 rounded-lg border bg-muted/40 p-2.5"
           data-testid="weekly-award-{award.id}"
-          title={award.description}
         >
           <span class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <span aria-hidden="true">{award.emoji}</span>
