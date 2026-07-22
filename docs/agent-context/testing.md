@@ -140,6 +140,10 @@ protects whichever test runs first.
 - **`full`** — every spec, as an **informational** (non-required) safety net, so
   deep-flow flake is visible without blocking merges.
 
+`smoke`'s required status check is actually `smoke-result`, a wrapper job — see
+ADR-0038 for why path-filtered required checks need one and how the required-check
+name is a stable interface with the repo's GitHub ruleset.
+
 Tag a test with Playwright's tag API:
 `test('…', { tag: '@smoke' }, async ({ page }) => { … })`. The current smoke set
 covers password sign-in, the core picks write path, the leaderboard, the stats
