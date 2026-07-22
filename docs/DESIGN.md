@@ -296,6 +296,7 @@ each. (Component homes live under `src/lib/components/`.)
 | Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                      |
 | Group related content             | `Card` + header/description                        | everywhere                                |
 | Announce a form/action outcome    | Persistent inline status note (`FormNote`)         | `/league/manage`, `/settings` League card |
+| Leave a page the nav can't reach  | Back link above the title (`BackLink`)             | `/wrapped`, `/recap`, `/league/manage`    |
 | Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                         |
 | Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/market`, `/stats`     |
 | Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                    |

@@ -4,6 +4,7 @@
   // snapshot instead of a `createQuery`. The season shelf moved to the demo League's Honors
   // tab (#741), same as the real app.
   import type { PageData } from './$types';
+  import BackLink from '$lib/components/BackLink.svelte';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -21,13 +22,11 @@
   <title>Season recaps | Hotshot Demo</title>
 </svelte:head>
 
-<div class="mx-auto max-w-2xl space-y-4 px-4 py-6">
+<!-- No `px-4 py-6` of its own — the demo layout already pads, and doubling it inset this
+     archive further than its sibling /demo/wrapped (#768). -->
+<div class="mx-auto max-w-2xl space-y-4">
   <div>
-    <a
-      href="/demo/league"
-      class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-      data-testid="recaps-back">← League</a
-    >
+    <BackLink href="/demo/league" label="League" testId="recaps-back" />
     <div class="mt-1 flex items-center gap-2">
       <Sparkles class="h-5 w-5 text-primary-ink" />
       <h1 class="text-xl font-semibold">Season recaps</h1>

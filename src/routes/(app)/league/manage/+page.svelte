@@ -11,6 +11,7 @@
   import { Input } from '$lib/components/ui/input';
   import { Label } from '$lib/components/ui/label';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
+  import BackLink from '$lib/components/BackLink.svelte';
   import FormNote from '$lib/components/FormNote.svelte';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -905,11 +906,7 @@
     {@render errorState()}
   {:else}
     <div>
-      <a
-        href="/league"
-        class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        data-testid="manage-back">← League</a
-      >
+      <BackLink href="/league" label="League" testId="manage-back" />
       <h1 class="mt-1 text-2xl font-bold">Manage league</h1>
       <p class="text-sm text-muted-foreground">{data.group.name}</p>
     </div>

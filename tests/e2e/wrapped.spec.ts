@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { wrappedPage } from './helpers/wrapped-page';
+import { leaderboardPage } from './helpers/leaderboard-page';
 
 // Selectors live in the wrappedPage page object (helpers/wrapped-page.ts)
 // and key off data-testid anchors so copy changes don't ripple here.
@@ -28,4 +29,17 @@ test('wrapped flash modal is dismissable', async ({ page }) => {
   // /wrapped itself still renders normally afterward.
   await wp.goto();
   await expect(wp.storyOrEmpty()).toBeVisible();
+});
+
+test('wrapped offers a way back to the League', async ({ page }) => {
+  // Season Wrapped is reached from the /league honors card and the flash, never from the
+  // nav — so like the recap archive it must carry its own exit (#768, DESIGN.md principle 8).
+  const wp = wrappedPage(page);
+  await wp.goto();
+
+  const back = wp.backLink();
+  await expect(back).toBeVisible();
+  await back.click();
+  await expect(page).toHaveURL(/\/league/);
+  await expect(leaderboardPage(page).heading()).toBeVisible();
 });
