@@ -19,6 +19,7 @@ import { supabaseService } from '$lib/supabase/service';
 import { getGroupConfig } from '$lib/server/groupConfig';
 import { getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
+import { getUpcomingWeeks } from '$lib/server/db/queries/getUpcomingWeeks';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
   const { groupId, user } = locals;
@@ -49,17 +50,27 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
   // Active invites + league rules. Sensitive commissioner data, deliberately kept off the
   // cached/persisted query payload (ADR-0017) — the redirect above is what gates it.
-  const [inviteResult, cfg, lockedResult] = await Promise.all([
-    supabaseService
-      .from('group_invites')
-      .select('id, code, expires_at, max_uses, used_count, revoked_at, created_at')
-      .eq('group_id', groupId)
-      .is('revoked_at', null)
-      .order('created_at', { ascending: false })
-      .limit(20),
-    getGroupConfig(groupId),
-    supabaseService.rpc('group_active_season_settled', { p_group_id: groupId })
-  ]);
+  const [inviteResult, cfg, lockedResult, groupRowResult, frozenResult, upcomingWeeks] =
+    await Promise.all([
+      supabaseService
+        .from('group_invites')
+        .select('id, code, expires_at, max_uses, used_count, revoked_at, created_at')
+        .eq('group_id', groupId)
+        .is('revoked_at', null)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      getGroupConfig(groupId),
+      supabaseService.rpc('group_active_season_settled', { p_group_id: groupId }),
+      // Current competition start + whether it's still editable (ADR-0037 ruling 4). Read via
+      // service role so the frozen predicate matches exactly what set_competition_start enforces.
+      supabaseService
+        .from('groups')
+        .select('competition_starts_at')
+        .eq('id', groupId)
+        .maybeSingle(),
+      supabaseService.rpc('competition_start_frozen', { p_group_id: groupId }),
+      getUpcomingWeeks()
+    ]);
 
   const scoringRules = cfg?.scoring_rules as {
     drop_worst_week?: boolean;
@@ -82,6 +93,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
     // which is what keeps the rule non-retroactive. Drives the "Apply from season" control.
     dropWorstWeekStartYear: scoringRules?.drop_worst_week_start_year ?? null,
     presetLocked: lockedResult.data ?? false,
+    // Competition start (ADR-0037 ruling 4/5): when this league's competition begins, whether
+    // it can still be moved (frozen once the first eligible game kicks off), and the future
+    // weeks available to move it to.
+    competitionStartsAt: groupRowResult.data?.competition_starts_at ?? null,
+    competitionStartFrozen: frozenResult.data ?? false,
+    upcomingWeeks,
     // AI recap settings (commissioner-only, issue #301, ADR-0008).
     spice: (rawSpice === 'mild' || rawSpice === 'spicy' ? rawSpice : 'medium') as
       'mild' | 'medium' | 'spicy',

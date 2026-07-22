@@ -16,8 +16,8 @@ SELECT has_column('public', 'settings', 'group_creation_mode',
   'settings has group_creation_mode');
 SELECT has_column('public', 'users', 'can_create_group',
   'users has can_create_group');
-SELECT has_function('public', 'create_group', ARRAY['text'],
-  'public.create_group(text) exists');
+SELECT has_function('public', 'create_group', ARRAY['text', 'timestamp with time zone'],
+  'public.create_group(text, timestamptz) exists');
 
 -- ── Seed (service role / superuser) ───────────────────────────────────────────
 

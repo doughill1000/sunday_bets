@@ -17,6 +17,7 @@ function row(over: Partial<WeeklyPickRow> = {}): WeeklyPickRow {
     pickedTeamShort: 'KC',
     weight: 'M', // 3 pts
     outcome: null,
+    notParticipating: false,
     pointsDelta: null,
     pickedTeamId: HOME_ID,
     lockedSpreadValue: 2.5,

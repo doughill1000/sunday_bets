@@ -2513,7 +2513,14 @@ export type Database = {
         Args: { p_action: string; p_actor: string; p_details: Json };
         Returns: undefined;
       };
-      create_group: { Args: { p_name: string }; Returns: string };
+      competition_start_frozen: {
+        Args: { p_group_id: string };
+        Returns: boolean;
+      };
+      create_group: {
+        Args: { p_competition_starts_at?: string; p_name: string };
+        Returns: string;
+      };
       find_unsettled_weeks: {
         Args: never;
         Returns: {
@@ -2669,6 +2676,10 @@ export type Database = {
           p_spread_value: number;
         };
         Returns: Json;
+      };
+      set_competition_start: {
+        Args: { p_group_id: string; p_starts_at?: string };
+        Returns: string;
       };
       unlock_pick: {
         Args: { p_game_id: string };

@@ -15,6 +15,7 @@ import {
   type NotificationPrefs,
   type RecapTally
 } from '$lib/domain/notifications';
+import { isGameRemindable, type GroupBoundary } from '$lib/domain/participation';
 import type { Json } from '$lib/types/supabase';
 
 // Remind ~2–3h before kickoff (hourly cron + this window catches each game once).
@@ -94,13 +95,14 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
 
   const { data: games, error: gamesErr } = await supabaseService
     .from('games')
-    .select('id')
+    .select('id, commence_time')
     .eq('week_id', week.id)
     .gt('commence_time', nowIso)
     .lte('commence_time', cutoff);
   if (gamesErr) throw gamesErr;
   const gameIds = (games ?? []).map((g) => g.id);
   if (gameIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  const gameCommence = new Map((games ?? []).map((g) => [g.id, g.commence_time]));
 
   const { data: allUsers, error: usersErr } = await supabaseService
     .from('users')
@@ -111,6 +113,23 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
     .filter((u) => u.prefs.enabled && u.prefs.pick_reminders);
   if (notifiable.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
   const userIds = notifiable.map((u) => u.id);
+
+  // ADR-0037: don't nag a member about a game before their participation begins. Now that a
+  // league can start a future week, this gap bites — so gate each (member, game) on the
+  // participation boundary across the member's active leagues (see isGameRemindable).
+  const { data: memberships, error: membershipsErr } = await supabaseService
+    .from('group_memberships')
+    .select('user_id, joined_at, groups(competition_starts_at)')
+    .eq('status', 'active')
+    .in('user_id', userIds);
+  if (membershipsErr) throw membershipsErr;
+  const boundariesByUser = new Map<string, GroupBoundary[]>();
+  for (const m of memberships ?? []) {
+    const group = Array.isArray(m.groups) ? m.groups[0] : m.groups;
+    const list = boundariesByUser.get(m.user_id) ?? [];
+    list.push({ competitionStartsAt: group?.competition_starts_at ?? null, joinedAt: m.joined_at });
+    boundariesByUser.set(m.user_id, list);
+  }
 
   const { data: picks, error: picksErr } = await supabaseService
     .from('picks')
@@ -136,7 +155,10 @@ export async function sendPickReminders(now = new Date()): Promise<ReminderSumma
   for (const user of notifiable) {
     evaluated++;
     const pendingGameIds = gameIds.filter(
-      (gid) => !picked.has(`${user.id}:${gid}`) && !reminded.has(`${user.id}:${gid}`)
+      (gid) =>
+        !picked.has(`${user.id}:${gid}`) &&
+        !reminded.has(`${user.id}:${gid}`) &&
+        isGameRemindable(gameCommence.get(gid), boundariesByUser.get(user.id) ?? [])
     );
     if (pendingGameIds.length === 0) {
       skipped++;

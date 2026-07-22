@@ -19,6 +19,21 @@
       </p>
     </div>
 
+    <!-- Partial-season onboarding (ADR-0037): make the participation boundary legible before
+         joining so a midseason joiner isn't surprised by blank earlier weeks. -->
+    <div
+      class="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm"
+      data-testid="invite-participation-note"
+    >
+      {#if data.startsWeekNumber != null && data.startsWeekNumber > 0}
+        You're in from <span class="font-medium">Week {data.startsWeekNumber}</span>. Games that
+        kicked off before you joined don't count for or against you.
+      {:else}
+        You're in from your first pickable game. Games that kicked off before you joined don't count
+        for or against you.
+      {/if}
+    </div>
+
     {#if form?.error}
       <div class="rounded-xl border border-destructive p-3 text-sm text-destructive">
         {form.error}

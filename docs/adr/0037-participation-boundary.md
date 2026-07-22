@@ -159,10 +159,15 @@ untouched. No new status enum, interval model, or "rejoin" concept is introduced
   nothing, so those surfaces would flag such a week as unsettled forever.
   `public._settlement_owed` is the guard, and it calls `_participation_start` like everything
   else.
-- **Issue C (creation/onboarding UI):** start-week control + partial-season copy
-  (`docs/DESIGN.md` / ADR-0030). Carries one obligation inherited from Issue B: the
-  pick-reminder fan-out (`sendPickReminders`) has no group scoping or boundary check, which is
-  harmless only while every league's competition start is in the past. Shipping a future
-  start-week makes it bite, so it must be scoped in the same change.
+- **Issue C (creation/onboarding UI):** #725 — start-week control + partial-season copy
+  (`docs/DESIGN.md` / ADR-0030). Shipped: `create_group` gained the start-week argument
+  (ruling 5, clamped so a new league can never be backdated) and `set_competition_start` the
+  freeze-on-first-kickoff guard (ruling 4), sharing a `competition_start_frozen` predicate the
+  commissioner console reads to show or hide the control. The creation flow and manage console
+  expose the control, a midseason joiner sees which week they start from, and weeks before a
+  member joined render as a neutral "not in yet" on the Weekly grid. The inherited obligation
+  from Issue B — the pick-reminder fan-out (`sendPickReminders`) having no boundary check, which
+  a future start-week makes bite — was scoped in the same change: reminders now gate each
+  (member, game) on the participation boundary across the member's active leagues.
 - **ADR-0009 join-time backfill** (separate, deferred): copying a joiner's still-open
   current-week picks into a newly joined league — this ADR is its temporal safety floor.

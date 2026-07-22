@@ -67,6 +67,36 @@
   let configMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
   let configBusy = $state(false);
 
+  // Competition start (ADR-0037 ruling 4): when this league's competition begins, editable only
+  // until the first eligible game kicks off (data.competitionStartFrozen).
+  let startMode = $state<'now' | 'future'>('now');
+  let selectedWeekStart = $state('');
+  $effect(() => {
+    if (!selectedWeekStart && data.upcomingWeeks.length > 0)
+      selectedWeekStart = data.upcomingWeeks[0].startTs;
+  });
+  // null = "start this week, from now" (the RPC stamps the DB's now()); otherwise a week's start_ts.
+  const competitionStart = $derived(startMode === 'future' ? selectedWeekStart : null);
+  let compStartMsg = $state<{ kind: 'success' | 'error'; text: string } | null>(null);
+  let compStartBusy = $state(false);
+
+  function weekLabel(week: { weekNumber: number; startTs: string }): string {
+    const when = new Date(week.startTs).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric'
+    });
+    const round = week.weekNumber > 0 ? `Week ${week.weekNumber}` : 'Preseason';
+    return `${round} · starts ${when}`;
+  }
+
+  function formatStartDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+
   // Selectable "apply from" seasons: every season the group has played plus the upcoming
   // one, and any already-saved start year (e.g. set via SQL) so it always shows as chosen.
   const startYearOptions = $derived.by(() => {
@@ -160,6 +190,30 @@
       await invalidateGroupScoring();
     } finally {
       configBusy = false;
+    }
+  }
+
+  async function saveCompetitionStart() {
+    if (compStartBusy) return;
+    compStartMsg = null;
+    compStartBusy = true;
+    try {
+      const res = await fetch('/api/group/set-competition-start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ competition_start: competitionStart })
+      });
+      const body = (await res.json().catch(() => ({}))) as { reason?: string };
+      if (!res.ok) {
+        compStartMsg = { kind: 'error', text: body.reason ?? 'Could not update when play starts.' };
+        return;
+      }
+      compStartMsg = { kind: 'success', text: 'Competition start updated.' };
+      // Re-run the server load so the displayed start + frozen state re-sync, and refresh the
+      // standings caches since the boundary feeds grading.
+      await Promise.all([invalidateAll(), invalidateGroupScoring()]);
+    } finally {
+      compStartBusy = false;
     }
   }
 
@@ -662,6 +716,111 @@
   </Card>
 {/snippet}
 
+<!-- Competition start (ADR-0037 ruling 4/5): when the league's competition begins. Editable
+   only until the first eligible game kicks off, then frozen — moving it after results settle
+   would rewrite them. -->
+{#snippet competitionStartCard()}
+  <Card class="p-6">
+    <CardHeader class="mb-2 p-0">
+      <CardTitle class="text-xl font-bold">Competition start</CardTitle>
+    </CardHeader>
+    <CardContent class="space-y-4 p-0 pt-2">
+      <p class="text-sm text-muted-foreground">
+        When your league's competition begins. Games before it don't count for anyone, and members
+        who join later are scored from their join forward.
+      </p>
+
+      {#if data.competitionStartFrozen}
+        <!-- Frozen: play has begun. Show a locked note, no controls (and no sentinel date for
+             leagues that pre-date this feature). -->
+        <div class="rounded-xl border border-border/60 bg-muted/30 p-3">
+          <p class="text-sm font-medium">Play is underway</p>
+          <p class="mt-0.5 text-xs text-muted-foreground">
+            The start week is locked now that the first game has kicked off — changing it would
+            rewrite results that already count.
+          </p>
+        </div>
+      {:else}
+        {#if data.competitionStartsAt}
+          <p class="text-sm">
+            Currently: <span class="font-medium"
+              >starts {formatStartDate(data.competitionStartsAt)}</span
+            >
+          </p>
+        {/if}
+
+        <form
+          class="space-y-4"
+          onsubmit={(e) => {
+            e.preventDefault();
+            void saveCompetitionStart();
+          }}
+        >
+          <fieldset class="space-y-2">
+            <legend class="text-sm font-medium">Change start</legend>
+            <label class="flex items-start gap-3">
+              <input
+                type="radio"
+                name="comp-start-mode"
+                value="now"
+                bind:group={startMode}
+                disabled={compStartBusy}
+                class="mt-1 h-4 w-4 border border-input"
+              />
+              <span class="space-y-0.5">
+                <span class="block text-sm">This week (from now)</span>
+                <span class="block text-xs text-muted-foreground">
+                  Games already kicked off don't count; picking starts with the next game.
+                </span>
+              </span>
+            </label>
+
+            {#if data.upcomingWeeks.length > 0}
+              <label class="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="comp-start-mode"
+                  value="future"
+                  bind:group={startMode}
+                  disabled={compStartBusy}
+                  class="mt-1 h-4 w-4 border border-input"
+                />
+                <span class="space-y-0.5">
+                  <span class="block text-sm">A future week</span>
+                  <span class="block text-xs text-muted-foreground">
+                    Competition begins at the start of the week you pick.
+                  </span>
+                </span>
+              </label>
+
+              {#if startMode === 'future'}
+                <select
+                  aria-label="Start week"
+                  bind:value={selectedWeekStart}
+                  disabled={compStartBusy}
+                  class="ml-7 h-10 w-[calc(100%-1.75rem)] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:w-56"
+                >
+                  {#each data.upcomingWeeks as week (week.startTs)}
+                    <option value={week.startTs}>{weekLabel(week)}</option>
+                  {/each}
+                </select>
+              {/if}
+            {/if}
+          </fieldset>
+
+          <Button type="submit" size="sm" disabled={compStartBusy}>
+            {compStartBusy ? 'Saving…' : 'Save'}
+          </Button>
+        </form>
+      {/if}
+
+      {#if compStartMsg}
+        <FormNote kind={compStartMsg.kind} text={compStartMsg.text} />
+      {/if}
+    </CardContent>
+  </Card>
+{/snippet}
+
 <!-- League-wide AI recap settings (issue #301, ADR-0008). The per-player "include me" opt-out
    is NOT here — it's a personal knob and lives on /settings (#660). -->
 {#snippet aiRecapCard()}
@@ -759,6 +918,7 @@
     {@render membersCard()}
     {@render invitesCard()}
     {@render leagueRulesCard()}
+    {@render competitionStartCard()}
     {@render aiRecapCard()}
   {/if}
 </section>

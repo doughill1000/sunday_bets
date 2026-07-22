@@ -83,8 +83,15 @@
   // visible, or the game is final). Pre-kickoff the view hides everyone's pick, so all rows
   // land here — in that case we suppress the list and show the reveal hint instead.
   const showNoPick = $derived(picked.length > 0 || game.isFinal);
+  // A member who joined after this game kicked off (ADR-0037) is split out from genuine
+  // no-picks: the game was never theirs, so it reads as a neutral "Not in yet", not a miss.
+  const notIn = $derived(
+    showNoPick ? game.picks.filter((p) => p.notParticipating).toSorted(sortMembers) : []
+  );
   const noPick = $derived(
-    showNoPick ? game.picks.filter((p) => p.pickedSide == null).toSorted(sortMembers) : []
+    showNoPick
+      ? game.picks.filter((p) => p.pickedSide == null && !p.notParticipating).toSorted(sortMembers)
+      : []
   );
 
   const teams = $derived.by(() => {
@@ -153,7 +160,7 @@
     </CardTitle>
   </CardHeader>
   <CardContent class="space-y-1.5 pt-0">
-    {#if picked.length === 0 && noPick.length === 0}
+    {#if !showNoPick && picked.length === 0}
       <p class="text-sm text-muted-foreground">Picks reveal at kickoff.</p>
     {:else}
       {#each teams as team (team.label)}
@@ -218,6 +225,24 @@
                   ? 'font-semibold'
                   : 'text-muted-foreground'}"
               >
+                {p.displayName}{p.isYou ? ' (you)' : ''}
+              </span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
+    {#if notIn.length > 0}
+      <div class="flex gap-2" data-testid="not-participating">
+        <span class="mt-0.5 w-12 shrink-0 text-xs font-medium text-muted-foreground/70"
+          >Not in yet</span
+        >
+        <ul class="flex flex-1 flex-wrap gap-x-2.5 gap-y-1">
+          {#each notIn as p (p.userId)}
+            <li class="flex items-center gap-1 text-xs text-muted-foreground/70">
+              <UserAvatar size="xs" avatarKey={p.avatarKey} displayName={p.displayName} />
+              <span class="inline-block max-w-[140px] truncate align-bottom sm:max-w-[200px]">
                 {p.displayName}{p.isYou ? ' (you)' : ''}
               </span>
             </li>
