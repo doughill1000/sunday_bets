@@ -82,5 +82,6 @@ current status.
 | [ADR-0035](0035-badge-boundary-rule.md)                                     | Badge catalog boundary — the credibility rating owns the market, badges own the room                        |
 | [ADR-0036](0036-product-principles.md)                                      | Product principles rubric + pressure-test / product-audit tooling — the product twin of the design layer    |
 | [ADR-0037](0037-participation-boundary.md)                                  | Participation boundary — a member is graded only for games that start after they join                       |
+| [ADR-0038](0038-pr-merge-gate-model.md)                                     | PR merge-gate model — the `-result` wrapper-job contract and required-check names as a stable interface     |
 
-_The numbering is sequential; the next ADR is 0038._
+_The numbering is sequential; the next ADR is 0039._
