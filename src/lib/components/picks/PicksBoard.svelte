@@ -236,10 +236,6 @@
     liveActive={liveWindowActive}
   />
 
-  <PicksStatusBoard board={liveStatusBoard} myUserId={userId} />
-
-  <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
-
   {#if upcoming.length === 0}
     <Alert class="mt-4">
       <AlertTitle>You're all set 🎉</AlertTitle>
@@ -281,6 +277,10 @@
       {/each}
     </div>
   {/if}
+
+  <PicksStatusBoard board={liveStatusBoard} myUserId={userId} />
+
+  <AllInDeclarations declarations={allInDeclarations} {games} myUserId={userId} />
 
   <LockedPicksSection
     games={committed}
