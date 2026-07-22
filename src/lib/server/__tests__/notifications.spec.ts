@@ -229,7 +229,7 @@ describe('sendAIRecapPushes', () => {
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Week 5 recap is ready',
       body: 'Kefke ran the table this week.',
-      url: '/recap',
+      url: '/recap?season=2025#week-5',
       tag: 'ai-recap-g1-week-5'
     });
     expect(db.insertedLogs).toEqual([
