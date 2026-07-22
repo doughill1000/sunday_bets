@@ -68,6 +68,26 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.11.0 — 2026-07-22
+
+- **PR #767** Release v3.11.0.
+- **#741** The Trophy Room — `/league` becomes Standings · Honors · Week, absorbing the
+  season trophy shelf from `/recap` and compressing the champion banner into a strip.
+- **#692** Reshape `/market` to its lean form — week slate, "Where the market bends"
+  verdict, and team ATS book; the deep explorer is retired.
+- **#738** `/stats` defaults to the last graded season and gains a career-rating chip
+  linking to `/league`'s ladder; Career is now an explicit `?scope=career` choice.
+- **#742** One season-story promoter — Wrapped and the weekly recap no longer both
+  interrupt the same app open.
+- **#737** `/league` Standings keeps honors and the credibility ladder co-visible, leads a
+  concluded season with its honors, and adds a shareable `?scope=alltime`.
+- **#740** `/picks` now leads with the unpicked game cards, moving the status board and
+  All-In declarations below.
+- **#739** The off-season `/recap` archive is reachable — season resolution, a season
+  select, and season-qualified `?season=YYYY#week-N` deep links.
+- **#751** Recorded the PR merge-gate model as ADR-0038 — the `-result` wrapper-job
+  contract and required-check names as a stable interface.
+
 ## v3.10.0 — 2026-07-22
 
 - **PR #758** Release v3.10.0.
