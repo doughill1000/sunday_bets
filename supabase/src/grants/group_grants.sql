@@ -11,8 +11,9 @@ grant select on public.group_memberships to authenticated;
 grant execute on function public.is_member(uuid) to authenticated, service_role;
 
 -- create_group is the only insert path into groups (RLS blocks direct client
--- inserts). It is SECURITY DEFINER and enforces the create-gate internally.
-grant execute on function public.create_group(text) to authenticated, service_role;
+-- inserts). It is SECURITY DEFINER and enforces the create-gate internally. The optional
+-- second arg is the ADR-0037 competition start (NULL = start this week, from now).
+grant execute on function public.create_group(text, timestamptz) to authenticated, service_role;
 
 -- Commissioner management RPCs (ADR-0006, dec. 4 + 5): SECURITY DEFINER, caller-trust
 -- verified internally; no direct client writes to groups.name or group_memberships.role.
@@ -21,6 +22,13 @@ grant execute on function public.remove_member(uuid, uuid) to authenticated, ser
 grant execute on function public.promote_member(uuid, uuid) to authenticated, service_role;
 grant execute on function public.leave_group(uuid)         to authenticated, service_role;
 grant execute on function public.mint_invite(uuid, integer, timestamptz) to authenticated, service_role;
+
+-- set_competition_start (ADR-0037 ruling 4): commissioner moves when competition begins,
+-- until the first eligible game kicks off. SECURITY DEFINER; commissioner + freeze + no-backdate
+-- guards enforced internally. competition_start_frozen is the shared ruling-4 predicate, also
+-- read by the commissioner console to show or hide the control.
+grant execute on function public.set_competition_start(uuid, timestamptz) to authenticated, service_role;
+grant execute on function public.competition_start_frozen(uuid)           to authenticated, service_role;
 
 -- update_group_config (issue #154): commissioner edits per-group league rules
 -- (grading_preset, scoring_rules.drop_worst_week / drop_worst_week_start_year,

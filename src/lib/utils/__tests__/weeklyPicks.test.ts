@@ -129,6 +129,10 @@ describe('assembleWeeklyBreakdown', () => {
 
     expect(alice.outcome).toBe('missed');
     expect(bob.outcome).toBeNull();
+    // #725: the pre-participation row is flagged so the grid can show a neutral "not in yet"
+    // rather than folding Bob into the "No pick" list.
+    expect(alice.notParticipating).toBe(false);
+    expect(bob.notParticipating).toBe(true);
   });
 
   it('still marks missed for a game at or after the member participation start (#724)', () => {
@@ -142,6 +146,7 @@ describe('assembleWeeklyBreakdown', () => {
 
     const result = assembleWeeklyBreakdown([game], [], [], roster, null);
     expect(result[0].picks[0].outcome).toBe('missed');
+    expect(result[0].picks[0].notParticipating).toBe(false);
   });
 
   it('a graded settlement still wins over the boundary (pre-removal history, ADR-0037 ruling 6)', () => {
@@ -159,6 +164,8 @@ describe('assembleWeeklyBreakdown', () => {
     const result = assembleWeeklyBreakdown([game], [], [settlement], roster, null);
     expect(result[0].picks[0].outcome).toBe('missed');
     expect(result[0].picks[0].pointsDelta).toBe(-1);
+    // A graded row means they did participate — never flagged "not in yet".
+    expect(result[0].picks[0].notParticipating).toBe(false);
   });
 
   it('does not mark missed for no-pick on an in-progress game', () => {

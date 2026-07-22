@@ -52,7 +52,11 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
   // atomically on submit, so this is display-only.
   const { data, error } = await locals.supabase.rpc('preview_invite', { p_code: code });
 
-  const preview = data as { status: string; group_name: string | null } | null;
+  const preview = data as {
+    status: string;
+    group_name: string | null;
+    starts_week_number?: number | null;
+  } | null;
 
   if (error || !preview) {
     return { status: 'invalid' as const, groupName: null, code };
@@ -64,7 +68,13 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
   }
 
   if (preview.status === 'valid') {
-    return { status: 'valid' as const, groupName: preview.group_name ?? null, code };
+    return {
+      status: 'valid' as const,
+      groupName: preview.group_name ?? null,
+      // The week this invitee starts scoring from (ADR-0037); null in the offseason.
+      startsWeekNumber: preview.starts_week_number ?? null,
+      code
+    };
   }
 
   // invalid | revoked | expired | exhausted — the page renders a friendly

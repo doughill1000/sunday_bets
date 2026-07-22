@@ -54,6 +54,34 @@ export function isWithinParticipation(
   return kickoff >= participationStart;
 }
 
+/** One active membership's boundary inputs (ADR-0037): the league's competition start and the
+ *  member's join, both raw ISO columns. */
+export type GroupBoundary = {
+  competitionStartsAt: string | null;
+  joinedAt: string | null;
+};
+
+/**
+ * Should a member be reminded to pick this game (ADR-0037)?
+ *
+ * The pick-reminder fan-out enumerates games × members itself, so — like the Weekly grid — it
+ * must honour the participation boundary rather than nag a member about a game that isn't theirs:
+ * a league created to start a future week should not remind its members about the games before
+ * that start. A game is remindable if it is within participation in *at least one* of the
+ * member's active leagues (a member of both a running and a not-yet-started league is still owed
+ * their running one). With no boundary data supplied (an unusual no-membership caller), it stays
+ * remindable — the pre-ADR behaviour — since silently muting is worse than the status quo.
+ */
+export function isGameRemindable(
+  commenceTime: string | null | undefined,
+  groupBoundaries: GroupBoundary[]
+): boolean {
+  if (groupBoundaries.length === 0) return true;
+  return groupBoundaries.some((b) =>
+    isWithinParticipation(commenceTime, participationStartMs(b.competitionStartsAt, b.joinedAt))
+  );
+}
+
 /**
  * Timestamps arrive as ISO strings with varying offsets and sub-second precision, so they are
  * compared as instants rather than lexically.

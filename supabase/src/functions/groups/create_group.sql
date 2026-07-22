@@ -6,12 +6,23 @@
 -- group_memberships even though those tables block direct client writes; the
 -- trust check is the gate below, keyed on the caller's auth.uid().
 --
+-- p_competition_starts_at (ADR-0037 ruling 5): when competition begins for this league.
+-- NULL means "start this week, from now" — the safe default the column already carries
+-- (games earlier today are already excluded); a non-NULL value lets the creator start a
+-- future week (that week's start_ts). It is clamped UP to now() so a stale or hostile
+-- client can never backdate a brand-new league onto games that have already been played —
+-- the exact boundary defect ADR-0037 exists to prevent. Moving the start later after
+-- creation is the commissioner's job via set_competition_start (ruling 4).
+--
 -- Error codes (surfaced to the caller as PostgrestError.code):
 --   P0001  not authenticated
 --   P0010  group name is required
 --   P0011  group name too long
 --   P0012  group creation not enabled for this account (gated mode)
-create or replace function public.create_group(p_name text)
+create or replace function public.create_group(
+  p_name text,
+  p_competition_starts_at timestamptz default null
+)
 returns uuid
 language plpgsql
 security definer
@@ -23,6 +34,7 @@ declare
   v_mode     text;
   v_capable  boolean;
   v_group_id uuid;
+  v_start    timestamptz;
 begin
   v_user_id := auth.uid();
 
@@ -57,9 +69,13 @@ begin
     end if;
   end if;
 
+  -- Clamp the competition start up to now(): NULL keeps the column default (now()), and a
+  -- provided-but-past value is pulled forward so no already-played game becomes eligible.
+  v_start := greatest(now(), coalesce(p_competition_starts_at, now()));
+
   -- Atomic create: group, then its seeded config, then the creator as commissioner.
-  insert into public.groups (name)
-  values (v_name)
+  insert into public.groups (name, competition_starts_at)
+  values (v_name, v_start)
   returning id into v_group_id;
 
   -- Seed group_config from global settings, reusing the shape established by
@@ -81,4 +97,4 @@ begin
 end;
 $$;
 
-revoke execute on function public.create_group(text) from public, anon;
+revoke execute on function public.create_group(text, timestamptz) from public, anon;

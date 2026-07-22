@@ -2,6 +2,7 @@ import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
 import { canCreateGroup } from '$lib/server/settings';
 import { invalidateAuthContext } from '$lib/server/auth-context-cache';
+import { getUpcomingWeeks } from '$lib/server/db/queries/getUpcomingWeeks';
 
 const MAX_NAME_LENGTH = 60;
 
@@ -24,7 +25,13 @@ function createErrorMessage(code: string | undefined): string {
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) throw redirect(303, '/auth?next=/join');
-  return { canCreate: await canCreateGroup(locals.user.id) };
+  const [canCreate, upcomingWeeks] = await Promise.all([
+    canCreateGroup(locals.user.id),
+    // Options for "start a future week" in the create form (ADR-0037 ruling 5). Only shown
+    // when creation is available; the default is always "start this week, from now".
+    getUpcomingWeeks()
+  ]);
+  return { canCreate, upcomingWeeks };
 };
 
 export const actions: Actions = {
@@ -33,15 +40,31 @@ export const actions: Actions = {
 
     const form = await request.formData();
     const name = String(form.get('name') ?? '').trim();
+    // "" (or absent) = start this week, from now — the safe default (ADR-0037 ruling 5). A
+    // non-empty value is a chosen future week's start_ts; the RPC clamps anything in the past
+    // up to now(), so a stale option can never backdate the new league.
+    const rawStart = String(form.get('competition_start') ?? '').trim();
 
     // Client-side mirror of the RPC validation for a fast, friendly response.
     if (name.length === 0) return fail(400, { error: createErrorMessage('P0010'), name });
     if (name.length > MAX_NAME_LENGTH)
       return fail(400, { error: createErrorMessage('P0011'), name });
 
+    let competitionStart: string | undefined;
+    if (rawStart.length > 0) {
+      const parsed = new Date(rawStart);
+      if (Number.isNaN(parsed.getTime()))
+        return fail(400, { error: 'Pick a valid start week.', name });
+      competitionStart = parsed.toISOString();
+    }
+
     // Call as the user (cookie-scoped client) so auth.uid() resolves inside the
-    // SECURITY DEFINER gate. The RPC enforces the gate authoritatively.
-    const { error } = await locals.supabase.rpc('create_group', { p_name: name });
+    // SECURITY DEFINER gate. The RPC enforces the gate authoritatively. Omitting
+    // p_competition_starts_at lets the column default (now()) apply.
+    const { error } = await locals.supabase.rpc('create_group', {
+      p_name: name,
+      ...(competitionStart ? { p_competition_starts_at: competitionStart } : {})
+    });
     if (error) {
       return fail(error.code === 'P0012' ? 403 : 400, {
         error: createErrorMessage(error.code),

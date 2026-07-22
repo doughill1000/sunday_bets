@@ -58,16 +58,20 @@ export function assembleWeeklyBreakdown(
       const pick = picksByGameUser.get(`${game.id}:${player.id}`);
       const settlement = settlementsByGameUser.get(`${game.id}:${player.id}`);
 
+      const within = isWithinParticipation(game.commence_time, player.participation_start);
+
       let outcome: WeeklyPickRow['outcome'] = null;
       if (settlement) {
         outcome = settlement.outcome;
-      } else if (
-        !pick &&
-        isFinal &&
-        isWithinParticipation(game.commence_time, player.participation_start)
-      ) {
+      } else if (!pick && isFinal && within) {
         outcome = 'missed';
       }
+
+      // Pre-participation (ADR-0037): the game predates this member's boundary and they have
+      // neither a pick nor a graded row, so it was never theirs. Flag it so the grid shows a
+      // neutral "not in yet" instead of folding them into the "No pick" list. A graded
+      // settlement always wins above, so this never overrides real history.
+      const notParticipating = !settlement && !pick && !within;
 
       return {
         userId: player.id,
@@ -78,6 +82,7 @@ export function assembleWeeklyBreakdown(
         pickedTeamShort: pick?.pickedTeamShort ?? null,
         weight: pick?.weight ?? null,
         outcome,
+        notParticipating,
         pointsDelta: settlement?.points_delta ?? null,
         // Frozen-at-lock inputs for the display-only live cover mirror (#584).
         pickedTeamId: pick?.pickedTeamId ?? null,

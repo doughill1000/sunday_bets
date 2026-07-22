@@ -64,6 +64,11 @@ export type WeeklyPickRow = {
   pickedTeamShort: string | null;
   weight: WeightCode | null;
   outcome: GameResult | 'missed' | null;
+  // ADR-0037: this game started before the member's participation began (their join, or their
+  // league's competition start), so it was never theirs to pick. Distinct from a genuine
+  // no-pick — the Weekly grid renders it as a neutral "not in yet", never a miss. A graded
+  // settlement (pre-removal history, ruling 6) always wins, so this is never set alongside one.
+  notParticipating: boolean;
   pointsDelta: number | null;
   // Frozen-at-lock inputs that let the client mirror grade_pick against the live ESPN score
   // for the display-only weekly sweat board (#584). Always come from picks_group_view via

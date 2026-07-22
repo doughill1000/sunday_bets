@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { participationStartMs, isWithinParticipation } from '../participation';
+import { participationStartMs, isWithinParticipation, isGameRemindable } from '../participation';
 
 // ADR-0037 / #724: the TS mirror of public._participation_start, used by the read surfaces
 // that enumerate membership x games themselves instead of reading pick_settlement.
@@ -66,5 +66,41 @@ describe('isWithinParticipation', () => {
 
   it('does not exclude on an unparseable kickoff', () => {
     expect(isWithinParticipation('not-a-date', start)).toBe(true);
+  });
+});
+
+describe('isGameRemindable', () => {
+  const GAME = '2025-09-14T17:00:00Z';
+
+  it('reminds when the member is in no league boundary data (pre-ADR behaviour)', () => {
+    expect(isGameRemindable(GAME, [])).toBe(true);
+  });
+
+  it('reminds when a running league makes the game the member’s to pick', () => {
+    expect(
+      isGameRemindable(GAME, [{ competitionStartsAt: SENTINEL, joinedAt: '2025-09-01T00:00:00Z' }])
+    ).toBe(true);
+  });
+
+  it('does not remind when the only league has not started by this game', () => {
+    expect(
+      isGameRemindable(GAME, [{ competitionStartsAt: '2025-11-01T00:00:00Z', joinedAt: SENTINEL }])
+    ).toBe(false);
+  });
+
+  it('does not remind for a game before the member joined their only league', () => {
+    expect(
+      isGameRemindable(GAME, [{ competitionStartsAt: SENTINEL, joinedAt: '2025-10-01T00:00:00Z' }])
+    ).toBe(false);
+  });
+
+  it('reminds if ANY of the member’s leagues makes the game eligible', () => {
+    // In a not-yet-started league AND a running one — still owed the running one.
+    expect(
+      isGameRemindable(GAME, [
+        { competitionStartsAt: '2025-11-01T00:00:00Z', joinedAt: SENTINEL },
+        { competitionStartsAt: SENTINEL, joinedAt: '2025-09-01T00:00:00Z' }
+      ])
+    ).toBe(true);
   });
 });

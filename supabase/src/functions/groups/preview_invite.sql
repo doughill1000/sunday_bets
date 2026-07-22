@@ -8,6 +8,8 @@ declare
   v_user_id uuid;
   v_invite  public.group_invites%rowtype;
   v_group_name text;
+  v_comp_start timestamptz;
+  v_start_week int;
 begin
   v_user_id := auth.uid();
 
@@ -47,9 +49,26 @@ begin
     return jsonb_build_object('status', 'already_member', 'group_name', null);
   end if;
 
-  select name into v_group_name from public.groups where id = v_invite.group_id;
+  select name, competition_starts_at into v_group_name, v_comp_start
+  from public.groups where id = v_invite.group_id;
 
-  return jsonb_build_object('status', 'valid', 'group_name', v_group_name);
+  -- The week this invitee would start scoring from (ADR-0037): the first game at or after their
+  -- participation start, which for someone joining now is greatest(the league's start, now()).
+  -- Drives the "you're in from Week N" onboarding copy. NULL when no eligible game is scheduled
+  -- yet (offseason) — the UI falls back to generic copy. Advisory only; grading enforces the
+  -- boundary authoritatively.
+  select w.week_number into v_start_week
+  from public.games g
+  join public.weeks w on w.id = g.week_id
+  where g.commence_time >= greatest(v_comp_start, now())
+  order by g.commence_time asc
+  limit 1;
+
+  return jsonb_build_object(
+    'status', 'valid',
+    'group_name', v_group_name,
+    'starts_week_number', v_start_week
+  );
 end;
 $$;
 

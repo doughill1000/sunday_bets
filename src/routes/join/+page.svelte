@@ -12,6 +12,29 @@
   let name = $state(form?.name ?? '');
   let submitting = $state(false);
 
+  // Start-week choice (ADR-0037 ruling 5). Default is "this week, from now" — the safe
+  // default that needs no explicit value. "A future week" is only offered when the schedule
+  // has upcoming weeks to pick from.
+  const upcomingWeeks = $derived(data.upcomingWeeks ?? []);
+  let startMode = $state<'now' | 'future'>('now');
+  let selectedWeekStart = $state('');
+  // Default the picker to the soonest upcoming week once options are known.
+  $effect(() => {
+    if (!selectedWeekStart && upcomingWeeks.length > 0)
+      selectedWeekStart = upcomingWeeks[0].startTs;
+  });
+  // The value posted to the create action: "" = start now; otherwise the chosen week's start_ts.
+  const competitionStart = $derived(startMode === 'future' ? selectedWeekStart : '');
+
+  function weekLabel(week: { weekNumber: number; startTs: string }): string {
+    const when = new Date(week.startTs).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric'
+    });
+    const round = week.weekNumber > 0 ? `Week ${week.weekNumber}` : 'Preseason';
+    return `${round} · starts ${when}`;
+  }
+
   // Paste-to-join: accept either a full invite link or a bare code and route to the
   // /join/[code] flow, which handles validation (valid / invalid / revoked / expired /
   // exhausted / already-member) with friendly copy — so we don't validate here.
@@ -113,6 +136,57 @@
               autocomplete="off"
             />
           </div>
+
+          <!-- Start-week choice (ADR-0037 ruling 5). Only offer "a future week" when the
+               schedule has upcoming weeks; otherwise the only sensible start is now. -->
+          <input type="hidden" name="competition_start" value={competitionStart} />
+          {#if upcomingWeeks.length > 0}
+            <fieldset class="space-y-2">
+              <legend class="text-sm font-medium">When does play start?</legend>
+              <label class="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="start-mode"
+                  value="now"
+                  bind:group={startMode}
+                  class="mt-1 h-4 w-4 border border-input"
+                />
+                <span class="space-y-0.5">
+                  <span class="block text-sm">This week (from now)</span>
+                  <span class="block text-xs text-muted-foreground">
+                    Games already kicked off don't count; picking starts with the next game.
+                  </span>
+                </span>
+              </label>
+              <label class="flex items-start gap-3">
+                <input
+                  type="radio"
+                  name="start-mode"
+                  value="future"
+                  bind:group={startMode}
+                  class="mt-1 h-4 w-4 border border-input"
+                />
+                <span class="space-y-0.5">
+                  <span class="block text-sm">Choose a future week</span>
+                  <span class="block text-xs text-muted-foreground">
+                    Competition begins at the start of the week you pick.
+                  </span>
+                </span>
+              </label>
+
+              {#if startMode === 'future'}
+                <select
+                  aria-label="Start week"
+                  bind:value={selectedWeekStart}
+                  class="ml-7 h-10 w-[calc(100%-1.75rem)] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none sm:w-56"
+                >
+                  {#each upcomingWeeks as week (week.startTs)}
+                    <option value={week.startTs}>{weekLabel(week)}</option>
+                  {/each}
+                </select>
+              {/if}
+            </fieldset>
+          {/if}
 
           {#if form?.error}
             <div class="rounded-xl border border-destructive p-3 text-sm">{form.error}</div>
