@@ -26,10 +26,6 @@ export const queryKeys = {
   // root — deliberately NOT in SHAREABLE_QUERY_ROOTS, so a cold PWA relaunch refetches the
   // current line instead of serving a superseded one from IndexedDB (ADR-0017).
   leagueSlate: (seasonYear: number) => ['league-slate', seasonYear] as const,
-  // Per-team drill-down game log, lazily fetched when a team expands (issue #428). Under the
-  // 'league' root so it shares the shareable/persistable class (public, group-independent).
-  leagueTeam: (teamId: number, seasonYear: number) =>
-    ['league', 'team', teamId, seasonYear] as const,
   // Pooled "Last N seasons" market-cut trends (epic #424). Season-independent — it spans the
   // recent seasons — so it takes no season arg. Under the 'league' root (public, shareable).
   leagueTrends: () => ['league', 'trends'] as const,

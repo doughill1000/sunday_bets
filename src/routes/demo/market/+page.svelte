@@ -1,31 +1,21 @@
 <script lang="ts">
-  // Demo Market (#460, ADR-0026 — extended #669): the real Market surfaces — MarketBends,
-  // the "Slice by" situational cuts, hot/cold streaks, and the sortable team ATS list with its
-  // in-memory home/away/fav/dog splits — reading the frozen `market` payload directly. No
-  // `WeekSlate` (forward-looking, nothing to freeze) and no per-team game-log drill-down (its own
-  // live fetch) — see the server load's comment. Single season, no pooled "Last 5" toggle: the
-  // snapshot carries exactly one season (the live one, #669's stated default).
+  // Demo Market (#460, ADR-0026 — lean form #692): the same three-part story as the real
+  // /market minus the live-only surfaces — MarketBends with its verdict lead, then the team
+  // book with streak chips and the in-memory home/away/fav/dog splits drill-down. No
+  // `WeekSlate` (forward-looking, nothing to freeze — see the server load's comment). The
+  // frozen snapshot carries exactly one season, so the bends read that season's cuts and the
+  // verdict names it (the real page pools the recent seasons).
   import type { PageData } from './$types';
   import type { LeagueTeamAts, AtsRecord } from '$lib/types/server/league';
-  import HotCold from '$lib/components/league/HotCold.svelte';
   import { Button } from '$lib/components/ui/button';
+  import { Badge } from '$lib/components/ui/badge';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import ArrowUp from '@lucide/svelte/icons/arrow-up';
   import ArrowDown from '@lucide/svelte/icons/arrow-down';
   import ArrowUpDown from '@lucide/svelte/icons/arrow-up-down';
-  import SpreadBuckets from '$lib/components/league/SpreadBuckets.svelte';
-  import Primetime from '$lib/components/league/Primetime.svelte';
-  import Divisional from '$lib/components/league/Divisional.svelte';
   import MarketBends from '$lib/components/league/MarketBends.svelte';
-  import ChipRadiogroup from '$lib/components/stats/ChipRadiogroup.svelte';
-  import CoverMeter from '$lib/components/CoverMeter.svelte';
   import { topMarketBends } from '$lib/utils/leagueBends';
-  import {
-    availableLeagueSlices,
-    resolveLeagueSlice,
-    LEAGUE_SLICE_LABEL,
-    type LeagueSlice
-  } from '$lib/utils/leagueSlices';
+  import { formatStreak } from '$lib/utils/leagueStreak';
   import {
     Card,
     CardContent,
@@ -33,44 +23,35 @@
     CardHeader,
     CardTitle
   } from '$lib/components/ui/card';
-  import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow
-  } from '$lib/components/ui/table';
   import { formatAccuracy } from '$lib/utils/stats';
   import { coverPct } from '$lib/utils/leagueAts';
 
   let { data }: { data: PageData } = $props();
   const league = $derived(data.market);
 
-  const trends = $derived({
-    favDog: league.favDogSeason,
-    favDogByWeek: league.favDogByWeek,
-    homeAway: league.homeAway,
-    spreadBuckets: league.spreadBuckets,
-    quadrants: league.quadrants,
-    primetime: league.primetime,
-    divisional: league.divisional
+  const bends = $derived(
+    topMarketBends({
+      spreadBuckets: league.spreadBuckets,
+      quadrants: league.quadrants,
+      primetime: league.primetime,
+      divisional: league.divisional
+    })
+  );
+
+  // Same data-derived verdict shape as the real page (#692), over the snapshot's one season.
+  const verdict = $derived.by(() => {
+    if (bends.length === 0) return null;
+    const maxDevPts = Math.max(...bends.map((b) => Math.abs(b.deviation))) * 100;
+    return `Across ${league.totalGames} games in ${data.seasonYear}, the widest situational bend is ${maxDevPts.toFixed(1)} points off a coin flip.`;
   });
 
-  const favPct = $derived(
-    coverPct({ wins: trends.favDog.favoriteCovers, losses: trends.favDog.underdogCovers })
-  );
-  const dogPct = $derived(
-    coverPct({ wins: trends.favDog.underdogCovers, losses: trends.favDog.favoriteCovers })
-  );
-
-  const bends = $derived(topMarketBends(trends));
-
-  const availableSlices = $derived(availableLeagueSlices(trends));
-  let selectedSlice = $state<LeagueSlice | null>(null);
-  const activeSlice = $derived(resolveLeagueSlice(selectedSlice, availableSlices));
-  const sliceOptions = $derived(
-    availableSlices.map((slice) => ({ value: slice, label: LEAGUE_SLICE_LABEL[slice] }))
+  // Streak chip per team row (Hot & cold folded into the book, #692).
+  const streakByTeam = $derived(
+    new Map(
+      league.streaks
+        .filter((s) => s.streakLength > 0 && s.streakResult !== 'push')
+        .map((s) => [s.teamId, s] as const)
+    )
   );
 
   type SortKey = 'team' | 'cover' | 'record' | 'su';
@@ -179,147 +160,6 @@
   </Button>
 {/snippet}
 
-{#snippet teamsView()}
-  <HotCold streaks={league.streaks} />
-
-  <Card data-testid="demo-market-team-table">
-    <CardHeader>
-      <CardTitle>Team ATS records</CardTitle>
-      <CardDescription>
-        Against-the-spread and straight-up records. Open a team for its home/away and
-        favorite/underdog splits.
-      </CardDescription>
-    </CardHeader>
-    <CardContent class="px-2 text-xs sm:px-6 sm:text-sm">
-      <div class="{rowGrid} border-b px-2 pb-2">
-        {@render sortButton('Team', 'team')}
-        {@render sortButton('ATS', 'record')}
-        {@render sortButton('Cover %', 'cover', 'right')}
-        {@render sortButton('SU', 'su')}
-      </div>
-      <ul class="divide-y">
-        {#each sortedTeams as team (team.teamId)}
-          {@const expanded = expandedTeamId === team.teamId}
-          <li>
-            <button
-              type="button"
-              class="{rowGrid} w-full rounded px-2 py-2.5 text-left hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              aria-expanded={expanded}
-              aria-controls="demo-team-drilldown-{team.teamId}"
-              data-testid="demo-market-team-toggle"
-              onclick={() => toggleTeam(team.teamId)}
-            >
-              <span
-                class="flex items-center gap-1 font-medium whitespace-nowrap"
-                title={team.teamName}
-              >
-                <ChevronRight
-                  class="size-3 shrink-0 transition-transform {expanded ? 'rotate-90' : ''}"
-                  aria-hidden="true"
-                />
-                {team.teamShortName}
-              </span>
-              <span>{@render wlp(team.ats)}</span>
-              <span class="text-right">{formatAccuracy(coverPct(team.ats))}</span>
-              <span>{@render wlp(team.su)}</span>
-            </button>
-            {#if expanded}
-              <div
-                id="demo-team-drilldown-{team.teamId}"
-                data-testid="demo-market-team-drilldown"
-                class="mb-2 space-y-4 rounded-lg bg-muted/30 px-3 py-4"
-              >
-                {@render teamSplits(team)}
-              </div>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-    </CardContent>
-  </Card>
-{/snippet}
-
-{#snippet favoritesPanel()}
-  <Card data-testid="league-fav-dog">
-    <CardHeader>
-      <CardTitle>Favorites vs. underdogs</CardTitle>
-      <CardDescription>How often the spread favorite covers, NFL-wide.</CardDescription>
-    </CardHeader>
-    <CardContent class="space-y-6">
-      <div class="sm:max-w-md">
-        <dl class="grid grid-cols-2 gap-4">
-          <div>
-            <dt class="text-xs font-medium text-muted-foreground">Favorites cover</dt>
-            <dd class="text-3xl font-bold">{formatAccuracy(favPct)}</dd>
-            <p class="text-xs text-muted-foreground">{trends.favDog.favoriteCovers} covers</p>
-          </div>
-          <div>
-            <dt class="text-xs font-medium text-muted-foreground">Underdogs cover</dt>
-            <dd class="text-3xl font-bold">{formatAccuracy(dogPct)}</dd>
-            <p class="text-xs text-muted-foreground">{trends.favDog.underdogCovers} covers</p>
-          </div>
-        </dl>
-        <CoverMeter pct={favPct} class="mt-4" />
-        <p class="mt-1.5 text-xs text-muted-foreground">
-          Bar is the favorite cover rate; the tick marks a 50/50 coin flip.
-        </p>
-      </div>
-
-      {#if trends.favDogByWeek.length > 0}
-        <div class="overflow-x-auto">
-          <Table class="text-xs sm:text-sm">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Week</TableHead>
-                <TableHead class="text-right">Games</TableHead>
-                <TableHead class="text-right">Fav cover</TableHead>
-                <TableHead class="text-right">Dog cover</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each trends.favDogByWeek as wk (wk.weekNumber)}
-                <TableRow>
-                  <TableCell class="font-medium">Week {wk.weekNumber}</TableCell>
-                  <TableCell class="text-right tabular-nums">{wk.games}</TableCell>
-                  <TableCell class="text-right"
-                    >{formatAccuracy(
-                      coverPct({ wins: wk.favoriteCovers, losses: wk.underdogCovers })
-                    )}</TableCell
-                  >
-                  <TableCell class="text-right"
-                    >{formatAccuracy(
-                      coverPct({ wins: wk.underdogCovers, losses: wk.favoriteCovers })
-                    )}</TableCell
-                  >
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-        </div>
-      {/if}
-    </CardContent>
-  </Card>
-{/snippet}
-
-{#snippet situationalDetail()}
-  <div
-    id="demo-league-slice-panel"
-    role="region"
-    aria-labelledby="demo-league-slice-tab-{activeSlice}"
-    data-testid="demo-league-slice-panel"
-  >
-    {#if activeSlice === 'favorites'}
-      {@render favoritesPanel()}
-    {:else if activeSlice === 'spread'}
-      <SpreadBuckets buckets={trends.spreadBuckets} />
-    {:else if activeSlice === 'primetime'}
-      <Primetime slots={trends.primetime} />
-    {:else if activeSlice === 'divisional'}
-      <Divisional splits={trends.divisional} />
-    {/if}
-  </div>
-{/snippet}
-
 <svelte:head>
   <title>Market | Hotshot Demo</title>
 </svelte:head>
@@ -338,37 +178,80 @@
     </p>
   </div>
 
-  <MarketBends {bends} />
+  <MarketBends {bends} {verdict} />
 
-  <div class="space-y-4">
-    <div class="space-y-2">
-      <span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Slice by</span
-      >
-      <ChipRadiogroup
-        options={sliceOptions}
-        value={activeSlice}
-        ariaLabel="Slice by"
-        idPrefix="demo-league-slice-tab"
-        testid="demo-league-slice-chip"
-        onchange={(value) => (selectedSlice = value as LeagueSlice)}
-      />
-    </div>
-
-    {#if league.totalGames === 0}
-      <Card class="border-dashed">
-        <CardHeader>
-          <CardTitle>No graded games for {data.seasonYear} yet</CardTitle>
-        </CardHeader>
-      </Card>
-    {:else if activeSlice === 'teams'}
-      <p class="text-sm text-muted-foreground">
-        Descriptive records against the closing spread, based on
-        <span class="font-medium text-foreground">{league.totalGames}</span>
-        scored {league.totalGames === 1 ? 'game' : 'games'} in {data.seasonYear}.
-      </p>
-      {@render teamsView()}
-    {:else}
-      {@render situationalDetail()}
-    {/if}
-  </div>
+  {#if league.totalGames === 0}
+    <Card class="border-dashed">
+      <CardHeader>
+        <CardTitle>No graded games for {data.seasonYear} yet</CardTitle>
+      </CardHeader>
+    </Card>
+  {:else}
+    <Card data-testid="demo-market-team-table">
+      <CardHeader>
+        <CardTitle>Team ATS records</CardTitle>
+        <CardDescription>
+          {data.seasonYear} · descriptive records against the closing spread, based on
+          <span class="font-medium text-foreground">{league.totalGames}</span>
+          scored {league.totalGames === 1 ? 'game' : 'games'} with a line. Open a team for its home/away
+          and favorite/underdog splits.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="px-2 text-xs sm:px-6 sm:text-sm">
+        <div class="{rowGrid} border-b px-2 pb-2">
+          {@render sortButton('Team', 'team')}
+          {@render sortButton('ATS', 'record')}
+          {@render sortButton('Cover %', 'cover', 'right')}
+          {@render sortButton('SU', 'su')}
+        </div>
+        <ul class="divide-y">
+          {#each sortedTeams as team (team.teamId)}
+            {@const expanded = expandedTeamId === team.teamId}
+            {@const streak = streakByTeam.get(team.teamId)}
+            <li>
+              <button
+                type="button"
+                class="{rowGrid} w-full rounded px-2 py-2.5 text-left hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                aria-expanded={expanded}
+                aria-controls="demo-team-drilldown-{team.teamId}"
+                data-testid="demo-market-team-toggle"
+                onclick={() => toggleTeam(team.teamId)}
+              >
+                <span
+                  class="flex items-center gap-1.5 font-medium whitespace-nowrap"
+                  title={team.teamName}
+                >
+                  <ChevronRight
+                    class="size-3 shrink-0 transition-transform {expanded ? 'rotate-90' : ''}"
+                    aria-hidden="true"
+                  />
+                  {team.teamShortName}
+                  {#if streak}
+                    <Badge
+                      variant={streak.streakResult === 'win' ? 'success' : 'destructive'}
+                      class="px-1 py-0 text-[10px] tabular-nums"
+                    >
+                      {formatStreak(streak)}
+                    </Badge>
+                  {/if}
+                </span>
+                <span>{@render wlp(team.ats)}</span>
+                <span class="text-right">{formatAccuracy(coverPct(team.ats))}</span>
+                <span>{@render wlp(team.su)}</span>
+              </button>
+              {#if expanded}
+                <div
+                  id="demo-team-drilldown-{team.teamId}"
+                  data-testid="demo-market-team-drilldown"
+                  class="mb-2 rounded-lg bg-muted/30 px-3 py-4"
+                >
+                  {@render teamSplits(team)}
+                </div>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      </CardContent>
+    </Card>
+  {/if}
 </section>

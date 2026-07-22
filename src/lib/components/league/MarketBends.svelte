@@ -1,11 +1,11 @@
 <script lang="ts">
-  // "Where the market bends" synthesis chart (issue #517) — the lead view of the /league Trends
-  // tab. A diverging bar per situational cut showing how far its *favorite* cover rate bends
-  // from a 50/50 coin flip: gold bars grow right when favorites cover, sky bars grow left when
-  // underdogs do. The whole story of the six situational cards in one glance, before the reader
-  // drills into any one cut via the chips below. Ranking + cover math live in the pure
-  // `topMarketBends` transform; this component only draws the rows. Honest by construction: the
-  // bars stay small because the market is efficient, and each row keeps its n= sample size.
+  // "Where the market bends" synthesis chart (issue #517; promoted to /market's single
+  // situational surface by #692). A diverging bar per situational cut showing how far its
+  // *favorite* cover rate bends from a 50/50 coin flip: gold bars grow right when favorites
+  // cover, sky bars grow left when underdogs do. Every retired drill-in slice keeps exactly one
+  // row here. Ranking + cover math live in the pure `topMarketBends` transform; this component
+  // only draws the rows. Honest by construction: the bars stay small because the market is
+  // efficient, and each row keeps its n= sample size.
   import type { MarketBend } from '$lib/utils/leagueBends';
   import {
     Card,
@@ -15,7 +15,15 @@
     CardTitle
   } from '$lib/components/ui/card';
 
-  let { bends }: { bends: MarketBend[] } = $props();
+  interface Props {
+    bends: MarketBend[];
+    /** Optional verdict lead (#692): a data-derived sentence rendered in place of the default
+     *  description — the honest takeaway the bars then prove. */
+    verdict?: string | null;
+    /** Optional provenance footnote (#692), e.g. the pooled window + imported-line caveat. */
+    footnote?: string | null;
+  }
+  let { bends, verdict = null, footnote = null }: Props = $props();
 
   // Fixed, honest scale: 10 percentage points of deviation fills half the track (its edge), so
   // a 1-point bend is a 1-point-sized bar — small deviations look small, never auto-stretched to
@@ -32,9 +40,13 @@
   <Card data-testid="league-market-bends">
     <CardHeader>
       <CardTitle>Where the market bends</CardTitle>
-      <CardDescription>
-        Favorite cover rate vs a 50/50 coin flip. Small by design — the line is efficient.
-      </CardDescription>
+      {#if verdict}
+        <CardDescription class="text-foreground">{verdict}</CardDescription>
+      {:else}
+        <CardDescription>
+          Favorite cover rate vs a 50/50 coin flip. Small by design — the line is efficient.
+        </CardDescription>
+      {/if}
     </CardHeader>
     <CardContent class="space-y-3">
       <ul class="space-y-1.5">
@@ -91,6 +103,10 @@
           <span class="size-2 rounded-[2px] bg-primary" aria-hidden="true"></span> Favs cover
         </span>
       </div>
+
+      {#if footnote}
+        <p class="text-xs text-muted-foreground">{footnote}</p>
+      {/if}
     </CardContent>
   </Card>
 {/if}

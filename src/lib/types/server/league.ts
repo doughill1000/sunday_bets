@@ -86,29 +86,6 @@ export type LeagueTeamStreak = {
   last4: AtsRecord;
 };
 
-/** One graded game in a team's season log for the drill-down (issue #428), from the team's
- *  own perspective in league_ats_base. `spreadValue` and `margin` are team-relative
- *  (negative spread = this team favored; margin > 0 = this team covered, = 0 push). */
-export type LeagueTeamGameLogEntry = {
-  weekNumber: number;
-  opponentTeamId: number;
-  /** true = this team hosted; false = it was on the road. */
-  isHome: boolean;
-  /** Team-relative closing/active spread: negative = favored, positive = underdog, 0 = pick'em. */
-  spreadValue: number;
-  /** Team-relative cover margin in points: > 0 covered by that many, = 0 push, < 0 did not. */
-  margin: number;
-  atsResult: 'win' | 'loss' | 'push';
-};
-
-/** A single team's season-long ATS game log (issue #428). Lazily fetched per team when the
- *  drill-down opens; group- and user-independent like the rest of the /league surface. */
-export type LeagueTeamGameLog = {
-  teamId: number;
-  seasonYear: number;
-  games: LeagueTeamGameLogEntry[];
-};
-
 /** Favorite ATS cover counts for one spread-size bucket over a season (issue #426). Buckets
  *  partition games by the absolute team-relative spread: pick'em (0), 1-3, 3.5-6.5, 7-9.5,
  *  10+. `favoriteCovers` / `underdogCovers` are the favorite's ATS wins / losses (cover % is
@@ -226,10 +203,13 @@ export type LeagueSlateSide = {
 };
 
 /** One upcoming game on the forward-looking slate (issue #429): the matchup, its kickoff,
- *  and each side's matching situational split. `gameId` deep-links to `/picks#game-<id>`. */
+ *  and each side's matching situational split. `gameId` deep-links to `/picks#game-<id>`.
+ *  `isDivisional` marks a same-conference-and-division matchup (#692 — the one conversational
+ *  tag folded into the slate from the retired Divisional slice). */
 export type LeagueSlateGame = {
   gameId: string;
   kickoff: string;
+  isDivisional: boolean;
   away: LeagueSlateSide;
   home: LeagueSlateSide;
 };
