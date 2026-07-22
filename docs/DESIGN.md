@@ -289,6 +289,20 @@ listed here, that is the signal to run a `design-study` and add it. As each patt
 touched, promote its row to the full anatomy below — the chip radiogroup is the worked
 template.
 
+Two named rules govern season-scoped surfaces (adopted from the 2026-07-21 IA review,
+first applied by #737 on `/league`):
+
+- **Default to the last graded thing.** A temporal control's bare-visit default is the
+  most recent thing that actually graded — never the calendar season (which Schedule Sync
+  seeds months early, yielding empty screens) and never a silent flip to a career/all-time
+  scope (which hides the season's content). Offseason, that means the concluded season,
+  pinned honestly ("Last season · YYYY", never "This season"); other windows are explicit,
+  URL-addressable choices.
+- **A crowned season leads with its crown.** Block order is keyed on the _viewed_ season's
+  data-state, not the calendar: a concluded season opens on its honors, an in-progress one
+  on the live standings — so the same season's page renders identically in July and
+  November, and the archive tier (story charts, the race) always trails the answers.
+
 **The second consumer triggers extraction.** "Seen in" is a starting point, not a licence
 to copy markup: as soon as a second surface needs a pattern, extract it into a shared
 component under `src/lib/components/` and update its row here to name the import. The

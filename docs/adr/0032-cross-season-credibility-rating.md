@@ -8,6 +8,8 @@
   conviction-**flat**, pick-time cover-rate, superseding the closing-line basis (§1),
   conviction weighting (§2), the soft season reset (§4), and the sequential fold (§8).
   See [Amendment history](#amendment-history).
+- **Amended 2026-07-22 (surfacing note, #737)** — the /league ladder now renders in both
+  Standings scopes; §9 semantics untouched. See [Amendment history](#amendment-history).
 
 ## Context
 
@@ -194,11 +196,11 @@ ladder" on `/league` is a **Wave-2 follow-up**, out of this ADR and issue.
   on #361) giving long-tenured players a public thing to defend.~~ **Shipped** as #637
   (PR #644): the all-time ladder renders on `/league`'s Standings tab. Note that at ship
   time it was gated to the All-time scope only; the 2026-07-21 IA review
-  (`docs/audits/2026-07-21-ia-review.md`, Rule 3) directs hoisting it to **always-on** in
-  both scopes with mandatory grain copy, and adds a career-rating chip to the `/stats`
-  season hero so the rating is default-visible year-round — tracked as #737 / #738. The
-  §9 ban on conflating the rating with standings points (never a standings-table column)
-  is unchanged by that move and still binds.
+  (`docs/audits/2026-07-21-ia-review.md`, Rule 3) directed hoisting it to **always-on**
+  in both scopes with mandatory grain copy — **shipped** as #737 (see the 2026-07-22
+  amendment note). The `/stats` season-hero career-rating chip remains tracked as #738.
+  The §9 ban on conflating the rating with standings points (never a standings-table
+  column) is unchanged by that move and still binds.
 - Totals-market inclusion when ADR-0022 ships; AI narration of the rating stays with #283
   and remains voice-only (ADR-0008) — it may describe the number, never decide it.
 - Design study (surfacing):
@@ -272,3 +274,14 @@ unchanged (Square < 1500 ≤ Solid < 1508 ≤ Sharp < 1520 ≤ Hotshot); only th
 `/stats` Career band gives Hotshot a distinct pill (brass fill + ink ring + ★) one step
 louder than Sharp. Labels remain tunable constants in `src/lib/domain/rating.ts`, not
 ADR-frozen.
+
+### 2026-07-22 — surfacing note: the /league ladder renders in both scopes (#737)
+
+Presentation only; no semantic change. The `/league` credibility ladder — built by #637
+under the All-time window alone — now renders beneath the standings table in **every**
+Standings scope, so the room (standings) and the market (rating) sit on one screen without
+a scope flip. The §9 boundaries still bind and are what the implementation carries: the
+ladder stays a **sibling card, never a standings-table column**; its copy states the
+career/market grain ("Career rating — the market, not points") in both scopes; and the
+season-delta arrow — which narrates the _latest_ settled season — is suppressed when an
+older season is in view, so the arrow can never sit beside a table it doesn't describe.

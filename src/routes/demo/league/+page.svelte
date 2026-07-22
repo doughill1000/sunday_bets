@@ -1,17 +1,17 @@
 <script lang="ts">
   // Demo League (#460, ADR-0026 — extended #669): mirrors the real /league IA exactly — same
-  // two self-contained tabs (Standings, Week), same season/All-time select, the credibility
-  // ladder under All-time (#637), and weekly hardware on Week — reading the frozen snapshot
-  // instead of live queries. The demo only ever has one completed season, so the select is a
-  // plain two-option toggle rather than the real page's multi-season `seasonScopeOptions` (no
-  // past seasons to list, and no `?season=` navigation — there's nothing else to navigate to).
+  // two self-contained tabs (Standings, Week), same season/All-time select, honors + the
+  // credibility ladder co-visible under the season window (#737: the demo's one season has
+  // concluded, so honors lead, then the table, then the ladder), and weekly hardware on Week —
+  // reading the frozen snapshot instead of live queries. The demo only ever has one completed
+  // season, so the select is a plain "Last season"/All-time toggle rather than the real page's
+  // multi-season `seasonScopeOptions` (no past seasons to list, and no `?season=` navigation).
   import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
-  import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
@@ -53,16 +53,9 @@
     <p class="mt-1 text-muted-foreground">{subtitle}</p>
   </div>
 
-  {#if data.hasWrapped}
-    <WrappedPromo
-      groupId={data.groupId}
-      seasonYear={data.completedSeasonYear}
-      href="/demo/wrapped"
-    />
-  {/if}
-
   <!-- Reigning-champion banner (#727): mirrors the real /league placement above the tabs, so
-       the demo shows it for free as a shared component (ADR-0026 parity). -->
+       the demo shows it for free as a shared component (ADR-0026 parity). WrappedPromo is
+       retired here as on the real page (#737) — the honors card's Wrapped link is the door. -->
   {#if data.honors.honors.reigningChampion}
     <ReigningChampionBanner
       reigningChampion={data.honors.honors.reigningChampion}
@@ -98,50 +91,52 @@
           aria-labelledby="demo-league-scope-label"
           data-testid="demo-league-scope"
         >
-          <option value={String(data.completedSeasonYear)}>{data.completedSeasonYear} season</option
-          >
+          <!-- The demo's one season has concluded, so it takes the "Last season" pin (#737) —
+               never "This season" for a finished year. -->
+          <option value={String(data.completedSeasonYear)}>
+            Last season · {data.completedSeasonYear}
+          </option>
           <option value="alltime">All-time</option>
         </select>
       </div>
 
-      <div class="mt-4">
+      <!-- Block order mirrors the real page (#737): the demo's season has concluded, so the
+           crowned season leads with its crown — honors → table — and the career-grain ladder
+           renders beneath the table in BOTH scopes rather than only under All-time. -->
+      <div class="mt-4 space-y-6">
         {#if scope === 'alltime'}
-          <div class="space-y-6">
-            <StandingsTable
-              rows={data.allTime.totals}
-              title="All-time standings"
-              currentUserId={data.persona.userId}
-              showDropFootnote={data.allTime.dropActive}
-              dropCopy="Total drops each player's lowest week per season. W-L-P count every week."
-              tableTestid="demo-alltime-table"
-            />
-            <!-- Nobody qualified is a legitimate state (ADR-0032 §5) — render nothing rather
-                 than a card of dashes, mirroring the real /league All-time branch. -->
-            {#if hasRatedMember(data.allTime.ladder)}
-              <RatingLadder rows={data.allTime.ladder} currentUserId={data.persona.userId} />
-            {/if}
-          </div>
+          <StandingsTable
+            rows={data.allTime.totals}
+            title="All-time standings"
+            currentUserId={data.persona.userId}
+            showDropFootnote={data.allTime.dropActive}
+            dropCopy="Total drops each player's lowest week per season. W-L-P count every week."
+            tableTestid="demo-alltime-table"
+          />
         {:else}
-          <div class="space-y-6">
-            <StandingsTable
-              rows={data.leaderboard.totals}
-              title="{data.completedSeasonYear} standings"
-              currentUserId={data.persona.userId}
-              showDropFootnote={data.leaderboard.dropActive}
-              dropCopy="Total drops each player's lowest week. W-L-P count every week."
-              tableTestid="demo-standings-table"
-              champion={data.leaderboard.championUserId}
-            />
-            <LeagueHonors
-              honors={data.honors.honors}
-              badges={data.honors.badges}
-              members={data.honors.members}
-              currentUserId={data.persona.userId}
-              selectedSeason={data.completedSeasonYear}
-              wrappedHref="/demo/wrapped"
-              recapsHref="/demo/recap"
-            />
-          </div>
+          <LeagueHonors
+            honors={data.honors.honors}
+            badges={data.honors.badges}
+            members={data.honors.members}
+            currentUserId={data.persona.userId}
+            selectedSeason={data.completedSeasonYear}
+            wrappedHref="/demo/wrapped"
+            recapsHref="/demo/recap"
+          />
+          <StandingsTable
+            rows={data.leaderboard.totals}
+            title="{data.completedSeasonYear} standings"
+            currentUserId={data.persona.userId}
+            showDropFootnote={data.leaderboard.dropActive}
+            dropCopy="Total drops each player's lowest week. W-L-P count every week."
+            tableTestid="demo-standings-table"
+            champion={data.leaderboard.championUserId}
+          />
+        {/if}
+        <!-- Nobody qualified is a legitimate state (ADR-0032 §5) — render nothing rather
+             than a card of dashes, mirroring the real /league ladder gate. -->
+        {#if hasRatedMember(data.allTime.ladder)}
+          <RatingLadder rows={data.allTime.ladder} currentUserId={data.persona.userId} />
         {/if}
       </div>
     </TabsContent>

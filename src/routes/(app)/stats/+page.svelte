@@ -430,8 +430,16 @@
           <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
         {/if}
         <option value="career">Career</option>
-        {#if scopeOptions.pastSeasons.length > 0}
+        {#if scopeOptions.lastCompleted !== null || scopeOptions.pastSeasons.length > 0}
           <optgroup label="Past seasons">
+            <!-- #737 split the last completed season out of `pastSeasons` so /league can pin
+                 it; here it renders back at the top of the list, unchanged. The /stats pin +
+                 default is the follow-up issue's job — this keeps the control identical. -->
+            {#if scopeOptions.lastCompleted !== null}
+              <option value={String(scopeOptions.lastCompleted)}>
+                {scopeOptions.lastCompleted}
+              </option>
+            {/if}
             {#each scopeOptions.pastSeasons as year (year)}
               <option value={String(year)}>{year}</option>
             {/each}

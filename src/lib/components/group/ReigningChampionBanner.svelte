@@ -27,8 +27,8 @@
   );
 </script>
 
-<!-- Gold = identity, distinct from WrappedPromo's ember = action, so the two never read as one
-     control when they stack above the tabs (decided in #727). -->
+<!-- Gold = identity (decided in #727, when this stacked under WrappedPromo's ember = action;
+     #737 retired the promo, leaving this the one banner above the tabs). -->
 <a
   href={wrappedHref}
   data-testid="reigning-champion-banner"

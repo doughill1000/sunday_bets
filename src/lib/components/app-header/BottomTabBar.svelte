@@ -11,8 +11,8 @@
   // called "League": League = the user's own group, Market = the NFL side, so the word never
   // collides (it was "Teams", which named only one of the tab's six slices). Wrapped is a seasonal
   // moment, not a year-round destination — it has no content until a season finalises, so rather
-  // than burn a permanent tab it is surfaced via the League home CTA (WrappedPromo) and the honors
-  // card's Wrapped link when one exists.
+  // than burn a permanent tab it is surfaced via the League honors card's Wrapped link when one
+  // exists (#737 retired the separate WrappedPromo CTA).
   const tabs = [
     { href: '/picks', label: 'Picks', Icon: ListChecks },
     { href: '/league', label: 'League', Icon: Trophy },

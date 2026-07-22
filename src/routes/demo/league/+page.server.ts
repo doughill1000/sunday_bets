@@ -13,7 +13,6 @@ export const load: PageServerLoad = () => {
     leaderboard: snapshot.leaderboard,
     allTime: snapshot.allTime,
     honors: snapshot.honors,
-    weeklyAwards: snapshot.weeklyAwards,
-    hasWrapped: snapshot.wrapped.player != null || snapshot.wrapped.league != null
+    weeklyAwards: snapshot.weeklyAwards
   };
 };

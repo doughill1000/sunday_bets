@@ -104,24 +104,30 @@ export function formatAccuracy(accuracy: number | null): string {
   return accuracy == null ? '--' : `${Math.round(accuracy * 100)}%`;
 }
 
-// ── /stats scope selector (issue #518, #638) ──────────────────────────────────
+// ── /stats + /league scope selector (issue #518, #638, #737) ──────────────────
 // The Season/Career tab is gone: scope folds into one dropdown that pins the newest
-// season ("This season") and Career, then lists older seasons newest-first. This derives
-// that option model from the seasons that actually have data, so the control scales as
-// years accumulate. Pure, so the ordering/scaling is unit-tested without a DOM.
+// season ("This season") and Career/All-time, then lists older seasons newest-first. This
+// derives that option model from the seasons that actually have data, so the control
+// scales as years accumulate. Pure, so the ordering/scaling is unit-tested without a DOM.
 //
 // The newest season only earns the "This season" pin while it's actually in progress
 // (`latestInProgress`, from `isSeasonInProgress` — a real weeks-based signal, not just
-// "has the most recent standings"). Once its scoring weeks have all concluded, it folds
-// into `pastSeasons` like any other year instead of misleadingly still reading "This
-// season" during the off-season (#638).
+// "has the most recent standings"). Once its scoring weeks have all concluded, it becomes
+// the "Last season · YYYY" pin instead (#737) — still what a bare visit defaults to (the
+// last graded season IS the league's content for the whole offseason), but never
+// misleadingly labelled "This season" (#638). It is deduped out of `pastSeasons`, so a
+// season appears exactly once in the control.
 
 export type SeasonScopeOptions = {
   /** Newest season with data, while still in progress — the pinned "This season" option;
    *  null when there is none (no seasons at all, or the newest one has concluded). */
   latest: number | null;
-  /** Every other season, newest-first, listed beneath "This season" and "Career". Includes
-   *  the newest season too when it is no longer in progress. */
+  /** Newest season with data once no season is in progress — the pinned
+   *  "Last season · YYYY" option (#737); null while a season is in progress (that year
+   *  is `latest` instead) or when there are no seasons at all. */
+  lastCompleted: number | null;
+  /** Every other season, newest-first, listed beneath the pins. Never contains a pinned
+   *  year — exactly one of `latest`/`lastCompleted` owns it. */
   pastSeasons: number[];
 };
 
@@ -130,10 +136,10 @@ export function seasonScopeOptions(
   latestInProgress: boolean
 ): SeasonScopeOptions {
   const desc = [...new Set(availableSeasons)].sort((a, b) => b - a);
-  if (desc.length === 0) return { latest: null, pastSeasons: [] };
+  if (desc.length === 0) return { latest: null, lastCompleted: null, pastSeasons: [] };
   return latestInProgress
-    ? { latest: desc[0], pastSeasons: desc.slice(1) }
-    : { latest: null, pastSeasons: desc };
+    ? { latest: desc[0], lastCompleted: null, pastSeasons: desc.slice(1) }
+    : { latest: null, lastCompleted: desc[0], pastSeasons: desc.slice(1) };
 }
 
 // ── Personal tendency tiles (issue #502) ──────────────────────────────────────

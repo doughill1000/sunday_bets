@@ -3,8 +3,8 @@
   // first-class tabs (Picks · League · Stats · Market, #561/#669) + a persistent sign-up CTA.
   // Replaces the authenticated AppHeader for the /demo route group. Wrapped and Recap are no
   // longer permanent tabs here either — same as the real app, they're reached from within
-  // League (WrappedPromo, the honors card's Wrapped/recap links, WeeklyHardware's recap link),
-  // never a fifth door on the nav.
+  // League (the honors card's Wrapped/recap links, WeeklyHardware's recap link), never a
+  // fifth door on the nav.
   import { page } from '$app/state';
   import DemoSignupCta from './DemoSignupCta.svelte';
 
