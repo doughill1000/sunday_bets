@@ -4,30 +4,39 @@ import { leaderboardPage } from './helpers/leaderboard-page';
 // Selectors live in the leaderboardPage page object (helpers/leaderboard-page.ts)
 // and key off data-testid anchors, so tab/column copy changes don't ripple here.
 
-test('leaderboard renders Standings and Week tabs', { tag: '@smoke' }, async ({ page }) => {
-  const lb = leaderboardPage(page);
-  await lb.goto();
+test(
+  'leaderboard renders Standings, Honors, and Week tabs',
+  { tag: '@smoke' },
+  async ({ page }) => {
+    const lb = leaderboardPage(page);
+    await lb.goto();
 
-  // Exactly two tabs, labelled "Standings" and "Week" (#631 renamed Weekly → Week: it shows one
-  // selected week, not a trend). Copy is asserted here — and only here — because the tab labels
-  // ARE the IA claim; every other locator keys off a testid.
-  await expect(lb.standingsTab()).toBeVisible();
-  await expect(lb.weeklyTab()).toBeVisible();
-  await expect(lb.standingsTab()).toHaveText('Standings');
-  await expect(lb.weeklyTab()).toHaveText('Week');
+    // Exactly three tabs, labelled "Standings", "Honors" (#741 — the trophy room), and "Week"
+    // (#631 renamed Weekly → Week: it shows one selected week, not a trend). Copy is asserted
+    // here — and only here — because the tab labels ARE the IA claim; every other locator keys
+    // off a testid.
+    await expect(lb.standingsTab()).toBeVisible();
+    await expect(lb.honorsTab()).toBeVisible();
+    await expect(lb.weeklyTab()).toBeVisible();
+    await expect(lb.standingsTab()).toHaveText('Standings');
+    await expect(lb.honorsTab()).toHaveText('Honors');
+    await expect(lb.weeklyTab()).toHaveText('Week');
 
-  // Standings is the default tab: the results table or the empty state renders.
-  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
+    // Standings is the default tab — year-round, per #741's binding condition (Honors is one
+    // tap away, never a computed default): the results table or the empty state renders.
+    await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
 
-  // Switching to Week loads the weekly breakdown (handles the async navigation).
-  await lb.openWeekly();
-  await expect(lb.weeklyBreakdown()).toBeVisible();
-});
+    // Switching to Week loads the weekly breakdown (handles the async navigation).
+    await lb.openWeekly();
+    await expect(lb.weeklyBreakdown()).toBeVisible();
+  }
+);
 
 test('each tab owns exactly one context control, contained in its own panel', async ({ page }) => {
-  // #631's core claim: the tab you're on governs what's on screen. Before it, the season
-  // selector and honors rendered OUTSIDE </Tabs>, so both showed under both tabs — and the
-  // global bar offered All-time above Week, which has no all-time view and bounced you back.
+  // #631's core claim, extended to three tabs by #741: the tab you're on governs what's on
+  // screen. Before #631, the season selector and honors rendered OUTSIDE </Tabs>, so both
+  // showed under both tabs — and the global bar offered All-time above Week, which has no
+  // all-time view and bounced you back.
   const lb = leaderboardPage(page);
   await lb.goto();
 
@@ -36,16 +45,50 @@ test('each tab owns exactly one context control, contained in its own panel', as
   await expect(lb.scopeSelect()).toBeVisible();
   await expect(lb.scopeSelect()).toHaveCount(1);
   await expect(lb.weekNavigator()).toBeHidden();
+  await expect(lb.honorsSeasonSelect()).toBeHidden();
 
-  // Week owns the week picker, and the season/All-time select is gone with the panel it lives
-  // in — so All-time is now unreachable from Week rather than reachable-then-rescinded.
+  // Honors owns its own season select (no All-time pin — honors are season-grain), and the
+  // other tabs' controls are gone with their panels. The champion card is the panel's
+  // deterministic anchor: it renders its "not decided yet" zero-state even on the e2e
+  // fixture, which never grades a week (#741's designed empty state).
+  await lb.openHonors();
+  await expect(lb.honorsSeasonSelect()).toBeVisible();
+  await expect(lb.honorsSeasonSelect()).toHaveCount(1);
+  await expect(lb.scopeSelect()).toBeHidden();
+  await expect(lb.weekNavigator()).toBeHidden();
+
+  // Week owns the week picker, and the other selects are gone with their panels — so
+  // All-time is unreachable from Week rather than reachable-then-rescinded.
   await lb.openWeekly();
   await expect(lb.weekNavigator()).toBeVisible();
   await expect(lb.scopeSelect()).toBeHidden();
-  // Honors is Standings-only. (The e2e fixture never grades a week, so honors has nothing to
-  // render either way — the load-bearing containment check is the selector above; honors under
-  // a graded season is covered by the demo-seeded manual pass.)
+  await expect(lb.honorsSeasonSelect()).toBeHidden();
+  // The honors case lives on the Honors tab only (#741). (The e2e fixture never grades a
+  // week, so the card has nothing to render either way — the load-bearing containment checks
+  // are the selectors above; honors under a graded season is covered by the demo-seeded
+  // manual pass.)
   await expect(lb.honors()).toBeHidden();
+  await expect(lb.championCard()).toBeHidden();
+});
+
+test('the trophy room is a client flip with a shareable URL', async ({ page }) => {
+  // #741: Honors needs no navigation (its payloads ride the shareable client caches), but the
+  // tab is still mirrored into the URL — `?view=honors` deep-links straight into the room,
+  // and leaving the room clears the param again.
+  const lb = leaderboardPage(page);
+  await lb.goto();
+
+  await lb.openHonors();
+  await expect(page).toHaveURL(/[?&]view=honors/);
+
+  await lb.standingsTab().click();
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
+  await expect(page).not.toHaveURL(/[?&]view=/);
+
+  // The deep link server-renders the room directly.
+  await page.goto('/league?view=honors');
+  await expect(lb.championCard()).toBeVisible();
+  await expect(lb.honorsSeasonSelect()).toBeVisible();
 });
 
 test('the manage console is reachable from the League heading action', async ({ page }) => {

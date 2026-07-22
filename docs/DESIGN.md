@@ -70,9 +70,21 @@ accordion) for the same "show me one cut" job.
 
 The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
 switches cuts **within a section**; **Tabs** may split a **whole page** into two or three
-top-level views (`/league` Standings · Weekly, `/wrapped` Your Year · The League). The test:
-if the switch re-renders one panel inside a scrolling page, it's chips; if it changes what
-the entire page is, it's Tabs. Never both on one screen for sibling jobs.
+top-level views (`/league` Standings · Honors · Week, `/wrapped` Your Year · The League).
+The test: if the switch re-renders one panel inside a scrolling page, it's chips; if it
+changes what the entire page is, it's Tabs. Never both on one screen for sibling jobs.
+
+> **Decision note (2026-07-22, #741).** `/league` spends the third tab slot on **Honors**
+> — the trophy room — superseding #631's two-tab containment. #631 was right to contain
+> recap sprawl and to write the one-control-per-tab rule (both survive unchanged), but it
+> filed the league's emotional payoff as a scope-gated appendix of the standings panel;
+> #737 made the honors visible by ordering, and living with it confirmed they deserved an
+> address, not a scroll position. ADR-0035's lane law is now the tab boundary: the market
+> lane (table, ladder, race) is Standings; the room lane (champion, spoon, titles, shelf)
+> is Honors. Binding conditions: Standings stays the year-round default tab (the honors
+> strip is the one seasonal first-paint mechanism), each tab keeps exactly one control,
+> and the three-view maximum is now fully spent — a fourth `/league` view requires a new
+> design study and a revision of this note.
 
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
 _Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the
@@ -213,12 +225,15 @@ accent. `--ember` is reserved for live/urgent/signature moments (principle 5's s
 
 Ember's sanctioned moments — a positive spec, so under-spend is as visible as leakage:
 **Lock in** (the primary commitment), an **All-In** declaration, **live/urgent** game
-states, and the **Wrapped champion reveal** (to be built — the season's one celebration
-peak, reduced-motion-guarded). Routine data fills use `--primary` (the CoverMeter fill
-is `--primary`, re-based from its earlier ember gradient — #547). One recorded
-exception: the public demo's single "Start your league" CTA — the marketing surface's
-one conversion verb. Anything new earns its place via a design study and a new entry in
-this list.
+states, the **Wrapped champion reveal** (to be built — the season's one celebration
+peak, reduced-motion-guarded), and the **reigning champion's crowned card** on the
+`/league` Honors tab (#741 design study — border/wash only, labels stay
+`--primary-ink`/`--foreground` for AA in both themes; the card's in-season zero-state
+is deliberately ember-free, so the accent igniting at crowning is the payoff). Routine
+data fills use `--primary` (the CoverMeter fill is `--primary`, re-based from its
+earlier ember gradient — #547). One recorded exception: the public demo's single
+"Start your league" CTA — the marketing surface's one conversion verb. Anything new
+earns its place via a design study and a new entry in this list.
 
 _Why:_ if the accent also means "good", the user can't tell branding from signal.
 
@@ -298,10 +313,14 @@ first applied by #737 on `/league`):
   scope (which hides the season's content). Offseason, that means the concluded season,
   pinned honestly ("Last season · YYYY", never "This season"); other windows are explicit,
   URL-addressable choices.
-- **A crowned season leads with its crown.** Block order is keyed on the _viewed_ season's
-  data-state, not the calendar: a concluded season opens on its honors, an in-progress one
-  on the live standings — so the same season's page renders identically in July and
-  November, and the archive tier (story charts, the race) always trails the answers.
+- **A crowned season leads with its crown.** How a surface leads is keyed on the _viewed_
+  season's data-state, not the calendar — so the same season's page renders identically in
+  July and November, and the archive tier (story charts, the race) always trails the
+  answers. On `/league` the rule's application moved with #741: the crown's first paint is
+  the honors strip above the tabs plus the Honors tab itself (whose champion card is
+  crowned or an honest "not decided yet"), rather than #737's block reordering inside the
+  standings panel — which retired when the honors left that panel. The block-order form
+  still applies to any season-scoped surface that keeps honors and answers in one scroll.
 
 **The second consumer triggers extraction.** "Seen in" is a starting point, not a licence
 to copy markup: as soon as a second surface needs a pattern, extract it into a shared

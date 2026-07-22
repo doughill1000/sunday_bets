@@ -29,8 +29,10 @@
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
+  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
-  import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
+  import ChampionCard from '$lib/components/group/ChampionCard.svelte';
+  import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
   import { seasonScopeOptions } from '$lib/utils/stats';
@@ -41,12 +43,15 @@
 
   let { data: pageData }: { data: PageData } = $props();
 
-  // Two page-level views (principle 2): Standings and Week are Tabs, and each tab owns exactly
-  // one context control rendered inside its own panel (#631) — Standings the season/All-time
-  // window, Week the week picker. The time window folds a pinned "All-time" option into the
-  // season dropdown (#518/#529) rather than being a third tab. `scope` is a pure client flip;
-  // changing the *season* navigates so the season-scoped query re-keys (ADR-0017).
-  let activeTab = $state<'standings' | 'weekly'>(pageData.view);
+  // Three page-level views (principle 2, spending DESIGN.md's "two or three" allowance —
+  // #741, superseding #631's two-tab containment): Standings · Honors · Week, and each tab
+  // owns exactly one context control rendered inside its own panel (#631) — Standings the
+  // season/All-time window, Honors a season select, Week the week picker. ADR-0035's lane
+  // law becomes the tab boundary: the market lane (table, ladder, race) lives on Standings;
+  // the room lane (champion, spoon, titles, shelf) lives in the trophy room. `scope` is a
+  // pure client flip; changing the *season* navigates so the season-scoped query re-keys
+  // (ADR-0017).
+  let activeTab = $state<'standings' | 'honors' | 'weekly'>(pageData.view);
   // Initial scope comes from `pageData.defaultScope` (#737): 'season' always — offseason
   // included, where the default season is the last graded one and its honors lead the page —
   // unless the visitor explicitly asked for the career window via `?scope=alltime`, which is
@@ -86,17 +91,18 @@
     initialData: pageData.initialGroup
   }));
 
-  // The Week tab leads with the selected week's hardware (#631). Rather than adding a payload to
-  // the server load, it reuses the SAME cached recap query `/recap` already owns — one
-  // `['recap', groupId, season]` entry serves both surfaces (ADR-0033, #602), so the Week tab and
-  // the Season recaps archive can never disagree about a week's awards. Gated on the Week tab so
-  // a Standings visitor never pays for it; `+page.ts` prefetches it only on a `?view=weekly`
-  // request, which is the only way Week is ever server-rendered.
+  // The Week tab leads with the selected week's hardware (#631) and the Honors tab renders
+  // the season's trophy shelf (#741). Rather than adding a payload to the server load, both
+  // reuse the SAME cached recap query `/recap` already owns — one `['recap', groupId, season]`
+  // entry serves all three surfaces (ADR-0033, #602), so they can never disagree about a
+  // week's awards. Gated on those tabs so a Standings visitor never pays for it; `+page.ts`
+  // prefetches it only on a `?view=weekly`/`?view=honors` request, the only ways either is
+  // ever server-rendered.
   const recapQuery = createQuery(() => ({
     queryKey: queryKeys.recap(pageData.groupId, pageData.seasonYear),
     queryFn: () => fetchRecap(fetch, pageData.groupId, pageData.seasonYear),
     initialData: pageData.initialRecap,
-    enabled: activeTab === 'weekly'
+    enabled: activeTab === 'weekly' || activeTab === 'honors'
   }));
 
   // Empty shapes so the render stays valid while a query loads on a cache miss (the pending
@@ -154,6 +160,36 @@
   // the server load. Positive = climbed. Season-scoped only; the All-time table passes `null`.
   const movements = $derived(rankMovements(pageData.trend ?? []));
 
+  // The trophy room's hero (#741): the VIEWED season's champion from the trophy case —
+  // rank-1-of-completed-season grain, so an in-progress season has no entry and the card
+  // renders its designed "not decided yet" zero-state instead. Ember is reserved for the
+  // reigning crown (DESIGN.md P13); browsing 2023 shows its champion in the quiet gold
+  // identity treatment.
+  const viewedChampion = $derived(
+    group.honors.trophyCase.find((c) => c.season_year === data.seasonYear) ?? null
+  );
+  const viewedChampionIsReigning = $derived(
+    viewedChampion != null &&
+      viewedChampion.season_year === group.honors.reigningChampion?.season_year
+  );
+  // W-L-P for the champion card's caption, read off the same season standings the page
+  // already holds — SeasonHonor carries points but not the record.
+  const viewedChampionRecord = $derived.by(() => {
+    if (!viewedChampion) return null;
+    const row = data.totals.find((t) => t.user_id === viewedChampion.user_id);
+    return row ? `${row.wins}-${row.losses}-${row.pushes}` : null;
+  });
+  // Zero-state context: who's on top of the live race, through the last graded week. The
+  // room may point at the standings' answer, but never restates the table (ADR-0035).
+  const lastGradedWeek = $derived(
+    (pageData.trend ?? []).reduce((max, t) => Math.max(max, t.week_number), 0)
+  );
+  const seasonLeaderLine = $derived.by(() => {
+    if (!data.viewedSeasonInProgress || lastGradedWeek === 0) return null;
+    const leader = data.totals[0];
+    return leader ? `${leader.display_name} leads through Week ${lastGradedWeek}` : null;
+  });
+
   // The selected week's hardware, plus the prose recap for that same week if one was generated.
   // Hardware only exists for FULLY-graded scoring weeks, so both are null on an in-progress week
   // and on every preseason round (ADR-0016 non-scoring rounds never mint awards).
@@ -203,6 +239,9 @@
     if (activeTab === 'weekly') {
       return `${data.seasonYear} season · ${weekLabel(data.selectedWeek)}.`;
     }
+    // Honors has no All-time window (honors are season-grain by construction), so its
+    // subtitle always names the season even while Standings' scope sits on All-time.
+    if (activeTab === 'honors') return `${data.seasonYear} season.`;
     return scope === 'alltime' ? 'All-time · every season combined.' : `${data.seasonYear} season.`;
   });
 
@@ -238,7 +277,23 @@
     }
   }
 
-  // When the user clicks the Week tab and we haven't loaded weekly data yet, trigger a navigation.
+  // Honors' one control (#741): the same season navigation as Standings, minus the pinned
+  // All-time option — there is no all-time honors view (season-grain by construction), so
+  // the room's select never offers a window it can't render.
+  function onHonorsSeasonChange(e: Event) {
+    const value = (e.target as HTMLSelectElement).value;
+    if (value === String(data.seasonYear)) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('season', value);
+    url.searchParams.set('view', 'honors');
+    void goto(url.toString(), { invalidateAll: true, noScroll: true });
+  }
+
+  // When the user clicks the Week tab and we haven't loaded weekly data yet, trigger a
+  // navigation — Week's pick breakdown is user-scoped server data (ADR-0017 boundary 3).
+  // Honors needs no navigation: its payloads all ride the shareable client caches, so the
+  // tab is a pure client flip mirrored into the URL with `replaceState` (shareable and
+  // reload-safe, like `?scope=alltime`), and leaving it clears the param again.
   let weeklyNavigated = $state(pageData.view === 'weekly');
 
   $effect(() => {
@@ -251,6 +306,15 @@
       }
     } else {
       weeklyNavigated = false;
+      const url = new URL(window.location.href);
+      const current = url.searchParams.get('view');
+      if (activeTab === 'honors' && current !== 'honors') {
+        url.searchParams.set('view', 'honors');
+        replaceState(url, {});
+      } else if (activeTab === 'standings' && current != null) {
+        url.searchParams.delete('view');
+        replaceState(url, {});
+      }
     }
   });
 </script>
@@ -270,21 +334,16 @@
   </Card>
 {/snippet}
 
-{#snippet honorsCard()}
-  <!-- Honors (#561): trophy case, wooden spoon, and awards — the reigning champion itself
-       lives in the evergreen banner above the tabs (#727). Keyed on the page's resolved
-       season (shared cache with /league/manage), following the scope selector rather than
-       carrying a second picker (#631). A snippet because its position depends on the viewed
-       season's state (#737): a concluded season leads with it, an in-progress one shows the
-       table first. Also the durable door to Season Wrapped since #737 retired WrappedPromo. -->
-  <LeagueHonors
-    honors={group.honors}
-    badges={group.badges}
-    members={group.members}
-    currentUserId={data.currentUserId}
-    selectedSeason={data.seasonYear}
-    recapsHref={`/recap?season=${data.seasonYear}`}
-  />
+{#snippet honorsLoading()}
+  <!-- Honors-tab cache miss: the shelf's recap query loads on first tap. A small pulse
+       block that keeps the card rhythm (P11) rather than swapping in a spinner. -->
+  <Card>
+    <CardContent class="space-y-3 p-6" aria-hidden="true">
+      {#each [0, 1, 2] as i (i)}
+        <div class="h-6 w-full animate-pulse rounded bg-muted"></div>
+      {/each}
+    </CardContent>
+  </Card>
 {/snippet}
 
 {#snippet standingsError(retry: () => void)}
@@ -302,12 +361,11 @@
   </Card>
 {/snippet}
 
-<!-- The League home (#561, re-contained by #631): two self-contained tabs where the tab you're on
-     fully governs what's on screen. Only the heading, the Manage action, and the champion banner
-     render outside the tab group — honors and the manage card used to sit after `</Tabs>` and
-     so appeared identically under both tabs. The standings testids keep their `leaderboard-`
-     prefix as stable e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the content is still
-     the leaderboard, and those anchors stay put across renames. -->
+<!-- The League home (#561, re-contained by #631, third tab minted by #741): three self-contained
+     tabs where the tab you're on fully governs what's on screen. Only the heading, the Manage
+     action, and the honors strip render outside the tab group. The standings testids keep their
+     `leaderboard-` prefix as stable e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the
+     content is still the leaderboard, and those anchors stay put across renames. -->
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
   <div class="flex items-start justify-between gap-3">
     <div class="min-w-0">
@@ -344,24 +402,30 @@
     {/if}
   </div>
 
-  <!-- Reigning-champion banner (#727): evergreen, rendered above the tab group so it shows on
-       both Standings and Week — unlike the old LeagueHonors placement, which only reached the
-       Standings-season branch. WrappedPromo used to stack above it; #737 retired the promo
-       (its CTA lives in the honors card's Wrapped link), so the banner is the one block that
-       renders outside the tab group and the dense tab nets lighter. -->
-  {#if group.honors.reigningChampion}
-    <ReigningChampionBanner
+  <!-- The honors strip (#741): #727's evergreen champion identity, compressed from the old
+       full-height banner into a one-line door that opens the Honors tab. Still the one block
+       outside the tab group, and still gold-quiet — the ember moment is the champion card
+       inside the room. Hidden while Honors is active: a door has no job inside the room. -->
+  {#if group.honors.reigningChampion && activeTab !== 'honors'}
+    <HonorsStrip
       reigningChampion={group.honors.reigningChampion}
       currentUserId={data.currentUserId}
+      onOpen={() => (activeTab = 'honors')}
     />
   {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
-    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
+    <TabsList class="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
       <TabsTrigger
         value="standings"
         data-testid="leaderboard-tab-standings"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
+      >
+      <!-- The trophy room (#741): the curated honors' named home. -->
+      <TabsTrigger
+        value="honors"
+        data-testid="leaderboard-tab-honors"
+        class={ACTIVE_TAB_TRIGGER_CLASS}>Honors</TabsTrigger
       >
       <!-- Labelled "Week" (#631) — it shows one selected week, not a trend. The testid and the
            `?view=weekly` param keep their old spelling on purpose: the testid is a stable e2e
@@ -409,10 +473,10 @@
         </select>
       </div>
 
-      <!-- Block order (#737) is data-keyed, never calendar-keyed — the same season's page
-           renders identically in July and November. A concluded season leads with its crown
-           (honors → table); an in-progress one with the live question (table → honors). The
-           ladder and the race follow beneath in every case. -->
+      <!-- One lane since #741: the market answers only — table, then ladder, then the race.
+           The honors left for their own tab, so #737's crowned-season block ordering retired
+           with them: the crown's first paint is now the strip above the tabs, and the room
+           itself is one tap away. -->
       <div class="mt-4 space-y-6">
         {#if scope === 'alltime'}
           {#if allTimeQuery.isPending}
@@ -440,14 +504,6 @@
             />
           {/if}
         {:else}
-          <!-- The season window. Honors is season-scoped, so it renders here and not under
-               All-time: an "Awards · 2025 · Crowned" block beside a career table would be
-               exactly the two-things-disagreeing-about-the-season problem #631 set out to fix.
-               It sits outside the standings branch chain so a league with a champion but a
-               pre-grading current season still shows its trophy case. -->
-          {#if !data.viewedSeasonInProgress}
-            {@render honorsCard()}
-          {/if}
           {#if leaderboardQuery.isPending}
             {@render standingsLoading()}
           {:else if leaderboardQuery.isError && !leaderboardQuery.data}
@@ -473,9 +529,6 @@
               movementsByUser={movements}
               {commissionerIds}
             />
-          {/if}
-          {#if data.viewedSeasonInProgress}
-            {@render honorsCard()}
           {/if}
         {/if}
 
@@ -508,6 +561,87 @@
               <SeasonRaceChart rows={pageData.trend ?? []} currentUserId={data.currentUserId} />
             </CardContent>
           </Card>
+        {/if}
+      </div>
+    </TabsContent>
+
+    <!-- The trophy room (#741): the room lane of ADR-0035's boundary — champion, spoon,
+         trophy case, season titles, and the weekly-hardware shelf absorbed from /recap.
+         Curation leads, volume trails: the hero and titles come before the shelf's
+         ~4-per-week gongs, so the room reads as an honors case, not a pile. -->
+    <TabsContent value="honors" data-testid="honors-panel">
+      <!-- Honors' one control: a season select with no All-time pin (honors are
+           season-grain; there is no all-time honors view to offer). -->
+      <div data-testid="honors-scope-bar" class={SCOPE_BAR_CLASS}>
+        <span
+          id="honors-scope-label"
+          class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+        >
+        <select
+          class={SELECT_CLASS}
+          value={String(data.seasonYear)}
+          onchange={onHonorsSeasonChange}
+          aria-labelledby="honors-scope-label"
+          data-testid="honors-season"
+        >
+          {#if scopeOptions.latest !== null}
+            <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+          {:else if scopeOptions.lastCompleted !== null}
+            <option value={String(scopeOptions.lastCompleted)}>
+              Last season · {scopeOptions.lastCompleted}
+            </option>
+          {/if}
+          {#if scopeOptions.pastSeasons.length > 0}
+            <optgroup label="Past seasons">
+              {#each scopeOptions.pastSeasons as year (year)}
+                <option value={String(year)}>{year}</option>
+              {/each}
+            </optgroup>
+          {/if}
+        </select>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <!-- The hero: the viewed season's crown, or its honest "not decided yet" (the room's
+             one ember element, and only once the crown is real — DESIGN.md P13). -->
+        <ChampionCard
+          champion={viewedChampion}
+          isReigning={viewedChampionIsReigning}
+          seasonYear={data.seasonYear}
+          seasonInProgress={data.viewedSeasonInProgress}
+          record={viewedChampionRecord}
+          leaderLine={seasonLeaderLine}
+          currentUserId={data.currentUserId}
+          onStandings={() => (activeTab = 'standings')}
+        />
+
+        {#if data.viewedSeasonInProgress}
+          <!-- The spoon's zero-state mirrors the crown's: in play, not missing. The most
+               recently minted spoon still shows inside the honors card, year-labelled. -->
+          <p class="text-sm text-muted-foreground" data-testid="spoon-in-play">
+            🥄 Wooden spoon — in play until the final week grades
+          </p>
+        {/if}
+
+        <!-- Trophy case, wooden spoon, and awards (#561), lifted from the Standings panel
+             (#741) exactly as wave 1 shipped it. Follows the room's season select; also the
+             durable doors to Season Wrapped and the recap archive. -->
+        <LeagueHonors
+          honors={group.honors}
+          badges={group.badges}
+          members={group.members}
+          currentUserId={data.currentUserId}
+          selectedSeason={data.seasonYear}
+          recapsHref={`/recap?season=${data.seasonYear}`}
+        />
+
+        <!-- The season's weekly-hardware shelf, absorbed from /recap (#741): the room's
+             in-season pulse — ~4 pieces mint every graded week from Week 1, so the tab is
+             alive in October, not just January. /recap keeps the per-week archive. -->
+        {#if recapQuery.isPending}
+          {@render honorsLoading()}
+        {:else if recap.weeklyAwards.shelf.length > 0}
+          <SeasonShelf shelf={recap.weeklyAwards.shelf} currentUserId={data.currentUserId} />
         {/if}
       </div>
     </TabsContent>

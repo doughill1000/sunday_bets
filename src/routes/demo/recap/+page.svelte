@@ -1,17 +1,16 @@
 <script lang="ts">
   // Demo Season recaps (#460, ADR-0026 — extended #669): mirrors the real /recap archive —
-  // the season shelf leads, then every graded week's hardware paired with its Commissioner
-  // recap — reading the frozen snapshot instead of a `createQuery`.
+  // every graded week's hardware paired with its Commissioner recap, reading the frozen
+  // snapshot instead of a `createQuery`. The season shelf moved to the demo League's Honors
+  // tab (#741), same as the real app.
   import type { PageData } from './$types';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
-  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
 
   let { data }: { data: PageData } = $props();
 
   const weeks = $derived(data.weeklyAwards.weeks);
-  const shelf = $derived(data.weeklyAwards.shelf);
   const recapByWeek = $derived(new Map(data.recaps.map((r) => [r.week_number, r])));
   const orphanRecaps = $derived(
     data.recaps.filter((r) => !weeks.some((w) => w.week_number === r.week_number))
@@ -41,10 +40,6 @@
   {#if weeks.length === 0 && data.recaps.length === 0}
     <p class="text-sm text-muted-foreground">No recaps in this snapshot.</p>
   {:else}
-    {#if shelf.length > 0}
-      <SeasonShelf {shelf} currentUserId={data.currentUserId} />
-    {/if}
-
     <div class="space-y-4">
       {#each weeks as hardware (hardware.week_number)}
         <div class="scroll-mt-20 space-y-3" id="week-{hardware.week_number}">
