@@ -54,7 +54,17 @@
               data-testid="league-slate-game"
             >
               <div class="flex items-baseline justify-between gap-3">
-                <span class="font-medium">{game.away.label} @ {game.home.label}</span>
+                <span class="flex items-baseline gap-1.5 font-medium">
+                  {game.away.label} @ {game.home.label}
+                  {#if game.isDivisional}
+                    <!-- The one conversational tag folded in from the retired Divisional slice
+                         (#692). Kickoff time already says primetime, so DIV is the only tag. -->
+                    <span
+                      class="rounded border border-border px-1 py-px text-[9px] font-semibold tracking-wider text-muted-foreground uppercase"
+                      title="Divisional matchup">Div</span
+                    >
+                  {/if}
+                </span>
                 <time
                   class="shrink-0 text-xs whitespace-nowrap text-muted-foreground"
                   datetime={game.kickoff}

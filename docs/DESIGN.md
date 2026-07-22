@@ -65,8 +65,9 @@ than adding a column. The same class of clip drove the `/market` picker consolid
 
 A given interaction should look the same everywhere it appears. To **switch between cuts
 of the same data, use the chip radiogroup** — the selector used by `/stats` "Every split"
-and `/market` (the #529 slice explorer). Don't introduce a second control (tabs, an
-accordion) for the same "show me one cut" job.
+and its Breakdowns. Don't introduce a second control (tabs, an accordion) for the same
+"show me one cut" job. (`/market`'s #529 slice explorer was this pattern's other canonical
+home until #692 retired the slices themselves.)
 
 The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
 switches cuts **within a section**; **Tabs** may split a **whole page** into two or three
@@ -285,19 +286,19 @@ Where [`design-system.md`](agent-context/design-system.md) catalogs the **tokens
 catalogs the **composed patterns** — the atoms already in the app, and when to reach for
 each. (Component homes live under `src/lib/components/`.)
 
-| Job                               | Pattern                                            | Seen in                                      |
-| --------------------------------- | -------------------------------------------------- | -------------------------------------------- |
-| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns, `/market` |
-| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/league`, `/wrapped`                        |
-| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                      |
-| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists                 |
-| Compare a value to a baseline     | Diverging bar from the market line                 | `/stats` Every split, `/market`              |
-| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                         |
-| Group related content             | `Card` + header/description                        | everywhere                                   |
-| Announce a form/action outcome    | Persistent inline status note (`FormNote`)         | `/league/manage`, `/settings` League card    |
-| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                            |
-| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/market`, `/stats`        |
-| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                       |
+| Job                               | Pattern                                            | Seen in                                   |
+| --------------------------------- | -------------------------------------------------- | ----------------------------------------- |
+| Switch between cuts of one data   | Chip radiogroup (`ChipRadiogroup`)                 | `/stats` Every split + Breakdowns         |
+| Split a page into top-level views | Tabs (two or three, page-level only — principle 2) | `/league`, `/wrapped`                     |
+| Reveal secondary detail           | Single disclosure (one level)                      | picks committed section                   |
+| Show a rate / accuracy            | Meter bar + 50% reference tick                     | `CoverMeter`, `/stats` lists              |
+| Compare a value to a baseline     | Diverging bar from the market line                 | `/stats` Every split, `/market`           |
+| Pick player + season/scope        | Sticky context bar (selectors)                     | `/stats` context bar                      |
+| Group related content             | `Card` + header/description                        | everywhere                                |
+| Announce a form/action outcome    | Persistent inline status note (`FormNote`)         | `/league/manage`, `/settings` League card |
+| Confirm a consequential action    | Inline anchored confirm beside the control         | picks All-In move                         |
+| Loading placeholder               | Pulse skeleton preserving the layout's hierarchy   | `/league/manage`, `/market`, `/stats`     |
+| Show stale/offline data           | Last-good data + stale pill + retry (ADR-0017)     | to build (shell-level)                    |
 
 Prefer these before inventing a new control. If a screen genuinely needs a pattern not
 listed here, that is the signal to run a `design-study` and add it. As each pattern is next
@@ -366,8 +367,8 @@ Those copies announce nothing to a screen reader, which is the concrete cost.
    exactly this reason — the three groups pass `stats-cut-tab`, `career-breakdown`, and
    `season-breakdown`, so their radio `id`s never collide. The active panel's accessible
    name derives from the selected cut.
-8. **Canonical examples.** `/stats` "Every split"; `/league` slice explorer (#529);
-   `/stats` "Breakdowns" (career + season, #538).
+8. **Canonical examples.** `/stats` "Every split"; `/stats` "Breakdowns" (career + season,
+   #538). (The `/market` slice explorer (#529) was canonical here until #692 retired it.)
 9. **Known exceptions.** None. (Page-level Tabs are **not** an exception — they own a
    different job; see principle 2's boundary.)
 

@@ -12,8 +12,8 @@
     ariaLabel: string;
     idPrefix: string;
     onchange: (value: string) => void;
-    // Optional per-chip `data-testid`, so a caller with an existing e2e contract (the /market
-    // "Slice by" row's `league-slice-chip`) keeps its hook. Omitted callers emit no attribute.
+    // Optional per-chip `data-testid`, so a caller with an existing e2e contract keeps its
+    // hook. Omitted callers emit no attribute.
     testid?: string;
   } = $props();
 

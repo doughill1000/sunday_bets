@@ -17,12 +17,7 @@ import type { PlayerRatingEntry, RatingLadderRow } from '$lib/domain/rating';
 import type { SeasonLeaderboardEntry } from '$lib/types/leaderboard';
 import type { GroupMember } from '$lib/types/group';
 import type { LeagueHonors, BadgeAward } from '$lib/types/honors';
-import type {
-  LeagueAts,
-  LeagueSlate,
-  LeagueTeamGameLog,
-  LeagueTrends
-} from '$lib/types/server/league';
+import type { LeagueAts, LeagueSlate, LeagueTrends } from '$lib/types/server/league';
 import type { RecapRow } from '$lib/server/db/queries/recaps';
 import type { SeasonWeeklyAwards } from '$lib/types/server/weeklyAwards';
 
@@ -143,19 +138,12 @@ export type LeagueCachePayload = LeagueAts;
 export type LeagueSlatePayload = LeagueSlate;
 
 /**
- * The pooled "Last N seasons" market-cuts payload for the /league Trends scope toggle (epic
- * #424). Group- and user-independent and season-independent (it spans the recent seasons), so
- * it is cached under a single `['league', 'trends']` key and is freely shareable/persistable
- * (ADR-0017). Fetched lazily — only when the user switches the Trends scope to multi-season.
+ * The pooled "Last N seasons" market-cuts payload backing the "Where the market bends"
+ * synthesis on /market (epic #424, lean form #692). Group- and user-independent and
+ * season-independent (it spans the recent seasons), so it is cached under a single
+ * `['league', 'trends']` key and is freely shareable/persistable (ADR-0017).
  */
 export type LeagueTrendsPayload = LeagueTrends;
-
-/**
- * One team's season ATS game log cached under `['league', 'team', teamId, season]` (issue
- * #428). Lazily fetched when the /league drill-down opens; group- and user-independent like
- * the rest of the league surface, so it is freely shareable/persistable (ADR-0017).
- */
-export type LeagueTeamGameLogPayload = LeagueTeamGameLog;
 
 /**
  * Shareable Recap payload cached under `['recap', groupId, season]` (ADR-0033, issue

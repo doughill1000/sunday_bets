@@ -10,7 +10,6 @@ import type {
   AllTimeLeaderboardPayload,
   LeagueCachePayload,
   LeagueSlatePayload,
-  LeagueTeamGameLogPayload,
   LeagueTrendsPayload,
   RecapCachePayload
 } from './types';
@@ -94,24 +93,12 @@ export async function fetchLeagueSlate(
 }
 
 /** Pooled "Last N seasons" market-cut trends (epic #424). No groupId and no season — the data
- *  is identical for everyone and spans the recent seasons. Fetched lazily when the Trends scope
- *  toggle switches to multi-season. */
+ *  is identical for everyone and spans the recent seasons. Backs the always-on "Where the
+ *  market bends" synthesis on /market (#692). */
 export async function fetchLeagueTrends(fetchFn: FetchFn): Promise<LeagueTrendsPayload> {
   const res = await fetchFn('/api/league/trends');
   if (!res.ok) throw new Error(`Failed to load league trends (${res.status})`);
   return res.json() as Promise<LeagueTrendsPayload>;
-}
-
-/** One team's season ATS game log for the /league drill-down (issue #428). No groupId — the
- *  data is identical for everyone. */
-export async function fetchLeagueTeamGameLog(
-  fetchFn: FetchFn,
-  teamId: number,
-  seasonYear: number
-): Promise<LeagueTeamGameLogPayload> {
-  const res = await fetchFn(`/api/league/team?teamId=${teamId}&season=${seasonYear}`);
-  if (!res.ok) throw new Error(`Failed to load team game log (${res.status})`);
-  return res.json() as Promise<LeagueTeamGameLogPayload>;
 }
 
 export async function fetchRecap(

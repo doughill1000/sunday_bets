@@ -83,4 +83,43 @@ describe('buildSlateGames', () => {
     const games = [game({ id: 'past', kickoff: '2026-09-13T06:00:00Z' })];
     expect(buildSlateGames(games, situational, NOW)).toEqual([]);
   });
+
+  describe('divisional tag (#692)', () => {
+    // Same-conference-and-division = divisional, mirroring league_ats_divisional's rule.
+    const divisions = new Map([
+      [1, 'AFC North'],
+      [2, 'AFC North'],
+      [3, 'NFC North']
+    ]);
+
+    it('marks a same-conference-and-division matchup', () => {
+      const [g] = buildSlateGames([game({ id: 'g1' })], situational, NOW, divisions);
+      expect(g.isDivisional).toBe(true);
+    });
+
+    it('does not mark a cross-division matchup', () => {
+      const [g] = buildSlateGames(
+        [game({ id: 'g2', awayTeamId: 3, spreadTeamId: 1 })],
+        situational,
+        NOW,
+        divisions
+      );
+      expect(g.isDivisional).toBe(false);
+    });
+
+    it('never marks a matchup when a team is missing from the division map', () => {
+      // Team 99 has no division identity (e.g. a non-NFL team with null columns).
+      const [g] = buildSlateGames(
+        [game({ id: 'g3', awayTeamId: 99, spreadTeamId: 1 })],
+        situational,
+        NOW,
+        divisions
+      );
+      expect(g.isDivisional).toBe(false);
+
+      // And with no map at all (the default), nothing is ever divisional.
+      const [bare] = buildSlateGames([game({ id: 'g4' })], situational, NOW);
+      expect(bare.isDivisional).toBe(false);
+    });
+  });
 });

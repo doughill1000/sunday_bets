@@ -15,6 +15,7 @@ export const load: PageServerLoad = async (event) => {
 
 async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) {
   const seasonParam = event.url.searchParams.get('season');
+  const scopeParam = event.url.searchParams.get('scope');
 
   // The hook (injectSession) already validated the JWT via safeGetSession, so trust
   // locals.user instead of a second auth.getUser() round-trip.
@@ -25,17 +26,26 @@ async function loadStats(event: Parameters<PageServerLoad>[0], groupId: string) 
 
   const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
 
-  // #638: the newest season only keeps the "This season" pin / 'season' default while it's
-  // actually in progress (a real weeks-based signal — see seasonProgress.ts), rather than
-  // just being the most recent one with standings. Folded with `seasonYear` the same way the
-  // client derives `scopeOptions`, so a brand-new season with no standings yet is still
-  // checked correctly. An explicit `?season=` always wins the initial scope regardless — the
-  // visitor asked for that season, not the default.
+  // Whether the newest season is actually in progress — a real weeks-based signal (see
+  // seasonProgress.ts), not just "has the most recent standings". Folded with `seasonYear` the
+  // same way the client derives `scopeOptions`, so a brand-new season with no standings yet is
+  // still checked correctly. Its only job now is labelling the season pin honestly ("This
+  // season · YYYY" vs "Last season · YYYY", #638/#737); it no longer picks the scope.
   const latestSeasonInProgress = await isSeasonInProgress(
     Math.max(seasonYear, ...availableSeasons)
   );
-  const defaultScope: 'season' | 'career' =
-    seasonParam != null || latestSeasonInProgress ? 'season' : 'career';
+
+  // #738: a bare visit always opens on a season, in every month ("default to the last graded
+  // thing", DESIGN.md, first applied by #737 on /league). The old rule (#638) flipped an
+  // offseason visit to Career, so the same URL rendered a different page either side of a
+  // calendar date nobody saw, and the season the league spends seven months talking about was
+  // never what /stats opened on. Career is now only ever an explicit choice — via the dropdown,
+  // or via `?scope=career`, which mirrors /league's `?scope=alltime` so the career window is a
+  // shareable URL rather than an unaddressable client flip. That matters more here than there:
+  // Career is the rating's canonical home (ADR-0032), and it just stopped being a scope anyone
+  // lands on by accident. The rating itself is no longer default-hidden either way — the season
+  // hero now carries the career-rating chip.
+  const defaultScope: 'season' | 'career' = scopeParam === 'career' ? 'career' : 'season';
 
   // The heavy, season-scoped Stats payload (totals / accuracy / head-to-head) is no longer
   // composed here: it moves to the client `createQuery` keyed by `(groupId, season)` so a

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto, invalidateAll } from '$app/navigation';
+  import { goto, invalidateAll, replaceState } from '$app/navigation';
   import { createQuery, keepPreviousData } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
   import { fetchStats } from '$lib/query/fetchers';
@@ -153,10 +153,12 @@
   // season-scoped query re-keys (ADR-0017). Because a full navigation re-mounts nothing, the
   // scope is set before `goto` so it survives the reload as 'season'.
   //
-  // The initial value comes from `pageData.defaultScope` (#638): 'career' when the newest
-  // season with data has already concluded (off-season) and the visitor didn't ask for a
-  // specific season via `?season=`; 'season' otherwise — unchanged from the old always-'season'
-  // default while a season is actually in progress.
+  // A bare visit always opens on a season, in every month (#738) — the last graded one through
+  // the whole offseason, pinned "Last season · YYYY". The old rule (#638) flipped an offseason
+  // visit to Career, which made the same URL render a different page either side of a calendar
+  // boundary nobody saw and hid the season the league actually talks about. Career is now only
+  // ever an explicit choice: the dropdown, or `?scope=career` (see `+page.server.ts`), which is
+  // what `pageData.defaultScope` now carries.
   let scope = $state<'season' | 'career'>(pageData.defaultScope);
   // Fold the currently-displayed season into the option set so the dropdown can always
   // represent `scopeValue`. `resolveSeasonYear` can land on a season with no settled picks
@@ -172,15 +174,24 @@
 
   function onScopeChange(e: Event) {
     const value = (e.target as HTMLSelectElement).value;
+    const url = new URL(window.location.href);
     if (value === 'career') {
+      // Career is a pure client flip (the career data is always loaded), but the URL mirrors it
+      // via `?scope=career` (#738, matching /league's `?scope=alltime`) so the view is shareable
+      // and survives a reload. `replaceState` keeps a scope flip out of the back-button history
+      // the way a view toggle should be — Back still leaves /stats, not the flip.
       scope = 'career';
+      url.searchParams.set('scope', 'career');
+      replaceState(url, {});
       return;
     }
     scope = 'season';
+    url.searchParams.delete('scope');
     if (value !== String(data.seasonYear)) {
-      const url = new URL(window.location.href);
       url.searchParams.set('season', value);
       void goto(url.toString(), { noScroll: true });
+    } else {
+      replaceState(url, {});
     }
   }
 
@@ -214,8 +225,11 @@
   });
 
   // Cross-season credibility rating for the selected player (#361), plus their in-group rank among
-  // qualified players. Career-only: passed to the Career hero, never the season one. A missing row
-  // (no settled decisions yet) renders as the Unrated state inside the band.
+  // qualified players. Career-grain wherever it appears — both heroes get it now (#738), the
+  // Career one as the leading band, the season one as the compact chip — so it is default-visible
+  // year-round instead of only in whichever scope the calendar happened to open. A missing row (no
+  // settled decisions yet) renders as the Unrated state inside the band, and as nothing at all in
+  // the chip: the season hero has no room to explain the gate (ADR-0032 §5).
   const selectedRating = $derived(data.playerRatings.find((r) => r.user_id === selectedUserId));
   const selectedRatingRank = $derived(
     selectedUserId ? ratingRank(data.playerRatings, selectedUserId) : null
@@ -426,20 +440,20 @@
         onchange={onScopeChange}
         aria-label="Select season or career"
       >
+        <!-- Exactly one season pin (#638/#737/#738), matching /league's control: "This season"
+             while one is in progress, "Last season" once it has concluded — a concluded season
+             is never labelled "This season", and the pinned year is deduped out of Past
+             seasons. The pin is also what a bare visit lands on, in either state. -->
         {#if scopeOptions.latest !== null}
           <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+        {:else if scopeOptions.lastCompleted !== null}
+          <option value={String(scopeOptions.lastCompleted)}>
+            Last season · {scopeOptions.lastCompleted}
+          </option>
         {/if}
         <option value="career">Career</option>
-        {#if scopeOptions.lastCompleted !== null || scopeOptions.pastSeasons.length > 0}
+        {#if scopeOptions.pastSeasons.length > 0}
           <optgroup label="Past seasons">
-            <!-- #737 split the last completed season out of `pastSeasons` so /league can pin
-                 it; here it renders back at the top of the list, unchanged. The /stats pin +
-                 default is the follow-up issue's job — this keeps the control identical. -->
-            {#if scopeOptions.lastCompleted !== null}
-              <option value={String(scopeOptions.lastCompleted)}>
-                {scopeOptions.lastCompleted}
-              </option>
-            {/if}
             {#each scopeOptions.pastSeasons as year (year)}
               <option value={String(year)}>{year}</option>
             {/each}
@@ -596,6 +610,7 @@
             {atsAccuracy}
             decisions={selected.decisions}
             tells={seasonSignature}
+            careerRating={{ entry: selectedRating, rank: selectedRatingRank }}
           />
 
           <!-- Every split (#514): the season-scoped situational explorer. -->
