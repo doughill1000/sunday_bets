@@ -9,6 +9,7 @@
   import BackLink from '$lib/components/BackLink.svelte';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
+  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -96,9 +97,15 @@
       <Sparkles class="h-5 w-5 text-primary-ink" />
       <h1 class="text-xl font-semibold">Season recaps</h1>
     </div>
-    <p class="text-sm text-muted-foreground">
-      Every graded week's hardware and the Commissioner's take, newest first.
-    </p>
+    <!-- One legend for the whole archive, beside the line that says what the archive is — the
+         page repeats a hardware card per week, so a trigger per card would be five triggers of
+         noise for one body of text (#771). -->
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <p class="text-sm text-muted-foreground">
+        Every graded week's hardware and the Commissioner's take, newest first.
+      </p>
+      <AwardsGuide />
+    </div>
 
     {#if seasonCount > 1}
       <!-- Makes past seasons reachable (#739): without it, an off-season visit was pinned to the
