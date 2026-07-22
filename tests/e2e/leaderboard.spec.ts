@@ -61,6 +61,18 @@ test('the manage console is reachable from the League heading action', async ({ 
   await expect(page.getByTestId('manage-back')).toBeVisible();
 });
 
+test('a bare visit always opens on the season window', async ({ page }) => {
+  // #737: the offseason default used to flip a bare visit to All-time, hiding the honors for
+  // the seven months they ARE the league's content. Now the season window (anchored to the
+  // last graded season) is the default year-round, in every fixture state — so this assertion
+  // is deterministic on both CI's clean DB and a prod-cloned local one.
+  const lb = leaderboardPage(page);
+  await lb.goto();
+
+  await expect(lb.subtitle()).toHaveText(/^\d{4} season\.$/);
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
+});
+
 test('All-time is a pinned scope option that renders career standings', async ({ page }) => {
   const lb = leaderboardPage(page);
   await lb.goto();
@@ -73,11 +85,28 @@ test('All-time is a pinned scope option that renders career standings', async ({
   await expect(lb.subtitle()).toHaveText('All-time · every season combined.');
   // The Standings panel now hosts the career table (All-time is a standings window).
   await expect(lb.standingsTab()).toBeVisible();
+  // The flip is mirrored into the URL (#737) so the career view is shareable.
+  await expect(page).toHaveURL(/[?&]scope=alltime/);
 
-  // Selecting the same season again restores the season standings + subtitle.
+  // Selecting the same season again restores the season standings + subtitle, and drops the
+  // scope param from the URL.
   await lb.selectScope(seasonValue);
   await expect(lb.subtitle()).toHaveText(standingsSubtitle ?? '');
   await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
+  await expect(page).not.toHaveURL(/[?&]scope=/);
+});
+
+test('?scope=alltime deep-links straight to the career window', async ({ page }) => {
+  // #737's shareable-URL contract: a pasted All-time link opens on the career table (or its
+  // empty state) with no client flip needed. The ladder only renders once a member is rated,
+  // and the e2e fixture never settles a decision — so it must be absent, not an empty card
+  // (ADR-0032 §5: no number before the gate).
+  const lb = leaderboardPage(page);
+  await lb.goto({ scope: 'alltime' });
+
+  await expect(lb.subtitle()).toHaveText('All-time · every season combined.');
+  await expect(lb.allTimeTable().or(lb.allTimeEmpty())).toBeVisible();
+  await expect(lb.ratingLadder()).toBeHidden();
 });
 
 test('week tab shows a jump-to-week dropdown', async ({ page }) => {

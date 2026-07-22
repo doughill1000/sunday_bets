@@ -24,9 +24,14 @@ export function leaderboardPage(page: Page) {
     /** Navigate to the League home and wait for the standings heading to render. Pass
      *  `season` to pin the scope — without it the page shows the newest season the league has
      *  standings for, which differs between CI's clean DB and a prod-cloned local one. Any
-     *  spec asserting on a seeded row should pin it. */
-    async goto(opts: { season?: number } = {}) {
-      await page.goto(opts.season ? `/league?season=${opts.season}` : '/league');
+     *  spec asserting on a seeded row should pin it. Pass `scope: 'alltime'` to deep-link the
+     *  career window (#737 — `?scope=alltime` is the shareable All-time URL). */
+    async goto(opts: { season?: number; scope?: 'alltime' } = {}) {
+      const params = new URLSearchParams();
+      if (opts.season) params.set('season', String(opts.season));
+      if (opts.scope) params.set('scope', opts.scope);
+      const qs = params.toString();
+      await page.goto(qs ? `/league?${qs}` : '/league');
       await expect(api.heading()).toBeVisible();
       // Dismiss the AI recap flash modal if it auto-opened (localStorage is empty
       // in a fresh e2e context, so the "seen" guard doesn't fire). The modal is a
@@ -138,6 +143,13 @@ export function leaderboardPage(page: Page) {
     /** The "No all-time standings yet" empty-state card. */
     allTimeEmpty(): Locator {
       return page.getByTestId('alltime-empty');
+    },
+
+    /** The credibility ladder card (#637/#737). Renders under BOTH scopes, but only once a
+     *  member has a rating — the e2e fixture never settles enough decisions, so specs assert
+     *  its absence (the no-empty-ladder rule, ADR-0032 §5) rather than its rows. */
+    ratingLadder(): Locator {
+      return page.getByTestId('rating-ladder');
     },
 
     /** Select the pinned "All-time" option from the scope dropdown and wait for the

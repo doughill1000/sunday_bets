@@ -1,9 +1,10 @@
 <script lang="ts">
-  // The All-time credibility ladder (#637): every member's career rating and tier, under the
-  // All-time standings table on /league. The point of putting it there is that the two facts finally
+  // The credibility ladder (#637, ungated by #737): every member's career rating and tier, under
+  // the standings table on /league. The point of putting it there is that the two facts finally
   // sit on one screen — the table says you beat five friends, the ladder says whether you beat the
   // number, and only one of those is impressive in absolute terms. It is career-grain like the
-  // rating itself (ADR-0032), which is why it renders under the All-time window and nowhere else.
+  // rating itself (ADR-0032) in EVERY scope — the grain copy below carries that, and the season
+  // delta arrow is suppressed when the season in view isn't the one it narrates (#737).
   //
   // A bar you clear, not a contest you win: more than one player can be Hotshot, nobody clearing it
   // is a legitimate year, and trailing it is a band you sit in rather than a crown you get mocked
@@ -30,12 +31,17 @@
 
   let {
     rows,
-    currentUserId
+    currentUserId,
+    showSeasonDelta = true
   }: {
     /** Ladder rows, already ordered and dense-ranked by `ratingLadder`. */
     rows: RatingLadderRow[];
     /** The viewer, highlighted the same way the standings table highlights their row. */
     currentUserId: string | null;
+    /** Whether to draw the ▲/▼ season-delta arrow. `seasonDelta` describes the LATEST settled
+     *  season (`computeRatings.ts`), so a host viewing an older season passes false — a
+     *  "this season" arrow beside a 2023 table would conflate seasons (ADR-0032 §9, #737). */
+    showSeasonDelta?: boolean;
   } = $props();
 </script>
 
@@ -43,8 +49,8 @@
   <CardHeader>
     <CardTitle>Market credibility</CardTitle>
     <CardDescription>
-      Career rating vs the spread you locked your pick against. {RATING_PAR} = market par; it carries
-      across seasons.
+      Career rating — the market, not points. Beats the spread you locked against; {RATING_PAR} = par,
+      carried across seasons.
     </CardDescription>
   </CardHeader>
   <CardContent class="space-y-3 px-3 sm:px-6">
@@ -73,7 +79,7 @@
             <span class="text-sm font-semibold tabular-nums">{entry.rating}</span>
             <!-- The season arrow is a delta INSIDE the career ladder, not a season scope: it says
                  how much this season moved the career number, which is still a career fact. -->
-            {#if entry.seasonDelta != null && entry.seasonDelta !== 0}
+            {#if showSeasonDelta && entry.seasonDelta != null && entry.seasonDelta !== 0}
               <span
                 class="text-xs font-semibold tabular-nums {entry.seasonDelta > 0
                   ? 'text-success'

@@ -197,39 +197,68 @@ const consensusEntry = (over: Partial<ConsensusStatsEntry> = {}): ConsensusStats
   ...over
 });
 
-describe('seasonScopeOptions (#518, #638)', () => {
+describe('seasonScopeOptions (#518, #638, #737)', () => {
   it('pins the newest season as "This season" and lists the rest newest-first', () => {
     expect(seasonScopeOptions([2022, 2025, 2023, 2024], true)).toEqual({
       latest: 2025,
+      lastCompleted: null,
       pastSeasons: [2024, 2023, 2022]
     });
   });
 
   it('leaves no past seasons when only one season has data', () => {
-    expect(seasonScopeOptions([2025], true)).toEqual({ latest: 2025, pastSeasons: [] });
+    expect(seasonScopeOptions([2025], true)).toEqual({
+      latest: 2025,
+      lastCompleted: null,
+      pastSeasons: []
+    });
   });
 
-  it('returns a null latest when no seasons have data, regardless of latestInProgress', () => {
-    expect(seasonScopeOptions([], true)).toEqual({ latest: null, pastSeasons: [] });
-    expect(seasonScopeOptions([], false)).toEqual({ latest: null, pastSeasons: [] });
+  it('returns null pins when no seasons have data, regardless of latestInProgress', () => {
+    expect(seasonScopeOptions([], true)).toEqual({
+      latest: null,
+      lastCompleted: null,
+      pastSeasons: []
+    });
+    expect(seasonScopeOptions([], false)).toEqual({
+      latest: null,
+      lastCompleted: null,
+      pastSeasons: []
+    });
   });
 
   it('dedupes repeated seasons', () => {
     expect(seasonScopeOptions([2024, 2024, 2023], true)).toEqual({
       latest: 2024,
+      lastCompleted: null,
       pastSeasons: [2023]
     });
   });
 
-  it('folds the newest season into pastSeasons instead of pinning it once it has concluded', () => {
+  it('pins the newest season as "Last season" once it has concluded, deduped from pastSeasons (#737)', () => {
     expect(seasonScopeOptions([2022, 2025, 2023, 2024], false)).toEqual({
       latest: null,
-      pastSeasons: [2025, 2024, 2023, 2022]
+      lastCompleted: 2025,
+      pastSeasons: [2024, 2023, 2022]
     });
   });
 
-  it('folds a single concluded season into pastSeasons rather than pinning it', () => {
-    expect(seasonScopeOptions([2025], false)).toEqual({ latest: null, pastSeasons: [2025] });
+  it('pins a single concluded season as "Last season", leaving pastSeasons empty', () => {
+    expect(seasonScopeOptions([2025], false)).toEqual({
+      latest: null,
+      lastCompleted: 2025,
+      pastSeasons: []
+    });
+  });
+
+  it('never assigns the same year to both pins', () => {
+    // Exactly one of latest/lastCompleted owns the newest year, keyed on latestInProgress.
+    const inProgress = seasonScopeOptions([2024, 2025], true);
+    const concluded = seasonScopeOptions([2024, 2025], false);
+    expect(inProgress.latest).toBe(2025);
+    expect(inProgress.lastCompleted).toBeNull();
+    expect(concluded.latest).toBeNull();
+    expect(concluded.lastCompleted).toBe(2025);
   });
 
   it('does not mutate the caller’s array', () => {

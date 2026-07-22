@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { goto, replaceState } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
   import {
@@ -29,7 +29,6 @@
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
-  import WrappedPromo from '$lib/components/wrapped/WrappedPromo.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
@@ -48,10 +47,10 @@
   // season dropdown (#518/#529) rather than being a third tab. `scope` is a pure client flip;
   // changing the *season* navigates so the season-scoped query re-keys (ADR-0017).
   let activeTab = $state<'standings' | 'weekly'>(pageData.view);
-  // Initial scope comes from `pageData.defaultScope` (#638): 'alltime' when the newest season
-  // with data has already concluded (off-season) and the visitor didn't ask for a specific
-  // season via `?season=`; 'season' otherwise — unchanged from the old always-'season' default
-  // while a season is actually in progress.
+  // Initial scope comes from `pageData.defaultScope` (#737): 'season' always — offseason
+  // included, where the default season is the last graded one and its honors lead the page —
+  // unless the visitor explicitly asked for the career window via `?scope=alltime`, which is
+  // what makes the All-time view a shareable URL rather than an unaddressable client flip.
   let scope = $state<'season' | 'alltime'>(pageData.defaultScope);
 
   // Shareable season standings come from a cached `createQuery` keyed by `(groupId, season)`:
@@ -178,10 +177,25 @@
   // only (`group_season_years`), so that season is absent from it. Without this the <select>
   // value would match no <option>, silently blanking the control to `''` while the subtitle
   // still reads "<year> season." (this empty value is what tripped the all-time e2e spec).
+  // `currentSeasonYear` is folded in too (#737) so the week-1 window offers a "This season"
+  // pin for the seeded-but-ungraded year while the default stays the last graded season —
+  // the server computes `latestSeasonInProgress` against the same folded maximum.
   const scopeOptions = $derived(
-    seasonScopeOptions([...data.availableSeasons, data.seasonYear], data.latestSeasonInProgress)
+    seasonScopeOptions(
+      [...data.availableSeasons, data.seasonYear, data.currentSeasonYear],
+      data.latestSeasonInProgress
+    )
   );
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.seasonYear));
+
+  // The ladder's ▲/▼ arrow narrates how much the LATEST settled season moved each career
+  // rating (`computeRatings.ts`) — it is not parameterized by the viewed season. Now that the
+  // ladder renders under every scope (#737), suppress it when browsing an older season so a
+  // "this season" delta never sits beside a 2023 table (ADR-0032 §9 non-conflation).
+  const latestDataSeason = $derived(Math.max(...data.availableSeasons, data.seasonYear));
+  const showLadderSeasonDelta = $derived(
+    scope === 'alltime' || data.seasonYear === latestDataSeason
+  );
 
   // The subtitle names whatever the ACTIVE tab's own control is set to, so the two tabs never
   // both claim the header line.
@@ -202,18 +216,25 @@
 
   function onScopeChange(e: Event) {
     const value = (e.target as HTMLSelectElement).value;
+    const url = new URL(window.location.href);
     if (value === 'alltime') {
       // All-time is a standings window, and this control now lives inside the Standings panel —
-      // so it can only ever be reached from Standings. There is no cross-tab bounce left to
-      // undo: the old global bar offered All-time above Week too and silently yanked you here.
+      // so it can only ever be reached from Standings. The flip is pure client state (no data
+      // to load — the career query is always warm), but the URL mirrors it via `?scope=alltime`
+      // (#737) so the view is shareable and survives a reload; `replaceState` keeps the flip
+      // out of the back-button history the way a view toggle should be.
       scope = 'alltime';
+      url.searchParams.set('scope', 'alltime');
+      replaceState(url, {});
       return;
     }
     scope = 'season';
+    url.searchParams.delete('scope');
     if (value !== String(data.seasonYear)) {
-      const url = new URL(window.location.href);
       url.searchParams.set('season', value);
       void goto(url.toString(), { invalidateAll: true, noScroll: true });
+    } else {
+      replaceState(url, {});
     }
   }
 
@@ -249,6 +270,23 @@
   </Card>
 {/snippet}
 
+{#snippet honorsCard()}
+  <!-- Honors (#561): trophy case, wooden spoon, and awards — the reigning champion itself
+       lives in the evergreen banner above the tabs (#727). Keyed on the page's resolved
+       season (shared cache with /league/manage), following the scope selector rather than
+       carrying a second picker (#631). A snippet because its position depends on the viewed
+       season's state (#737): a concluded season leads with it, an in-progress one shows the
+       table first. Also the durable door to Season Wrapped since #737 retired WrappedPromo. -->
+  <LeagueHonors
+    honors={group.honors}
+    badges={group.badges}
+    members={group.members}
+    currentUserId={data.currentUserId}
+    selectedSeason={data.seasonYear}
+    recapsHref={`/recap?season=${data.seasonYear}`}
+  />
+{/snippet}
+
 {#snippet standingsError(retry: () => void)}
   <!-- Only shown on a *hard* failure (error with no cached data); a background-refetch failure
        that still has last-good data keeps rendering the table, and the shell stale pill flags it
@@ -265,9 +303,9 @@
 {/snippet}
 
 <!-- The League home (#561, re-contained by #631): two self-contained tabs where the tab you're on
-     fully governs what's on screen. Only the heading, the Manage action, and the seasonal Wrapped
-     promo render outside the tab group — honors and the manage card used to sit after `</Tabs>`
-     and so appeared identically under both tabs. The standings testids keep their `leaderboard-`
+     fully governs what's on screen. Only the heading, the Manage action, and the champion banner
+     render outside the tab group — honors and the manage card used to sit after `</Tabs>` and
+     so appeared identically under both tabs. The standings testids keep their `leaderboard-`
      prefix as stable e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the content is still
      the leaderboard, and those anchors stay put across renames. -->
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
@@ -306,14 +344,11 @@
     {/if}
   </div>
 
-  {#if data.latestWrappedSeason != null}
-    <WrappedPromo groupId={data.groupId} seasonYear={data.latestWrappedSeason} />
-  {/if}
-
   <!-- Reigning-champion banner (#727): evergreen, rendered above the tab group so it shows on
        both Standings and Week — unlike the old LeagueHonors placement, which only reached the
-       Standings-season branch. Stacking order (decided): WrappedPromo (ember/action) on top,
-       this banner (gold/identity) directly above the tabs. -->
+       Standings-season branch. WrappedPromo used to stack above it; #737 retired the promo
+       (its CTA lives in the honors card's Wrapped link), so the banner is the one block that
+       renders outside the tab group and the dense tab nets lighter. -->
   {#if group.honors.reigningChampion}
     <ReigningChampionBanner
       reigningChampion={group.honors.reigningChampion}
@@ -353,8 +388,15 @@
           aria-labelledby="leaderboard-scope-label"
           data-testid="leaderboard-scope"
         >
+          <!-- Exactly one season pin (#638/#737): "This season" while one is in progress,
+               "Last season" once it has concluded — a concluded season is never labelled
+               "This season", and the pinned year is deduped out of Past seasons. -->
           {#if scopeOptions.latest !== null}
             <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+          {:else if scopeOptions.lastCompleted !== null}
+            <option value={String(scopeOptions.lastCompleted)}>
+              Last season · {scopeOptions.lastCompleted}
+            </option>
           {/if}
           <option value="alltime">All-time</option>
           {#if scopeOptions.pastSeasons.length > 0}
@@ -367,7 +409,11 @@
         </select>
       </div>
 
-      <div class="mt-4">
+      <!-- Block order (#737) is data-keyed, never calendar-keyed — the same season's page
+           renders identically in July and November. A concluded season leads with its crown
+           (honors → table); an in-progress one with the live question (table → honors). The
+           ladder and the race follow beneath in every case. -->
+      <div class="mt-4 space-y-6">
         {#if scope === 'alltime'}
           {#if allTimeQuery.isPending}
             {@render standingsLoading()}
@@ -383,96 +429,85 @@
               </CardHeader>
             </Card>
           {:else}
-            <!-- The career table leads — "where do I stand" first — then the ladder answers the
-                 question the table can't: whether standing there meant beating the market. Both are
-                 career-grain, so they belong to this window and no other (#637). The ladder is a
-                 sibling card INSIDE the Standings panel, never outside the tab group and never a
-                 fourth column on the three-column table (#631). -->
-            <div class="space-y-6">
-              <StandingsTable
-                rows={allTime.totals}
-                title="All-time standings"
-                currentUserId={data.currentUserId}
-                showDropFootnote={allTime.dropActive}
-                dropCopy="Total drops each player's lowest week per season. W-L-P count every week."
-                tableTestid="alltime-table"
-                {commissionerIds}
-              />
-              <!-- Nobody qualified yet is a legitimate state, not an error: render nothing rather
-                   than a card of dashes (ADR-0032 §5 — no number before the gate). -->
-              {#if hasRatedMember(allTime.ladder)}
-                <RatingLadder rows={allTime.ladder} currentUserId={data.currentUserId} />
-              {/if}
-            </div>
+            <StandingsTable
+              rows={allTime.totals}
+              title="All-time standings"
+              currentUserId={data.currentUserId}
+              showDropFootnote={allTime.dropActive}
+              dropCopy="Total drops each player's lowest week per season. W-L-P count every week."
+              tableTestid="alltime-table"
+              {commissionerIds}
+            />
           {/if}
         {:else}
-          <!-- The season window. Honors and the race are both season-scoped, so they render here
-               and not under All-time: an "Awards · 2025 · Crowned" block beside a career table
-               would be exactly the two-things-disagreeing-about-the-season problem #631 set out
-               to fix. Honors sits outside the standings branch chain so a league with a champion
-               but a pre-grading current season still shows its trophy case. -->
-          <div class="space-y-6">
-            {#if leaderboardQuery.isPending}
-              {@render standingsLoading()}
-            {:else if leaderboardQuery.isError && !leaderboardQuery.data}
-              {@render standingsError(() => leaderboardQuery.refetch())}
-            {:else if data.totals.length === 0}
-              <Card class="border-dashed" data-testid="standings-empty">
-                <CardHeader>
-                  <CardTitle>No standings yet</CardTitle>
-                  <CardDescription>
-                    Season standings will appear after the first games are graded.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            {:else}
-              <!-- Standings lead the view: the ranked table answers "where do I stand" first, then
-                   "The race" tells the story below it. The table is always present; the race renders
-                   only once a week is graded (the trend is season-scoped), so a pre-grading season
-                   shows the table alone. -->
-              <StandingsTable
-                rows={data.totals}
-                title="{data.seasonYear} standings"
-                currentUserId={data.currentUserId}
-                showDropFootnote={data.dropActive}
-                dropCopy="Total drops each player's lowest week. W-L-P count every week."
-                tableTestid="standings-table"
-                champion={championUserId}
-                movementsByUser={movements}
-                {commissionerIds}
-              />
-              {#if hasGradedWeek(pageData.trend ?? [])}
-                <Card data-testid="season-race">
-                  <CardHeader>
-                    <CardTitle>The race</CardTitle>
-                    <CardDescription>
-                      Cumulative points by week — tap a name to trace their run.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SeasonRaceChart
-                      rows={pageData.trend ?? []}
-                      currentUserId={data.currentUserId}
-                    />
-                  </CardContent>
-                </Card>
-              {/if}
-            {/if}
-
-            <!-- Honors (#561): trophy case, wooden spoon, and awards — the reigning champion
-                 itself lives outside this card now, in the evergreen banner above the tabs
-                 (#727). Keyed on the page's resolved season (shared cache with /league/manage),
-                 and following the scope selector above rather than carrying a second picker of
-                 its own (#631). -->
-            <LeagueHonors
-              honors={group.honors}
-              badges={group.badges}
-              members={group.members}
+          <!-- The season window. Honors is season-scoped, so it renders here and not under
+               All-time: an "Awards · 2025 · Crowned" block beside a career table would be
+               exactly the two-things-disagreeing-about-the-season problem #631 set out to fix.
+               It sits outside the standings branch chain so a league with a champion but a
+               pre-grading current season still shows its trophy case. -->
+          {#if !data.viewedSeasonInProgress}
+            {@render honorsCard()}
+          {/if}
+          {#if leaderboardQuery.isPending}
+            {@render standingsLoading()}
+          {:else if leaderboardQuery.isError && !leaderboardQuery.data}
+            {@render standingsError(() => leaderboardQuery.refetch())}
+          {:else if data.totals.length === 0}
+            <Card class="border-dashed" data-testid="standings-empty">
+              <CardHeader>
+                <CardTitle>No standings yet</CardTitle>
+                <CardDescription>
+                  Season standings will appear after the first games are graded.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          {:else}
+            <StandingsTable
+              rows={data.totals}
+              title="{data.seasonYear} standings"
               currentUserId={data.currentUserId}
-              selectedSeason={data.seasonYear}
-              recapsHref={`/recap?season=${data.seasonYear}`}
+              showDropFootnote={data.dropActive}
+              dropCopy="Total drops each player's lowest week. W-L-P count every week."
+              tableTestid="standings-table"
+              champion={championUserId}
+              movementsByUser={movements}
+              {commissionerIds}
             />
-          </div>
+          {/if}
+          {#if data.viewedSeasonInProgress}
+            {@render honorsCard()}
+          {/if}
+        {/if}
+
+        <!-- The credibility ladder (#637, ungated by #737): career-grain by construction
+             (ADR-0032), it now renders beneath the table in BOTH scopes — the standings say you
+             beat five friends, the ladder says whether you beat the number, and hiding one
+             behind a scope flip was the mutual-exclusion #737 removed. Still a sibling card,
+             never a fourth column on the table (#631). Nobody qualified yet is a legitimate
+             state, not an error: render nothing rather than a card of dashes (ADR-0032 §5). -->
+        {#if hasRatedMember(allTime.ladder)}
+          <RatingLadder
+            rows={allTime.ladder}
+            currentUserId={data.currentUserId}
+            showSeasonDelta={showLadderSeasonDelta}
+          />
+        {/if}
+
+        <!-- The race is the archive tier of the season window (#737): a story you scroll to,
+             demoted below the answers ("where do I stand", the honors, the ladder). Renders
+             only once a week is graded — the trend is season-scoped, so All-time hides it. -->
+        {#if scope !== 'alltime' && hasGradedWeek(pageData.trend ?? [])}
+          <Card data-testid="season-race">
+            <CardHeader>
+              <CardTitle>The race</CardTitle>
+              <CardDescription>
+                Cumulative points by week — tap a name to trace their run.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SeasonRaceChart rows={pageData.trend ?? []} currentUserId={data.currentUserId} />
+            </CardContent>
+          </Card>
         {/if}
       </div>
     </TabsContent>
