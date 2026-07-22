@@ -151,7 +151,7 @@ describe('getRecapCachePayload — per-group isolation', () => {
 
     const week = payload.weeklyAwards.weeks.find((w) => w.week_number === 10);
     expect(week).toBeDefined();
-    const holderIds = week!.awards.map((a) => a.holder.user_id);
+    const holderIds = week!.awards.flatMap((a) => a.holders.map((h) => h.user_id));
     expect(holderIds).not.toContain(fx.exclusiveUserBId);
     const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
     expect(shelfIds).not.toContain(fx.exclusiveUserBId);
@@ -165,7 +165,7 @@ describe('getRecapCachePayload — per-group isolation', () => {
 
     const week = payload.weeklyAwards.weeks.find((w) => w.week_number === 10);
     expect(week).toBeDefined();
-    const holderIds = week!.awards.map((a) => a.holder.user_id);
+    const holderIds = week!.awards.flatMap((a) => a.holders.map((h) => h.user_id));
     expect(holderIds).not.toContain(fx.exclusiveUserAId);
     const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
     expect(shelfIds).not.toContain(fx.exclusiveUserAId);
