@@ -57,7 +57,7 @@ describe('gameBallOfWeek', () => {
       pts({ user_id: 'b', display_name: 'Bo', week_points: 9 }),
       pts({ user_id: 'c', display_name: 'Cy', week_points: 7 })
     ]);
-    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, points: 9 });
+    expect(r).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], points: 9 });
   });
 
   it('crowns even a single (negative) player', () => {
@@ -65,15 +65,31 @@ describe('gameBallOfWeek', () => {
     expect(r?.points).toBe(-4);
   });
 
-  it('breaks ties by display_name then user_id, independent of input order', () => {
+  it('mints every player tied on the week high as a co-winner, in identity order (#770)', () => {
     const a = pts({ user_id: 'z', display_name: 'Zoe', week_points: 8 });
     const b = pts({ user_id: 'a', display_name: 'Ada', week_points: 8 });
-    const c = pts({ user_id: 'm', display_name: 'Moe', week_points: 8 });
-    expect(gameBallOfWeek([a, b, c])?.holder.display_name).toBe(
-      gameBallOfWeek([c, b, a])?.holder.display_name
-    );
-    // "Ada" < "Moe" < "Zoe" by locale compare.
-    expect(gameBallOfWeek([a, b, c])?.holder.user_id).toBe('a');
+    const c = pts({ user_id: 'm', display_name: 'Moe', week_points: 5 });
+    // "Ada" < "Zoe" by locale compare; Moe is off the high and wins nothing.
+    expect(gameBallOfWeek([a, b, c])).toEqual({
+      holders: [
+        { user_id: 'a', display_name: 'Ada' },
+        { user_id: 'z', display_name: 'Zoe' }
+      ],
+      points: 8
+    });
+    // Order-independent.
+    expect(gameBallOfWeek([c, b, a])).toEqual(gameBallOfWeek([a, b, c]));
+  });
+
+  it('crowns everyone in a flat week — it is still "most points" (#770)', () => {
+    const flat = [
+      pts({ user_id: 'a', display_name: 'Al', week_points: 4 }),
+      pts({ user_id: 'b', display_name: 'Bo', week_points: 4 }),
+      pts({ user_id: 'c', display_name: 'Cy', week_points: 4 })
+    ];
+    expect(gameBallOfWeek(flat)?.holders.map((h) => h.user_id)).toEqual(['a', 'b', 'c']);
+    // …while the Donkey side deliberately mints nobody.
+    expect(donkeyOfWeek(flat)).toBeNull();
   });
 });
 
@@ -96,17 +112,19 @@ describe('donkeyOfWeek', () => {
     ];
     const donkey = donkeyOfWeek(week);
     const gameBall = gameBallOfWeek(week);
-    expect(donkey).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, points: -3 });
-    expect(donkey?.holder.user_id).not.toBe(gameBall?.holder.user_id);
+    expect(donkey).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], points: -3 });
+    expect(donkey?.holders[0].user_id).not.toBe(gameBall?.holders[0].user_id);
   });
 
-  it('breaks a bottom tie by identity', () => {
+  it('shares the bottom between everyone tied there, in identity order (#770)', () => {
     const week = [
       pts({ user_id: 'top', display_name: 'Top', week_points: 9 }),
       pts({ user_id: 'z', display_name: 'Zed', week_points: 1 }),
       pts({ user_id: 'a', display_name: 'Abe', week_points: 1 })
     ];
-    expect(donkeyOfWeek(week)?.holder.user_id).toBe('a'); // "Abe" < "Zed"
+    // "Abe" < "Zed" by locale compare.
+    expect(donkeyOfWeek(week)?.holders.map((h) => h.user_id)).toEqual(['a', 'z']);
+    expect(donkeyOfWeek([...week].reverse())).toEqual(donkeyOfWeek(week));
   });
 });
 
@@ -126,7 +144,7 @@ describe('badBeatOfWeek', () => {
       cover({ user_id: 'b', display_name: 'Bo', cover_margin: -0.5 }),
       cover({ user_id: 'c', display_name: 'Cy', cover_margin: -3 })
     ]);
-    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: -0.5 });
+    expect(r).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], cover_margin: -0.5 });
   });
 
   it('ignores winning and pushing picks even if their margin is closer to zero', () => {
@@ -134,18 +152,22 @@ describe('badBeatOfWeek', () => {
       cover({ user_id: 'a', display_name: 'Al', outcome: 'win', cover_margin: 0.5 }),
       cover({ user_id: 'b', display_name: 'Bo', outcome: 'loss', cover_margin: -2 })
     ]);
-    expect(r?.holder.user_id).toBe('b');
+    expect(r?.holders.map((h) => h.user_id)).toEqual(['b']);
   });
 
-  it('breaks equal-margin ties by identity then game_id, order-independent', () => {
+  it('mints every equal-margin beat as a co-winner, identity-ordered and order-independent (#770)', () => {
+    const a = cover({ user_id: 'b', display_name: 'Bo', game_id: 'g9', cover_margin: -1 });
+    const b = cover({ user_id: 'a', display_name: 'Al', game_id: 'g5', cover_margin: -1 });
+    const c = cover({ user_id: 'c', display_name: 'Cy', game_id: 'g1', cover_margin: -6 });
+    // Al < Bo by name; Cy's wider beat loses outright.
+    expect(badBeatOfWeek([a, b, c])?.holders.map((h) => h.user_id)).toEqual(['a', 'b']);
+    expect(badBeatOfWeek([c, b, a])).toEqual(badBeatOfWeek([a, b, c]));
+  });
+
+  it('counts a player tied with themselves across two picks once (#770)', () => {
     const a = cover({ user_id: 'b', display_name: 'Bo', game_id: 'g9', cover_margin: -1 });
     const b = cover({ user_id: 'b', display_name: 'Bo', game_id: 'g2', cover_margin: -1 });
-    const c = cover({ user_id: 'a', display_name: 'Al', game_id: 'g5', cover_margin: -1 });
-    // Al < Bo by name, so 'a' wins regardless of game_id or order.
-    expect(badBeatOfWeek([a, b, c])?.holder.user_id).toBe('a');
-    expect(badBeatOfWeek([c, b, a])?.holder.user_id).toBe('a');
-    // Same player, tie falls to the lower game_id.
-    expect(badBeatOfWeek([a, b])?.holder.user_id).toBe('b');
+    expect(badBeatOfWeek([a, b])?.holders).toEqual([{ user_id: 'b', display_name: 'Bo' }]);
   });
 });
 
@@ -165,7 +187,7 @@ describe('backdoorOfWeek', () => {
       cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 0.5 }),
       cover({ user_id: 'c', display_name: 'Cy', outcome: 'win', cover_margin: 3 })
     ]);
-    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 0.5 });
+    expect(r).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], cover_margin: 0.5 });
   });
 
   it('ignores losing and pushing picks even if their margin is closer to zero', () => {
@@ -173,7 +195,7 @@ describe('backdoorOfWeek', () => {
       cover({ user_id: 'a', display_name: 'Al', outcome: 'loss', cover_margin: -0.5 }),
       cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 2 })
     ]);
-    expect(r?.holder.user_id).toBe('b');
+    expect(r?.holders.map((h) => h.user_id)).toEqual(['b']);
   });
 
   it('still crowns the least-wide win when every win was comfortable (no separate threshold)', () => {
@@ -184,10 +206,10 @@ describe('backdoorOfWeek', () => {
       cover({ user_id: 'a', display_name: 'Al', outcome: 'win', cover_margin: 21 }),
       cover({ user_id: 'b', display_name: 'Bo', outcome: 'win', cover_margin: 14 })
     ]);
-    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 14 });
+    expect(r).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], cover_margin: 14 });
   });
 
-  it('breaks equal-margin ties by identity then game_id, order-independent', () => {
+  it('mints every equal-margin cover as a co-winner, deduping one player’s two picks (#770)', () => {
     const a = cover({
       user_id: 'b',
       display_name: 'Bo',
@@ -209,11 +231,13 @@ describe('backdoorOfWeek', () => {
       outcome: 'win',
       cover_margin: 1
     });
-    // Al < Bo by name, so 'a' wins regardless of game_id or order.
-    expect(backdoorOfWeek([a, b, c])?.holder.user_id).toBe('a');
-    expect(backdoorOfWeek([c, b, a])?.holder.user_id).toBe('a');
-    // Same player, tie falls to the lower game_id.
-    expect(backdoorOfWeek([a, b])?.holder.user_id).toBe('b');
+    // Al < Bo by name; Bo's two tied picks collapse to one holder.
+    expect(backdoorOfWeek([a, b, c])?.holders).toEqual([
+      { user_id: 'a', display_name: 'Al' },
+      { user_id: 'b', display_name: 'Bo' }
+    ]);
+    expect(backdoorOfWeek([c, b, a])).toEqual(backdoorOfWeek([a, b, c]));
+    expect(backdoorOfWeek([a, b])?.holders).toEqual([{ user_id: 'b', display_name: 'Bo' }]);
   });
 
   it('fires alongside Bad Beat in the same week without interfering', () => {
@@ -223,8 +247,14 @@ describe('backdoorOfWeek', () => {
     ];
     const badBeat = badBeatOfWeek(covers);
     const backdoor = backdoorOfWeek(covers);
-    expect(badBeat).toEqual({ holder: { user_id: 'a', display_name: 'Al' }, cover_margin: -0.5 });
-    expect(backdoor).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, cover_margin: 0.5 });
+    expect(badBeat).toEqual({
+      holders: [{ user_id: 'a', display_name: 'Al' }],
+      cover_margin: -0.5
+    });
+    expect(backdoor).toEqual({
+      holders: [{ user_id: 'b', display_name: 'Bo' }],
+      cover_margin: 0.5
+    });
   });
 });
 
@@ -244,15 +274,25 @@ describe('contrarianWinOfWeek', () => {
       cons({ user_id: 'b', display_name: 'Bo', consensus_pct: 12.5 }),
       cons({ user_id: 'c', display_name: 'Cy', consensus_pct: 33 })
     ]);
-    expect(r).toEqual({ holder: { user_id: 'b', display_name: 'Bo' }, consensus_pct: 12.5 });
+    expect(r).toEqual({ holders: [{ user_id: 'b', display_name: 'Bo' }], consensus_pct: 12.5 });
   });
 
-  it('breaks equal-consensus ties by identity', () => {
+  it('mints every equal-consensus lone winner as a co-winner (#770)', () => {
+    const rows = [
+      cons({ user_id: 'z', display_name: 'Zoe', game_id: 'g1', consensus_pct: 20 }),
+      cons({ user_id: 'a', display_name: 'Abe', game_id: 'g2', consensus_pct: 20 }),
+      cons({ user_id: 'm', display_name: 'Moe', game_id: 'g3', consensus_pct: 40 })
+    ];
+    expect(contrarianWinOfWeek(rows)?.holders.map((h) => h.user_id)).toEqual(['a', 'z']);
+    expect(contrarianWinOfWeek([...rows].reverse())).toEqual(contrarianWinOfWeek(rows));
+  });
+
+  it('counts a player tied with themselves across two lone picks once (#770)', () => {
     const r = contrarianWinOfWeek([
-      cons({ user_id: 'z', display_name: 'Zoe', consensus_pct: 20 }),
-      cons({ user_id: 'a', display_name: 'Abe', consensus_pct: 20 })
+      cons({ user_id: 'a', display_name: 'Abe', game_id: 'g1', consensus_pct: 20 }),
+      cons({ user_id: 'a', display_name: 'Abe', game_id: 'g2', consensus_pct: 20 })
     ]);
-    expect(r?.holder.user_id).toBe('a');
+    expect(r?.holders).toEqual([{ user_id: 'a', display_name: 'Abe' }]);
   });
 });
 
@@ -305,13 +345,15 @@ describe('computeWeeklyHardware', () => {
       'contrarian-win'
     ]);
     // Week 1: Al top (game ball), Bo bottom (donkey), Bo bad beat, Al backdoor, Al contrarian.
-    const byId = Object.fromEntries(week1.awards.map((a) => [a.id, a.holder.user_id]));
+    const byId = Object.fromEntries(
+      week1.awards.map((a) => [a.id, a.holders.map((h) => h.user_id)])
+    );
     expect(byId).toEqual({
-      'game-ball': 'a',
-      'donkey-of-week': 'b',
-      'bad-beat': 'b',
-      backdoor: 'a',
-      'contrarian-win': 'a'
+      'game-ball': ['a'],
+      'donkey-of-week': ['b'],
+      'bad-beat': ['b'],
+      backdoor: ['a'],
+      'contrarian-win': ['a']
     });
   });
 
@@ -366,6 +408,49 @@ describe('computeSeasonShelf', () => {
     // Single player: game ball (only one, no donkey), bad beat, contrarian win — donkey absent.
     expect(shelf[0].awards.map((a) => a.id)).toEqual(['game-ball', 'bad-beat', 'contrarian-win']);
     expect(shelf[0].total).toBe(3);
+  });
+
+  it('gives every co-winner a full award, never a fraction (#770)', () => {
+    const inputs: WeeklyAwardInputs = {
+      points: [
+        // Week 1: Al and Bo tie the high at 9, Cy is the lone donkey.
+        pts({ user_id: 'a', display_name: 'Al', week_number: 1, week_points: 9 }),
+        pts({ user_id: 'b', display_name: 'Bo', week_number: 1, week_points: 9 }),
+        pts({ user_id: 'c', display_name: 'Cy', week_number: 1, week_points: 2 })
+      ],
+      covers: [],
+      consensus: []
+    };
+    const hardware = computeWeeklyHardware(inputs);
+    const gameBall = hardware[0].awards.find((a) => a.id === 'game-ball')!;
+    expect(gameBall.holders.map((h) => h.user_id)).toEqual(['a', 'b']);
+
+    const shelf = computeSeasonShelf(hardware);
+    const counts = Object.fromEntries(shelf.map((e) => [e.user_id, e.total]));
+    // Both co-winners bank one whole Game Ball; Cy banks the Donkey.
+    expect(counts).toEqual({ a: 1, b: 1, c: 1 });
+    for (const id of ['a', 'b']) {
+      expect(shelf.find((e) => e.user_id === id)!.awards).toEqual([
+        { id: 'game-ball', short: 'Game Ball', emoji: '🏈', count: 1 }
+      ]);
+    }
+  });
+
+  it('tallies a repeat co-winner across weeks (#770)', () => {
+    const week = (n: number): WeeklyPointsEntry[] => [
+      pts({ user_id: 'a', display_name: 'Al', week_number: n, week_points: 9 }),
+      pts({ user_id: 'b', display_name: 'Bo', week_number: n, week_points: 9 }),
+      pts({ user_id: 'c', display_name: 'Cy', week_number: n, week_points: 0 })
+    ];
+    const shelf = computeSeasonShelf(
+      computeWeeklyHardware({ points: [...week(1), ...week(2)], covers: [], consensus: [] })
+    );
+    expect(shelf.find((e) => e.user_id === 'a')!.awards).toEqual([
+      { id: 'game-ball', short: 'Game Ball', emoji: '🏈', count: 2 }
+    ]);
+    expect(shelf.find((e) => e.user_id === 'b')!.awards).toEqual([
+      { id: 'game-ball', short: 'Game Ball', emoji: '🏈', count: 2 }
+    ]);
   });
 
   it('returns an empty shelf when no hardware was minted', () => {

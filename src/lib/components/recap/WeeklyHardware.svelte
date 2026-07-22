@@ -61,9 +61,14 @@
             <span aria-hidden="true">{award.emoji}</span>
             {award.short}
           </span>
-          <span class="truncate text-sm font-semibold">
-            {nameFor(award.holder.user_id, award.holder.display_name)}
-          </span>
+          <!-- Co-winners stack one name per line (#770): the tie exists to be seen, so every
+               holder stays visible and only an over-long name truncates. A lone holder renders
+               exactly as it always did, and the grid stretches sibling tiles to match. -->
+          {#each award.holders as holder (holder.user_id)}
+            <span class="truncate text-sm font-semibold" data-testid="weekly-award-holder">
+              {nameFor(holder.user_id, holder.display_name)}
+            </span>
+          {/each}
           <span class="text-xs text-muted-foreground tabular-nums">{detailText(award)}</span>
         </li>
       {/each}

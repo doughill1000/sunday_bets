@@ -91,7 +91,12 @@ type WeeklyAwardBase = {
   short: string;
   emoji: string;
   description: string;
-  holder: WeeklyAwardHolder;
+  /**
+   * Everyone who tied on the ranked stat — co-winners (#770). Always at least one, listed in
+   * `byIdentity` order. A genuine tie is as deterministic as a single winner, so we mint them
+   * all rather than silently handing the award to whoever sorts first alphabetically.
+   */
+  holders: WeeklyAwardHolder[];
 };
 
 /**
@@ -185,87 +190,112 @@ function byIdentity(a: IdentifiedRow, b: IdentifiedRow): number {
   return 0;
 }
 
-/** The single best row under `rank` (higher wins), identity as the deterministic tiebreak. */
-function bestBy<T extends IdentifiedRow>(rows: T[], rank: (r: T) => number): T {
-  return rows.reduce((best, curr) => {
-    const d = rank(curr) - rank(best);
-    if (d > 0) return curr;
-    if (d === 0 && byIdentity(curr, best) < 0) return curr;
-    return best;
-  });
+/**
+ * Every row tied at the best `rank` (higher wins), in `byIdentity` order (#770). Exact-value
+ * equality is the tie test: every input comes from the same matview computation, so there is
+ * no float drift to absorb and no epsilon to tune. Returns [] only for empty input.
+ */
+function allBestBy<T extends IdentifiedRow>(rows: T[], rank: (r: T) => number): T[] {
+  if (rows.length === 0) return [];
+  const best = rows.reduce((m, r) => Math.max(m, rank(r)), -Infinity);
+  return rows.filter((r) => rank(r) === best).sort(byIdentity);
 }
 
-function holderOf(e: { user_id: string; display_name: string }): WeeklyAwardHolder {
-  return { user_id: e.user_id, display_name: e.display_name };
+/**
+ * Tied rows → holders, one per player. The per-pick awards (bad beat / backdoor / contrarian)
+ * rank individual picks, so one player can hold two rows tied at the same margin or consensus;
+ * they are still one co-winner. Input arrives `byIdentity`-sorted, so first-wins dedupe keeps
+ * the display order.
+ */
+function holdersOf(rows: IdentifiedRow[]): WeeklyAwardHolder[] {
+  const seen = new Set<string>();
+  const holders: WeeklyAwardHolder[] = [];
+  for (const r of rows) {
+    if (seen.has(r.user_id)) continue;
+    seen.add(r.user_id);
+    holders.push({ user_id: r.user_id, display_name: r.display_name });
+  }
+  return holders;
 }
 
-// --- Selectors (one holder or null, deterministic) ---
+// --- Selectors (all co-winners, or null when nobody qualifies; deterministic) ---
 
-/** Game Ball of the Week: most points. Tie → identity. Null only on an empty week. */
+/**
+ * Game Ball of the Week: most points. Everyone on the week high shares it. Null only on an
+ * empty week — which means a flat week with 2+ players crowns *everybody* (it is still "most
+ * points"). The Donkey-side asymmetry below is deliberate.
+ */
 export function gameBallOfWeek(
   points: WeeklyPointsEntry[]
-): { holder: WeeklyAwardHolder; points: number } | null {
-  if (points.length === 0) return null;
-  const best = bestBy(points, (p) => p.week_points);
-  return { holder: holderOf(best), points: best.week_points };
+): { holders: WeeklyAwardHolder[]; points: number } | null {
+  const best = allBestBy(points, (p) => p.week_points);
+  if (best.length === 0) return null;
+  return { holders: holdersOf(best), points: best[0].week_points };
 }
 
 /**
  * Donkey of the Week: fewest points. Requires 2+ players AND a real spread — if everyone
  * scored the same there is no distinct donkey (and it could never differ from the game ball),
- * so we award nobody. Tie at the bottom → identity.
+ * so we award nobody. Everyone tied at the bottom shares it.
  */
 export function donkeyOfWeek(
   points: WeeklyPointsEntry[]
-): { holder: WeeklyAwardHolder; points: number } | null {
+): { holders: WeeklyAwardHolder[]; points: number } | null {
   if (points.length < 2) return null;
   const min = Math.min(...points.map((p) => p.week_points));
   const max = Math.max(...points.map((p) => p.week_points));
   if (min === max) return null; // flat week: no donkey
-  // Rank by fewest points: negate so bestBy's "higher wins" finds the minimum.
-  const worst = bestBy(points, (p) => -p.week_points);
-  return { holder: holderOf(worst), points: worst.week_points };
+  // Rank by fewest points: negate so allBestBy's "higher wins" finds the minimum.
+  const worst = allBestBy(points, (p) => -p.week_points);
+  return { holders: holdersOf(worst), points: worst[0].week_points };
 }
 
 /**
  * Bad Beat of the Week: the losing pick that came closest to covering — the greatest
- * (least-negative) cover_margin among losses. Tie → identity. Null if no pick lost.
+ * (least-negative) cover_margin among losses. Every pick on that margin mints its owner;
+ * a player holding two such picks is one co-winner. Null if no pick lost.
  */
 export function badBeatOfWeek(
   covers: WeeklyCoverEntry[]
-): { holder: WeeklyAwardHolder; cover_margin: number } | null {
-  const losses = covers.filter((c) => c.outcome === 'loss');
-  if (losses.length === 0) return null;
-  const worst = bestBy(losses, (c) => c.cover_margin);
-  return { holder: holderOf(worst), cover_margin: worst.cover_margin };
+): { holders: WeeklyAwardHolder[]; cover_margin: number } | null {
+  const worst = allBestBy(
+    covers.filter((c) => c.outcome === 'loss'),
+    (c) => c.cover_margin
+  );
+  if (worst.length === 0) return null;
+  return { holders: holdersOf(worst), cover_margin: worst[0].cover_margin };
 }
 
 /**
  * Backdoor of the Week: the winning pick that barely covered — the smallest positive
- * cover_margin among wins. Tie → identity. Null if no pick won. Mirror of badBeatOfWeek (#636).
+ * cover_margin among wins. Tie → co-winners. Null if no pick won. Mirror of badBeatOfWeek (#636).
  */
 export function backdoorOfWeek(
   covers: WeeklyCoverEntry[]
-): { holder: WeeklyAwardHolder; cover_margin: number } | null {
-  const wins = covers.filter((c) => c.outcome === 'win');
-  if (wins.length === 0) return null;
-  // Narrowest = smallest positive margin: negate so bestBy's "higher wins" finds the minimum.
-  const narrowest = bestBy(wins, (c) => -c.cover_margin);
-  return { holder: holderOf(narrowest), cover_margin: narrowest.cover_margin };
+): { holders: WeeklyAwardHolder[]; cover_margin: number } | null {
+  // Narrowest = smallest positive margin: negate so allBestBy's "higher wins" finds the minimum.
+  const narrowest = allBestBy(
+    covers.filter((c) => c.outcome === 'win'),
+    (c) => -c.cover_margin
+  );
+  if (narrowest.length === 0) return null;
+  return { holders: holdersOf(narrowest), cover_margin: narrowest[0].cover_margin };
 }
 
 /**
- * Contrarian Win of the Week: the lowest-consensus minority pick that won. Tie → identity.
+ * Contrarian Win of the Week: the lowest-consensus minority pick that won. Tie → co-winners.
  * Null if no minority pick won this week.
  */
 export function contrarianWinOfWeek(
   consensus: WeeklyConsensusEntry[]
-): { holder: WeeklyAwardHolder; consensus_pct: number } | null {
-  const hits = consensus.filter((c) => c.is_minority && c.outcome === 'win');
-  if (hits.length === 0) return null;
-  // Loneliest = lowest consensus_pct: negate so bestBy finds the minimum.
-  const lone = bestBy(hits, (c) => -c.consensus_pct);
-  return { holder: holderOf(lone), consensus_pct: lone.consensus_pct };
+): { holders: WeeklyAwardHolder[]; consensus_pct: number } | null {
+  // Loneliest = lowest consensus_pct: negate so allBestBy finds the minimum.
+  const lone = allBestBy(
+    consensus.filter((c) => c.is_minority && c.outcome === 'win'),
+    (c) => -c.consensus_pct
+  );
+  if (lone.length === 0) return null;
+  return { holders: holdersOf(lone), consensus_pct: lone[0].consensus_pct };
 }
 
 // --- Assembly ---
@@ -301,17 +331,25 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
 
     const gameBall = gameBallOfWeek(points);
     if (gameBall)
-      awards.push({ ...flavorFor('game-ball'), holder: gameBall.holder, points: gameBall.points });
+      awards.push({
+        ...flavorFor('game-ball'),
+        holders: gameBall.holders,
+        points: gameBall.points
+      });
 
     const donkey = donkeyOfWeek(points);
     if (donkey)
-      awards.push({ ...flavorFor('donkey-of-week'), holder: donkey.holder, points: donkey.points });
+      awards.push({
+        ...flavorFor('donkey-of-week'),
+        holders: donkey.holders,
+        points: donkey.points
+      });
 
     const badBeat = badBeatOfWeek(covers);
     if (badBeat)
       awards.push({
         ...flavorFor('bad-beat'),
-        holder: badBeat.holder,
+        holders: badBeat.holders,
         cover_margin: badBeat.cover_margin
       });
 
@@ -319,7 +357,7 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
     if (backdoor)
       awards.push({
         ...flavorFor('backdoor'),
-        holder: backdoor.holder,
+        holders: backdoor.holders,
         cover_margin: backdoor.cover_margin
       });
 
@@ -327,7 +365,7 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
     if (contrarian)
       awards.push({
         ...flavorFor('contrarian-win'),
-        holder: contrarian.holder,
+        holders: contrarian.holders,
         consensus_pct: contrarian.consensus_pct
       });
 
@@ -341,6 +379,9 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
  * Fold a season's weekly hardware into a per-player shelf: how many of each award every
  * player has won, most-decorated first (ties broken alphabetically, then by user_id).
  * Each player's awards are listed in WEEKLY_AWARD_ORDER, count > 0 only.
+ *
+ * Co-winners each bank a full award (#770) — a shared Game Ball is +1 on every holder's shelf,
+ * never a fraction. The shelf counts hardware won, and they all won it.
  */
 export function computeSeasonShelf(hardware: WeeklyHardware[]): SeasonShelfEntry[] {
   type Acc = { user_id: string; display_name: string; counts: Map<WeeklyAwardId, number> };
@@ -348,13 +389,14 @@ export function computeSeasonShelf(hardware: WeeklyHardware[]): SeasonShelfEntry
 
   for (const week of hardware) {
     for (const award of week.awards) {
-      const { user_id, display_name } = award.holder;
-      let acc = byUser.get(user_id);
-      if (!acc) {
-        acc = { user_id, display_name, counts: new Map() };
-        byUser.set(user_id, acc);
+      for (const { user_id, display_name } of award.holders) {
+        let acc = byUser.get(user_id);
+        if (!acc) {
+          acc = { user_id, display_name, counts: new Map() };
+          byUser.set(user_id, acc);
+        }
+        acc.counts.set(award.id, (acc.counts.get(award.id) ?? 0) + 1);
       }
-      acc.counts.set(award.id, (acc.counts.get(award.id) ?? 0) + 1);
     }
   }
 

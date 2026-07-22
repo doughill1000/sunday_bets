@@ -220,16 +220,18 @@ describe('weekly hardware read model (#387)', () => {
     const week1 = weeks.find((w) => w.week_number === 1);
     expect(week1).toBeDefined();
 
-    const holderById = Object.fromEntries(week1!.awards.map((a) => [a.id, a.holder.user_id]));
+    const holdersById = Object.fromEntries(
+      week1!.awards.map((a) => [a.id, a.holders.map((h) => h.user_id)])
+    );
     // Alice: 2 wins (top points); Bob: 2 losses (bottom); Bob's BUF loss (-3.5) is the closest
     // cover; Alice's PHI win was the lone minority pick that hit. Alice and Carol both covered
-    // KC by the same 3.5 margin (the smallest of the week's wins), so identity breaks the tie
-    // to Alice ("WA_Alice" < "WA_Carol").
-    expect(holderById['game-ball']).toBe(ALICE);
-    expect(holderById['donkey-of-week']).toBe(BOB);
-    expect(holderById['bad-beat']).toBe(BOB);
-    expect(holderById['backdoor']).toBe(ALICE);
-    expect(holderById['contrarian-win']).toBe(ALICE);
+    // KC by the same 3.5 margin (the smallest of the week's wins) — a genuine tie, so #770
+    // mints both as Backdoor co-winners, listed by identity ("WA_Alice" < "WA_Carol").
+    expect(holdersById['game-ball']).toEqual([ALICE]);
+    expect(holdersById['donkey-of-week']).toEqual([BOB]);
+    expect(holdersById['bad-beat']).toEqual([BOB]);
+    expect(holdersById['backdoor']).toEqual([ALICE, CAROL]);
+    expect(holdersById['contrarian-win']).toEqual([ALICE]);
 
     // Bad Beat detail = the closest losing cover margin (Bob's BUF pick at -3.5).
     const badBeat = week1!.awards.find((a) => a.id === 'bad-beat');
@@ -257,7 +259,9 @@ describe('weekly hardware read model (#387)', () => {
       new Set(['game-ball', 'backdoor', 'contrarian-win'])
     );
     expect(new Set(bob?.awards.map((a) => a.id))).toEqual(new Set(['donkey-of-week', 'bad-beat']));
-    // Carol won nothing this week → absent from the shelf.
-    expect(shelf.find((e) => e.user_id === CAROL)).toBeUndefined();
+    // Carol tied Alice's 3.5 Backdoor cover, so #770 banks her a full award of her own.
+    const carol = shelf.find((e) => e.user_id === CAROL);
+    expect(carol?.total).toBe(1);
+    expect(carol?.awards).toEqual([expect.objectContaining({ id: 'backdoor', count: 1 })]);
   });
 });
