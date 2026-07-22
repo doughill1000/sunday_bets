@@ -10,7 +10,7 @@
   import WrappedFlash from '$lib/components/wrapped/WrappedFlash.svelte';
   import FeedbackWidget from '$lib/components/feedback/FeedbackWidget.svelte';
   import { Toaster } from '$lib/components/ui/sonner';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { invalidate } from '$app/navigation';
   import { page, navigating } from '$app/state';
   import { browser, dev } from '$app/environment';
@@ -23,6 +23,7 @@
   import { SvelteQueryDevtools } from '@tanstack/svelte-query-devtools';
   import { getQueryClient, makePersistOptions } from '$lib/query/client';
   import { DEFAULT_THEME_MODE, applyThemeMode, type ThemeMode } from '$lib/theme';
+  import { selectSeasonStoryFlash } from '$lib/ui/seasonStoryFlash';
 
   let { children, data } = $props();
 
@@ -66,10 +67,38 @@
   // both linking to gated pages — is suppressed here, the same way the auth screens are.
   const isDemoRoute = $derived(page.url.pathname.startsWith('/demo'));
 
-  // WrappedFlash is suppressed on /wrapped itself: that page already renders the same
-  // WrappedStory content directly, so showing the flash on top of it would double-render
-  // the screen the user is already on (audit S8, issue #548).
-  const isWrappedRoute = $derived(page.url.pathname.startsWith('/wrapped'));
+  // One season-story interrupt per app open (#742). Season Wrapped and the weekly recap
+  // each carry their own cross-device seen marker, but only one of them may open on a
+  // given load — the dispatcher ranks Wrapped above the recap, and the loser stays unseen
+  // so it surfaces on a later open. Both promises are awaited together because the
+  // priority call needs both answers before either flash may mount.
+  const seasonStoryFlash = $derived.by(() => {
+    // WrappedFlash is suppressed on /wrapped itself: that page already renders the same
+    // WrappedStory content directly, so showing the flash on top of it would double-render
+    // the screen the user is already on (audit S8, issue #548). Read untracked — the
+    // decision belongs to the app open, not to every client-side navigation; tracking the
+    // route here would re-run the dispatcher (and re-pop a flash) mid-session.
+    const onWrappedRoute = untrack(() => page.url.pathname.startsWith('/wrapped'));
+    return Promise.all([
+      data.latestRecap,
+      data.recapSeen,
+      data.latestWrapped,
+      data.wrappedSeen
+    ]).then(([recap, recapSeen, wrapped, wrappedSeen]) => ({
+      recap,
+      recapSeen,
+      wrapped,
+      wrappedSeen,
+      kind: selectSeasonStoryFlash({
+        wrapped: {
+          hasContent: wrapped != null,
+          alreadySeen: wrappedSeen,
+          suppressed: onWrappedRoute
+        },
+        recap: { hasContent: recap != null, alreadySeen: recapSeen }
+      })
+    }));
+  });
 
   let isChampion = $state(false);
   $effect(() => {
@@ -209,18 +238,14 @@
           {user}
         />
         <FeedbackWidget {groupId} />
-        {#await data.latestRecap then recap}
-          {#await data.recapSeen then seen}
-            <RecapFlash {recap} alreadySeen={seen} />
-          {/await}
+        <!-- Exactly one season-story flash mounts per open — see `seasonStoryFlash` above. -->
+        {#await seasonStoryFlash then flash}
+          {#if flash.kind === 'wrapped'}
+            <WrappedFlash row={flash.wrapped} alreadySeen={flash.wrappedSeen} />
+          {:else if flash.kind === 'recap'}
+            <RecapFlash recap={flash.recap} alreadySeen={flash.recapSeen} />
+          {/if}
         {/await}
-        {#if !isWrappedRoute}
-          {#await data.latestWrapped then wrapped}
-            {#await data.wrappedSeen then seen}
-              <WrappedFlash row={wrapped} alreadySeen={seen} />
-            {/await}
-          {/await}
-        {/if}
       {/if}
     {/if}
 
