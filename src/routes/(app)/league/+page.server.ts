@@ -32,7 +32,15 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
     wantLiveDefault ? isActiveWeekLive() : Promise.resolve(false)
   ]);
 
-  const view = viewParam ?? (liveDefaultWeekly ? 'weekly' : 'standings');
+  // Three views since #741 (Standings · Honors · Week). Honors is only ever reached
+  // explicitly — by tab tap or `?view=honors` — never computed: Standings stays the
+  // year-round default and `liveDefaultWeekly` remains the single seasonal default flip.
+  const view =
+    viewParam === 'weekly' || viewParam === 'honors'
+      ? viewParam
+      : liveDefaultWeekly
+        ? 'weekly'
+        : 'standings';
 
   const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
 
@@ -96,7 +104,10 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
       currentUserId,
       isCommissioner,
       trend,
-      view: 'standings' as const,
+      // Honors needs no server payload of its own — its data all rides the shareable
+      // client queries (group + recap caches); `+page.ts` prefetches the recap payload
+      // for a `?view=honors` request so the trophy shelf SSRs without a flash.
+      view: view === 'honors' ? ('honors' as const) : ('standings' as const),
       weeks: null,
       selectedWeek: null,
       breakdown: null

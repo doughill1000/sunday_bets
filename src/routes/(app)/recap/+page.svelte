@@ -8,7 +8,6 @@
   import { seasonScopeOptions } from '$lib/utils/stats';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
-  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -33,7 +32,6 @@
   const data = $derived(recapQuery.data ?? EMPTY_RECAP);
 
   const weeks = $derived(data.weeklyAwards.weeks);
-  const shelf = $derived(data.weeklyAwards.shelf);
 
   // Prose recap (if one was generated) keyed by week number, so each graded week can pair
   // its hardware with the AI recap for the same week.
@@ -84,10 +82,9 @@
 <!-- The Season recaps archive (#631). Built long before it had a door: the authed nav linked here
      nowhere, so it was reachable only via the RecapFlash toast. It is now the destination of the
      League honors CTA and of every Week tab's hardware recap link, which deep-link to the
-     `#week-N` anchors below. It stays a CTA-reached archive rather than a third League tab —
-     the same treatment Wrapped gets. The trophy shelf leads: it is the season-long index of who
-     won what, and it deliberately lives here rather than beside the honors card's curated
-     Awards, where 30-odd weekly gongs would drown them out. -->
+     `#week-N` anchors below. It stays a CTA-reached archive; the season-long trophy shelf moved
+     to the /league Honors tab (#741), which finally has room for it beneath the curated awards —
+     leaving this page the pure week-by-week archive: prose + per-week hardware, newest first. -->
 <div class="mx-auto max-w-2xl space-y-4 px-4 py-6">
   <div>
     <a
@@ -138,10 +135,6 @@
       No weekly hardware yet — awards mint after each week grades.
     </p>
   {:else}
-    {#if shelf.length > 0}
-      <SeasonShelf {shelf} currentUserId={pageData.currentUserId} />
-    {/if}
-
     <div class="space-y-4">
       {#each weeks as hardware (hardware.week_number)}
         <!-- `scroll-mt-20` keeps the anchored week clear of the sticky app header when a Week

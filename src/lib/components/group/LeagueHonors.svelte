@@ -139,8 +139,9 @@
 <!-- Render once there's a completed season (trophy case) or awarded badges. A multi-season
      league is no longer a reason on its own: that only ever justified showing the awards
      SeasonPicker, which #631 deleted (honors now follows the season its host tab already
-     selected). The reigning champion itself lives outside this card now, in the evergreen
-     banner above the /league tabs (#727) — this card opens on the trophy case instead. -->
+     selected). The reigning champion itself lives outside this card now, in the ChampionCard
+     that leads the Honors tab (#727 hoisted it out; #741 made it the room's hero) — this
+     card opens on the trophy case instead. -->
 {#if trophyCase.length > 0 || shown.length > 0}
   <Card data-testid="league-honors">
     <CardHeader>
@@ -149,11 +150,14 @@
     </CardHeader>
     <CardContent class="space-y-6">
       {#if trophyCase.length > 0}
-        <!-- Trophy case: every completed season's champion, newest first -->
+        <!-- Trophy case: every completed season's champion, newest first. Labelled with its
+             real grain (#741): the host tab's season select governs the awards below, but the
+             case is career-grain and deliberately ignores it — say so instead of implying the
+             select filters it. -->
         <div class="space-y-2" data-testid="trophy-case">
           <p class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
             <Trophy class="size-3.5 text-primary-ink" aria-hidden="true" />
-            Trophy case
+            Trophy case · every season
           </p>
           <ul class="flex flex-wrap gap-2">
             {#each trophyCase as champ (`${champ.season_year}-${champ.user_id}`)}
@@ -276,6 +280,8 @@
         {/if}
 
         {#if recapsHref}
+          <!-- #741 moved the trophy shelf out of the archive and into the Honors tab, so this
+               door now promises only what /recap still holds: the week-by-week stories. -->
           <a
             href={recapsHref}
             data-testid="recaps-honors-link"
@@ -284,7 +290,7 @@
             <Sparkles class="size-4 shrink-0 text-primary-ink" aria-hidden="true" />
             <span class="flex-1">
               Season recaps
-              <span class="font-normal text-muted-foreground">· trophy shelf + weekly stories</span>
+              <span class="font-normal text-muted-foreground">· the week-by-week stories</span>
             </span>
             <ArrowRight class="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           </a>

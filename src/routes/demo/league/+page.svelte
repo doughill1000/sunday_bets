@@ -1,24 +1,26 @@
 <script lang="ts">
-  // Demo League (#460, ADR-0026 — extended #669): mirrors the real /league IA exactly — same
-  // two self-contained tabs (Standings, Week), same season/All-time select, honors + the
-  // credibility ladder co-visible under the season window (#737: the demo's one season has
-  // concluded, so honors lead, then the table, then the ladder), and weekly hardware on Week —
-  // reading the frozen snapshot instead of live queries. The demo only ever has one completed
-  // season, so the select is a plain "Last season"/All-time toggle rather than the real page's
-  // multi-season `seasonScopeOptions` (no past seasons to list, and no `?season=` navigation).
+  // Demo League (#460, ADR-0026 — extended #669): mirrors the real /league IA exactly — the
+  // same three self-contained tabs (Standings · Honors · Week, #741), the honors strip above
+  // them, the season/All-time select on Standings, the trophy room (champion card + honors +
+  // shelf) on Honors, and weekly hardware on Week — reading the frozen snapshot instead of
+  // live queries. The demo only ever has one completed season, so each select is a plain
+  // single-pin control rather than the real page's multi-season `seasonScopeOptions` (no past
+  // seasons to list, and no `?season=` navigation).
   import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
+  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
-  import ReigningChampionBanner from '$lib/components/group/ReigningChampionBanner.svelte';
+  import ChampionCard from '$lib/components/group/ChampionCard.svelte';
+  import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
 
   let { data }: { data: PageData } = $props();
 
-  let activeTab = $state<'standings' | 'weekly'>('standings');
+  let activeTab = $state<'standings' | 'honors' | 'weekly'>('standings');
   let scope = $state<'season' | 'alltime'>('season');
 
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.completedSeasonYear));
@@ -27,12 +29,23 @@
     scope = (e.target as HTMLSelectElement).value === 'alltime' ? 'alltime' : 'season';
   }
 
+  // The trophy room's hero (#741): the demo's one season has concluded, so the champion card
+  // always renders crowned (and reigning — there is nothing newer to out-reign it).
+  const demoChampion = $derived(
+    data.honors.honors.trophyCase.find((c) => c.season_year === data.completedSeasonYear) ?? null
+  );
+  const demoChampionRecord = $derived.by(() => {
+    if (!demoChampion) return null;
+    const row = data.leaderboard.totals.find((t) => t.user_id === demoChampion.user_id);
+    return row ? `${row.wins}-${row.losses}-${row.pushes}` : null;
+  });
+
   // Newest-first (per `getSeasonWeeklyAwards`); the Week tab has no picker in the demo, so it
   // simply leads with the most recent graded week's hardware.
   const latestHardware = $derived(data.weeklyAwards.weeks[0] ?? null);
 
   const subtitle = $derived(
-    scope === 'alltime'
+    scope === 'alltime' && activeTab === 'standings'
       ? 'All-time · every season combined.'
       : `${data.completedSeasonYear} season.`
   );
@@ -53,23 +66,28 @@
     <p class="mt-1 text-muted-foreground">{subtitle}</p>
   </div>
 
-  <!-- Reigning-champion banner (#727): mirrors the real /league placement above the tabs, so
-       the demo shows it for free as a shared component (ADR-0026 parity). WrappedPromo is
-       retired here as on the real page (#737) — the honors card's Wrapped link is the door. -->
-  {#if data.honors.honors.reigningChampion}
-    <ReigningChampionBanner
+  <!-- The honors strip (#741): mirrors the real /league door above the tabs — the champion's
+       evergreen identity, opening the Honors tab. Hidden while the room is open, as on the
+       real page. -->
+  {#if data.honors.honors.reigningChampion && activeTab !== 'honors'}
+    <HonorsStrip
       reigningChampion={data.honors.honors.reigningChampion}
       currentUserId={data.persona.userId}
-      wrappedHref="/demo/wrapped"
+      onOpen={() => (activeTab = 'honors')}
     />
   {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
-    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
+    <TabsList class="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
       <TabsTrigger
         value="standings"
         data-testid="demo-league-tab-standings"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
+      >
+      <TabsTrigger
+        value="honors"
+        data-testid="demo-league-tab-honors"
+        class={ACTIVE_TAB_TRIGGER_CLASS}>Honors</TabsTrigger
       >
       <TabsTrigger
         value="weekly"
@@ -100,9 +118,8 @@
         </select>
       </div>
 
-      <!-- Block order mirrors the real page (#737): the demo's season has concluded, so the
-           crowned season leads with its crown — honors → table — and the career-grain ladder
-           renders beneath the table in BOTH scopes rather than only under All-time. -->
+      <!-- One lane since #741, as on the real page: table then ladder — the honors moved to
+           their own tab, so Standings no longer interleaves the room's content. -->
       <div class="mt-4 space-y-6">
         {#if scope === 'alltime'}
           <StandingsTable
@@ -114,15 +131,6 @@
             tableTestid="demo-alltime-table"
           />
         {:else}
-          <LeagueHonors
-            honors={data.honors.honors}
-            badges={data.honors.badges}
-            members={data.honors.members}
-            currentUserId={data.persona.userId}
-            selectedSeason={data.completedSeasonYear}
-            wrappedHref="/demo/wrapped"
-            recapsHref="/demo/recap"
-          />
           <StandingsTable
             rows={data.leaderboard.totals}
             title="{data.completedSeasonYear} standings"
@@ -137,6 +145,53 @@
              than a card of dashes, mirroring the real /league ladder gate. -->
         {#if hasRatedMember(data.allTime.ladder)}
           <RatingLadder rows={data.allTime.ladder} currentUserId={data.persona.userId} />
+        {/if}
+      </div>
+    </TabsContent>
+
+    <!-- The trophy room (#741): champion card (crowned — the demo season has concluded, so
+         the ember hero shows off), the honors case, and the season's weekly-hardware shelf
+         absorbed from the demo recap page. -->
+    <TabsContent value="honors" data-testid="demo-honors-panel">
+      <div data-testid="demo-honors-scope-bar" class={SCOPE_BAR_CLASS}>
+        <span
+          id="demo-honors-scope-label"
+          class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+        >
+        <select
+          class={SELECT_CLASS}
+          value={String(data.completedSeasonYear)}
+          aria-labelledby="demo-honors-scope-label"
+          data-testid="demo-honors-season"
+        >
+          <option value={String(data.completedSeasonYear)}>
+            Last season · {data.completedSeasonYear}
+          </option>
+        </select>
+      </div>
+
+      <div class="mt-4 space-y-4">
+        <ChampionCard
+          champion={demoChampion}
+          isReigning={true}
+          seasonYear={data.completedSeasonYear}
+          seasonInProgress={false}
+          record={demoChampionRecord}
+          currentUserId={data.persona.userId}
+        />
+
+        <LeagueHonors
+          honors={data.honors.honors}
+          badges={data.honors.badges}
+          members={data.honors.members}
+          currentUserId={data.persona.userId}
+          selectedSeason={data.completedSeasonYear}
+          wrappedHref="/demo/wrapped"
+          recapsHref="/demo/recap"
+        />
+
+        {#if data.weeklyAwards.shelf.length > 0}
+          <SeasonShelf shelf={data.weeklyAwards.shelf} currentUserId={data.persona.userId} />
         {/if}
       </div>
     </TabsContent>

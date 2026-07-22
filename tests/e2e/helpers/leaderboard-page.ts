@@ -10,11 +10,11 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * table headers are UI copy, so the spec keys off testids instead of role/text — a heading or
  * column-label change should not require touching the spec.
  *
- * By that same rule the second tab keeps its `leaderboard-tab-weekly` anchor and `weeklyTab()`
+ * By that same rule the third tab keeps its `leaderboard-tab-weekly` anchor and `weeklyTab()`
  * accessor even though #631 relabelled it "Week" — the anchor outlives the copy. What #631 did
  * change is structural, and that IS asserted: each tab owns exactly one context control rendered
- * inside its own panel (Standings the season/All-time select, Week the week navigator), and no
- * panel content renders outside the tab group.
+ * inside its own panel (Standings the season/All-time select, Honors its season select since
+ * #741, Week the week navigator), and no panel content renders outside the tab group.
  */
 
 export function leaderboardPage(page: Page) {
@@ -56,16 +56,44 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('leaderboard-tab-standings');
     },
 
-    /** The second tab — labelled "Week" since #631; the anchor keeps its older spelling. */
+    /** The Honors tab — the trophy room (#741). */
+    honorsTab(): Locator {
+      return page.getByTestId('leaderboard-tab-honors');
+    },
+
+    /** The last tab — labelled "Week" since #631; the anchor keeps its older spelling. */
     weeklyTab(): Locator {
       return page.getByTestId('leaderboard-tab-weekly');
     },
 
-    /** The League honors case. Renders only inside the Standings panel (#631), and only once
-     *  the league has a champion or awarded badges — so it is absent from the e2e fixture,
-     *  whose single seeded game never grades. */
+    /** The League honors case. Renders only inside the Honors panel (#741; Standings-only
+     *  before that), and only once the league has a champion or awarded badges — so it is
+     *  absent from the e2e fixture, whose single seeded game never grades. */
     honors(): Locator {
       return page.getByTestId('league-honors');
+    },
+
+    /** The Honors tab's hero (#741): the viewed season's champion, or its designed
+     *  "not decided yet" zero-state — it ALWAYS renders inside the Honors panel, which makes
+     *  it the tab's deterministic anchor across fixture states (the e2e fixture never grades
+     *  a week, so it shows the zero-state there). */
+    championCard(): Locator {
+      return page.getByTestId('champion-card');
+    },
+
+    /** The one-line honors door above the tab group (#741) — renders only once the league
+     *  has a reigning champion, so it is absent from the e2e fixture. */
+    honorsStrip(): Locator {
+      return page.getByTestId('honors-strip');
+    },
+
+    /** Click the Honors tab and wait for the trophy room to render. A pure client flip (no
+     *  navigation), but the click can land before hydration wires the tab up — retry. */
+    async openHonors() {
+      await expect(async () => {
+        await api.honorsTab().click();
+        await expect(api.championCard()).toBeVisible({ timeout: 5000 });
+      }).toPass({ timeout: 8000 });
     },
 
     /** The "Manage" heading action — the door to /league/manage since #631 lifted it out of
@@ -170,6 +198,12 @@ export function leaderboardPage(page: Page) {
     /** The season/scope <select> — seasons plus the pinned "All-time" option (#546). */
     scopeSelect(): Locator {
       return page.getByTestId('leaderboard-scope');
+    },
+
+    /** The Honors tab's one control (#741): a season select with no All-time pin — honors
+     *  are season-grain, so the room never offers a window it can't render. */
+    honorsSeasonSelect(): Locator {
+      return page.getByTestId('honors-season');
     },
 
     // --- week navigator ------------------------------------------------------
