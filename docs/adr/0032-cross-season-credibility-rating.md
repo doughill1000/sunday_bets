@@ -10,6 +10,9 @@
   See [Amendment history](#amendment-history).
 - **Amended 2026-07-22 (surfacing note, #737)** — the /league ladder now renders in both
   Standings scopes; §9 semantics untouched. See [Amendment history](#amendment-history).
+- **Amended 2026-07-22 (surfacing note, #738)** — the /stats **season** hero carries a
+  compact career-rating chip, so the rating is default-visible year-round; §9 semantics
+  untouched. See [Amendment history](#amendment-history).
 
 ## Context
 
@@ -198,9 +201,9 @@ ladder" on `/league` is a **Wave-2 follow-up**, out of this ADR and issue.
   time it was gated to the All-time scope only; the 2026-07-21 IA review
   (`docs/audits/2026-07-21-ia-review.md`, Rule 3) directed hoisting it to **always-on**
   in both scopes with mandatory grain copy — **shipped** as #737 (see the 2026-07-22
-  amendment note). The `/stats` season-hero career-rating chip remains tracked as #738.
-  The §9 ban on conflating the rating with standings points (never a standings-table
-  column) is unchanged by that move and still binds.
+  amendment note). The `/stats` season-hero career-rating chip **shipped** as #738 (second
+  2026-07-22 amendment note). The §9 ban on conflating the rating with standings points
+  (never a standings-table column) is unchanged by either move and still binds.
 - Totals-market inclusion when ADR-0022 ships; AI narration of the rating stays with #283
   and remains voice-only (ADR-0008) — it may describe the number, never decide it.
 - Design study (surfacing):
@@ -285,3 +288,28 @@ ladder stays a **sibling card, never a standings-table column**; its copy states
 career/market grain ("Career rating — the market, not points") in both scopes; and the
 season-delta arrow — which narrates the _latest_ settled season — is suppressed when an
 older season is in view, so the arrow can never sit beside a table it doesn't describe.
+
+### 2026-07-22 — surfacing note: the /stats season hero carries a career-rating chip (#738)
+
+Presentation only; no semantic change. §"Surfacing" placed the rating band on the **Career**
+`StatsHero`, and that remains its canonical home — the band, the Unrated "N to go" progress,
+and the meter are unchanged. What changed is that Career stopped being a scope `/stats` ever
+defaults to: under the "default to the last graded thing" rule (`docs/DESIGN.md`, adopted
+with #737) a bare visit now opens on a season in **every** month, where before an offseason
+visit silently flipped to Career. Read alone, that would have hidden the rating behind a
+manual control flip year-round — strictly worse than the calendar flip it replaced — so the
+**season** hero gains a compact, explicitly-labelled "Career rating" chip (number + tier pill
+
+- "#N"). Net, the rating is default-visible in every month for the first time.
+
+The chip is bound by §9 the same way the ladder is, with the conflation axis rotated: on
+`/league` the risk is reading a career number as standings points, and here it is reading it
+as a **season** number, on a card whose every other figure is season-scoped. So the chip is
+its own bordered, labelled object rather than a fourth tile in the hero's `dl`; the word
+"Career" leads it; and its accessible name states the grain outright ("career-long across
+every season, not this season") because the visual separation that carries the distinction
+for a sighted reader is not announced. Below the qualification gate the chip renders
+**nothing** — §5's hidden-until-qualified with no room to explain a gate, so honest silence
+rather than a provisional number. The "#N" is also now the link to `/league`'s ladder: that
+rank is an ADR-0018 carve-out sitting on the analytics page, and pointing it at the surface
+that owns comparison makes it a cross-reference instead of a standings fact stranded there.
