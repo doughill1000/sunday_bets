@@ -68,6 +68,52 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.10.0 — 2026-07-22
+
+- **PR #758** Release v3.10.0.
+- **#725** Commissioners can now set when their league's competition starts — "this week,
+  from now" by default or a future week — both when creating a league and from the manage
+  console, where the control locks once the first game kicks off. A midseason joiner sees
+  which week they're in from before joining, and weeks before a member joined read as a
+  neutral "not in yet" on the Weekly grid rather than a miss. Pick reminders now respect the
+  same boundary. Closes out ADR-0037 (rulings 4 & 5).
+- **#724** The read side now honours the participation boundary too: the who's-picked board
+  no longer counts a league against a slate it is not competing for yet, and the League ▸
+  Weekly grid no longer paints a member as having missed games played before they joined.
+  The completeness surfaces (reconcile sweep, week-completion check) gained the matching
+  guard. Governed by ADR-0037.
+- **PR #754** Consolidate two open dependabot PRs (#743 dev-dependencies group, #680
+  `actions/setup-node`) onto one branch — 17 of 18 dev-dependency bumps applied
+  (`typescript` stays pinned per the standing hold from PR #511) and `actions/setup-node`
+  bumped to v7 across all 8 workflow files.
+- **#744** Stop the grade cron from re-grading a finished season's final week on every
+  tick — the prior-week candidate now drops once it has no grading work left; the existing
+  reconcile sweep and manual grade endpoint remain available for a late score correction.
+- **#712** A member is no longer charged missed-pick penalties for games that kicked off
+  before they joined, and a league created midseason no longer accrues penalties for the
+  weeks before it existed — grading now gates on a participation boundary derived from the
+  league's competition start and the member's join. Existing leagues are backfilled so no
+  already-settled game becomes ineligible.
+- **#734** Fix the inverted favorite/underdog label across every ATS read model — `/market`,
+  the `/league` Trends cuts, "Where the market bends", the pick-card nugget, the `/stats`
+  line-side tendency, and the Chalk Eater / Dog Lover badges all showed the opposite side's
+  numbers. Grading and the ledger were never affected. A `check` constraint now makes the
+  `spread_team_id`-is-favorite convention enforceable. ADR-0007 / ADR-0013.
+- **PR #748** ADR-0007 third amendment — records the fail-fast closing-line rule shipped by
+  #735/PR #745 and the durable rule the incident established: a capture rule introduced
+  mid-life needs a paired backfill for the history it cannot reach.
+- **PR #747** ADR governance layer — add the `adr-audit` skill (periodic fan-out pass
+  grading the ADR corpus itself for drift), give `finish-pr` a step to update a linked
+  ADR's Follow-up in the same PR that ships the work, and close the blind spot that let
+  `Issue: None` ADRs sit `Proposed` indefinitely.
+- **PR #746** ADR record maintenance — a review of all 37 ADRs against v3.9.0 found no
+  accepted decision contradicted by shipped work, and corrected the records that had
+  drifted (ADR-0021 rejected, ADR-0036 accepted, ADR-0011/0013/0030/0032 amended).
+- **#735** House grading now refuses to settle a game with no captured closing line instead
+  of silently falling back to each player's pick-time line — 2025 was left almost entirely
+  unflagged because closing-line capture runs only at a game's first grade and shipped
+  after that season had already finished grading. Governed by ADR-0007.
+
 ## v3.9.0 — 2026-07-21
 
 - **PR #736** Release v3.9.0.
