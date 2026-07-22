@@ -65,6 +65,11 @@ export function wrappedPage(page: Page) {
     /** The season picker <select> (only rendered when 2+ seasons are available). */
     seasonPicker(): Locator {
       return page.getByRole('combobox', { name: 'Select season' });
+    },
+
+    /** The way back to /league — Wrapped has no nav tab of its own (#768). */
+    backLink(): Locator {
+      return page.getByTestId('wrapped-back');
     }
   };
 

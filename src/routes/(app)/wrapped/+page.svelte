@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { PageData } from './$types';
+  import BackLink from '$lib/components/BackLink.svelte';
   import SeasonPicker from '$lib/components/SeasonPicker.svelte';
   import WrappedStory from '$lib/components/wrapped/WrappedStory.svelte';
   import { Card, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
+  import Gift from '@lucide/svelte/icons/gift';
 
   let { data }: { data: PageData } = $props();
 
@@ -16,15 +18,31 @@
   <title>Season Wrapped | Hotshot</title>
 </svelte:head>
 
-<section class="mx-auto w-full max-w-screen-xl space-y-8" aria-labelledby="wrapped-heading">
-  <div class="flex flex-wrap items-end justify-between gap-4">
-    <div>
-      <h1 id="wrapped-heading" class="text-3xl font-bold tracking-tight">
+<!-- Season Wrapped is the once-a-season set piece, reached from the /league honors card's
+     "See the full Season Wrapped" door and from the WrappedFlash — never from the nav. It
+     therefore carries its own way back (#768), and wears the same page-header anatomy as
+     its sibling archive /recap: back link → icon + title → one line of what this is →
+     season control. The Gift icon is deliberately the same mark as the honors card's door,
+     so the CTA and the page it opens read as one move. -->
+<section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="wrapped-heading">
+  <div>
+    <BackLink href="/league" label="League" testId="wrapped-back" />
+    <div class="mt-1 flex items-center gap-2">
+      <Gift class="h-5 w-5 shrink-0 text-primary-ink" aria-hidden="true" />
+      <h1 id="wrapped-heading" class="text-xl font-semibold">
         Season Wrapped — {data.seasonYear}
       </h1>
-      <p class="mt-1 text-muted-foreground">Your year in picks, by the numbers.</p>
     </div>
-    <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
+    <p class="text-sm text-muted-foreground">Your year in picks, by the numbers.</p>
+
+    <!-- SeasonPicker carries its own accessible name, so it needs no visible label under a
+         heading that already names the year. It self-suppresses below two seasons, but the
+         spacing wrapper would survive it, so the same count gates the wrapper here. -->
+    {#if data.availableSeasons.length > 1}
+      <div class="mt-3">
+        <SeasonPicker seasons={data.availableSeasons} selected={data.seasonYear} />
+      </div>
+    {/if}
   </div>
 
   {#if !data.league && !data.player}

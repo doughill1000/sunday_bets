@@ -6,6 +6,7 @@
   import type { RecapCachePayload } from '$lib/query/types';
   import type { PageData } from './$types';
   import { seasonScopeOptions } from '$lib/utils/stats';
+  import BackLink from '$lib/components/BackLink.svelte';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
@@ -84,14 +85,13 @@
      League honors CTA and of every Week tab's hardware recap link, which deep-link to the
      `#week-N` anchors below. It stays a CTA-reached archive; the season-long trophy shelf moved
      to the /league Honors tab (#741), which finally has room for it beneath the curated awards —
-     leaving this page the pure week-by-week archive: prose + per-week hardware, newest first. -->
-<div class="mx-auto max-w-2xl space-y-4 px-4 py-6">
+     leaving this page the pure week-by-week archive: prose + per-week hardware, newest first.
+     Its own `px-4 py-6` came off with #768: the app shell's main element already pads, so the
+     archive was insetting further than its sibling /wrapped and the two read as different
+     screen kinds at 390px. -->
+<div class="mx-auto max-w-2xl space-y-4">
   <div>
-    <a
-      href="/league"
-      class="text-sm text-muted-foreground transition-colors hover:text-foreground"
-      data-testid="recaps-back">← League</a
-    >
+    <BackLink href="/league" label="League" testId="recaps-back" />
     <div class="mt-1 flex items-center gap-2">
       <Sparkles class="h-5 w-5 text-primary-ink" />
       <h1 class="text-xl font-semibold">Season recaps</h1>
