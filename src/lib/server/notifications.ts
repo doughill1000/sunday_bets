@@ -488,7 +488,9 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
     await sendToUser(user_id, {
       title: `Week ${weekNumber} recap is ready`,
       body: recapPushBody(proseByGroup.get(group_id) ?? ''),
-      url: '/recap',
+      // Season-qualified deep link (#739): `?season=` lands on this week's archive even after a
+      // newer season starts grading, and `#week-N` scrolls straight to its hardware + recap.
+      url: `/recap?season=${seasonYear}#week-${weekNumber}`,
       tag: `ai-recap-${group_id}-week-${weekId}`
     });
     await logNotification({

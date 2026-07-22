@@ -470,6 +470,7 @@
               members={group.members}
               currentUserId={data.currentUserId}
               selectedSeason={data.seasonYear}
+              recapsHref={`/recap?season=${data.seasonYear}`}
             />
           </div>
         {/if}
@@ -496,7 +497,7 @@
             <WeeklyHardware
               hardware={selectedHardware}
               currentUserId={data.currentUserId}
-              recapHref="/recap#week-{selectedHardware.week_number}"
+              recapHref="/recap?season={data.seasonYear}#week-{selectedHardware.week_number}"
               recapLabel={selectedWeekRecap
                 ? `Read the ${weekLabel(data.selectedWeek)} recap`
                 : 'Season recaps'}

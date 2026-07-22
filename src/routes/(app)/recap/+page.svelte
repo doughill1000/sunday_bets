@@ -1,9 +1,11 @@
 <script lang="ts">
   import { createQuery } from '@tanstack/svelte-query';
+  import { goto } from '$app/navigation';
   import { queryKeys } from '$lib/query/keys';
   import { fetchRecap } from '$lib/query/fetchers';
   import type { RecapCachePayload } from '$lib/query/types';
   import type { PageData } from './$types';
+  import { seasonScopeOptions } from '$lib/utils/stats';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
@@ -42,6 +44,37 @@
   const orphanRecaps = $derived(
     data.recaps.filter((r) => !weeks.some((w) => w.week_number === r.week_number))
   );
+
+  // Minimal season select (#739) — same option model as the `/league` Standings scope, minus
+  // the All-time option (there is no all-time recap archive). Pins "This season · YYYY" only
+  // while the newest season is in progress; older seasons list newest-first. `pageData.seasonYear`
+  // is always in the option set (seeded from the server's `resolveSeasonYear`), so the select
+  // always reflects what is on screen even for an out-of-range/explicit `?season=`.
+  const scopeOptions = $derived(
+    seasonScopeOptions(
+      [...pageData.availableSeasons, pageData.seasonYear],
+      pageData.latestSeasonInProgress
+    )
+  );
+  // Total selectable seasons; the picker only earns its place once there is a past season to
+  // reach — a single-season league has nothing to switch between.
+  const seasonCount = $derived(
+    (scopeOptions.latest !== null ? 1 : 0) + scopeOptions.pastSeasons.length
+  );
+
+  const SELECT_CLASS =
+    'rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
+
+  // Changing the season navigates so the season-scoped recap query re-keys (ADR-0017) — the
+  // `?season=` param is also the shareable, deep-linkable contract that push notifications and
+  // the Week tab produce (#739).
+  function onSeasonChange(e: Event) {
+    const value = (e.target as HTMLSelectElement).value;
+    if (value === String(pageData.seasonYear)) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('season', value);
+    void goto(url.toString(), { invalidateAll: true, noScroll: true });
+  }
 </script>
 
 <svelte:head>
@@ -69,6 +102,35 @@
     <p class="text-sm text-muted-foreground">
       Every graded week's hardware and the Commissioner's take, newest first.
     </p>
+
+    {#if seasonCount > 1}
+      <!-- Makes past seasons reachable (#739): without it, an off-season visit was pinned to the
+           last graded season with no way back to earlier archives. -->
+      <div class="mt-3 flex items-center gap-2">
+        <span
+          id="recap-season-label"
+          class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Season</span
+        >
+        <select
+          class={SELECT_CLASS}
+          value={String(pageData.seasonYear)}
+          onchange={onSeasonChange}
+          aria-labelledby="recap-season-label"
+          data-testid="recap-season"
+        >
+          {#if scopeOptions.latest !== null}
+            <option value={String(scopeOptions.latest)}>This season · {scopeOptions.latest}</option>
+          {/if}
+          {#if scopeOptions.pastSeasons.length > 0}
+            <optgroup label="Past seasons">
+              {#each scopeOptions.pastSeasons as year (year)}
+                <option value={String(year)}>{year}</option>
+              {/each}
+            </optgroup>
+          {/if}
+        </select>
+      </div>
+    {/if}
   </div>
 
   {#if weeks.length === 0 && data.recaps.length === 0}
