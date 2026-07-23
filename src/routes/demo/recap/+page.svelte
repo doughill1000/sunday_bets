@@ -37,7 +37,7 @@
       <p class="text-sm text-muted-foreground">
         Every graded week's hardware and the Commissioner's take, newest first.
       </p>
-      <AwardsGuide />
+      <AwardsGuide scope="weekly" />
     </div>
   </div>
 

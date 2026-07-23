@@ -23,6 +23,28 @@
   } from '$lib/domain/weeklyAwards';
   import Info from '@lucide/svelte/icons/info';
 
+  // Two legends, one component (#780). Each surface mounts only the tier it actually shows: the
+  // Honors tab and Season Wrapped explain the curated season awards (`scope="season"`), the Week
+  // tab and the recap archive explain weekly hardware (`scope="weekly"`). Splitting the single
+  // combined guide this way means a legend never describes jewellery that isn't on the screen
+  // beside it — the Week tab used to open a legend that led with season titles it never renders.
+  let { scope }: { scope: 'season' | 'weekly' } = $props();
+
+  const COPY = {
+    season: {
+      trigger: 'Awards legend',
+      title: 'Awards legend',
+      description: "What each season award means and how it's earned. Updates as games are graded."
+    },
+    weekly: {
+      trigger: 'Hardware legend',
+      title: 'Weekly hardware',
+      description:
+        "What each piece of weekly hardware means and how it's earned. Updates as games are graded."
+    }
+  } as const;
+  const copy = $derived(COPY[scope]);
+
   const byId = new Map(BADGE_GLOSSARY.map((g) => [g.id, g]));
 
   // Paired awards explain themselves only as a pair: one measure, two ends, a zero between
@@ -71,7 +93,9 @@
 </script>
 
 {#snippet awardsGuideBody()}
-  <div class="space-y-5">
+  <!-- Only one region renders per scope (#780), so there is no wrapping stack div — the Dialog /
+       Sheet body owns the single section directly. -->
+  {#if scope === 'season'}
     <!-- Region 1: the curated season titles, exactly as they have always rendered. -->
     <section class="space-y-4" data-testid="awards-guide-season">
       <div>
@@ -143,10 +167,12 @@
         </ul>
       </div>
     </section>
+  {/if}
 
-    <!-- Region 2: weekly hardware. The rule and the border are the tier separation — a reader
-         must be able to tell from the guide's shape that these are not more season titles. -->
-    <section class="space-y-4 border-t pt-5" data-testid="awards-guide-weekly">
+  {#if scope === 'weekly'}
+    <!-- Region 2: weekly hardware. Rendered as its own standalone legend on the Week tab and the
+         recap archive — the surfaces that actually show the hardware tiles. -->
+    <section class="space-y-4" data-testid="awards-guide-weekly">
       <div>
         <p class="text-sm font-semibold">Weekly hardware</p>
         <p class="text-xs text-muted-foreground">
@@ -202,7 +228,7 @@
         </ul>
       </div>
     </section>
-  </div>
+  {/if}
 {/snippet}
 
 <Button
@@ -212,7 +238,7 @@
   onclick={() => (guideOpen = true)}
 >
   <Info class="size-3.5" aria-hidden="true" />
-  Awards legend
+  {copy.trigger}
 </Button>
 
 <!-- Awards guide: dialog on desktop, bottom sheet on mobile (matches WelcomeGuide). -->
@@ -220,9 +246,9 @@
   <Dialog bind:open={guideOpen}>
     <DialogContent data-testid="awards-guide" class="max-h-[80vh] max-w-lg overflow-y-auto px-8">
       <DialogHeader>
-        <DialogTitle>Awards legend</DialogTitle>
+        <DialogTitle>{copy.title}</DialogTitle>
         <DialogDescription>
-          What each award means and how it's earned. Updates as games are graded.
+          {copy.description}
         </DialogDescription>
       </DialogHeader>
       {@render awardsGuideBody()}
@@ -236,9 +262,9 @@
       class="max-h-[85vh] overflow-y-auto rounded-t-xl pb-8"
     >
       <SheetHeader class="pb-2">
-        <SheetTitle>Awards legend</SheetTitle>
+        <SheetTitle>{copy.title}</SheetTitle>
         <SheetDescription>
-          What each award means and how it's earned. Updates as games are graded.
+          {copy.description}
         </SheetDescription>
       </SheetHeader>
       <div class="px-4">
