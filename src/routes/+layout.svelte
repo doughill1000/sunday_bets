@@ -107,6 +107,16 @@
     });
   });
 
+  // The Week nav tab's live-pulse dot (#776): streamed from the layout server load like
+  // championUserId above, resolved here so the dot appears on every page without ever blocking
+  // navigation. False until the promise resolves — the dot fades in, never flashes wrongly.
+  let weekLive = $state(false);
+  $effect(() => {
+    void Promise.resolve(data.weekLive).then((live) => {
+      weekLive = live;
+    });
+  });
+
   // Show a section skeleton only when *entering* Stats or the Members & manage subpage from
   // another section — not on intra-section navigations (e.g. season switches via goto), which
   // would otherwise blank the current page to a skeleton on every filter change. The League home
@@ -211,6 +221,7 @@
             {memberships}
             activeGroupId={groupId}
             champion={isChampion}
+            {weekLive}
           />
         </div>
       </header>
@@ -227,7 +238,7 @@
       </main>
 
       {#if user}
-        <BottomTabBar />
+        <BottomTabBar {weekLive} />
         <!-- Offline/stale indicator for the cached read screens (audit S5, ADR-0017): a single
              shell-level pill so every surface inherits it. Inside the QueryClientProvider (the
              whole shell is), so it can read the query cache. -->

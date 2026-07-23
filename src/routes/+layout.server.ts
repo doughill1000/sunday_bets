@@ -1,4 +1,5 @@
 import type { LayoutServerLoad } from './$types';
+import { isActiveWeekLiveCached } from '$lib/server/liveScores';
 import { getLatestRecap } from '$lib/server/db/queries/recaps';
 import { hasSeenRecap } from '$lib/server/db/queries/recapSeen';
 import { getReigningChampion } from '$lib/server/db/queries/honors';
@@ -70,6 +71,15 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
         .catch(() => true)
     : Promise.resolve(true);
 
+  // Whether the active week has a game inside its live window — the Week nav tab's pulse dot
+  // (#776, reusing #584's check after its auto-flip retired). Streamed like championUserId so it
+  // never blocks navigation, and short-TTL cached module-side (isActiveWeekLiveCached) so the
+  // nav-wide read adds no per-navigation DB query; offseason it costs one findActiveWeek read per
+  // TTL window and resolves false. Degrades to false on any error.
+  const weekLive: Promise<boolean> = user
+    ? isActiveWeekLiveCached().catch(() => false)
+    : Promise.resolve(false);
+
   return {
     session,
     user,
@@ -82,6 +92,7 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
     recapSeen,
     championUserId,
     latestWrapped,
-    wrappedSeen
+    wrappedSeen,
+    weekLive
   };
 };

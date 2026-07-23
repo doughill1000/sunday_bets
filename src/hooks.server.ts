@@ -25,10 +25,19 @@ import { DEFAULT_THEME_MODE, isThemeMode, themeClassFor, type ThemeMode } from '
 // everyone — this hook runs before auth and has no role to check — and that page's own load
 // redirects a non-commissioner on to /league. Two hops, but the role check stays in one place.
 const legacyRouteRedirects: Handle = async ({ event, resolve }) => {
-  const { pathname, search } = event.url;
+  const { pathname, search, searchParams } = event.url;
   if (pathname === '/leaderboard') throw redirect(308, `/league${search}`);
   if (pathname === '/group') throw redirect(308, `/league/manage${search}`);
   if (pathname === '/teams') throw redirect(308, `/market${search}`);
+  // #776: the Week view left /league for its own top-level destination. `?view=weekly` was the
+  // shareable-URL contract for the old third tab, so bookmarks/shares forward permanently,
+  // carrying `week`/`season` (the params /week understands) and dropping `view` itself.
+  if (pathname === '/league' && searchParams.get('view') === 'weekly') {
+    const forwarded = new URLSearchParams(searchParams);
+    forwarded.delete('view');
+    const qs = forwarded.toString();
+    throw redirect(308, qs ? `/week?${qs}` : '/week');
+  }
   return resolve(event);
 };
 

@@ -1,27 +1,26 @@
 <script lang="ts">
   // Demo League (#460, ADR-0026 — extended #669): mirrors the real /league IA exactly — the
-  // same three self-contained tabs (Standings · Honors · Week, #741), the honors strip above
-  // them, the season/All-time select on Standings, the trophy room (champion card + honors +
-  // shelf) on Honors, and weekly hardware on Week — reading the frozen snapshot instead of
-  // live queries. The demo only ever has one completed season, so each select is a plain
-  // single-pin control rather than the real page's multi-season `seasonScopeOptions` (no past
-  // seasons to list, and no `?season=` navigation).
+  // same two self-contained tabs (Standings · Honors, back to two lanes since #776 promoted
+  // Week to its own nav destination, /demo/week here), the honors strip above them, the
+  // season/All-time select on Standings, and the trophy room (champion card + honors + shelf)
+  // on Honors — reading the frozen snapshot instead of live queries. The demo only ever has
+  // one completed season, so each select is a plain single-pin control rather than the real
+  // page's multi-season `seasonScopeOptions` (no past seasons to list, and no `?season=`
+  // navigation).
   import type { PageData } from './$types';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
-  import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
-  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
 
   let { data }: { data: PageData } = $props();
 
-  let activeTab = $state<'standings' | 'honors' | 'weekly'>('standings');
+  let activeTab = $state<'standings' | 'honors'>('standings');
   let scope = $state<'season' | 'alltime'>('season');
 
   const scopeValue = $derived(scope === 'alltime' ? 'alltime' : String(data.completedSeasonYear));
@@ -40,10 +39,6 @@
     const row = data.leaderboard.totals.find((t) => t.user_id === demoChampion.user_id);
     return row ? `${row.wins}-${row.losses}-${row.pushes}` : null;
   });
-
-  // Newest-first (per `getSeasonWeeklyAwards`); the Week tab has no picker in the demo, so it
-  // simply leads with the most recent graded week's hardware.
-  const latestHardware = $derived(data.weeklyAwards.weeks[0] ?? null);
 
   const subtitle = $derived(
     scope === 'alltime' && activeTab === 'standings'
@@ -79,21 +74,17 @@
   {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
-    <TabsList class="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
+    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
       <TabsTrigger
         value="standings"
         data-testid="demo-league-tab-standings"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
       >
+      <!-- Two lanes since #776 — the Week tab moved to /demo/week, mirroring the real app. -->
       <TabsTrigger
         value="honors"
         data-testid="demo-league-tab-honors"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Honors</TabsTrigger
-      >
-      <TabsTrigger
-        value="weekly"
-        data-testid="demo-league-tab-weekly"
-        class={ACTIVE_TAB_TRIGGER_CLASS}>Week</TabsTrigger
       >
     </TabsList>
 
@@ -195,24 +186,6 @@
           <SeasonShelf shelf={data.weeklyAwards.shelf} currentUserId={data.persona.userId} />
         {/if}
       </div>
-    </TabsContent>
-
-    <TabsContent value="weekly" data-testid="demo-weekly-panel">
-      {#if latestHardware}
-        <!-- Parity with the real Week tab (#771): the Honors tab inherits the legend through
-             LeagueHonors, but this panel renders the hardware directly and needs its own. -->
-        <div class="space-y-2">
-          <WeeklyHardware
-            hardware={latestHardware}
-            currentUserId={data.persona.userId}
-            recapHref="/demo/recap#week-{latestHardware.week_number}"
-            recapLabel="Read the recap"
-          />
-          <AwardsGuide />
-        </div>
-      {:else}
-        <p class="text-sm text-muted-foreground">No graded weeks yet.</p>
-      {/if}
     </TabsContent>
   </Tabs>
 </section>

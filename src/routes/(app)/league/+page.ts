@@ -26,17 +26,16 @@ export const load: PageLoad = async ({ data, fetch }) => {
   let initialGroup: GroupCachePayload | undefined;
   let initialRecap: RecapCachePayload | undefined;
   if (!browser) {
-    // The recap payload backs the Week tab's weekly hardware (#631) and the Honors tab's
-    // trophy shelf (#741), sharing `/recap`'s cache entry. Fetched only when one of those is
-    // what we're rendering — `?view=weekly` / `?view=honors` requests are the only way they
-    // are ever server-rendered — so the far more common Standings visit doesn't pay for
-    // several matview reads it will never show. Reaching either by tap enables the query
-    // client-side instead (Honors doesn't even navigate — its panel is a pure client flip).
+    // The recap payload backs the Honors tab's trophy shelf (#741), sharing `/recap`'s cache
+    // entry. Fetched only on a `?view=honors` request — the only way the shelf is ever
+    // server-rendered — so the far more common Standings visit doesn't pay for several matview
+    // reads it will never show. Reaching Honors by tap enables the query client-side instead (its
+    // panel is a pure client flip). The Week hardware's own prefetch moved to /week's load (#776).
     [initialLeaderboard, initialAllTime, initialGroup, initialRecap] = await Promise.all([
       fetchLeaderboard(fetch, data.groupId, data.seasonYear),
       fetchAllTimeLeaderboard(fetch, data.groupId),
       fetchGroup(fetch, data.groupId, data.seasonYear),
-      data.view === 'weekly' || data.view === 'honors'
+      data.view === 'honors'
         ? fetchRecap(fetch, data.groupId, data.seasonYear)
         : Promise.resolve(undefined)
     ]);

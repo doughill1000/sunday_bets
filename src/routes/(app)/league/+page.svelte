@@ -24,35 +24,30 @@
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
-  import WeeklyPicksBreakdown from '$lib/components/leaderboard/WeeklyPicksBreakdown.svelte';
-  import WeekNavigator from '$lib/components/leaderboard/WeekNavigator.svelte';
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
-  import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
-  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
   import { seasonScopeOptions } from '$lib/utils/stats';
-  import { weekLabel } from '$lib/utils/weekLabel';
   import { hasGradedWeek, rankMovements } from '$lib/utils/leaderboardTrend';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import Users from '@lucide/svelte/icons/users';
 
   let { data: pageData }: { data: PageData } = $props();
 
-  // Three page-level views (principle 2, spending DESIGN.md's "two or three" allowance —
-  // #741, superseding #631's two-tab containment): Standings · Honors · Week, and each tab
-  // owns exactly one context control rendered inside its own panel (#631) — Standings the
-  // season/All-time window, Honors a season select, Week the week picker. ADR-0035's lane
-  // law becomes the tab boundary: the market lane (table, ladder, race) lives on Standings;
-  // the room lane (champion, spoon, titles, shelf) lives in the trophy room. `scope` is a
-  // pure client flip; changing the *season* navigates so the season-scoped query re-keys
+  // Two page-level views (principle 2, within DESIGN.md's "two or three" allowance): Standings ·
+  // Honors, each owning exactly one context control rendered inside its own panel (#631) —
+  // Standings the season/All-time window, Honors a season select. #776 returned the third slot
+  // (Week) to its own top-level nav destination, relieving the three-view pressure #741 spent.
+  // ADR-0035's lane law is the tab boundary: the market lane (table, ladder, race) lives on
+  // Standings; the room lane (champion, spoon, titles, shelf) lives in the trophy room. `scope`
+  // is a pure client flip; changing the *season* navigates so the season-scoped query re-keys
   // (ADR-0017).
-  let activeTab = $state<'standings' | 'honors' | 'weekly'>(pageData.view);
+  let activeTab = $state<'standings' | 'honors'>(pageData.view);
   // Initial scope comes from `pageData.defaultScope` (#737): 'season' always — offseason
   // included, where the default season is the last graded one and its honors lead the page —
   // unless the visitor explicitly asked for the career window via `?scope=alltime`, which is
@@ -92,18 +87,17 @@
     initialData: pageData.initialGroup
   }));
 
-  // The Week tab leads with the selected week's hardware (#631) and the Honors tab renders
-  // the season's trophy shelf (#741). Rather than adding a payload to the server load, both
-  // reuse the SAME cached recap query `/recap` already owns — one `['recap', groupId, season]`
-  // entry serves all three surfaces (ADR-0033, #602), so they can never disagree about a
-  // week's awards. Gated on those tabs so a Standings visitor never pays for it; `+page.ts`
-  // prefetches it only on a `?view=weekly`/`?view=honors` request, the only ways either is
-  // ever server-rendered.
+  // The Honors tab renders the season's trophy shelf (#741). Rather than adding a payload to the
+  // server load, it reuses the SAME cached recap query `/recap` and /week already own — one
+  // `['recap', groupId, season]` entry serves every surface (ADR-0033, #602), so none can disagree
+  // about a week's awards. Gated on the Honors tab so a Standings visitor never pays for it;
+  // `+page.ts` prefetches it only on a `?view=honors` request, the one way the shelf is ever
+  // server-rendered.
   const recapQuery = createQuery(() => ({
     queryKey: queryKeys.recap(pageData.groupId, pageData.seasonYear),
     queryFn: () => fetchRecap(fetch, pageData.groupId, pageData.seasonYear),
     initialData: pageData.initialRecap,
-    enabled: activeTab === 'weekly' || activeTab === 'honors'
+    enabled: activeTab === 'honors'
   }));
 
   // Empty shapes so the render stays valid while a query loads on a cache miss (the pending
@@ -191,22 +185,6 @@
     return leader ? `${leader.display_name} leads through Week ${lastGradedWeek}` : null;
   });
 
-  // The selected week's hardware, plus the prose recap for that same week if one was generated.
-  // Hardware only exists for FULLY-graded scoring weeks, so both are null on an in-progress week
-  // and on every preseason round (ADR-0016 non-scoring rounds never mint awards).
-  const selectedHardware = $derived(
-    pageData.selectedWeek != null
-      ? (recap.weeklyAwards.weeks.find(
-          (w) => w.week_number === pageData.selectedWeek?.weekNumber
-        ) ?? null)
-      : null
-  );
-  const selectedWeekRecap = $derived(
-    pageData.selectedWeek != null
-      ? (recap.recaps.find((r) => r.week_number === pageData.selectedWeek?.weekNumber) ?? null)
-      : null
-  );
-
   // Fold the currently-displayed season into the option set so the dropdown can always
   // represent `scopeValue`. `resolveSeasonYear` can land on a season that has no standings
   // yet — a brand-new/pre-grading season (empty `availableSeasons` → the active season year),
@@ -237,9 +215,6 @@
   // The subtitle names whatever the ACTIVE tab's own control is set to, so the two tabs never
   // both claim the header line.
   const subtitle = $derived.by(() => {
-    if (activeTab === 'weekly') {
-      return `${data.seasonYear} season · ${weekLabel(data.selectedWeek)}.`;
-    }
     // Honors has no All-time window (honors are season-grain by construction), so its
     // subtitle always names the season even while Standings' scope sits on All-time.
     if (activeTab === 'honors') return `${data.seasonYear} season.`;
@@ -290,32 +265,18 @@
     void goto(url.toString(), { invalidateAll: true, noScroll: true });
   }
 
-  // When the user clicks the Week tab and we haven't loaded weekly data yet, trigger a
-  // navigation — Week's pick breakdown is user-scoped server data (ADR-0017 boundary 3).
-  // Honors needs no navigation: its payloads all ride the shareable client caches, so the
-  // tab is a pure client flip mirrored into the URL with `replaceState` (shareable and
-  // reload-safe, like `?scope=alltime`), and leaving it clears the param again.
-  let weeklyNavigated = $state(pageData.view === 'weekly');
-
+  // Standings ↔ Honors is a pure client flip mirrored into the URL with `replaceState` (shareable
+  // and reload-safe, like `?scope=alltime`): Honors' payloads all ride the shareable client caches
+  // (#741), so neither tab needs a server navigation. Leaving Honors clears the param again.
   $effect(() => {
-    if (activeTab === 'weekly') {
-      if (!weeklyNavigated) {
-        weeklyNavigated = true;
-        const url = new URL(window.location.href);
-        url.searchParams.set('view', 'weekly');
-        void goto(url.toString(), { noScroll: true, keepFocus: true });
-      }
-    } else {
-      weeklyNavigated = false;
-      const url = new URL(window.location.href);
-      const current = url.searchParams.get('view');
-      if (activeTab === 'honors' && current !== 'honors') {
-        url.searchParams.set('view', 'honors');
-        replaceState(url, {});
-      } else if (activeTab === 'standings' && current != null) {
-        url.searchParams.delete('view');
-        replaceState(url, {});
-      }
+    const url = new URL(window.location.href);
+    const current = url.searchParams.get('view');
+    if (activeTab === 'honors' && current !== 'honors') {
+      url.searchParams.set('view', 'honors');
+      replaceState(url, {});
+    } else if (activeTab === 'standings' && current != null) {
+      url.searchParams.delete('view');
+      replaceState(url, {});
     }
   });
 </script>
@@ -362,10 +323,11 @@
   </Card>
 {/snippet}
 
-<!-- The League home (#561, re-contained by #631, third tab minted by #741): three self-contained
-     tabs where the tab you're on fully governs what's on screen. Only the heading, the Manage
-     action, and the honors strip render outside the tab group. The standings testids keep their
-     `leaderboard-` prefix as stable e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the
+<!-- The League home (#561, re-contained by #631, Honors minted by #741, back to two lanes by #776
+     which promoted Week to its own nav slot): two self-contained tabs where the tab you're on
+     fully governs what's on screen. Only the heading, the Manage action, and the honors strip
+     render outside the tab group. The standings testids keep their `leaderboard-` prefix as stable
+     e2e anchors (see tests/e2e/helpers/leaderboard-page.ts): the
      content is still the leaderboard, and those anchors stay put across renames. -->
 <section class="mx-auto w-full max-w-screen-xl space-y-6" aria-labelledby="leaderboard-heading">
   <div class="flex items-start justify-between gap-3">
@@ -416,25 +378,18 @@
   {/if}
 
   <Tabs bind:value={activeTab} class="w-full space-y-4">
-    <TabsList class="grid w-full grid-cols-3 sm:inline-grid sm:w-auto">
+    <TabsList class="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
       <TabsTrigger
         value="standings"
         data-testid="leaderboard-tab-standings"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
       >
-      <!-- The trophy room (#741): the curated honors' named home. -->
+      <!-- The trophy room (#741): the curated honors' named home. #776 returned the third tab
+           (Week) to its own top-level nav destination, so the bar is back to two lanes. -->
       <TabsTrigger
         value="honors"
         data-testid="leaderboard-tab-honors"
         class={ACTIVE_TAB_TRIGGER_CLASS}>Honors</TabsTrigger
-      >
-      <!-- Labelled "Week" (#631) — it shows one selected week, not a trend. The testid and the
-           `?view=weekly` param keep their old spelling on purpose: the testid is a stable e2e
-           anchor, and the param is a shareable-URL contract. -->
-      <TabsTrigger
-        value="weekly"
-        data-testid="leaderboard-tab-weekly"
-        class={ACTIVE_TAB_TRIGGER_CLASS}>Week</TabsTrigger
       >
     </TabsList>
 
@@ -645,50 +600,6 @@
           <SeasonShelf shelf={recap.weeklyAwards.shelf} currentUserId={data.currentUserId} />
         {/if}
       </div>
-    </TabsContent>
-
-    <TabsContent value="weekly" data-testid="weekly-panel">
-      {#if data.view === 'weekly' && data.weeks != null && data.breakdown != null}
-        <!-- Week's one control, sitting above everything it drives. -->
-        <div data-testid="week-scope-bar" class={SCOPE_BAR_CLASS}>
-          <span
-            id="week-scope-label"
-            class="text-xs font-medium tracking-wide text-muted-foreground uppercase">Week</span
-          >
-          <WeekNavigator weeks={data.weeks} selectedWeek={data.selectedWeek} />
-        </div>
-
-        <div class="mt-4 space-y-4">
-          <!-- The week leads with its hardware (#631), then the pick breakdown. The AI recap is a
-               link into the Season recaps archive rather than an inline RecapCard, so the tab stays
-               tight and the archive remains the one place the prose lives. Hardware exists only for
-               fully-graded scoring weeks, so an in-progress week shows the breakdown alone. -->
-          {#if selectedHardware}
-            <div class="space-y-2">
-              <WeeklyHardware
-                hardware={selectedHardware}
-                currentUserId={data.currentUserId}
-                recapHref="/recap?season={data.seasonYear}#week-{selectedHardware.week_number}"
-                recapLabel={selectedWeekRecap
-                  ? `Read the ${weekLabel(data.selectedWeek)} recap`
-                  : 'Season recaps'}
-              />
-              <!-- The tiles' descriptions used to be a desktop-only `title=` tooltip (#771). The
-                   legend sits directly under the hardware it explains, on every surface that
-                   renders it — here, /recap, and their demo mirrors. -->
-              <AwardsGuide />
-            </div>
-          {/if}
-
-          <WeeklyPicksBreakdown
-            weeks={data.weeks}
-            selectedWeek={data.selectedWeek}
-            breakdown={data.breakdown}
-          />
-        </div>
-      {:else}
-        <p class="text-sm text-muted-foreground">Loading…</p>
-      {/if}
     </TabsContent>
   </Tabs>
 </section>

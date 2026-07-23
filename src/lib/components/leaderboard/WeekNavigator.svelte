@@ -1,9 +1,9 @@
 <script lang="ts">
-  // The Week tab's single context control (#631), lifted out of WeeklyPicksBreakdown so the
-  // picker sits ABOVE everything it drives. The Week tab now leads with that week's hardware,
-  // and a selector rendered below its own output reads as belonging to the breakdown alone
-  // rather than to the whole week. Mirrors the role the Season/All-time scope bar plays on
-  // Standings: one control per tab, at the top of the tab.
+  // The Week page's single context control (#631, promoted to /week by #776), lifted out of
+  // WeeklyPicksBreakdown so the picker sits ABOVE everything it drives. The page leads with that
+  // week's hardware, and a selector rendered below its own output would read as belonging to the
+  // breakdown alone rather than to the whole week. Mirrors the role the Season/All-time scope bar
+  // plays on Standings: one control at the top of the surface.
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
   import {
@@ -24,8 +24,10 @@
   } = $props();
 
   function navigate(weekNumber: number) {
+    // On /week (#776) the picker only changes `?week=`; it keeps any `?season=` deep-link the URL
+    // already carries. `invalidateAll` re-runs the server load so the user-scoped breakdown for
+    // the new week is fetched (boundary 3 — it is never cached client-side).
     const url = new URL(window.location.href);
-    url.searchParams.set('view', 'weekly');
     url.searchParams.set('week', String(weekNumber));
     void goto(url.toString(), { invalidateAll: true, noScroll: true, keepFocus: true });
   }
