@@ -226,7 +226,7 @@
               {/if}
             {/if}
           </div>
-          <AwardsGuide />
+          <AwardsGuide scope="season" />
         </div>
 
         {#if shown.length > 0}

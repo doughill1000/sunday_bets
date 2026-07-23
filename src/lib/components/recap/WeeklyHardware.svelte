@@ -3,13 +3,15 @@
   import Trophy from '@lucide/svelte/icons/trophy';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import type { Snippet } from 'svelte';
   import type { WeeklyAward, WeeklyHardware } from '$lib/domain/weeklyAwards';
 
   let {
     hardware,
     currentUserId = null,
     recapHref = null,
-    recapLabel = null
+    recapLabel = null,
+    legend
   }: {
     hardware: WeeklyHardware;
     currentUserId?: string | null;
@@ -18,6 +20,11 @@
      *  Season recaps archive leaves it null because the card already sits right below. */
     recapHref?: string | null;
     recapLabel?: string | null;
+    /** Optional legend trigger rendered in the card header, top-right of the title (#780). The
+     *  Week tab shows a single hardware card, so its weekly-hardware legend sits on the card it
+     *  explains; the recap archive repeats a card per week and keeps one legend up top instead,
+     *  so it leaves this unset. */
+    legend?: Snippet;
   } = $props();
 
   const fmt = (n: number) => String(Number(n));
@@ -44,10 +51,13 @@
 
 <Card class="border-border/50 bg-card">
   <CardHeader class="pb-2">
-    <CardTitle class="flex items-center gap-2 text-base font-semibold">
-      <Trophy class="h-4 w-4 shrink-0 text-primary-ink" aria-hidden="true" />
-      Week {hardware.week_number} hardware
-    </CardTitle>
+    <div class="flex items-center justify-between gap-2">
+      <CardTitle class="flex items-center gap-2 text-base font-semibold">
+        <Trophy class="h-4 w-4 shrink-0 text-primary-ink" aria-hidden="true" />
+        Week {hardware.week_number} hardware
+      </CardTitle>
+      {@render legend?.()}
+    </div>
   </CardHeader>
   <CardContent class="space-y-3">
     <ul class="grid grid-cols-2 gap-2" data-testid="weekly-hardware">

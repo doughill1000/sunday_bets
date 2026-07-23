@@ -85,19 +85,22 @@
          and the archive remains the one place the prose lives. Hardware exists only for
          fully-graded scoring weeks, so an in-progress week shows the breakdown alone. -->
     {#if selectedHardware}
-      <div class="space-y-2">
-        <WeeklyHardware
-          hardware={selectedHardware}
-          currentUserId={pageData.currentUserId}
-          recapHref="/recap?season={pageData.seasonYear}#week-{selectedHardware.week_number}"
-          recapLabel={selectedWeekRecap
-            ? `Read the ${weekLabel(pageData.selectedWeek)} recap`
-            : 'Season recaps'}
-        />
-        <!-- The tiles' descriptions render as a legend under the hardware they explain (#771),
-             on every surface that renders it — here, /recap, and their demo mirrors. -->
-        <AwardsGuide />
-      </div>
+      <!-- The weekly-hardware legend (#771) rides in the card header now (#780), top-right of the
+           "Week N hardware" title, instead of dangling below the card as a stray link. Scoped to
+           weekly hardware — the only tier this tab shows — so it no longer opens on season titles
+           that live over on the Honors tab. -->
+      <WeeklyHardware
+        hardware={selectedHardware}
+        currentUserId={pageData.currentUserId}
+        recapHref="/recap?season={pageData.seasonYear}#week-{selectedHardware.week_number}"
+        recapLabel={selectedWeekRecap
+          ? `Read the ${weekLabel(pageData.selectedWeek)} recap`
+          : 'Season recaps'}
+      >
+        {#snippet legend()}
+          <AwardsGuide scope="weekly" />
+        {/snippet}
+      </WeeklyHardware>
     {/if}
 
     <WeeklyPicksBreakdown

@@ -34,14 +34,18 @@
   </div>
 
   {#if latestHardware}
-    <div class="space-y-2" data-testid="demo-week-hardware">
+    <div data-testid="demo-week-hardware">
+      <!-- Mirrors the real Week tab (#780): the weekly-hardware legend rides in the card header. -->
       <WeeklyHardware
         hardware={latestHardware}
         currentUserId={data.persona.userId}
         recapHref="/demo/recap#week-{latestHardware.week_number}"
         recapLabel="Read the recap"
-      />
-      <AwardsGuide />
+      >
+        {#snippet legend()}
+          <AwardsGuide scope="weekly" />
+        {/snippet}
+      </WeeklyHardware>
     </div>
   {:else}
     <p class="text-sm text-muted-foreground">No graded weeks yet.</p>

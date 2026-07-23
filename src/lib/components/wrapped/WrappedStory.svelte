@@ -115,7 +115,7 @@
         <h3 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
           Your Badges
         </h3>
-        <AwardsGuide />
+        <AwardsGuide scope="season" />
       </div>
       <ul class="flex flex-wrap gap-3">
         {#each playerFacts.badges as badge (badge.id)}
@@ -139,7 +139,7 @@
         <h3 class="text-sm font-semibold tracking-wide text-muted-foreground uppercase">
           Season Titles
         </h3>
-        <AwardsGuide />
+        <AwardsGuide scope="season" />
       </div>
       <div class="space-y-1">
         {#each leagueFacts.title_badges as badge (badge.label)}
