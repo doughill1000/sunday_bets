@@ -7,6 +7,7 @@
   import BackLink from '$lib/components/BackLink.svelte';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
+  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import Sparkles from '@lucide/svelte/icons/sparkles';
 
   let { data }: { data: PageData } = $props();
@@ -31,9 +32,13 @@
       <Sparkles class="h-5 w-5 text-primary-ink" />
       <h1 class="text-xl font-semibold">Season recaps</h1>
     </div>
-    <p class="text-sm text-muted-foreground">
-      Every graded week's hardware and the Commissioner's take, newest first.
-    </p>
+    <!-- Mirrors the real archive's single legend trigger (#771). -->
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <p class="text-sm text-muted-foreground">
+        Every graded week's hardware and the Commissioner's take, newest first.
+      </p>
+      <AwardsGuide />
+    </div>
   </div>
 
   {#if weeks.length === 0 && data.recaps.length === 0}

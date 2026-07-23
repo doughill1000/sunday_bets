@@ -14,6 +14,7 @@
   import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
   import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
+  import AwardsGuide from '$lib/components/AwardsGuide.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
   import { hasRatedMember } from '$lib/domain/rating';
@@ -198,12 +199,17 @@
 
     <TabsContent value="weekly" data-testid="demo-weekly-panel">
       {#if latestHardware}
-        <WeeklyHardware
-          hardware={latestHardware}
-          currentUserId={data.persona.userId}
-          recapHref="/demo/recap#week-{latestHardware.week_number}"
-          recapLabel="Read the recap"
-        />
+        <!-- Parity with the real Week tab (#771): the Honors tab inherits the legend through
+             LeagueHonors, but this panel renders the hardware directly and needs its own. -->
+        <div class="space-y-2">
+          <WeeklyHardware
+            hardware={latestHardware}
+            currentUserId={data.persona.userId}
+            recapHref="/demo/recap#week-{latestHardware.week_number}"
+            recapLabel="Read the recap"
+          />
+          <AwardsGuide />
+        </div>
       {:else}
         <p class="text-sm text-muted-foreground">No graded weeks yet.</p>
       {/if}
