@@ -10,11 +10,11 @@ import { expect, type Locator, type Page } from '@playwright/test';
  * table headers are UI copy, so the spec keys off testids instead of role/text — a heading or
  * column-label change should not require touching the spec.
  *
- * By that same rule the third tab keeps its `leaderboard-tab-weekly` anchor and `weeklyTab()`
- * accessor even though #631 relabelled it "Week" — the anchor outlives the copy. What #631 did
- * change is structural, and that IS asserted: each tab owns exactly one context control rendered
- * inside its own panel (Standings the season/All-time select, Honors its season select since
- * #741, Week the week navigator), and no panel content renders outside the tab group.
+ * Two tabs since #776 promoted Week to its own top-level destination (see week-page.ts for that
+ * page's object): Standings and Honors. What #631 changed is structural, and that IS asserted:
+ * each tab owns exactly one context control rendered inside its own panel (Standings the
+ * season/All-time select, Honors its season select since #741), and no panel content renders
+ * outside the tab group.
  */
 
 export function leaderboardPage(page: Page) {
@@ -59,11 +59,6 @@ export function leaderboardPage(page: Page) {
     /** The Honors tab — the trophy room (#741). */
     honorsTab(): Locator {
       return page.getByTestId('leaderboard-tab-honors');
-    },
-
-    /** The last tab — labelled "Week" since #631; the anchor keeps its older spelling. */
-    weeklyTab(): Locator {
-      return page.getByTestId('leaderboard-tab-weekly');
     },
 
     /** The League honors case. Renders only inside the Honors panel (#741; Standings-only
@@ -137,29 +132,6 @@ export function leaderboardPage(page: Page) {
         .filter({ has: page.getByText(displayName, { exact: true }) });
     },
 
-    // --- weekly panel --------------------------------------------------------
-
-    /**
-     * The weekly breakdown content (week navigator + cards/empty state). Only
-     * mounts after the Weekly tab triggers its `?view=weekly` navigation, so
-     * use `openWeekly()` to switch and wait for it.
-     */
-    weeklyBreakdown(): Locator {
-      return page.getByTestId('weekly-breakdown');
-    },
-
-    /**
-     * Click the Weekly tab and wait for its content to load. The click is
-     * retried because switching tabs kicks off an async navigation that
-     * replaces the "Loading…" placeholder with the breakdown.
-     */
-    async openWeekly() {
-      await expect(async () => {
-        await api.weeklyTab().click();
-        await expect(api.weeklyBreakdown()).toBeVisible({ timeout: 5000 });
-      }).toPass({ timeout: 8000 });
-    },
-
     // --- all-time window (folded into the scope dropdown, #546) ----------------
 
     /** The all-time results table (shown when the All-time scope is selected and career
@@ -206,23 +178,10 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('honors-season');
     },
 
-    // --- week navigator ------------------------------------------------------
-
-    /** The Week tab's one context control, lifted above the week's hardware in #631. */
+    /** The week navigator — MUST stay hidden here: it moved to /week with its panel (#776).
+     *  Kept as an accessor so the containment spec can assert its absence. */
     weekNavigator(): Locator {
       return page.getByTestId('week-navigator');
-    },
-
-    /** The "Jump to week" dropdown trigger button. */
-    weekDropdownTrigger(): Locator {
-      return page.getByRole('button', { name: 'Jump to week' });
-    },
-
-    /** Click the week dropdown and wait for its content to open. */
-    async openWeekDropdown() {
-      await api.weekDropdownTrigger().click();
-      // Wait for at least one dropdown item to appear.
-      await expect(page.getByRole('menuitem').first()).toBeVisible({ timeout: 5000 });
     }
   };
 

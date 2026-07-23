@@ -1,11 +1,18 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // `liveScores.ts` pulls server-only deps at import (Sentry + the Supabase service client);
 // `selectLiveScores` itself is pure, so stub them so the module loads under jsdom.
 vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 vi.mock('$lib/supabase/service', () => ({ supabaseService: {} }));
+vi.mock('../db/queries/findActiveWeek', () => ({ findActiveWeek: vi.fn() }));
 
-import { selectLiveScores, type WeekGameForLive } from '../liveScores';
+import {
+  selectLiveScores,
+  isActiveWeekLiveCached,
+  __resetActiveWeekLiveCache,
+  type WeekGameForLive
+} from '../liveScores';
+import { findActiveWeek } from '../db/queries/findActiveWeek';
 import type { EspnGame } from '../schedule';
 import { LIVE_WINDOW_MS } from '$lib/live/config';
 
@@ -113,5 +120,34 @@ describe('selectLiveScores', () => {
     ];
 
     expect(selectLiveScores(games, espnGames, NOW)).toEqual({});
+  });
+});
+
+describe('isActiveWeekLiveCached', () => {
+  // The wrapper feeds the Week nav tab's pulse dot on every authenticated page load (#776) —
+  // the memo is what keeps that nav-wide read off the per-navigation DB hot path. The offseason
+  // path (no active week) exercises it without a Supabase double: `findActiveWeek` returning
+  // null resolves false after that single read.
+  beforeEach(() => {
+    __resetActiveWeekLiveCache();
+    vi.mocked(findActiveWeek).mockReset();
+  });
+
+  it('memoizes within the TTL — ≤1 DB check per window however many viewers navigate', async () => {
+    vi.mocked(findActiveWeek).mockResolvedValue(null);
+
+    expect(await isActiveWeekLiveCached(NOW)).toBe(false);
+    expect(await isActiveWeekLiveCached(NOW + 1_000)).toBe(false);
+
+    expect(findActiveWeek).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-checks once the TTL has elapsed', async () => {
+    vi.mocked(findActiveWeek).mockResolvedValue(null);
+
+    await isActiveWeekLiveCached(NOW);
+    await isActiveWeekLiveCached(NOW + 31_000); // past the 30s TTL
+
+    expect(findActiveWeek).toHaveBeenCalledTimes(2);
   });
 });

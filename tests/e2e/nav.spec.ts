@@ -3,21 +3,23 @@ import { leaderboardPage } from './helpers/leaderboard-page';
 import { E2E_USER, E2E_MULTIGROUP_USER } from './test-user';
 import { SEASON_YEAR } from './global-setup';
 
-// Primary navigation: four first-class tabs — Picks · League · Stats · Market. The desktop inline
-// nav and the mobile bottom tab bar render the same four destinations. League is the merged
-// Leaderboard + Group home (standings, the season race, honors, and a commissioner-only manage
-// console at /league/manage); Market is the NFL-wide ATS surface (renamed from "Teams" so the tab
-// names the market concept and never collides with "League", the user's group).
+// Primary navigation: five first-class tabs — Picks · Week · League · Stats · Market (#776
+// promoted Week out of /league; it sits second as the highest-frequency surface). The desktop
+// inline nav and the mobile bottom tab bar render the same five destinations. League is the
+// standings + trophy-room home (with a commissioner-only manage console at /league/manage);
+// Market is the NFL-wide ATS surface (renamed from "Teams" so the tab names the market concept
+// and never collides with "League", the user's group).
 
 const TABS = [
   { href: '/picks', name: 'Picks' },
+  { href: '/week', name: 'Week' },
   { href: '/league', name: 'League' },
   { href: '/stats', name: 'Stats' },
   { href: '/market', name: 'Market' }
 ] as const;
 
 test(
-  'desktop nav exposes all four tabs and each navigates',
+  'desktop nav exposes all five tabs and each navigates',
   { tag: '@smoke' },
   async ({ page }) => {
     await page.goto('/picks');
@@ -35,7 +37,7 @@ test(
   }
 );
 
-test('mobile bottom tab bar exposes all four tabs', async ({ page }) => {
+test('mobile bottom tab bar exposes all five tabs', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/picks');
 

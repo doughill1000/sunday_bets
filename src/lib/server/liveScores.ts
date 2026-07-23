@@ -71,8 +71,10 @@ export function selectLiveScores(
 
 /**
  * Cheap, DB-only check (no ESPN) for whether the active week has a game inside its live
- * window. Drives the wayfinding default that opens /league on the Weekly tab during the live
- * window (#584, Move 5). Degrades to `false` on any error so navigation never breaks.
+ * window. Since #776 this drives the live-pulse dot on the Week nav tab (it previously drove
+ * #584's `liveDefaultWeekly` auto-flip, retired when Week became its own nav destination).
+ * Degrades to `false` on any error so navigation never breaks. Prefer {@link isActiveWeekLiveCached}
+ * for the nav dot — this raw form runs a DB read every call.
  */
 export async function isActiveWeekLive(now = Date.now()): Promise<boolean> {
   try {
@@ -87,6 +89,29 @@ export async function isActiveWeekLive(now = Date.now()): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+let liveFlagMemo: { at: number; value: boolean } | null = null;
+const LIVE_FLAG_TTL_MS = 30_000;
+
+/** Testing seam: drop the nav live-flag memo between cases. */
+export function __resetActiveWeekLiveCache(): void {
+  liveFlagMemo = null;
+}
+
+/**
+ * Cached wrapper over {@link isActiveWeekLive} for the nav-wide live-pulse dot (#776). The dot is
+ * read on every authenticated page load, so a bare call would put a DB check on the navigation hot
+ * path. A short module-level memo collapses all viewers to ≤1 DB check per window regardless of
+ * headcount — the same goodwill property `getLiveScoresForActiveWeek` relies on. The in-season gate
+ * is inherent: offseason there is no active week, so the underlying call returns false after a
+ * single `findActiveWeek` read. Degrades to false on any error (inherited).
+ */
+export async function isActiveWeekLiveCached(now = Date.now()): Promise<boolean> {
+  if (liveFlagMemo && now - liveFlagMemo.at < LIVE_FLAG_TTL_MS) return liveFlagMemo.value;
+  const value = await isActiveWeekLive(now);
+  liveFlagMemo = { at: now, value };
+  return value;
 }
 
 let memo: { at: number; payload: LiveScoresPayload } | null = null;

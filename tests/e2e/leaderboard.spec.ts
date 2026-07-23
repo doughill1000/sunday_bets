@@ -4,71 +4,50 @@ import { leaderboardPage } from './helpers/leaderboard-page';
 // Selectors live in the leaderboardPage page object (helpers/leaderboard-page.ts)
 // and key off data-testid anchors, so tab/column copy changes don't ripple here.
 
-test(
-  'leaderboard renders Standings, Honors, and Week tabs',
-  { tag: '@smoke' },
-  async ({ page }) => {
-    const lb = leaderboardPage(page);
-    await lb.goto();
+test('leaderboard renders Standings and Honors tabs', { tag: '@smoke' }, async ({ page }) => {
+  const lb = leaderboardPage(page);
+  await lb.goto();
 
-    // Exactly three tabs, labelled "Standings", "Honors" (#741 — the trophy room), and "Week"
-    // (#631 renamed Weekly → Week: it shows one selected week, not a trend). Copy is asserted
-    // here — and only here — because the tab labels ARE the IA claim; every other locator keys
-    // off a testid.
-    await expect(lb.standingsTab()).toBeVisible();
-    await expect(lb.honorsTab()).toBeVisible();
-    await expect(lb.weeklyTab()).toBeVisible();
-    await expect(lb.standingsTab()).toHaveText('Standings');
-    await expect(lb.honorsTab()).toHaveText('Honors');
-    await expect(lb.weeklyTab()).toHaveText('Week');
+  // Exactly two tabs, labelled "Standings" and "Honors" (#741 — the trophy room): #776 promoted
+  // Week to its own top-level nav destination, returning /league to two lanes. Copy is asserted
+  // here — and only here — because the tab labels ARE the IA claim; every other locator keys
+  // off a testid.
+  await expect(lb.standingsTab()).toBeVisible();
+  await expect(lb.honorsTab()).toBeVisible();
+  await expect(lb.standingsTab()).toHaveText('Standings');
+  await expect(lb.honorsTab()).toHaveText('Honors');
+  await expect(page.getByRole('tab')).toHaveCount(2);
 
-    // Standings is the default tab — year-round, per #741's binding condition (Honors is one
-    // tap away, never a computed default): the results table or the empty state renders.
-    await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
-
-    // Switching to Week loads the weekly breakdown (handles the async navigation).
-    await lb.openWeekly();
-    await expect(lb.weeklyBreakdown()).toBeVisible();
-  }
-);
+  // Standings is the unconditional default tab — year-round, live window included now that
+  // #584's auto-flip retired with #776 (Honors is one tap away, never a computed default):
+  // the results table or the empty state renders.
+  await expect(lb.standingsTable().or(lb.standingsEmpty())).toBeVisible();
+});
 
 test('each tab owns exactly one context control, contained in its own panel', async ({ page }) => {
-  // #631's core claim, extended to three tabs by #741: the tab you're on governs what's on
-  // screen. Before #631, the season selector and honors rendered OUTSIDE </Tabs>, so both
-  // showed under both tabs — and the global bar offered All-time above Week, which has no
-  // all-time view and bounced you back.
+  // #631's core claim, back to two tabs since #776 moved Week out: the tab you're on governs
+  // what's on screen. Before #631, the season selector and honors rendered OUTSIDE </Tabs>,
+  // so both showed under both tabs.
   const lb = leaderboardPage(page);
   await lb.goto();
 
   // Standings owns the season/All-time select — and there is exactly ONE of it on the page.
-  // The honors card used to render a second SeasonPicker of its own; #631 deleted it.
+  // The honors card used to render a second SeasonPicker of its own; #631 deleted it. The
+  // week navigator left for /week with its panel (#776), so it must be absent everywhere here.
   await expect(lb.scopeSelect()).toBeVisible();
   await expect(lb.scopeSelect()).toHaveCount(1);
-  await expect(lb.weekNavigator()).toBeHidden();
+  await expect(lb.weekNavigator()).toHaveCount(0);
   await expect(lb.honorsSeasonSelect()).toBeHidden();
 
   // Honors owns its own season select (no All-time pin — honors are season-grain), and the
-  // other tabs' controls are gone with their panels. The champion card is the panel's
+  // other tab's control is gone with its panel. The champion card is the panel's
   // deterministic anchor: it renders its "not decided yet" zero-state even on the e2e
   // fixture, which never grades a week (#741's designed empty state).
   await lb.openHonors();
   await expect(lb.honorsSeasonSelect()).toBeVisible();
   await expect(lb.honorsSeasonSelect()).toHaveCount(1);
   await expect(lb.scopeSelect()).toBeHidden();
-  await expect(lb.weekNavigator()).toBeHidden();
-
-  // Week owns the week picker, and the other selects are gone with their panels — so
-  // All-time is unreachable from Week rather than reachable-then-rescinded.
-  await lb.openWeekly();
-  await expect(lb.weekNavigator()).toBeVisible();
-  await expect(lb.scopeSelect()).toBeHidden();
-  await expect(lb.honorsSeasonSelect()).toBeHidden();
-  // The honors case lives on the Honors tab only (#741). (The e2e fixture never grades a
-  // week, so the card has nothing to render either way — the load-bearing containment checks
-  // are the selectors above; honors under a graded season is covered by the demo-seeded
-  // manual pass.)
-  await expect(lb.honors()).toBeHidden();
-  await expect(lb.championCard()).toBeHidden();
+  await expect(lb.weekNavigator()).toHaveCount(0);
 });
 
 test('the trophy room is a client flip with a shareable URL', async ({ page }) => {
@@ -150,19 +129,6 @@ test('?scope=alltime deep-links straight to the career window', async ({ page })
   await expect(lb.subtitle()).toHaveText('All-time · every season combined.');
   await expect(lb.allTimeTable().or(lb.allTimeEmpty())).toBeVisible();
   await expect(lb.ratingLadder()).toBeHidden();
-});
-
-test('week tab shows a jump-to-week dropdown', async ({ page }) => {
-  const lb = leaderboardPage(page);
-  await lb.goto();
-  await lb.openWeekly();
-
-  // The week dropdown trigger is always present once the weekly breakdown loads.
-  await expect(lb.weekDropdownTrigger()).toBeVisible();
-
-  // Opening the dropdown reveals at least one week option.
-  await lb.openWeekDropdown();
-  await expect(page.getByRole('menuitem').first()).toBeVisible();
 });
 
 test('the Season recaps archive has a door and a way back', async ({ page }) => {

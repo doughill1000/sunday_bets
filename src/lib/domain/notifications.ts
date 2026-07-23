@@ -121,7 +121,7 @@ export type RecapTally = {
 /**
  * One-line push body summarizing a user's week. Pure so it can be unit-tested
  * without a database. Push/missed clauses are omitted when zero.
- *   e.g. "3-1 with 1 push · +7 points this week. Tap for standings."
+ *   e.g. "3-1 with 1 push · +7 points this week. Tap for the breakdown."
  */
 export function formatRecapBody(t: RecapTally): string {
   let record = `${t.wins}-${t.losses}`;
@@ -133,7 +133,9 @@ export function formatRecapBody(t: RecapTally): string {
   const sign = t.net > 0 ? '+' : '';
   const points = `${sign}${t.net} point${Math.abs(t.net) === 1 ? '' : 's'} this week`;
 
-  return `${record} · ${points}. Tap for standings.`;
+  // The push lands on /week (#776 — the week's own destination), so the tail names the
+  // pick breakdown it opens rather than the standings it used to.
+  return `${record} · ${points}. Tap for the breakdown.`;
 }
 
 /**

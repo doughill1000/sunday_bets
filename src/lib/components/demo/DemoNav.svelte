@@ -1,15 +1,16 @@
 <script lang="ts">
-  // Demo-only top chrome (#460): a "DEMO" wordmark + a nav that mirrors the real app's four
-  // first-class tabs (Picks · League · Stats · Market, #561/#669) + a persistent sign-up CTA.
-  // Replaces the authenticated AppHeader for the /demo route group. Wrapped and Recap are no
-  // longer permanent tabs here either — same as the real app, they're reached from within
-  // League (the honors card's Wrapped/recap links, WeeklyHardware's recap link), never a
-  // fifth door on the nav.
+  // Demo-only top chrome (#460): a "DEMO" wordmark + a nav that mirrors the real app's five
+  // first-class tabs (Picks · Week · League · Stats · Market, #561/#669/#776) + a persistent
+  // sign-up CTA. Replaces the authenticated AppHeader for the /demo route group. Wrapped and
+  // Recap are not permanent tabs here either — same as the real app, they're reached from within
+  // League and Week (the honors card's Wrapped/recap links, WeeklyHardware's recap link), never
+  // an extra door on the nav.
   import { page } from '$app/state';
   import DemoSignupCta from './DemoSignupCta.svelte';
 
   const links = [
     { href: '/demo', label: 'Picks', exact: true },
+    { href: '/demo/week', label: 'Week', exact: false },
     { href: '/demo/league', label: 'League', exact: false },
     { href: '/demo/stats', label: 'Stats', exact: false },
     { href: '/demo/market', label: 'Market', exact: false }

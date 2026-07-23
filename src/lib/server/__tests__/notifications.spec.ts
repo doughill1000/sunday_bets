@@ -128,8 +128,8 @@ describe('sendResultsRecap', () => {
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Your Week 5 results',
-      body: '1-1 · +2 points this week. Tap for standings.',
-      url: '/league',
+      body: '1-1 · +2 points this week. Tap for the breakdown.',
+      url: '/week',
       tag: 'results-recap-week-5'
     });
     expect(db.insertedLogs).toEqual([
@@ -157,7 +157,9 @@ describe('sendResultsRecap', () => {
 
     expect(sendToUser).toHaveBeenCalledWith(
       'u1',
-      expect.objectContaining({ body: '2-0 with 1 push · +9 points this week. Tap for standings.' })
+      expect.objectContaining({
+        body: '2-0 with 1 push · +9 points this week. Tap for the breakdown.'
+      })
     );
   });
 

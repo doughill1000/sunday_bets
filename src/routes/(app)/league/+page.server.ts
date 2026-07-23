@@ -1,8 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getAvailableSeasons, getWeeklyCumulative } from '$lib/server/db/queries/leaderboard';
-import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
-import { isActiveWeekLive } from '$lib/server/liveScores';
 import { isSeasonInProgress } from '$lib/server/db/queries/seasonProgress';
 import { resolveSeasonYear } from '$lib/server/seasonDefault';
 import { tracePageLoad } from '$lib/server/observability';
@@ -17,30 +15,19 @@ export const load: PageServerLoad = async (event) => {
 async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: string) {
   const viewParam = event.url.searchParams.get('view');
   const seasonParam = event.url.searchParams.get('season');
-  const weekParam = event.url.searchParams.get('week');
   const scopeParam = event.url.searchParams.get('scope');
 
-  // Wayfinding (#584, Move 5): a bare `/league` visit opens on the Weekly tab while a game is
-  // in its live window, and on Standings the rest of the week. An explicit `?view=` or a past
-  // `?season=` is always honoured, so the check only runs (and only costs a query) on a bare
-  // visit. Parallelised with the standing load so it adds no latency.
-  const wantLiveDefault = viewParam == null && seasonParam == null;
-
-  const [currentSeasonYear, availableSeasons, liveDefaultWeekly] = await Promise.all([
+  const [currentSeasonYear, availableSeasons] = await Promise.all([
     event.locals.getCurrentSeasonYear(),
-    getAvailableSeasons(groupId),
-    wantLiveDefault ? isActiveWeekLive() : Promise.resolve(false)
+    getAvailableSeasons(groupId)
   ]);
 
-  // Three views since #741 (Standings · Honors · Week). Honors is only ever reached
-  // explicitly — by tab tap or `?view=honors` — never computed: Standings stays the
-  // year-round default and `liveDefaultWeekly` remains the single seasonal default flip.
-  const view =
-    viewParam === 'weekly' || viewParam === 'honors'
-      ? viewParam
-      : liveDefaultWeekly
-        ? 'weekly'
-        : 'standings';
+  // Two lanes since #776 promoted Week to its own top-level nav destination (retiring #584's
+  // `liveDefaultWeekly` auto-flip): Standings is the unconditional default, Honors is reached only
+  // explicitly — by tab tap or `?view=honors`. A bookmarked `?view=weekly` never reaches this load
+  // — hooks.server.ts permanently redirects it to /week before auth — so Standings is the sole
+  // computed default now, live window or not.
+  const view: 'standings' | 'honors' = viewParam === 'honors' ? 'honors' : 'standings';
 
   const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
 
@@ -89,42 +76,10 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
 
   // Season standings (shareable) come from the client `createQuery` keyed by `(groupId, season)`
   // so a revisit renders from cache (ADR-0017); `+page.ts` prefetches them on the server for a
-  // flash-free first paint. This load stays light. For the Weekly view only it composes the
-  // user-specific, RLS-gated pick breakdown — read through the user-scoped client with a kickoff
-  // gate, so it differs per user and is NEVER cached or persisted (boundary 3); it stays here.
-  if (view !== 'weekly') {
-    return {
-      groupId,
-      currentSeasonYear,
-      seasonYear,
-      availableSeasons,
-      latestSeasonInProgress,
-      viewedSeasonInProgress,
-      defaultScope,
-      currentUserId,
-      isCommissioner,
-      trend,
-      // Honors needs no server payload of its own — its data all rides the shareable
-      // client queries (group + recap caches); `+page.ts` prefetches the recap payload
-      // for a `?view=honors` request so the trophy shelf SSRs without a flash.
-      view: view === 'honors' ? ('honors' as const) : ('standings' as const),
-      weeks: null,
-      selectedWeek: null,
-      breakdown: null
-    };
-  }
-
-  const weeks = await getSeasonWeekOptions(seasonYear);
-  const latestWeek = weeks.length > 0 ? weeks[weeks.length - 1] : null;
-  const selectedWeekNumber =
-    weekParam != null ? Number(weekParam) : (latestWeek?.weekNumber ?? null);
-  const selectedWeek = weeks.find((w) => w.weekNumber === selectedWeekNumber) ?? latestWeek;
-
-  const breakdown =
-    selectedWeek != null
-      ? await getWeeklyPickBreakdown(event, selectedWeek.weekId, groupId, currentUserId)
-      : [];
-
+  // flash-free first paint. This load stays light: both remaining lanes ride shareable client
+  // caches (Standings the leaderboard/all-time payloads, Honors the group + recap caches, the
+  // latter prefetched by `+page.ts` only on a `?view=honors` request so the trophy shelf SSRs
+  // without a flash). The user-scoped weekly pick breakdown moved to /week's own server load (#776).
   return {
     groupId,
     currentSeasonYear,
@@ -136,9 +91,6 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
     currentUserId,
     isCommissioner,
     trend,
-    view: 'weekly' as const,
-    weeks,
-    selectedWeek: selectedWeek ?? null,
-    breakdown
+    view
   };
 }

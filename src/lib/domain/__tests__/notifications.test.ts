@@ -56,25 +56,25 @@ describe('parseNotificationPrefs', () => {
 describe('formatRecapBody', () => {
   it('summarizes record, pushes/missed, and net points', () => {
     expect(formatRecapBody({ wins: 3, losses: 1, pushes: 1, missed: 0, net: 7 })).toBe(
-      '3-1 with 1 push · +7 points this week. Tap for standings.'
+      '3-1 with 1 push · +7 points this week. Tap for the breakdown.'
     );
   });
 
   it('omits push/missed clauses when zero', () => {
     expect(formatRecapBody({ wins: 2, losses: 2, pushes: 0, missed: 0, net: 0 })).toBe(
-      '2-2 · 0 points this week. Tap for standings.'
+      '2-2 · 0 points this week. Tap for the breakdown.'
     );
   });
 
   it('combines pushes and missed and pluralizes', () => {
     expect(formatRecapBody({ wins: 0, losses: 4, pushes: 2, missed: 1, net: -4 })).toBe(
-      '0-4 with 2 pushes and 1 missed · -4 points this week. Tap for standings.'
+      '0-4 with 2 pushes and 1 missed · -4 points this week. Tap for the breakdown.'
     );
   });
 
   it('uses singular "point" for ±1', () => {
     expect(formatRecapBody({ wins: 1, losses: 0, pushes: 0, missed: 0, net: 1 })).toBe(
-      '1-0 · +1 point this week. Tap for standings.'
+      '1-0 · +1 point this week. Tap for the breakdown.'
     );
   });
 });

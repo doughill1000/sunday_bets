@@ -1,15 +1,18 @@
 <script lang="ts">
   // Mobile bottom tab bar for the /demo route group (#460), mirroring the authenticated app's
-  // BottomTabBar — same four tabs (Picks · League · Stats · Market), same order, same icons
-  // (#669) — so the demo navigates exactly the way the real product does.
+  // BottomTabBar — same five tabs (Picks · Week · League · Stats · Market, #776), same order,
+  // same icons (#669) — so the demo navigates exactly the way the real product does. No live
+  // dot here: the snapshot season has concluded, so there is never a live window to signal.
   import { page } from '$app/state';
   import ListChecks from '@lucide/svelte/icons/list-checks';
+  import CalendarDays from '@lucide/svelte/icons/calendar-days';
   import Trophy from '@lucide/svelte/icons/trophy';
   import BarChart2 from '@lucide/svelte/icons/bar-chart-2';
   import TrendingUp from '@lucide/svelte/icons/trending-up';
 
   const tabs = [
     { href: '/demo', label: 'Picks', exact: true, Icon: ListChecks },
+    { href: '/demo/week', label: 'Week', exact: false, Icon: CalendarDays },
     { href: '/demo/league', label: 'League', exact: false, Icon: Trophy },
     { href: '/demo/stats', label: 'Stats', exact: false, Icon: BarChart2 },
     { href: '/demo/market', label: 'Market', exact: false, Icon: TrendingUp }

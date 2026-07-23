@@ -397,7 +397,8 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
     await sendToUser(user.id, {
       title: `Your Week ${week.week_number} results`,
       body: formatRecapBody(tally),
-      url: '/league',
+      // The week-scoped landing surface moved from /league's Week tab to /week (#776).
+      url: '/week',
       tag: `results-recap-week-${weekId}`
     });
     await logNotification({

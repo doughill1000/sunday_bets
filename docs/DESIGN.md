@@ -71,21 +71,25 @@ home until #692 retired the slices themselves.)
 
 The boundary with Tabs (ratified after the 2026-07-11 audit): the chip radiogroup
 switches cuts **within a section**; **Tabs** may split a **whole page** into two or three
-top-level views (`/league` Standings · Honors · Week, `/wrapped` Your Year · The League).
+top-level views (`/league` Standings · Honors, `/wrapped` Your Year · The League).
 The test: if the switch re-renders one panel inside a scrolling page, it's chips; if it
 changes what the entire page is, it's Tabs. Never both on one screen for sibling jobs.
 
-> **Decision note (2026-07-22, #741).** `/league` spends the third tab slot on **Honors**
-> — the trophy room — superseding #631's two-tab containment. #631 was right to contain
-> recap sprawl and to write the one-control-per-tab rule (both survive unchanged), but it
-> filed the league's emotional payoff as a scope-gated appendix of the standings panel;
-> #737 made the honors visible by ordering, and living with it confirmed they deserved an
-> address, not a scroll position. ADR-0035's lane law is now the tab boundary: the market
-> lane (table, ladder, race) is Standings; the room lane (champion, spoon, titles, shelf)
-> is Honors. Binding conditions: Standings stays the year-round default tab (the honors
-> strip is the one seasonal first-paint mechanism), each tab keeps exactly one control,
-> and the three-view maximum is now fully spent — a fourth `/league` view requires a new
-> design study and a revision of this note.
+> **Decision note (2026-07-22, #741 — revised 2026-07-23, #776).** `/league` spent its
+> third tab slot on **Honors** — the trophy room — superseding #631's two-tab containment.
+> #631 was right to contain recap sprawl and to write the one-control-per-tab rule (both
+> survive unchanged), but it filed the league's emotional payoff as a scope-gated appendix
+> of the standings panel; #737 made the honors visible by ordering, and living with it
+> confirmed they deserved an address, not a scroll position. ADR-0035's lane law is the tab
+> boundary: the market lane (table, ladder, race) is Standings; the room lane (champion,
+> spoon, titles, shelf) is Honors. **#776 then promoted Week out of `/league` entirely** —
+> it is the fifth first-class nav destination (`/week`, second in the bar: Picks · Week ·
+> League · Stats · Market), which retired #584's live-window auto-flip (its "games are on"
+> signal survives as the red pulse dot on the Week nav tab) and returned `/league` to two
+> lanes. Binding conditions: Standings stays the year-round default tab — unconditionally,
+> now that the auto-flip is gone (the honors strip is the one seasonal first-paint
+> mechanism), each tab keeps exactly one control, and a third `/league` view again
+> requires a new design study and a revision of this note.
 
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
 _Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the

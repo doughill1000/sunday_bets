@@ -51,6 +51,7 @@ export const load: LayoutLoad = async ({ data, depends, fetch }) => {
     recapSeen: data.recapSeen ?? true,
     championUserId: data.championUserId ?? null,
     latestWrapped: data.latestWrapped ?? null,
-    wrappedSeen: data.wrappedSeen ?? true
+    wrappedSeen: data.wrappedSeen ?? true,
+    weekLive: data.weekLive ?? false
   };
 };

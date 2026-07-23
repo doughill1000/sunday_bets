@@ -5,13 +5,17 @@
   import GroupSwitcher from '$lib/components/app-header/GroupSwitcher.svelte';
   import { openFeedback } from '$lib/feedback/store';
 
-  // Four first-class tabs after the #561 IA merge (see BottomTabBar): League is the merged
-  // Leaderboard+Group home (with a Members & manage subpage at /league/manage), and Market is the
-  // NFL-wide ATS surface (renamed from "Teams" so the tab names the market concept and never
-  // collides with "League", the user's group). Wrapped is intentionally absent: it is a seasonal
-  // moment surfaced via the League home CTA + honors card link, not a permanent nav destination.
+  // Five first-class tabs since #776 promoted Week out of /league (see BottomTabBar for the full
+  // rationale): Week is the selected week's hardware + pick breakdown, second because it is the
+  // highest-frequency surface; League is the standings + trophy-room home (with the commissioner
+  // console at /league/manage); Market is the NFL-wide ATS surface (renamed from "Teams" so the tab
+  // names the market concept and never collides with "League", the user's group). Wrapped is
+  // intentionally absent: a seasonal moment surfaced via the League honors card link, not a
+  // permanent nav destination. `weekLive` puts the red live-pulse dot on Week during the live
+  // window — same signal as WeeklyLiveBoard's LIVE badge (one pattern per job).
   const navLinks = [
     { href: '/picks', label: 'Picks' },
+    { href: '/week', label: 'Week' },
     { href: '/league', label: 'League' },
     { href: '/stats', label: 'Stats' },
     { href: '/market', label: 'Market' }
@@ -31,6 +35,7 @@
     memberships?: Membership[];
     activeGroupId?: string | null;
     champion?: boolean;
+    weekLive?: boolean;
   }
 
   let {
@@ -40,7 +45,8 @@
     avatarKey = null,
     memberships = [],
     activeGroupId = null,
-    champion = false
+    champion = false,
+    weekLive = false
   }: Props = $props();
 </script>
 
@@ -53,10 +59,14 @@
       {@const active = pendingPath.startsWith(href)}
       <a
         {href}
-        class="rounded-md px-3 py-1.5 transition-colors {active
+        class="relative rounded-md px-3 py-1.5 transition-colors {active
           ? 'bg-accent font-semibold text-foreground'
           : 'hover:bg-accent'}"
-        aria-current={active ? 'page' : undefined}>{label}</a
+        aria-current={active ? 'page' : undefined}
+        >{label}{#if href === '/week' && weekLive}<span
+            data-testid="week-live-dot"
+            class="absolute top-1 right-1 size-1.5 animate-pulse rounded-full bg-destructive"
+          ></span><span class="sr-only">— games live now</span>{/if}</a
       >
     {/each}
   </nav>
