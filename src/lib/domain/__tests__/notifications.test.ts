@@ -3,8 +3,9 @@ import {
   parseNotificationPrefs,
   DEFAULT_NOTIFICATION_PREFS,
   spreadRelativeToHome,
-  lineMovementPoints,
+  lineShiftForPick,
   shouldNotifyLineShift,
+  pregamePushBody,
   formatRecapBody,
   recapPushBody,
   LINE_SHIFT_THRESHOLD_POINTS
@@ -123,53 +124,99 @@ describe('spreadRelativeToHome', () => {
   });
 });
 
-describe('lineMovementPoints', () => {
-  it('is zero when nothing moved', () => {
+describe('lineShiftForPick', () => {
+  it('reports no movement when the line is unchanged', () => {
+    // Bills (team 1) -3 in both rows.
     expect(
-      lineMovementPoints({
-        homeTeamId: 1,
-        lockedTeamId: 1,
-        lockedValue: -3,
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 1,
+        previousValue: -3,
         currentTeamId: 1,
         currentValue: -3
       })
-    ).toBe(0);
+    ).toEqual({ points: 0, direction: 'none' });
   });
 
-  it('normalizes lines stored against different reference teams', () => {
-    // locked: home -3 ; current: away +5 => home -5 => moved 2 points
+  it('is against the pick when the market backs off the picked side', () => {
+    // Picked team went from -3 to -1: the market lost faith in your side.
     expect(
-      lineMovementPoints({
-        homeTeamId: 1,
-        lockedTeamId: 1,
-        lockedValue: -3,
-        currentTeamId: 2,
-        currentValue: 5
-      })
-    ).toBe(2);
-  });
-
-  it('handles half-point moves', () => {
-    expect(
-      lineMovementPoints({
-        homeTeamId: 1,
-        lockedTeamId: 1,
-        lockedValue: -2.5,
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 1,
+        previousValue: -3,
         currentTeamId: 1,
-        currentValue: -5
+        currentValue: -1
       })
-    ).toBe(2.5);
+    ).toEqual({ points: 2, direction: 'against' });
+  });
+
+  it('is favorable when the market moves further onto the picked side', () => {
+    // Locked Bills -1, line now Bills -3.5: the brag-fuel direction.
+    expect(
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 1,
+        previousValue: -1,
+        currentTeamId: 1,
+        currentValue: -3.5
+      })
+    ).toEqual({ points: 2.5, direction: 'favorable' });
+  });
+
+  it('normalizes rows stored against different reference teams (against)', () => {
+    // Previous row references the picked team (-2.5); current row references the
+    // opponent (-2.5 → +2.5 for the pick): a 5-pt swing against the pick.
+    expect(
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 1,
+        previousValue: -2.5,
+        currentTeamId: 2,
+        currentValue: -2.5
+      })
+    ).toEqual({ points: 5, direction: 'against' });
+  });
+
+  it('normalizes rows stored against different reference teams (favorable)', () => {
+    // Previous row references the opponent (+3 → pick -3); current references
+    // the pick directly at -5.5: 2.5 pts further onto the picked side.
+    expect(
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 2,
+        previousValue: 3,
+        currentTeamId: 1,
+        currentValue: -5.5
+      })
+    ).toEqual({ points: 2.5, direction: 'favorable' });
+  });
+
+  it('detects an unchanged line even when the reference team flips between rows', () => {
+    // Same line, opposite reference teams: previous pick-relative -3, current
+    // opponent +3 → pick-relative -3. No movement.
+    expect(
+      lineShiftForPick({
+        pickedTeamId: 1,
+        previousTeamId: 1,
+        previousValue: -3,
+        currentTeamId: 2,
+        currentValue: 3
+      })
+    ).toEqual({ points: 0, direction: 'none' });
   });
 });
 
 describe('shouldNotifyLineShift', () => {
   const base = {
     movement: 3,
+    direction: 'against' as const,
+    freshJump: true,
     lineShiftEnabled: true,
     recentlyNotified: false
   };
 
-  it('fires when at or over the fixed threshold and not recently notified', () => {
+  it('fires on a fresh against-you jump at or over the threshold', () => {
     expect(shouldNotifyLineShift(base)).toBe(true);
     expect(shouldNotifyLineShift({ ...base, movement: LINE_SHIFT_THRESHOLD_POINTS })).toBe(true);
   });
@@ -178,11 +225,70 @@ describe('shouldNotifyLineShift', () => {
     expect(shouldNotifyLineShift({ ...base, lineShiftEnabled: false })).toBe(false);
   });
 
+  it('is suppressed for favorable or flat moves (against-you only)', () => {
+    expect(shouldNotifyLineShift({ ...base, direction: 'favorable' })).toBe(false);
+    expect(shouldNotifyLineShift({ ...base, direction: 'none', movement: 0 })).toBe(false);
+  });
+
+  it('is suppressed when the jump settled before the pregame window', () => {
+    expect(shouldNotifyLineShift({ ...base, freshJump: false })).toBe(false);
+  });
+
   it('is suppressed below the fixed threshold', () => {
     expect(shouldNotifyLineShift({ ...base, movement: 1 })).toBe(false);
   });
 
   it('is suppressed by the once-per-day cap', () => {
     expect(shouldNotifyLineShift({ ...base, recentlyNotified: true })).toBe(false);
+  });
+});
+
+describe('pregamePushBody', () => {
+  it('returns null when there is nothing to say', () => {
+    expect(pregamePushBody({ unpickedCount: 0, lineShifts: [] })).toBeNull();
+  });
+
+  it('builds the reminder-only form (singular and plural)', () => {
+    expect(pregamePushBody({ unpickedCount: 1, lineShifts: [] })).toEqual({
+      title: 'Picks lock soon',
+      body: 'You have 1 unpicked game kicking off soon.'
+    });
+    expect(pregamePushBody({ unpickedCount: 3, lineShifts: [] })).toEqual({
+      title: 'Picks lock soon',
+      body: 'You have 3 unpicked games kicking off soon.'
+    });
+  });
+
+  it('builds the single line-shift form with side and fresh-jump magnitude', () => {
+    expect(
+      pregamePushBody({ unpickedCount: 0, lineShifts: [{ team: 'Bills', points: 2.5 }] })
+    ).toEqual({
+      title: 'Line moved on your pick',
+      body: "The line on your Bills pick moved 2.5 pts — here's your shot to react before kickoff."
+    });
+  });
+
+  it('builds the multi line-shift form naming each side', () => {
+    expect(
+      pregamePushBody({
+        unpickedCount: 0,
+        lineShifts: [
+          { team: 'Bills', points: 2.5 },
+          { team: 'Chiefs', points: 2 }
+        ]
+      })
+    ).toEqual({
+      title: 'Lines moved on your picks',
+      body: "Lines moved on 2 of your picks (Bills 2.5 pts, Chiefs 2 pts) — here's your shot to react before kickoff."
+    });
+  });
+
+  it('merges a reminder and line-shifts into one body', () => {
+    expect(
+      pregamePushBody({ unpickedCount: 2, lineShifts: [{ team: 'Bills', points: 2.5 }] })
+    ).toEqual({
+      title: 'Heads up before kickoff',
+      body: 'The line on your Bills pick moved 2.5 pts, and you have 2 unpicked games kicking off soon. Your shot to react before kickoff.'
+    });
   });
 });

@@ -78,34 +78,113 @@ export function spreadRelativeToHome(teamId: number, value: number, homeTeamId: 
   return teamId === homeTeamId ? value : -value;
 }
 
-/** Absolute points the active line has moved since the user's snapshot. */
-export function lineMovementPoints(args: {
-  homeTeamId: number;
-  lockedTeamId: number;
-  lockedValue: number;
+/** Which way a line move cuts for the user who picked a side (#731). */
+export type LineShiftDirection = 'against' | 'favorable' | 'none';
+
+/**
+ * The fresh jump between two synced line rows, expressed relative to the user's
+ * picked team (#731). The comparison basis is the previous synced row, not the
+ * pick-time locked line — the locked pick only supplies which side is yours.
+ * A picked-team-relative spread moving up (toward/past the underdog side, e.g.
+ * -1 → +2) means the market backed off your side: 'against'. Moving down
+ * (Bills -1 → Bills -3.5) means the market agrees with you: 'favorable'.
+ */
+export function lineShiftForPick(args: {
+  pickedTeamId: number;
+  previousTeamId: number;
+  previousValue: number;
   currentTeamId: number;
   currentValue: number;
-}): number {
-  const locked = spreadRelativeToHome(args.lockedTeamId, args.lockedValue, args.homeTeamId);
-  const current = spreadRelativeToHome(args.currentTeamId, args.currentValue, args.homeTeamId);
-  return Math.abs(current - locked);
+}): { points: number; direction: LineShiftDirection } {
+  const previous =
+    args.previousTeamId === args.pickedTeamId ? args.previousValue : -args.previousValue;
+  const current = args.currentTeamId === args.pickedTeamId ? args.currentValue : -args.currentValue;
+  const delta = current - previous;
+  return {
+    points: Math.abs(delta),
+    direction: delta > 0 ? 'against' : delta < 0 ? 'favorable' : 'none'
+  };
 }
 
 /**
- * Decide whether a line-shift alert should fire. Returns false when the feature
- * is off, the move is under the fixed threshold, or this user was already
- * alerted for this game recently (the once-per-pick-per-day cap).
+ * Decide whether a line-shift alert should fire (#731: recent-jump,
+ * against-you-only). Returns false when the feature is off, the jump is not
+ * fresh (it happened before the pregame window — a move that settled early is
+ * old news, not urgency), the move favors the user's side, the fresh jump is
+ * under the fixed threshold, or this user was already alerted for this game
+ * recently (the once-per-pick-per-day cap).
  */
 export function shouldNotifyLineShift(args: {
+  /** Fresh-jump magnitude versus the previous synced row, in points. */
   movement: number;
+  direction: LineShiftDirection;
+  /** True when the current row was synced inside the pregame window (the jump is fresh). */
+  freshJump: boolean;
   lineShiftEnabled: boolean;
   /** True if a line-shift alert was already sent for this pick within the cap window. */
   recentlyNotified: boolean;
 }): boolean {
   if (!args.lineShiftEnabled) return false;
+  if (!args.freshJump) return false;
+  if (args.direction !== 'against') return false;
   if (args.movement < LINE_SHIFT_THRESHOLD_POINTS) return false;
   if (args.recentlyNotified) return false;
   return true;
+}
+
+/** One qualifying line move feeding the merged pregame push (#731). */
+export type PregameLineShift = {
+  /** Short display name of the user's picked side (teams.short_name, e.g. "Bills"). */
+  team: string;
+  /** Fresh-jump magnitude in points versus the previous synced row. */
+  points: number;
+};
+
+/**
+ * Title + body for the single consolidated pregame push (#731): any combination
+ * of unpicked-game reminder and qualifying line-shifts due for one user in one
+ * run collapses into one notification. Pure so the copy matrix (reminder-only /
+ * shift-only / both / multiple shifts) can be unit-tested without a database.
+ * Returns null when there is nothing to say.
+ */
+export function pregamePushBody(args: {
+  unpickedCount: number;
+  lineShifts: PregameLineShift[];
+}): { title: string; body: string } | null {
+  const pts = (n: number) => `${n} pt${n === 1 ? '' : 's'}`;
+  const { unpickedCount, lineShifts } = args;
+  if (unpickedCount === 0 && lineShifts.length === 0) return null;
+
+  const reminderClause =
+    unpickedCount === 1
+      ? 'you have 1 unpicked game kicking off soon'
+      : `you have ${unpickedCount} unpicked games kicking off soon`;
+
+  if (lineShifts.length === 0) {
+    return {
+      title: 'Picks lock soon',
+      body: `You have ${unpickedCount} unpicked game${unpickedCount === 1 ? '' : 's'} kicking off soon.`
+    };
+  }
+
+  const shiftClause =
+    lineShifts.length === 1
+      ? `The line on your ${lineShifts[0].team} pick moved ${pts(lineShifts[0].points)}`
+      : `Lines moved on ${lineShifts.length} of your picks (${lineShifts
+          .map((s) => `${s.team} ${pts(s.points)}`)
+          .join(', ')})`;
+
+  if (unpickedCount === 0) {
+    return {
+      title: lineShifts.length === 1 ? 'Line moved on your pick' : 'Lines moved on your picks',
+      body: `${shiftClause} — here's your shot to react before kickoff.`
+    };
+  }
+
+  return {
+    title: 'Heads up before kickoff',
+    body: `${shiftClause}, and ${reminderClause}. Your shot to react before kickoff.`
+  };
 }
 
 /** Tally of a single user's settled picks for a week. */

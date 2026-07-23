@@ -11,9 +11,10 @@ import type { CronRunRow } from '$lib/server/db/queries/getRecentCronRuns';
 // `maxDuration` is later set. See docs/observability/scaling-signals.md.
 export const VERCEL_FUNCTION_TIMEOUT_SECONDS = 300;
 
-// The notification (pick-reminder) path runs inside the `pregame` cron job
-// (src/routes/(app)/api/cron/pregame/+server.ts → sendPickReminders), so the
-// pregame run duration is the hard Tier-B trigger source.
+// The notification (pick-reminder + line-shift) path runs inside the `pregame`
+// cron job (src/routes/(app)/api/cron/pregame/+server.ts →
+// runPregameNotifications), so the pregame run duration is the hard Tier-B
+// trigger source.
 export const NOTIFICATION_CRON_JOB = 'pregame';
 
 // Tier-B trigger: if a notification run consumes this fraction of the timeout,
