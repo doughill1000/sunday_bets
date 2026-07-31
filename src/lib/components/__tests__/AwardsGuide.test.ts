@@ -87,9 +87,10 @@ describe('AwardsGuide — weekly scope', () => {
     expect(guide.querySelector('[data-testid="awards-guide-weekly"]')).not.toBeNull();
 
     for (const badge of BADGE_GLOSSARY) {
-      expect(guide.textContent, `season title "${badge.label}" leaked into the weekly legend`).not.toContain(
-        badge.label
-      );
+      expect(
+        guide.textContent,
+        `season title "${badge.label}" leaked into the weekly legend`
+      ).not.toContain(badge.label);
     }
   });
 });
