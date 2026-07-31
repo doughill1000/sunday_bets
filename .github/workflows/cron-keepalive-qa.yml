@@ -1,0 +1,49 @@
+# .github/workflows/cron-keepalive-qa.yml
+# Keep the free-tier QA/staging Supabase project (SUNDAY_BETS_QA, ref
+# eoncckeqqogezoftooix) awake.
+#
+# Supabase pauses Free-tier projects after 7 days with NO activity. Prod stays awake on
+# its own — the app and the cron-*.yml jobs hit it constantly — but QA/staging is only
+# touched by clone-to-staging.yml, which fires on a prod release. During quiet stretches
+# (offseason, no live users) releases can be >7 days apart, so QA drifts past the window
+# and Supabase pauses it (the "SUNDAY_BETS_QA has been paused" email).
+#
+# This job issues a trivial query against the staging DB on a schedule well inside the
+# 7-day window, which counts as activity and resets Supabase's inactivity timer.
+#
+# NOTE: this only PREVENTS re-pausing. A project that is ALREADY paused rejects
+# connections and must first be unpaused manually from the Supabase dashboard — after
+# that, this keeps it awake. Upgrading the org to Pro also removes auto-pause entirely
+# (paid); this workflow is the free alternative for a project with no live traffic.
+name: 'Cron: Keep QA DB awake'
+
+on:
+  schedule:
+    # Mon & Thu 09:00 UTC. Max gap between runs is 4 days (Thu -> Mon), comfortably
+    # inside Supabase's 7-day pause window even if one run is skipped or fails.
+    - cron: '0 9 * * 1,4'
+  workflow_dispatch:
+
+concurrency:
+  group: keepalive-qa-db
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment:
+      name: Production # SUPABASE_STAGING_DB_URL lives in the Production environment
+    steps:
+      - name: Ping staging DB to reset the inactivity timer
+        env:
+          SUPABASE_STAGING_DB_URL: ${{ secrets.SUPABASE_STAGING_DB_URL }}
+        run: |
+          set -euo pipefail
+          # ubuntu-latest ships a psql client; a trivial SELECT is all Supabase needs to
+          # register activity.
+          psql "$SUPABASE_STAGING_DB_URL" -v ON_ERROR_STOP=1 -Atc 'select 1;'
+          echo "QA/staging DB pinged — inactivity timer reset."
