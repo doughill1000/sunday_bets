@@ -201,16 +201,17 @@
   });
 </script>
 
-<h1 class="mb-4 text-2xl font-semibold">My Picks</h1>
-
-{#if week && week.is_scoring === false}
-  <Alert class="mb-4" data-testid="non-scoring-banner">
-    <AlertTitle>This round doesn't count</AlertTitle>
-    <AlertDescription>
-      Picks and results here are just for fun — they don't affect the season standings.
-    </AlertDescription>
-  </Alert>
-{/if}
+<!-- A non-scoring round is a standing caveat, not an alert to clear (#787). It rides as a
+     caption under the title rather than a full Alert card, which in the all-locked resting
+     state cost three lines above the fold before anything actionable. -->
+<div class="mb-4">
+  <h1 class="text-2xl font-semibold">My Picks</h1>
+  {#if week && week.is_scoring === false}
+    <p class="mt-1 text-xs text-muted-foreground" data-testid="non-scoring-banner">
+      This round doesn't count · just for fun, no effect on the season standings.
+    </p>
+  {/if}
+</div>
 
 {#if games.length === 0}
   <Alert>
@@ -236,12 +237,9 @@
     liveActive={liveWindowActive}
   />
 
-  {#if upcoming.length === 0}
-    <Alert class="mt-4">
-      <AlertTitle>You're all set 🎉</AlertTitle>
-      <AlertDescription>All picks are locked or kicked off. Nothing left to do.</AlertDescription>
-    </Alert>
-  {:else}
+  <!-- No "You're all set" card (#787): PicksSummaryBar already asserts the done-state on its
+       own line, so a second card restating it just pushed the committed pick further down. -->
+  {#if upcoming.length > 0}
     {#if membershipCount > 1}
       <Alert class="mt-4" data-testid="multi-group-banner">
         <AlertDescription>

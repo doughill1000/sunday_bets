@@ -55,16 +55,17 @@
   });
 </script>
 
-<section class="mt-4 rounded-lg border bg-card p-3" data-testid="all-in-declarations">
-  <h2 class="mb-2 flex items-center gap-1.5 text-sm font-semibold">
-    <span aria-hidden="true">🐳</span> This week's All-Ins
-  </h2>
+<!-- Rendered only once an All-In exists (#787). Wrapping "none declared yet" in full card
+     chrome gave an empty state the same weight as real content, and in the all-locked resting
+     state it sat between the player and their committed pick. The board itself is unchanged —
+     it returns in full the moment someone locks an All-In, which is the ADR-0023 reveal
+     moment this component exists for. -->
+{#if groups.length > 0}
+  <section class="mt-4 rounded-lg border bg-card p-3" data-testid="all-in-declarations">
+    <h2 class="mb-2 flex items-center gap-1.5 text-sm font-semibold">
+      <span aria-hidden="true">🐳</span> This week's All-Ins
+    </h2>
 
-  {#if groups.length === 0}
-    <p class="text-xs text-muted-foreground">
-      No All-Ins declared yet. Lock an All-In and the whole group sees it — before kickoff.
-    </p>
-  {:else}
     <ul class="space-y-2">
       {#each groups as group (group.gameId)}
         <li>
@@ -92,5 +93,5 @@
         </li>
       {/each}
     </ul>
-  {/if}
-</section>
+  </section>
+{/if}
