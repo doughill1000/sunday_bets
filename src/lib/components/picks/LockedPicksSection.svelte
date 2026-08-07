@@ -124,7 +124,11 @@
       >
         <path d="M6 4l4 4-4 4V4z" />
       </svg>
-      Committed<span class="sr-only"> picks ({games.length})</span>
+      <!-- The count moved out of the visible label (#787) but has to stay in the accessible
+           name — "Committed" alone doesn't say what it counts. The separator is `&nbsp;`
+           because Svelte trims leading whitespace inside an element, which would otherwise
+           announce this as "Committedpicks (1)". -->
+      Committed<span class="sr-only">&nbsp;picks ({games.length})</span>
       {#if hasMissed}
         <span
           class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive"

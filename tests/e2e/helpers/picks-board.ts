@@ -91,7 +91,7 @@ export function picksBoard(page: Page) {
 
     // --- committed section --------------------------------------------------
 
-    /** The "N committed pick(s)" disclosure summary. */
+    /** The "Committed" disclosure summary (the count is in its accessible name, #787). */
     committedSummary(): Locator {
       return page.getByTestId('committed-summary');
     },
