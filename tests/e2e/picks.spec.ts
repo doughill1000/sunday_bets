@@ -58,7 +58,9 @@ test(
     // and the committed section summarises it.
     await board.expectSaved(1, 1);
     await expect(board.card()).not.toBeVisible();
-    await expect(board.committedSummary()).toContainText('committed pick');
+    // The summary is a quiet "Committed" label since #787; the count lives in its
+    // accessible name rather than the visible text.
+    await expect(board.committedSummary()).toContainText('Committed');
   }
 );
 
