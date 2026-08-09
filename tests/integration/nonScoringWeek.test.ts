@@ -6,6 +6,16 @@
 // graded — settlements exist and are viewable — but contributes ZERO to the leaderboard
 // and stats. This suite owns season year 2009 (a past year so weeks are start_ts-eligible
 // for getSeasonWeekOptions, and distinct from the other suites: 2098/2099/2097/2024/2041).
+//
+// It also owns the #789 regression for the surface that actually wrote a prod row: the AI
+// recap generator. The fun week here is deliberately fully graded (final_scores on its game)
+// and has a real pick, so the completeness gate and the group-discovery lane both pass — the
+// only thing that can stop a recap is the is_scoring gate itself.
+//
+// The two recap *pushes* are unit-tested instead (notifications.spec.ts): notifications.ts
+// imports @sentry/sveltekit and web-push, and the Sentry client entry cannot resolve `$app`
+// under this runner. That constraint is why isWeekFullyGraded lives in db/queries rather
+// than in notifications.ts, where it started.
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { createServiceClient } from './_auth';
@@ -21,6 +31,9 @@ import {
   getWeeklyCumulative
 } from '../../src/lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions } from '../../src/lib/server/weeklyPicks';
+import { sendAIRecaps } from '../../src/lib/server/aiRecap';
+import { sendSeasonWrappeds } from '../../src/lib/server/seasonWrapped';
+import { sendBadgeFlavors } from '../../src/lib/server/badgeFlavor';
 
 const admin = createServiceClient();
 
@@ -92,6 +105,9 @@ async function insertGame(
       away_team_id: awayId,
       external_game_id: externalId,
       status: 'final',
+      // final_scores present so isWeekFullyGraded() reports both weeks complete — the #789
+      // tests below need the completeness gate to PASS so the scoring gate is what's proven.
+      final_scores: { home: 24, away: 17 },
       commence_time: commenceTs
     })
     .select('id')
@@ -99,6 +115,27 @@ async function insertGame(
   if (error || !data)
     throw new Error(`nonScoringWeek: insert game ${externalId}: ${error?.message}`);
   return data.id as string;
+}
+
+// A real pick on the non-scoring game: sendAIRecaps discovers candidate groups through
+// `picks`, so without one the recap would no-op for the wrong reason and the regression
+// test would pass vacuously.
+async function insertPick(userId: string, gameId: string, teamId: number, oppTeamId: number) {
+  const { error } = await admin.from('picks').upsert(
+    {
+      group_id: NS_GROUP_ID,
+      user_id: userId,
+      game_id: gameId,
+      picked_team_id: teamId,
+      locked_spread_team_id: oppTeamId,
+      locked_spread_value: 3.5,
+      weight: 'M',
+      locked_by: userId,
+      locked_at: new Date().toISOString()
+    },
+    { onConflict: 'group_id,user_id,game_id' }
+  );
+  if (error) throw new Error(`nonScoringWeek: insert pick: ${error.message}`);
 }
 
 async function insertSettlement(
@@ -170,6 +207,8 @@ beforeAll(async () => {
   );
   funGameId = await insertGame(funWeekId, homeId, awayId, 'ns-2009-fun', '2009-08-10T18:00:00Z');
 
+  await insertPick(ALICE_ID, funGameId, homeId, awayId);
+
   // Scoring week counts; non-scoring (bigger magnitudes) must not leak in.
   await insertSettlement(ALICE_ID, scoringGameId, 8, 'win');
   await insertSettlement(BOB_ID, scoringGameId, -3, 'loss');
@@ -182,7 +221,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await admin
+    .from('ai_recaps')
+    .delete()
+    .eq('group_id', NS_GROUP_ID)
+    .eq('season_year', NS_SEASON_YEAR);
+  await admin.from('notification_log').delete().in('week_id', [scoringWeekId, funWeekId]);
   await admin.from('pick_settlement').delete().in('game_id', [scoringGameId, funGameId]);
+  await admin.from('picks').delete().in('game_id', [scoringGameId, funGameId]);
   await admin.from('games').delete().in('id', [scoringGameId, funGameId]);
   await admin.from('weeks').delete().in('id', [scoringWeekId, funWeekId]);
   await admin.from('seasons').delete().eq('year', NS_SEASON_YEAR);
@@ -243,5 +289,49 @@ describe('non-scoring rounds (ADR-0016)', () => {
     expect(options.findIndex((w) => w.weekNumber === -1)).toBeLessThan(
       options.findIndex((w) => w.weekNumber === 1)
     );
+  });
+});
+
+// #789: prod generated a real ai_recaps row for 2026 preseason round 1 the moment its one
+// game (the Hall of Fame game) went final. Every gate the recap path had — "all games have
+// final scores" — was satisfied; none of them asked whether the round counted.
+describe('non-scoring rounds tell no story (#789)', () => {
+  async function recapRows() {
+    const { data, error } = await admin
+      .from('ai_recaps')
+      .select('week_number')
+      .eq('group_id', NS_GROUP_ID)
+      .eq('season_year', NS_SEASON_YEAR);
+    if (error) throw error;
+    return data ?? [];
+  }
+
+  test('sendAIRecaps writes no recap for a fully-graded non-scoring week', async () => {
+    await admin
+      .from('ai_recaps')
+      .delete()
+      .eq('group_id', NS_GROUP_ID)
+      .eq('season_year', NS_SEASON_YEAR);
+
+    const summary = await sendAIRecaps(funWeekId);
+
+    expect(summary).toEqual({ evaluated: 0, generated: 0, fallback: 0, skipped: 0 });
+    expect(await recapRows()).toHaveLength(0);
+  });
+
+  test('the recap stays absent on a re-run, so the grade cron cannot heal into one', async () => {
+    // The cron calls sendAIRecaps on every tick for whichever weeks are "recent"; a preseason
+    // week stays recent for days.
+    await sendAIRecaps(funWeekId);
+    await sendAIRecaps(funWeekId);
+
+    expect(await recapRows()).toHaveLength(0);
+  });
+
+  test('the season-end fan-out was already safe — a non-scoring week is never the final week', async () => {
+    // loadWeekMeta anchors isFinalWeek on the max is_scoring week, so these two need no
+    // gate of their own. Asserted here so that invariant fails loudly if it ever changes.
+    expect(await sendSeasonWrappeds(funWeekId)).toMatchObject({ evaluated: 0, generated: 0 });
+    expect(await sendBadgeFlavors(funWeekId)).toMatchObject({ evaluated: 0, generated: 0 });
   });
 });

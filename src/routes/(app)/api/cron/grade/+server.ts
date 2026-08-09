@@ -67,6 +67,8 @@ export const POST: RequestHandler = async (event) => {
     // generates the recap row; the "recap ready" push (and the results-recap push) are
     // sent separately by the weekly-recap cron so they land at a civilized hour instead
     // of whenever grading happens to settle the week (see docs/changelog.d for why).
+    // A non-scoring round is still graded above but tells no story: sendAIRecaps no-ops on
+    // it (#789), as do the two season-end fan-outs below (never the final scoring week).
     // Errors → Sentry only; never fail grading.
     const aiRecaps = await Promise.all(
       weeks.map(async (w) => {

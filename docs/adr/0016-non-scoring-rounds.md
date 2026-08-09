@@ -99,3 +99,18 @@ each view definition, refreshed by the same path.
 - A future issue could add an admin toggle to mark any week non-scoring, and/or a separate
   "practice leaderboard" for the fun round. Postseason (`seasontype=3`) sourcing is also a
   later option.
+
+## Amendment history
+
+- 2026-08-09 (#789) — Widens boundary 1 past aggregation. "Exclusion happens at aggregation
+  time" got read as "the matviews are the whole gate", so the post-grade **narrative**
+  surfaces were left ungated: the AI recap generator and both recap pushes asked only whether
+  every game was final, never whether the round counted. The first 2026 preseason round — one
+  game — went fully graded the moment it ended, and prod wrote a real recap row for it that
+  narrated all-time head-to-head, because the matviews had correctly given the week nothing to
+  say. Amended rule: **a non-scoring round tells no weekly story either.** Anything that
+  summarizes a scoring week now gates on `is_scoring` up front, through one shared predicate
+  rather than a per-caller mirror. Grading, settlement, and per-game result display are
+  unchanged — a non-scoring round is still picked, graded, and shown, exactly as decided
+  above. The season-end fan-out (Season Wrapped, badge flavors) needed no gate of its own: it
+  already anchors "final week" on the season's max **scoring** week.

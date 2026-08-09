@@ -24,7 +24,12 @@ const LOCAL_DB_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@127.0.0.1:54322/postgres';
 
 const GROUP_ID = '00000000-0000-4152-9000-000000000001';
-const SEASON_YEAR = 2098; // far-future, collision-free
+// Far-future and owned solely by this suite. Was 2098, which dropWorstWeek.test.ts also
+// claims — and both seed week 1 of it with the same KC-vs-BUF matchup, which `uq_games_matchup`
+// (week_id + normalized team pair) forbids. That only ever passed because whichever suite ran
+// first deleted season 2098 in its afterAll before the other's beforeAll; any change to file
+// ordering broke it (testing.md Pillar 2: no spec may depend on the order tests run in).
+const SEASON_YEAR = 2096;
 
 // 8 members: index 0 is the commissioner, 1..7 are members. points_delta = i + 1, so
 // season totals are all distinct (1..8) and the leaderboard order is unambiguous.
