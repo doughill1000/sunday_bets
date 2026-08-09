@@ -44,3 +44,42 @@ describe('LockedPicksSection (committed pick warnings, issue #542)', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });
+
+describe('LockedPicksSection (status vs action on a committed row, issue #787)', () => {
+  beforeEach(() => {
+    setPicks({ g1: { lockedPick: { team: 'home', weight: 'M' } } });
+  });
+
+  it('renders "Locked" as status text, not a control', () => {
+    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+
+    // The only button on the row is Unlock — "Locked" must not be pressable, or the
+    // two read as a segmented toggle pair.
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveAttribute('data-testid', 'unlock-pick');
+    expect(screen.getByText('Locked')).toBeInTheDocument();
+  });
+
+  it('labels the action "Unlock" without a redundant lock glyph', () => {
+    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+
+    expect(screen.getByTestId('unlock-pick').textContent?.trim()).toBe('Unlock');
+  });
+
+  // Svelte trims leading whitespace inside an element, so a plain space in the sr-only
+  // span collapsed the label to "Committedpicks (1)". Guard the spacing, not just the text.
+  it('keeps the pick count in the summary’s accessible name, correctly spaced', () => {
+    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+
+    const summary = screen.getByTestId('committed-summary');
+    expect(summary.textContent?.replace(/\s+/g, ' ').trim()).toBe('Committed picks (1)');
+  });
+
+  it('hides the Unlock action in readonly/demo mode but keeps the locked status', () => {
+    render(LockedPicksSection, { props: { games: [game], now: Date.now(), readonly: true } });
+
+    expect(screen.queryByTestId('unlock-pick')).not.toBeInTheDocument();
+    expect(screen.getByText('Locked')).toBeInTheDocument();
+  });
+});

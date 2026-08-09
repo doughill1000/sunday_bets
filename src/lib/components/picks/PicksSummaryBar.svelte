@@ -92,7 +92,14 @@
     {#if openCount > 0}
       <span class="text-warning" data-testid="open-count">· {openCount} to pick</span>
     {:else if savedCount > 0}
-      <span class="text-muted-foreground">✓ All saved</span>
+      <!-- Carries the done-state the standalone "You're all set" card used to announce (#787).
+           `openCount === 0` is exactly `upcoming.length === 0` (pickStatus: a game is 'open'
+           iff it's unlocked with a future kickoff), so this fires on the same condition the
+           card did. Stays muted when picks were missed, so a clean-sweep green never sits
+           next to the destructive "N missed" count on the row below. -->
+      <span class={missedCount > 0 ? 'text-muted-foreground' : 'text-success'} data-testid="all-set"
+        >✓ All set</span
+      >
     {/if}
   </div>
 
