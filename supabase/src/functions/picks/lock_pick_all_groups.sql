@@ -18,9 +18,7 @@ declare
   v_uid              uuid := auth.uid();
   v_game             public.games%rowtype;
   v_team_id          int;
-  v_weeknum          int;
-  v_season           int;
-  v_lastwk           int;
+  v_final_scoring_week boolean;
   v_final_week_allin boolean;
   v_now              timestamptz := now();
 
@@ -55,16 +53,11 @@ begin
 
   v_team_id := case when p_side = 'home' then v_game.home_team_id else v_game.away_team_id end;
 
-  -- week/season/final-week flag shared across all groups
-  select w.week_number, w.season_id into v_weeknum, v_season
-  from public.weeks w
-  where w.id = v_game.week_id;
-
-  select max(week_number) into v_lastwk
-  from public.weeks
-  where season_id = v_season;
-
-  v_final_week_allin := public._get_final_week_unlimited_allin();
+  -- final-week flags shared across all groups. "Final week" is the season's last SCORING
+  -- week (ADR-0016 boundary 2), resolved by public._is_final_scoring_week so this rule
+  -- cannot drift from lock_pick.sql.
+  v_final_scoring_week := public._is_final_scoring_week(v_game.week_id);
+  v_final_week_allin   := public._get_final_week_unlimited_allin();
 
   -- fan-out: one pick per active membership, skipping groups that fail individually
   for v_membership in
@@ -84,8 +77,8 @@ begin
         v_line_source := 'fanduel';
       end if;
 
-      -- per-group All-In enforcement (mirrors lock_pick.sql:70-93)
-      if p_weight = 'A' and not (v_weeknum = v_lastwk and v_final_week_allin) then
+      -- per-group All-In enforcement (mirrors lock_pick.sql)
+      if p_weight = 'A' and not (v_final_scoring_week and v_final_week_allin) then
         if exists (
           select 1
           from public.picks p
@@ -100,7 +93,7 @@ begin
         end if;
       end if;
 
-      -- active line snapshot for this group's source (mirrors lock_pick.sql:96-108)
+      -- active line snapshot for this group's source (mirrors lock_pick.sql)
       select gl.id, gl.spread_team_id, gl.spread_value
         into v_line_id, v_spread_team_id, v_spread_value
       from public.game_lines gl
@@ -115,7 +108,7 @@ begin
           using errcode = 'P0001';
       end if;
 
-      -- upsert pick for this group (mirrors lock_pick.sql:110-130)
+      -- upsert pick for this group (mirrors lock_pick.sql)
       with upsert as (
         insert into public.picks (
           group_id, user_id, game_id, picked_team_id, weight,
