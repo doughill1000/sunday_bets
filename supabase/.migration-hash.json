@@ -510,16 +510,16 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/picks/lock_pick_all_groups.sql": {
-    "hash": "d54056f362e9e1ca89670258dc9f3ce03a5dd5045f48e674b6b48d21a6310c12",
+    "hash": "84f9046aaba117327ea46f2ade4480e2b624cb7a3b3e7b6b874ddb430091c5bd",
     "signature": "public.lock_pick_all_groups(uuid, public.side_enum, public.weight_enum)",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260809211718_all_in_exemption_uses_final_scoring_week.sql",
+    "migrationHash": "ca6b54e2120e9755b388eaf46584c8806dae5066bc7741a4ee0544f2f3a7ea74"
   },
   "functions/picks/lock_pick.sql": {
-    "hash": "037e21cf5efd1f0ccb16fc3702054e92a99d6606ee49e67d9b626d9e42ac36db",
+    "hash": "6a5ce412d73c8fb7ea17c6b3537738babef2f13606e5551293a0965e562d0342",
     "signature": "public.lock_pick(uuid, public.side_enum, public.weight_enum, text)",
-    "migration": "20260626184826_baseline.sql",
-    "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
+    "migration": "20260809211718_all_in_exemption_uses_final_scoring_week.sql",
+    "migrationHash": "ca6b54e2120e9755b388eaf46584c8806dae5066bc7741a4ee0544f2f3a7ea74"
   },
   "functions/picks/unlock_pick_all_groups.sql": {
     "hash": "191fd3b9ad541645f4a4032a16d3a1722cec761858f74b0c0fd676ccb8d4f683",
@@ -964,5 +964,11 @@
     "signature": "public.set_competition_start(uuid, timestamptz)",
     "migration": "20260722003527_participation_creation_ui_rpcs.sql",
     "migrationHash": "774dc73140b6d3530b71a49a201d26b6a5eedacca6e9f7c5919a617046be43b6"
+  },
+  "functions/_private/is_final_scoring_week.sql": {
+    "hash": "628ccf4b53f7392e29d0576b0fb897d1e35034b8c6d039944923b73674b2807d",
+    "signature": "public._is_final_scoring_week(int)",
+    "migration": "20260809211718_all_in_exemption_uses_final_scoring_week.sql",
+    "migrationHash": "ca6b54e2120e9755b388eaf46584c8806dae5066bc7741a4ee0544f2f3a7ea74"
   }
 }
