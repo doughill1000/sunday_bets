@@ -178,3 +178,53 @@ as the other crons; only the data source is new.
 - Revisit this decision if ESPN's endpoint proves unreliable in production (promote the
   nflverse fallback via a superseding ADR) or if a provider's home/away or week-boundary
   modeling diverges enough to need a richer matchup key.
+
+## Amendment (2026-08-09, issue #791): week windows are anchored in US Eastern
+
+Decision §5 made schedule sync the owner of deriving and persisting week windows but left
+the anchor unstated. `weekBoundaries()` implemented it in **UTC** — snap back to the
+Tuesday 00:00 UTC before the first kickoff, forward to the Tuesday 00:00 UTC after the last
+one plus a four-hour "game is over" grace.
+
+That is wrong for the NFL calendar. A Monday-night kickoff is 8:15pm ET, which is already
+**00:15 on Tuesday in UTC**, so the forward snap cleared the Tuesday it was aiming at and
+landed on the next one. Every week with a Monday-night game was stored fourteen days long,
+overlapping the following week by seven. In prod that was all seventeen 2026 regular weeks
+that had been synced (1–17); week 18 and the four preseason weeks, which have no Monday
+night game, were correct.
+
+The overlap was not cosmetic. `findRecentGradableWeeks()` grades the active week plus the
+most-recently-**ended** one, and an overlapped week is neither — still open, yet outranked
+on `start_ts` by the week that has already begun. The grade cron would have worked on week
+`m` and week `m-2` for the whole season, so every completed week (and with it standings, the
+AI recap and both recap pushes) would have run seven days late, with no self-healing path:
+the reconcile sweep needs `final_scores`, and the only writer of those runs solely for the
+weeks this query returns.
+
+**The anchor is now US Eastern (`America/New_York`), resolved through the IANA zone rather
+than a fixed offset**, and the grace period is gone:
+
+- `start_ts` = Tuesday 00:00 ET on or before the week's first kickoff.
+- `end_ts` = the first Tuesday 00:00 ET strictly after its last kickoff.
+
+An NFL week genuinely is Tuesday-to-Monday-night in Eastern, so the boundary now falls in
+the dead hours the schedule leaves for it. Windows stay gapless and non-overlapping,
+including across the DST change, where one week is simply 7 days ± 1 hour. Adding any
+"game is over" cushion past the final kickoff would push the boundary back over midnight ET
+and re-create the week-long overshoot, so there is deliberately none: Monday Night Football
+kicks off 3h45m before its own boundary.
+
+This also closed a second, pre-existing hole. Under UTC the next week went active at 00:00
+UTC — fifteen minutes _before_ Monday Night Football kicked off — so `findActiveWeek()`
+named the wrong week for the duration of every MNF, taking the live sweat board (#386),
+that game's pick reminder and its odds sync with it. It had never been observed because no
+season had yet been played live in the app.
+
+**The durable rule this establishes:** a rule about _when an NFL week is_ belongs in the
+league's own timezone, not in UTC. UTC is right for storing an instant and wrong for
+deciding which calendar day an 8:15pm Eastern kickoff falls on.
+
+Worth noting how long this hid. Seasons 2022–2025 all carry correct 7-day windows because
+they were **imported** by `supabase/scripts/import-historical`, never produced by
+`syncSchedule` — 2026 is the first season this code path has ever created. Suspect the same
+class of defect in anything else whose first live exercise is the 2026 season.
