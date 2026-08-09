@@ -37,9 +37,15 @@ const LINE_SOURCE = 'fanduel';
 
 export type ReminderSummary = { evaluated: number; sent: number; skipped: number };
 export type LineShiftSummary = { evaluated: number; sent: number };
+/**
+ * Why a run evaluated no line shifts at all, kept distinct from a real zero so the
+ * cron log says which (#793). `no odds sync` is the caller's `includeLineShifts:
+ * false` — a run with no fresh odds behind it; `non-scoring round` is ADR-0016.
+ */
+export type LineShiftSkipped = { skipped: true; reason: 'no odds sync' | 'non-scoring round' };
 export type PregameSummary = {
   reminders: ReminderSummary;
-  lineShifts: LineShiftSummary | { skipped: true } | { error: string };
+  lineShifts: LineShiftSummary | LineShiftSkipped | { error: string };
   /** Merged pushes actually delivered (at most one per user per run). */
   pushes: number;
 };
@@ -107,17 +113,44 @@ type LineShiftIntent = PregameLineShift & { gameId: string; detail: Json };
  * written per game (reminder dedup + the per-pick line-shift cap) — only the
  * delivery collapses. `includeLineShifts` mirrors the old cron gating: line
  * shifts are only meaningful right after a successful odds sync.
+ *
+ * On a non-scoring round the two lanes get opposite answers (#793): the reminder
+ * still fires (and says the round doesn't count), the line-shift alert does not.
  */
 export async function runPregameNotifications(
   now = new Date(),
   { includeLineShifts = true }: { includeLineShifts?: boolean } = {}
 ): Promise<PregameSummary> {
   const emptyReminders: ReminderSummary = { evaluated: 0, sent: 0, skipped: 0 };
-  const emptyLineShifts = (): PregameSummary['lineShifts'] =>
-    includeLineShifts ? { evaluated: 0, sent: 0 } : { skipped: true };
+  const noOddsSync: LineShiftSkipped = { skipped: true, reason: 'no odds sync' };
 
   const week = await findActiveWeek();
-  if (!week) return { reminders: emptyReminders, lineShifts: emptyLineShifts(), pushes: 0 };
+  if (!week) {
+    return {
+      reminders: emptyReminders,
+      lineShifts: includeLineShifts ? { evaluated: 0, sent: 0 } : noOddsSync,
+      pushes: 0
+    };
+  }
+
+  // ADR-0016 / #793: a non-scoring round (preseason, or any future practice round)
+  // notifies you about *picking* and nothing else. A line-shift alert only means
+  // something because a moving line changes what your pick is worth, and on a round
+  // worth zero there is nothing to react to — so its whole detection pass is skipped.
+  // The pick reminder deliberately survives: preseason is the onboarding runway, the
+  // round where people learn the loop on games where being wrong is free.
+  //
+  // The gate therefore sits on line-shift DETECTION, not on this function and not on
+  // the merged delivery loop below — #731 collapsed both lanes into one push per user,
+  // so gating either of those would silently take the reminder down with it.
+  const scoringRound = await isScoringWeek(week.id);
+  const detectLineShifts = includeLineShifts && scoringRound;
+  const idleLineShifts = (): PregameSummary['lineShifts'] =>
+    !includeLineShifts
+      ? noOddsSync
+      : scoringRound
+        ? { evaluated: 0, sent: 0 }
+        : { skipped: true, reason: 'non-scoring round' };
 
   const nowIso = now.toISOString();
   const windowEnd = new Date(now.getTime() + PREGAME_WINDOW_MS).toISOString();
@@ -131,7 +164,7 @@ export async function runPregameNotifications(
   const gameById = new Map((games ?? []).map((g) => [g.id, g]));
   const gameIds = [...gameById.keys()];
   if (gameIds.length === 0) {
-    return { reminders: emptyReminders, lineShifts: emptyLineShifts(), pushes: 0 };
+    return { reminders: emptyReminders, lineShifts: idleLineShifts(), pushes: 0 };
   }
 
   const { data: allUsers, error: usersErr } = await supabaseService
@@ -206,9 +239,9 @@ export async function runPregameNotifications(
   // ---- Line-shift intents ---------------------------------------------------
   // A failure here must not cost anyone their pick reminder, so the whole
   // detection pass degrades to an error summary instead of throwing.
-  let lineShifts: PregameSummary['lineShifts'] = emptyLineShifts();
+  let lineShifts: PregameSummary['lineShifts'] = idleLineShifts();
   const shiftsByUser = new Map<string, LineShiftIntent[]>();
-  if (includeLineShifts) {
+  if (detectLineShifts) {
     try {
       const summary: LineShiftSummary = { evaluated: 0, sent: 0 };
 
@@ -338,7 +371,8 @@ export async function runPregameNotifications(
     const shifts = shiftsByUser.get(userId) ?? [];
     const content = pregamePushBody({
       unpickedCount: pendingGameIds.length,
-      lineShifts: shifts.map(({ team, points }) => ({ team, points }))
+      lineShifts: shifts.map(({ team, points }) => ({ team, points })),
+      scoring: scoringRound
     });
     if (!content) continue;
 

@@ -392,7 +392,7 @@ describe('runPregameNotifications', () => {
   // One game 60 min out: home team 1 (Bills) vs team 2 (Jets), synced history
   // showing a fresh 2-pt jump against a Bills backer (Bills -3 → Bills -1).
   function seedShiftScenario() {
-    db.week = { id: WEEK_ID, week_number: 5 };
+    db.week = { id: WEEK_ID, week_number: 5, is_scoring: true };
     db.gameRows = [{ id: 'g1', home_team_id: 1, commence_time: mins(60) }];
     db.teams = [
       { id: 1, short_name: 'Bills' },
@@ -673,7 +673,7 @@ describe('runPregameNotifications', () => {
   });
 
   it('does not re-nudge a game already reminder-logged this week', async () => {
-    db.week = { id: WEEK_ID, week_number: 5 };
+    db.week = { id: WEEK_ID, week_number: 5, is_scoring: true };
     db.gameRows = [{ id: 'g1', home_team_id: 1, commence_time: mins(60) }];
     db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
     db.notificationLogs = [
@@ -692,12 +692,99 @@ describe('runPregameNotifications', () => {
 
     const res = await runPregameNotifications(NOW, { includeLineShifts: false });
 
-    expect(res.lineShifts).toEqual({ skipped: true });
+    expect(res.lineShifts).toEqual({ skipped: true, reason: 'no odds sync' });
     expect(res.reminders).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith(
       'u1',
       expect.objectContaining({ title: 'Picks lock soon' })
     );
+  });
+
+  // A non-scoring round (ADR-0016) is pickable but worth zero, so the two pregame
+  // lanes get opposite answers (#793). #731 merged them into one delivery step, so
+  // each case below pins which lane survived — a gate placed on the function or on
+  // that loop instead of on detection would pass the first case and fail these.
+  describe('on a non-scoring round (#793)', () => {
+    const PRESEASON_WEEK = { id: WEEK_ID, week_number: -1, is_scoring: false };
+    const NON_SCORING_REMINDER =
+      "You have 1 unpicked game kicking off soon. This round doesn't count — just for fun.";
+
+    it('drops a qualifying line shift however far the line moved', async () => {
+      seedShiftScenario();
+      db.week = PRESEASON_WEEK;
+      // 13 pts against the pick — far past the 2-pt threshold. Magnitude buys no
+      // exception on a round where the pick is worth nothing either way.
+      db.gameLines[0].spread_value = -14;
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res).toEqual({
+        reminders: { evaluated: 1, sent: 0, skipped: 1 },
+        lineShifts: { skipped: true, reason: 'non-scoring round' },
+        pushes: 0
+      });
+      expect(sendToUser).not.toHaveBeenCalled();
+      expect(db.insertedLogs).toEqual([]);
+    });
+
+    it('still nudges an unpicked game, and says the round does not count', async () => {
+      seedShiftScenario();
+      db.week = PRESEASON_WEEK;
+      db.picks = []; // g1 unpicked: the reminder is the only signal in play
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.reminders).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+      expect(sendToUser).toHaveBeenCalledTimes(1);
+      expect(sendToUser).toHaveBeenCalledWith('u1', {
+        title: 'Picks lock soon',
+        body: NON_SCORING_REMINDER,
+        url: '/picks',
+        tag: `pregame-week-${WEEK_ID}`
+      });
+      expect(db.insertedLogs).toEqual([
+        {
+          user_id: 'u1',
+          kind: 'pick_reminder',
+          game_id: 'g1',
+          week_id: WEEK_ID,
+          group_id: null,
+          detail: null
+        }
+      ]);
+    });
+
+    it('keeps the reminder and drops the shift when both are due in the same run', async () => {
+      seedShiftScenario(); // g1: picked, with a fresh 2-pt jump against u1
+      db.week = PRESEASON_WEEK;
+      db.gameRows.push({ id: 'g3', home_team_id: 5, commence_time: mins(75) }); // unpicked
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res).toEqual({
+        reminders: { evaluated: 1, sent: 1, skipped: 0 },
+        lineShifts: { skipped: true, reason: 'non-scoring round' },
+        pushes: 1
+      });
+      // One push, reminder copy only — no trace of the line move in body or log.
+      expect(sendToUser).toHaveBeenCalledTimes(1);
+      expect(sendToUser).toHaveBeenCalledWith('u1', {
+        title: 'Picks lock soon',
+        body: NON_SCORING_REMINDER,
+        url: '/picks',
+        tag: `pregame-week-${WEEK_ID}`
+      });
+      expect(db.insertedLogs).toEqual([
+        {
+          user_id: 'u1',
+          kind: 'pick_reminder',
+          game_id: 'g3',
+          week_id: WEEK_ID,
+          group_id: null,
+          detail: null
+        }
+      ]);
+    });
   });
 });
