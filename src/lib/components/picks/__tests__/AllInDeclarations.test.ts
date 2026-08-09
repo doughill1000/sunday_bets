@@ -39,9 +39,23 @@ function makeDeclarations(): GroupPickEntry[] {
 }
 
 describe('AllInDeclarations', () => {
-  it('shows an empty state when there are no declarations', () => {
-    render(AllInDeclarations, { props: { declarations: [], games: [], myUserId: ME } });
-    expect(screen.getByText(/No All-Ins declared yet/i)).toBeTruthy();
+  // #787: the board used to wrap "No All-Ins declared yet" in full card chrome, giving an
+  // empty state the same weight as real content on the resting picks board. It now renders
+  // nothing until there is something to reveal.
+  it('renders nothing at all when there are no declarations', () => {
+    const { container } = render(AllInDeclarations, {
+      props: { declarations: [], games: [], myUserId: ME }
+    });
+    expect(container.querySelector('[data-testid="all-in-declarations"]')).toBeNull();
+    expect(screen.queryByText(/No All-Ins declared yet/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the full board as soon as one All-In is declared', () => {
+    render(AllInDeclarations, {
+      props: { declarations: [makeDeclarations()[0]], games: makeGames(), myUserId: ME }
+    });
+    expect(screen.getByTestId('all-in-declarations')).toBeInTheDocument();
+    expect(screen.getAllByTestId('all-in-entry')).toHaveLength(1);
   });
 
   it('renders one matchup block per game, earliest kickoff first', () => {

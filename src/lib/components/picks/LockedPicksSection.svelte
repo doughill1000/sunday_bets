@@ -15,7 +15,6 @@
   import type { GroupPickEntry } from '$lib/types/picks';
   import type { LiveScoreEntry } from '$lib/live/types';
   import RevealedGroupPicks from './RevealedGroupPicks.svelte';
-  import { Badge } from '$lib/components/ui/badge';
   import FormNote from '$lib/components/FormNote.svelte';
 
   type SocialData = { comments: SocialComment[] };
@@ -116,7 +115,7 @@
   <details bind:open={sectionOpen} class="group mt-4" data-testid="committed-section">
     <summary
       data-testid="committed-summary"
-      class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-1 py-2 text-sm font-medium text-muted-foreground select-none hover:text-foreground"
+      class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-1 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase select-none hover:text-foreground"
     >
       <svg
         class="size-4 transition-transform group-open:rotate-90"
@@ -125,7 +124,11 @@
       >
         <path d="M6 4l4 4-4 4V4z" />
       </svg>
-      {games.length} committed pick{games.length === 1 ? '' : 's'}
+      <!-- The count moved out of the visible label (#787) but has to stay in the accessible
+           name — "Committed" alone doesn't say what it counts. The separator is `&nbsp;`
+           because Svelte trims leading whitespace inside an element, which would otherwise
+           announce this as "Committedpicks (1)". -->
+      Committed<span class="sr-only">&nbsp;picks ({games.length})</span>
       {#if hasMissed}
         <span
           class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive"
@@ -188,16 +191,26 @@
                   <span class="text-xs text-muted-foreground">⏱ Kicked off</span>
                 {/if}
               {:else}
-                <span in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}>
-                  <Badge variant="secondary">🔒 Locked</Badge>
+                <!-- Status, not a control (#787). This used to be a filled `Badge variant="secondary"`
+                   sitting beside a muted ghost button, so the element you *can't* press outweighed
+                   the one you can, and the twin lock emoji made the pair read as a segmented
+                   toggle. Flat text matches its own siblings above — "⏱ Kicked off", LIVE, FINAL —
+                   and leaves Unlock as the only bordered thing on the row (DESIGN.md principle 5:
+                   keep `status` and `actionable` visually distinct). The scale-in still plays; it
+                   wraps the status element, not the badge chrome. -->
+                <span
+                  class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
+                  in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}
+                >
+                  <span aria-hidden="true">🔒</span> Locked
                 </span>
                 {#if !readonly}
                   <button
-                    class="rounded border px-2 py-0.5 text-xs font-medium text-muted-foreground underline-offset-2 hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                    class="rounded border px-2 py-0.5 text-xs font-medium text-foreground underline-offset-2 hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                     data-testid="unlock-pick"
                     onclick={() => onEdit(g)}
                   >
-                    🔓 Unlock
+                    Unlock
                   </button>
                 {/if}
               {/if}

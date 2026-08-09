@@ -48,43 +48,51 @@
   });
 </script>
 
-<!-- Solo groups have no one to wait on — the summary bar already covers you. -->
+<!-- Solo groups have no one to wait on — the summary bar already covers you.
+     Collapsed, this is a single line rather than a card (#787): the card border made a
+     one-line summary read as heavy as the committed pick below it. The roster still gets
+     card chrome once expanded, where it is actually content. -->
 {#if board.length > 1}
-  <section class="mt-4 rounded-lg border bg-card" data-testid="picks-status-board">
+  <section class="mt-4" data-testid="picks-status-board">
     <button
       type="button"
-      class="flex w-full items-center gap-1.5 p-3 text-left text-sm font-semibold"
+      class="flex w-full items-center gap-1.5 rounded-lg px-1 py-2 text-left text-sm text-muted-foreground hover:text-foreground"
       aria-expanded={expanded}
       aria-controls="picks-status-roster"
       data-testid="status-board-toggle"
       onclick={() => (expanded = !expanded)}
     >
-      <span aria-hidden="true">📋</span> Who's picked
-      <span class="ml-auto flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
-        <span data-testid="status-summary">{doneCount}/{board.length} locked in</span>
-        <svg
-          class="h-4 w-4 transition-transform duration-150 {expanded ? 'rotate-180' : ''}"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+      <span aria-hidden="true">📋</span>
+      <!-- The visible "Who's picked" heading is gone with the card, but the control still
+           needs a name; the counts alone don't say what they count. -->
+      <span class="sr-only">Who's picked:</span>
+      <span class="font-semibold text-foreground" data-testid="status-summary"
+        >{doneCount}/{board.length} locked in</span
+      >
+      {#if !expanded && waitingSummary}
+        <span aria-hidden="true">·</span>
+        <span class="min-w-0 truncate text-xs" data-testid="status-waiting"
+          >waiting on {waitingSummary}</span
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </span>
+      {/if}
+      <svg
+        class="ml-auto h-4 w-4 shrink-0 transition-transform duration-150 {expanded
+          ? 'rotate-180'
+          : ''}"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
     </button>
 
-    {#if !expanded && waitingSummary}
-      <p class="-mt-1 px-3 pb-3 text-xs text-muted-foreground" data-testid="status-waiting">
-        waiting on {waitingSummary}
-      </p>
-    {/if}
-
     {#if expanded}
-      <ul id="picks-status-roster" class="space-y-1 px-3 pb-3">
+      <ul id="picks-status-roster" class="mt-1 space-y-1 rounded-lg border bg-card p-3">
         {#each sorted as m (m.userId)}
           {@const isMe = m.userId === myUserId}
           <li
