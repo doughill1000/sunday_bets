@@ -38,6 +38,10 @@ export async function loadWeekMeta(weekId: number): Promise<WeekMeta> {
   const seasonId = data.season_id;
 
   // is_final_week: current week == max scoring week in this season (by season_id).
+  // The `is_scoring` filter is also what already keeps the season-end fan-out
+  // (sendSeasonWrappeds, sendBadgeFlavors) clear of #789's non-scoring leak, with no gate
+  // of its own: a preseason week is negative and the max scoring week is 18, so isFinalWeek
+  // is false and both return an empty summary. Don't drop this filter.
   const { data: maxRow } = await supabaseService
     .from('weeks')
     .select('week_number')

@@ -4,7 +4,8 @@ import { supabaseService } from '$lib/supabase/service';
 import { buildRecapFacts } from '$lib/server/recap/facts';
 import { generateRecapProse } from '$lib/server/recap/voice';
 import { upsertRecap, getRecapForWeek } from '$lib/server/db/queries/recaps';
-import { isWeekFullyGraded } from '$lib/server/notifications';
+import { isScoringWeek } from '$lib/server/db/queries/isScoringWeek';
+import { isWeekFullyGraded } from '$lib/server/db/queries/isWeekFullyGraded';
 
 export type AIRecapSummary = {
   evaluated: number;
@@ -17,8 +18,15 @@ export type AIRecapSummary = {
  * For each enabled group that participated in the graded week, generate and persist
  * one AI recap row. Idempotent: if a row already exists for (group, season, week)
  * the group is skipped. Errors on individual groups are captured and counted, not thrown.
+ *
+ * No-op on a non-scoring round (#789): the recap narrates the standings week, and a
+ * non-scoring week moves no standings. Ordered before the fully-graded check because a
+ * preseason week is often a single game — it goes fully-graded the instant that game ends.
  */
 export async function sendAIRecaps(weekId: number): Promise<AIRecapSummary> {
+  if (!(await isScoringWeek(weekId))) {
+    return { evaluated: 0, generated: 0, fallback: 0, skipped: 0 };
+  }
   if (!(await isWeekFullyGraded(weekId))) {
     return { evaluated: 0, generated: 0, fallback: 0, skipped: 0 };
   }

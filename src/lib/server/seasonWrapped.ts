@@ -22,21 +22,7 @@ import {
   deleteSeasonWrappedRow,
   isSeasonComplete
 } from '$lib/server/db/queries/seasonWrapped';
-
-/**
- * A week is fully graded once every game in it has final scores. Inlined (rather than
- * importing notifications.ts::isWeekFullyGraded) so this server module's import graph stays
- * free of the push/Sentry client chain — keeping it loadable in the node integration tests.
- */
-async function isWeekFullyGraded(weekId: number): Promise<boolean> {
-  const { count, error } = await supabaseService
-    .from('games')
-    .select('id', { count: 'exact', head: true })
-    .eq('week_id', weekId)
-    .is('final_scores', null);
-  if (error) throw error;
-  return (count ?? 0) === 0;
-}
+import { isWeekFullyGraded } from '$lib/server/db/queries/isWeekFullyGraded';
 
 export type SeasonWrappedSummary = {
   evaluated: number; // subjects considered (league + active players)

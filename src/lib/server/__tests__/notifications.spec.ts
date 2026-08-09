@@ -151,7 +151,7 @@ beforeEach(() => {
   db = {
     gamesNullCount: 0,
     gameRows: [{ id: 'g1' }, { id: 'g2' }],
-    week: { week_number: 5 },
+    week: { week_number: 5, is_scoring: true },
     users: [],
     notificationLogs: [],
     settlements: [],
@@ -165,7 +165,24 @@ beforeEach(() => {
   sendToUser.mockResolvedValue({ sent: 1, pruned: 0 });
 });
 
+// A preseason round (ADR-0016): negative week_number, is_scoring false.
+const NON_SCORING_WEEK = { week_number: -1, is_scoring: false, seasons: { year: 2026 } };
+
 describe('sendResultsRecap', () => {
+  it('is a no-op on a non-scoring round (#789)', async () => {
+    // Preseason is typically a single game, so it reads fully-graded the moment that
+    // game ends — the completeness gate alone never stopped it.
+    db.week = NON_SCORING_WEEK;
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+
+    const res = await sendResultsRecap(112);
+
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(db.insertedLogs).toEqual([]);
+  });
+
   it('is a no-op until the week is fully graded', async () => {
     db.gamesNullCount = 1; // one game still ungraded
     db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
@@ -265,7 +282,22 @@ describe('sendResultsRecap', () => {
 
 describe('sendAIRecapPushes', () => {
   beforeEach(() => {
-    db.week = { week_number: 5, seasons: { year: 2025 } };
+    db.week = { week_number: 5, is_scoring: true, seasons: { year: 2025 } };
+  });
+
+  it('is a no-op on a non-scoring round even when a recap row exists (#789)', async () => {
+    // Belt-and-braces: generation is the usual gate, but a row written before the fix
+    // shipped (or by a backfill) must still not push.
+    db.week = NON_SCORING_WEEK;
+    db.aiRecapRows = [{ group_id: 'g1', prose: 'Nothing that counted happened.' }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+
+    const res = await sendAIRecapPushes(112);
+
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(db.insertedLogs).toEqual([]);
   });
 
   it('is a no-op when no ai_recaps rows exist for the week', async () => {

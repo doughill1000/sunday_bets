@@ -4,6 +4,8 @@
 import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
 import { findActiveWeek } from './db/queries/findActiveWeek';
+import { isScoringWeek } from './db/queries/isScoringWeek';
+import { isWeekFullyGraded } from './db/queries/isWeekFullyGraded';
 import { sendToUser } from './push';
 import {
   parseNotificationPrefs,
@@ -373,27 +375,17 @@ export async function runPregameNotifications(
 }
 
 /**
- * A week is recap-ready only once every game in it has been settled (final
- * scores present). Mirrors the completeness notion `advance_week_if_complete`
- * enforces, so partial-week grade runs don't fire a recap early.
- */
-export async function isWeekFullyGraded(weekId: number): Promise<boolean> {
-  const { count, error } = await supabaseService
-    .from('games')
-    .select('id', { count: 'exact', head: true })
-    .eq('week_id', weekId)
-    .is('final_scores', null);
-  if (error) throw error;
-  return (count ?? 0) === 0;
-}
-
-/**
  * Post-grading recap: once a week is fully settled, send each opted-in user a
  * single push summarizing their week (record + net points), aggregated across
  * all of their groups. Deduped per (user, week) via notification_log so repeated
  * grade-cron runs don't re-send. No-op until the week is complete.
+ *
+ * Also a no-op on a non-scoring round (#789): the body reports a record and a net
+ * points swing, and on a preseason week neither moved anything (the title would
+ * read "Your Week -1 results" besides).
  */
 export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
+  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
   if (!(await isWeekFullyGraded(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
 
   const { data: week, error: weekErr } = await supabaseService
@@ -496,8 +488,14 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
  * (disabled, or not fully graded) is simply not evaluated here. Deduped per
  * (user, group, week) via notification_log so repeated grade-cron runs don't
  * re-send.
+ *
+ * Non-scoring rounds are gated here too (#789) rather than left to "sendAIRecaps
+ * generated no row". Generation is the *usual* gate, not a guarantee: rows written
+ * before this fix shipped, or by any future backfill, would otherwise still push.
  */
 export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSummary> {
+  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
+
   const { data: weekRow, error: weekErr } = await supabaseService
     .from('weeks')
     .select('week_number, seasons!inner(year)')

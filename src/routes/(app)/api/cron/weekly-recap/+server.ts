@@ -11,9 +11,10 @@ import { findRecentGradableWeeks } from '$lib/server/db/queries/findRecentGradab
 // (previously the Tue 09:00 catch-all, i.e. ~4-5am ET — right after MNF). Grading itself
 // still settles MNF overnight (grade's Tue 05:00 run); this cron only sends the pushes,
 // hours later. Both sendResultsRecap and sendAIRecapPushes are gated on full-week-grading
-// and deduped per (user, week) / (user, group, week) via notification_log, so calling them
-// here — on whichever weeks findRecentGradableWeeks() currently considers recent — is a
-// safe no-op for anything not yet fully graded or already pushed.
+// and on the week being a scoring round (#789), and deduped per (user, week) / (user, group,
+// week) via notification_log, so calling them here — on whichever weeks
+// findRecentGradableWeeks() currently considers recent — is a safe no-op for a preseason
+// round, anything not yet fully graded, or anything already pushed.
 export const POST: RequestHandler = async (event) => {
   const guard = requireCronSecret(event);
   if (guard) return guard;
