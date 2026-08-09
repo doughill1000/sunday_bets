@@ -68,6 +68,28 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v3.12.0 — 2026-08-09
+
+- **PR #794** Release v3.12.0.
+- **#789** Preseason no longer gets a weekly recap — the AI recap and both recap pushes now
+  gate on the round being a scoring one (ADR-0016), not merely fully graded.
+- **#787** Declutter the picks board's all-locked resting state, so the committed pick
+  reaches the player above the fold.
+- **PR #785** Keep the free-tier QA/staging Supabase project awake with a twice-weekly
+  scheduled ping so it stops auto-pausing during quiet stretches.
+- **#780** Split the Awards legend into season- and weekly-scoped legends, so a surface only
+  opens the tier it actually shows.
+- **#776** Week gets its own nav tab — the weekly surface moves to `/week` in a five-tab bar
+  and `/league` returns to Standings · Honors.
+- **#731** One consolidated pregame push — a fresh near-kickoff line jump against your picked
+  side, delivered with the pick reminder instead of two separate buzzes.
+- **#771** The Awards legend explains weekly hardware too, replacing the desktop-only hover
+  tooltip.
+- **#770** Weekly hardware ties mint co-winners instead of silently going to whoever sorted
+  first alphabetically.
+- **#768** Season Wrapped has a way out — both Wrapped surfaces lead with a shared back link
+  and wear the recap archive's header anatomy.
+
 ## v3.11.0 — 2026-07-22
 
 - **PR #767** Release v3.11.0.
