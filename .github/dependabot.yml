@@ -5,6 +5,15 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Held-back majors. A bump listed here takes the whole grouped PR red, so it is
+    # ignored at the source rather than repeatedly closed by hand. Drop an entry once
+    # the blocker below clears, and take the major deliberately in its own PR.
+    ignore:
+      # typescript-eslint 8.x throws on load under TS 7 ("does not support TS 7.0"),
+      # which fails `pnpm lint` before ESLint reads a file.
+      # See https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
     groups:
       dev-dependencies:
         dependency-type: development
