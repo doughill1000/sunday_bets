@@ -2462,6 +2462,7 @@ export type Database = {
         Args: { p_game_ids: string[] };
         Returns: undefined;
       };
+      _is_final_scoring_week: { Args: { p_week_id: number }; Returns: boolean };
       _participation_start: {
         Args: { p_group_id: string; p_user_id: string };
         Returns: string;

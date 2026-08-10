@@ -150,9 +150,18 @@ export type PregameLineShift = {
 export function pregamePushBody(args: {
   unpickedCount: number;
   lineShifts: PregameLineShift[];
+  /**
+   * Does this round count (ADR-0016 `weeks.is_scoring`)? Defaults to true. On a
+   * non-scoring round the reminder says so out loud (#793), matching the "This round
+   * doesn't count" caption already on /picks — a lock-soon nudge with no caveat would
+   * imply stakes the round doesn't carry. Only the reminder-only branch varies:
+   * line-shift detection is skipped entirely for a non-scoring round upstream, so no
+   * shift copy can reach here on one.
+   */
+  scoring?: boolean;
 }): { title: string; body: string } | null {
   const pts = (n: number) => `${n} pt${n === 1 ? '' : 's'}`;
-  const { unpickedCount, lineShifts } = args;
+  const { unpickedCount, lineShifts, scoring = true } = args;
   if (unpickedCount === 0 && lineShifts.length === 0) return null;
 
   const reminderClause =
@@ -161,9 +170,12 @@ export function pregamePushBody(args: {
       : `you have ${unpickedCount} unpicked games kicking off soon`;
 
   if (lineShifts.length === 0) {
+    const games = `${unpickedCount} unpicked game${unpickedCount === 1 ? '' : 's'} kicking off soon`;
     return {
       title: 'Picks lock soon',
-      body: `You have ${unpickedCount} unpicked game${unpickedCount === 1 ? '' : 's'} kicking off soon.`
+      body: scoring
+        ? `You have ${games}.`
+        : `You have ${games}. This round doesn't count — just for fun.`
     };
   }
 

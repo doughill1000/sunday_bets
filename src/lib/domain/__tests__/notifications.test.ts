@@ -259,6 +259,26 @@ describe('pregamePushBody', () => {
     });
   });
 
+  it('adds the just-for-fun caveat to the reminder on a non-scoring round (#793)', () => {
+    // Matches the "This round doesn't count" caption on /picks: the nudge is real,
+    // the stakes are not. A non-scoring round never reaches the line-shift forms —
+    // detection is skipped for it upstream — so only this branch varies.
+    expect(pregamePushBody({ unpickedCount: 1, lineShifts: [], scoring: false })).toEqual({
+      title: 'Picks lock soon',
+      body: "You have 1 unpicked game kicking off soon. This round doesn't count — just for fun."
+    });
+    expect(pregamePushBody({ unpickedCount: 3, lineShifts: [], scoring: false })).toEqual({
+      title: 'Picks lock soon',
+      body: "You have 3 unpicked games kicking off soon. This round doesn't count — just for fun."
+    });
+  });
+
+  it('treats an omitted scoring flag as a scoring round', () => {
+    expect(pregamePushBody({ unpickedCount: 1, lineShifts: [] })).toEqual(
+      pregamePushBody({ unpickedCount: 1, lineShifts: [], scoring: true })
+    );
+  });
+
   it('builds the single line-shift form with side and fresh-jump magnitude', () => {
     expect(
       pregamePushBody({ unpickedCount: 0, lineShifts: [{ team: 'Bills', points: 2.5 }] })

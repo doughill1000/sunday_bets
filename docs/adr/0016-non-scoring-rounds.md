@@ -114,3 +114,18 @@ each view definition, refreshed by the same path.
   unchanged — a non-scoring round is still picked, graded, and shown, exactly as decided
   above. The season-end fan-out (Season Wrapped, badge flavors) needed no gate of its own: it
   already anchors "final week" on the season's max **scoring** week.
+- 2026-08-09 (#793) — Extends the same boundary forward, to the **pregame** alert lane, and
+  records the one deliberate exception. Auditing the rest of the notification surface after
+  #789 found both pregame lanes scoped only by `findActiveWeek()`, which asks nothing about
+  whether the round counts. Amended rule: **a non-scoring round notifies you about picking,
+  and nothing else.** The **line-shift alert** is gated on `is_scoring` — it only means
+  anything because a moving line changes what your pick is worth, and on a round worth zero
+  there is nothing to react to (it is also the most intrusive push we send). The **pick
+  reminder** deliberately keeps firing: it makes no claim about stakes, and this ADR made
+  non-scoring rounds _pickable_ precisely so preseason could be the onboarding runway — the
+  round where people learn the loop on games where being wrong is free. Silencing it would
+  make the whole round a feature nobody discovers. The reminder's copy now says the round
+  doesn't count, matching the caption on `/picks`. Nothing here re-opens the gates above:
+  grading, settlement, and per-game result display remain unchanged. Note for future
+  notification work — #731 merged both pregame lanes into one push per user per run, so a
+  gate of this kind belongs on **detection**, not on the shared delivery step.

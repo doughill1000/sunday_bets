@@ -71,7 +71,8 @@ SELECT is_empty(
   $$ SELECT name
      FROM unnest(ARRAY[
        'is_admin', 'is_member', 'is_commissioner', 'game_has_started',
-       '_get_final_week_unlimited_allin', 'lock_pick', 'unlock_pick',
+       '_get_final_week_unlimited_allin', '_is_final_scoring_week',
+       'lock_pick', 'unlock_pick',
        'lock_pick_all_groups', 'unlock_pick_all_groups', 'create_group',
        'redeem_invite', 'preview_invite', 'leave_group', 'mint_invite'
      ]) AS name
