@@ -1,6 +1,8 @@
 # ADR-0003: Schedule source and game-identity / reconciliation model
 
 - Status: Accepted
+- Amended: 2026-08-09 (#791), 2026-08-11 (#801), 2026-08-11 (#804) — see the amendment
+  sections below
 - Date: 2026-06-24
 - Issue: #123
 - Supersedes: None
@@ -260,3 +262,36 @@ produce a full forward season.
 players will need next, not by what they are looking at now. Anything that fetches "the
 current thing" should be checked for whether the next thing is ready before it becomes
 current.
+
+## Amendment (2026-08-11, issue #804): odds sync stops writing at kickoff
+
+Decision §3 gives odds sync one stated reason to skip a returned game — no matching
+matchup exists yet — and otherwise has it attach `external_game_id` and write the line.
+It never said _when_ that stops. The Odds API `/odds` endpoint answers a week window with
+**live** events as well as upcoming ones, and FanDuel quotes in-play spreads for them, so
+a sync running mid-slate wrote the in-play number as the game's active line. Nothing
+downstream re-derives an active line, so it stayed that way permanently: 12 such rows
+across the 2025 season in prod, up to 3h10m after kickoff, the worst reading -29.5 on a
+game that closed at -3 with the favorite flipped.
+
+**Kickoff is now a hard boundary on this write path**: odds sync skips any returned game
+whose `commence_time` has passed, and reports the count in its sync stats alongside the
+existing skip reasons. This narrows the `external_game_id` clause above — odds sync
+attaches provider ids only for games that have not started. That id feeds only the Odds
+`/scores` grading fallback; ESPN, the primary under ADR-0025, matches finals by the
+matchup identity this ADR establishes, so identity and grading are unaffected.
+
+The guard is deliberately in the sync loop and **not** in `set_active_line`. Historical
+imports legitimately write a single post-kickoff row as a past game's active line, and
+that fallback is the only reason the 2022–24 seasons resolve a line at all. The rule
+being enforced is about this ingestion path, not about the shape of a `game_lines` row.
+
+No settlement path was exposed while the gap was open — Gamer grades on the pick-time
+snapshot, House on the flagged closing line (`fetched_at <= commence_time`, ADR-0007),
+and the ATS read model prefers the closing line ahead of its active-line fallback. Three
+independent filters, each correct for its own reasons, none of them the invariant.
+
+**The durable rule this establishes:** when several downstream readers each happen to
+exclude bad data, the data is not safe — it is unowned. Put the guard at the write, where
+one rule can be stated and tested, rather than trusting a coincidence of filters to keep
+holding as read models are added.
