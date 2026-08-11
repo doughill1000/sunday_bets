@@ -5,6 +5,11 @@ on:
   schedule:
     # Daily Tue–Sat ~14:00 UTC
     - cron: '0 14 * * 2-6'
+    # Tue ~10:30 UTC, just behind cron-rollover-week's 0 10 * * 2 — belt and
+    # braces for #801: the run above primes the upcoming week days ahead, and
+    # this one lines the new active week right after rollover for the case where
+    # the books had posted nothing yet when that priming ran.
+    - cron: '30 10 * * 2'
   workflow_dispatch:
 
 jobs:

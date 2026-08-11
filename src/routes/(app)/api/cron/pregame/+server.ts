@@ -12,6 +12,11 @@ const SYNC_PROXIMITY_HOURS = 6;
 // pregame notification pass (#731): pick reminders + fresh line-shift alerts
 // over the same ~90-min window, at most one push per user per run. Line shifts
 // are only evaluated right after a successful sync.
+//
+// Deliberately the active-week-only sync: this job exists for near-kickoff
+// freshness on the live slate, so priming the upcoming week here (#801, the
+// daily `sync-odds` cron's job) would spend an extra API call every hour for
+// nothing.
 export const POST: RequestHandler = async (event) => {
   const guard = requireCronSecret(event);
   if (guard) return guard;

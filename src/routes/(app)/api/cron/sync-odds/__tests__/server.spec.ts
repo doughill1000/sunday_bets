@@ -1,9 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-// syncOddsForActiveWeek is the unit under test's dependency — mock it so each
-// case controls whether the job returns a structured skip, a success, or throws.
+// syncOddsForActiveAndUpcomingWeeks is the unit under test's dependency — mock it
+// so each case controls whether the job returns a structured skip, a success, or
+// throws.
 vi.mock('$lib/server/oddsSync', () => ({
-  syncOddsForActiveWeek: vi.fn()
+  syncOddsForActiveAndUpcomingWeeks: vi.fn()
 }));
 
 // Guard always passes here (auth is covered by cron.spec.ts). withCronLog is
@@ -23,9 +24,9 @@ vi.mock('$lib/server/cron', () => ({
 }));
 
 import { POST } from '../+server';
-import { syncOddsForActiveWeek } from '$lib/server/oddsSync';
+import { syncOddsForActiveAndUpcomingWeeks } from '$lib/server/oddsSync';
 
-const mockSync = syncOddsForActiveWeek as ReturnType<typeof vi.fn>;
+const mockSync = syncOddsForActiveAndUpcomingWeeks as ReturnType<typeof vi.fn>;
 
 function makeEvent(): Parameters<typeof POST>[0] {
   return {
@@ -63,13 +64,41 @@ describe('POST /api/cron/sync-odds', () => {
   it('returns 200 with the sync stats on a successful sync', async () => {
     const stats = {
       ok: true,
-      count: 2,
-      totalGames: 16,
-      processed: 16,
+      count: 18,
+      totalGames: 32,
+      processed: 32,
       unchanged: 14,
       skippedNoTeams: 0,
       skippedNoSpread: 0,
-      skippedNoMatchup: 0
+      skippedNoMatchup: 0,
+      weeks: [
+        {
+          role: 'active',
+          ok: true,
+          weekId: 113,
+          weekNumber: -2,
+          count: 2,
+          totalGames: 16,
+          processed: 16,
+          unchanged: 14,
+          skippedNoTeams: 0,
+          skippedNoSpread: 0,
+          skippedNoMatchup: 0
+        },
+        {
+          role: 'upcoming',
+          ok: true,
+          weekId: 114,
+          weekNumber: -3,
+          count: 16,
+          totalGames: 16,
+          processed: 16,
+          unchanged: 0,
+          skippedNoTeams: 0,
+          skippedNoSpread: 0,
+          skippedNoMatchup: 0
+        }
+      ]
     };
     mockSync.mockResolvedValue(stats);
 
@@ -77,6 +106,30 @@ describe('POST /api/cron/sync-odds', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, result: stats });
+  });
+
+  // #801: priming the upcoming week is best-effort. It reports its own failure
+  // inside weeks[] rather than throwing, so the run stays a clean 200 and the
+  // active week's completed sync is still recorded.
+  it('returns 200 when only the upcoming-week priming failed', async () => {
+    mockSync.mockResolvedValue({
+      ok: true,
+      count: 2,
+      totalGames: 16,
+      processed: 16,
+      unchanged: 14,
+      skippedNoTeams: 0,
+      skippedNoSpread: 0,
+      skippedNoMatchup: 0,
+      weeks: [
+        { role: 'active', ok: true, weekId: 113, weekNumber: -2, count: 2 },
+        { role: 'upcoming', ok: false, weekId: 114, weekNumber: -3, reason: 'Odds API 500: boom' }
+      ]
+    });
+
+    const response = await POST(makeEvent());
+
+    expect(response.status).toBe(200);
   });
 
   // A genuine fault (DB/network) still surfaces: withCronLog reports it to Sentry
