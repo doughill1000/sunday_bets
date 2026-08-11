@@ -456,10 +456,10 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "functions/groups/create_group.sql": {
-    "hash": "b16456a46eafb96ba87ddb76cdcd316d3b6a86bafd574af0febd09eeef80b18f",
-    "signature": "public.create_group(text, timestamptz)",
-    "migration": "20260722003527_participation_creation_ui_rpcs.sql",
-    "migrationHash": "774dc73140b6d3530b71a49a201d26b6a5eedacca6e9f7c5919a617046be43b6"
+    "hash": "6c199ee0bdcee51f308ca7b5c6bb667287fc2a04b338b96792fc8e9ce49b6b77",
+    "signature": "public.create_group(text)",
+    "migration": "20260811112617_retire_competition_start_controls.sql",
+    "migrationHash": "746f26e2b07ae060b884886b7a861a34d949289a16afa1598cc232c052c90928"
   },
   "functions/groups/leave_group.sql": {
     "hash": "63250ed8c125d7acd662158abcab775a6b1982edb9f22cf253325dc4f58be35d",
@@ -599,9 +599,9 @@
     "migrationHash": "544c4e2631ab55c20e4f0a41458a4e36e4c398c5ee16fb37c4b395cf3cf226b2"
   },
   "grants/group_grants.sql": {
-    "hash": "35bccb1623af4cd9e81bb9ba2e7b0e1ed2eeebf1beea0f7a9dc69a8bc281a497",
-    "migration": "20260722003527_participation_creation_ui_rpcs.sql",
-    "migrationHash": "774dc73140b6d3530b71a49a201d26b6a5eedacca6e9f7c5919a617046be43b6"
+    "hash": "22ef695d1a8777801039675c5beb75876b715b4f8c90e7d7d8dd9ecb2b88dc13",
+    "migration": "20260811112617_retire_competition_start_controls.sql",
+    "migrationHash": "746f26e2b07ae060b884886b7a861a34d949289a16afa1598cc232c052c90928"
   },
   "grants/picks_fanout_grants.sql": {
     "hash": "def61327db9284563b9334f36bb237027b2b9ec5299975eae818a4015821a0df",
@@ -952,18 +952,6 @@
     "signature": "public._settlement_owed(uuid)",
     "migration": "20260721220214_participation_boundary_read_surfaces.sql",
     "migrationHash": "7564ffe267e22294153b16406707232f443fc0a31d92fd78da3b31128ab674bb"
-  },
-  "functions/groups/competition_start_frozen.sql": {
-    "hash": "be84a0bfe558efce2371a95dfcf14041bc1a23bbe6cb49e627e04aabe5dde601",
-    "signature": "public.competition_start_frozen(uuid)",
-    "migration": "20260722003527_participation_creation_ui_rpcs.sql",
-    "migrationHash": "774dc73140b6d3530b71a49a201d26b6a5eedacca6e9f7c5919a617046be43b6"
-  },
-  "functions/groups/set_competition_start.sql": {
-    "hash": "8d475c3febec2e0b59cdcdd48d41fc37c383b67eef713ef7df4cb298c2b9328f",
-    "signature": "public.set_competition_start(uuid, timestamptz)",
-    "migration": "20260722003527_participation_creation_ui_rpcs.sql",
-    "migrationHash": "774dc73140b6d3530b71a49a201d26b6a5eedacca6e9f7c5919a617046be43b6"
   },
   "functions/_private/is_final_scoring_week.sql": {
     "hash": "628ccf4b53f7392e29d0576b0fb897d1e35034b8c6d039944923b73674b2807d",

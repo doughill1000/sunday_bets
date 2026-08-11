@@ -8,7 +8,7 @@
 
 BEGIN;
 
-SELECT plan(15);
+SELECT plan(18);
 
 -- ── Schema checks ─────────────────────────────────────────────────────────────
 
@@ -16,8 +16,17 @@ SELECT has_column('public', 'settings', 'group_creation_mode',
   'settings has group_creation_mode');
 SELECT has_column('public', 'users', 'can_create_group',
   'users has can_create_group');
-SELECT has_function('public', 'create_group', ARRAY['text', 'timestamp with time zone'],
-  'public.create_group(text, timestamptz) exists');
+SELECT has_function('public', 'create_group', ARRAY['text'],
+  'public.create_group(text) exists');
+-- ADR-0039 retired the start-week argument and the two RPCs that served it. The two-arg
+-- overload must be GONE, not merely unused: leaving it behind (its second argument has a
+-- default) makes every single-argument call ambiguous.
+SELECT hasnt_function('public', 'create_group', ARRAY['text', 'timestamp with time zone'],
+  'the two-arg create_group overload is gone (no ambiguous call)');
+SELECT hasnt_function('public', 'set_competition_start', ARRAY['uuid', 'timestamp with time zone'],
+  'set_competition_start is retired (ADR-0039)');
+SELECT hasnt_function('public', 'competition_start_frozen', ARRAY['uuid'],
+  'competition_start_frozen is retired (ADR-0039)');
 
 -- ── Seed (service role / superuser) ───────────────────────────────────────────
 
