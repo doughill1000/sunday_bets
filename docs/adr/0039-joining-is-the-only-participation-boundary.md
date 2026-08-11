@@ -1,6 +1,6 @@
 # ADR-0039: Joining is the only participation boundary
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-08-11
 - Issue: #782
 - Supersedes: [ADR-0037](0037-participation-boundary.md) (rulings 4 and 5 only — the
