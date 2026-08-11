@@ -156,8 +156,11 @@ as a materially wider surface that overlaps #802's picks-UI affordance work.
 
 - #803 — this change (the `_game_was_pickable` helper, the missed-pass gate, the
   `_settlement_owed` gate, pgTAP, type regeneration).
-- #802 — the client-side affordance: `canLock` / `canChange` never consult `spreadValue`, so
+- ~~#802 — the client-side affordance: `canLock` / `canChange` never consult `spreadValue`, so
   an unlined game still renders as pickable and dead-ends at the server error. Complementary,
-  not covered here.
+  not covered here.~~ **Shipped.** The picks board now gates both on a shared `hasLine`
+  predicate and labels an unlined game as not-yet-posted instead of offering controls that
+  cannot succeed. The server guard this ADR describes is unchanged — the client gate is
+  defence in depth on top of it, never a replacement.
 - #801 — why lines go missing for a newly-active week. Reduces how often this gate is load-
   bearing; does not replace it.
