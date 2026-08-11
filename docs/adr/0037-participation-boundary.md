@@ -165,7 +165,10 @@ untouched. No new status enum, interval model, or "rejoin" concept is introduced
   grading always owes at least one row per game — under the boundary a game can legitimately owe
   nothing, so those surfaces would flag such a week as unsettled forever.
   `public._settlement_owed` is the guard, and it calls `_participation_start` like everything
-  else.
+  else. _Extended by ADR-0040 (#803):_ the negative space turned out to have a second cause —
+  a game no league was permitted to **pick** also owes nothing — so `_settlement_owed` now
+  carries `_game_was_pickable` alongside `_participation_start`. The general rule this ADR's
+  Issue B discovered holds: every gate the missed-pass gains, `_settlement_owed` must gain too.
 - **Issue C (creation/onboarding UI):** #725 — start-week control + partial-season copy
   (`docs/DESIGN.md` / ADR-0030). Shipped: `create_group` gained the start-week argument
   (ruling 5, clamped so a new league can never be backdated) and `set_competition_start` the
