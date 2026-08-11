@@ -4,6 +4,13 @@
 - Date: 2026-07-16
 - Issue: #711
 - Supersedes: None
+- Note: rulings **4** (editable until the first eligible kickoff) and **5** (creation UX:
+  default to now, offer a future week) are superseded by
+  [ADR-0039](0039-joining-is-the-only-participation-boundary.md), which retires both
+  commissioner controls — joining is the only participation boundary a user can set.
+  Rulings 1, 2, 3, and 6 below — the boundary formula, the grading choke point, the
+  include-all sentinel, and re-activation carrying no gap credit — are retained unchanged,
+  as is `groups.competition_starts_at` itself.
 
 ## Context
 
@@ -169,5 +176,10 @@ untouched. No new status enum, interval model, or "rejoin" concept is introduced
   from Issue B — the pick-reminder fan-out (`sendPickReminders`) having no boundary check, which
   a future start-week makes bite — was scoped in the same change: reminders now gate each
   (member, game) on the participation boundary across the member's active leagues.
+  **Retired by [ADR-0039](0039-joining-is-the-only-participation-boundary.md) (#782):** the
+  start-week control, `set_competition_start`, `competition_start_frozen`, and
+  `create_group`'s start-week argument are gone — the freeze predicate compared against
+  ruling 3's include-all sentinel (so it was permanently true) and ignored `is_scoring`.
+  The boundary formula, the sentinel, and the `sendPickReminders` gate above all stand.
 - **ADR-0009 join-time backfill** (separate, deferred): copying a joiner's still-open
   current-week picks into a newly joined league — this ADR is its temporal safety floor.
