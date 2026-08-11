@@ -111,6 +111,32 @@ describe('lib/server/odds.ts', () => {
       expect(url.pathname).toBe('/sports/americanfootball_nfl_preseason/odds');
     });
 
+    // #801: one run now covers two weeks, and at the preseason→regular boundary
+    // they sit on different sport endpoints. The key must be derived per call —
+    // nothing may be memoized across a run.
+    it('resolves the sport key per call, not once per run', async () => {
+      const { fetchNFLSpreadsForWeek } = await loadSut();
+      (fetch as any).mockResolvedValue({ ok: true, json: vi.fn().mockResolvedValue([]) });
+
+      // Week -4, the last preseason tune-up, then week 1, the opener.
+      await fetchNFLSpreadsForWeek({
+        startTs: new Date(Date.UTC(2025, 7, 26)).toISOString(),
+        endTs: new Date(Date.UTC(2025, 8, 2)).toISOString(),
+        weekNumber: -4
+      } as WeekWindow);
+      await fetchNFLSpreadsForWeek({
+        startTs: new Date(Date.UTC(2025, 8, 2)).toISOString(),
+        endTs: new Date(Date.UTC(2025, 8, 9)).toISOString(),
+        weekNumber: 1
+      } as WeekWindow);
+
+      const paths = (fetch as any).mock.calls.map((c: [string]) => new URL(c[0]).pathname);
+      expect(paths).toEqual([
+        '/sports/americanfootball_nfl_preseason/odds',
+        '/sports/americanfootball_nfl/odds'
+      ]);
+    });
+
     it('throws a helpful error on non-OK response', async () => {
       const { fetchNFLSpreadsForWeek } = await loadSut();
       (fetch as any).mockResolvedValue({

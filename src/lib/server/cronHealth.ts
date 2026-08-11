@@ -46,6 +46,9 @@ export type CronSchedule = {
 export const CRON_SCHEDULES: readonly CronSchedule[] = [
   { job: 'pregame', kind: 'hourly', minute: 0, marginMinutes: 45 },
   {
+    // Also fires Tue 10:30 UTC just behind rollover-week (#801). The daily 14:00
+    // run is the representative one — it is the trigger that fires every day the
+    // job is expected at all, so it stays the right floor here.
     job: 'sync-odds',
     kind: 'weekly',
     weekdays: [2, 3, 4, 5, 6],
