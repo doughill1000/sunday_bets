@@ -84,6 +84,15 @@ join public.teams home on home.external_key = g.home_key
 join public.teams away on away.external_key = g.away_key
 on conflict (external_game_id) do nothing;
 
+-- A pre-kickoff line per game, the shape every real gradable game has (a locked pick is
+-- snapshotted from one). Since ADR-0040 (#803) the missed-penalty pass skips a game that never
+-- had a line, so without this every assertion below would pass for the WRONG reason -- an empty
+-- result proving pickability, not the participation boundary this file exists to pin.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id like 'pb-%';
+
 -- pb_founder picks week 1 (home covers -6: margin (20-10)-6 = +4 -> win), so the real-pick
 -- pass is exercised alongside the missed pass and cannot be confused with a boundary effect.
 insert into public.picks (

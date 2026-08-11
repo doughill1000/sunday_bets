@@ -75,6 +75,14 @@ from public.teams home, public.teams away
 where home.external_key = 'AWCH' and away.external_key = 'AWCA'
 on conflict (external_game_id) do nothing;
 
+-- A pre-kickoff line, the shape every real gradable game has. Since ADR-0040 (#803) an
+-- unlined game gets no missed row and owes nothing, so without this Week A would never
+-- produce the settlements-outnumber-picks shape test (1) exists to pin.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id = 'awc-a';
+
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
   locked_at, locked_spread_team_id, locked_spread_value, locked_by
@@ -115,6 +123,13 @@ select 99602, 'awc-b', now() - interval '2 days 1 hour', home.id, away.id, 'fina
 from public.teams home, public.teams away
 where home.external_key = 'AWCH' and away.external_key = 'AWCA'
 on conflict (external_game_id) do nothing;
+
+-- Likewise: awc-b must be genuinely OWED for the "not yet graded" assertions to bite. An
+-- unlined game owes nothing under ADR-0040 (#803), which would make Week B report complete.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id = 'awc-b';
 
 select is(
   (public.advance_week_if_complete()->>'ok')::boolean,
