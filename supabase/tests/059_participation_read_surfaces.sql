@@ -80,6 +80,16 @@ from (values
 join public.teams home on home.external_key = g.home_key
 join public.teams away on away.external_key = g.away_key;
 
+-- A pre-kickoff line per final game, the shape every real gradable game has. _settlement_owed
+-- gained a pickability gate in ADR-0040 (#803), so an unlined game owes nothing regardless of
+-- participation -- without this, rs-owed would read "not owed" and the assertions below would
+-- pass for the wrong reason. rs-stranded stays unowed on the participation term alone, which
+-- is exactly what this file is pinning.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id in ('rs-stranded', 'rs-picked', 'rs-owed');
+
 -- The board's week: three still-open games straddling RS Late's competition start (+3 days).
 insert into public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id, status)
 select 99631, g.ext, g.commence, home.id, away.id, 'scheduled'

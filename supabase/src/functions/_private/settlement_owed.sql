@@ -17,13 +17,27 @@
 -- So both callers gain this predicate: a final game is only "unsettled" if a row is actually
 -- owed. Owed means either
 --   (a) some ACTIVE membership anywhere is eligible for it -- the missed-pass population,
---       gated by the same public._participation_start the grading choke point uses; or
+--       gated by the same public._participation_start AND public._game_was_pickable that the
+--       grading choke point uses; or
 --   (b) a real pick exists on it -- pass (1) of _grade_games_by_ids grades real picks with
 --       no boundary gate (ADR-0037 ruling 2), so a pick from a since-removed member still
 --       produces a row and must still be swept for.
 --
--- Deliberately group-agnostic: both callers are global (cross-league) and only ask whether
--- the GAME is stranded, not which league stranded it.
+-- Pickability joined clause (a) for exactly the reason the boundary did (ADR-0040, #803).
+-- Once the missed pass stopped charging for a game no league was permitted to pick, an
+-- unlined game with no picks became a SECOND way to legitimately owe nothing -- and the
+-- zero-row test would have flagged it forever, re-firing the reconcile sweep on every tick
+-- and keeping its week from ever reporting complete. Every gate the write side gains, this
+-- predicate must gain too, or the two disagree about what is still outstanding.
+--
+-- _game_was_pickable reads game_lines.fetched_at rather than is_closing_line specifically so
+-- it works here: this function runs on games that have NOT been graded yet, and the closing
+-- flag is only ever set by _capture_closing_line on the grade path (#735). Keying off the
+-- flag would report "not owed" for every ungraded game and the sweep would heal nothing.
+--
+-- Deliberately group-agnostic in its SIGNATURE: both callers are global (cross-league) and
+-- only ask whether the GAME is stranded, not which league stranded it. Both gates are still
+-- evaluated per-membership inside, since participation start and line_source are per-league.
 --
 -- SECURITY DEFINER for the same reason as _participation_start: the answer is a grading fact
 -- and must not vary with the caller's RLS view of group_memberships/picks. Born closed to
@@ -44,6 +58,7 @@ as $$
       where g.id = p_game_id
         and gm.status = 'active'
         and g.commence_time >= public._participation_start(gm.group_id, gm.user_id)
+        and public._game_was_pickable(gm.group_id, g.id)
     )
     or exists (
       select 1
@@ -53,4 +68,4 @@ as $$
 $$;
 
 comment on function public._settlement_owed(uuid) is
-  'ADR-0037 / #724: true when grading owes at least one pick_settlement row for this game -- some active membership is eligible under _participation_start, or a real pick exists. The completeness surfaces (find_unsettled_weeks, advance_week_if_complete) use it so a game no league was participating in is not flagged as permanently unsettled.';
+  'ADR-0037 / #724 + ADR-0040 / #803: true when grading owes at least one pick_settlement row for this game -- some active membership is both eligible under _participation_start and able to pick it under _game_was_pickable, or a real pick exists. The completeness surfaces (find_unsettled_weeks, advance_week_if_complete) use it so a game no league was participating in, or that no league could pick, is not flagged as permanently unsettled.';

@@ -90,6 +90,14 @@ cross join public.teams away
 where home.external_key = 'PSCH' and away.external_key = 'PSCA'
 on conflict (external_game_id) do nothing;
 
+-- A pre-kickoff line per game, the shape every real gradable game has. Since ADR-0040 (#803)
+-- the missed-penalty pass skips a game that never had one, so without this the completeness
+-- pair would be measuring the pickability gate instead of the participation boundary.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id like 'psc-%';
+
 -- Only the picker picks the live game (home covers -6: margin (20-10)-6 = +4 -> win).
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,

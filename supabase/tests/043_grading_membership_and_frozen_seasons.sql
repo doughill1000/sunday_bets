@@ -55,8 +55,10 @@ insert into public.weeks (id, season_id, week_number, start_ts, end_ts) values
   (99531, 9953, 1, '2019-09-05 00:00:00+00', '2019-09-12 00:00:00+00'),
   (99532, 9953, 2, '2019-09-12 00:00:00+00', '2019-09-19 00:00:00+00');
 
--- One game per season, both final. Gamer preset (no group_config) grades real picks
--- off the pick's locked spread, so no game_lines are needed.
+-- One game per season, both final. Gamer preset (no group_config) grades real picks off the
+-- pick's locked spread, so the line VALUES below are irrelevant -- but a line must exist:
+-- since ADR-0040 (#803) the missed-penalty pass refuses to charge for a game that never had a
+-- pre-kickoff line for the league's book, which is the whole population half (A) asserts on.
 insert into public.games (week_id, external_game_id, commence_time, home_team_id, away_team_id, status, final_scores)
 select g.week_id, g.ext, g.commence, home.id, away.id, 'final', '{"home": 20, "away": 10}'::jsonb
 from (values
@@ -68,6 +70,13 @@ cross join public.teams home
 cross join public.teams away
 where home.external_key = 'GMFH' and away.external_key = 'GMFA'
 on conflict (external_game_id) do nothing;
+
+-- Every gradable game reaches grading with a pre-kickoff line -- that is what a locked pick is
+-- snapshotted from -- so seeding one is what makes this fixture realistic, not a workaround.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id like 'gmf-%';
 
 -- picker picks home in all three games (home covers -6: margin (20-10)-6 = +4 → win).
 insert into public.picks (

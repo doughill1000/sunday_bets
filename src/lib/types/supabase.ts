@@ -2457,6 +2457,10 @@ export type Database = {
         Args: { p_game_ids: string[] };
         Returns: undefined;
       };
+      _game_was_pickable: {
+        Args: { p_game_id: string; p_group_id: string };
+        Returns: boolean;
+      };
       _get_final_week_unlimited_allin: { Args: never; Returns: boolean };
       _grade_games_by_ids: {
         Args: { p_game_ids: string[] };

@@ -84,5 +84,6 @@ current status.
 | [ADR-0037](0037-participation-boundary.md)                                  | Participation boundary — a member is graded only for games that start after they join                       |
 | [ADR-0038](0038-pr-merge-gate-model.md)                                     | PR merge-gate model — the `-result` wrapper-job contract and required-check names as a stable interface     |
 | [ADR-0039](0039-joining-is-the-only-participation-boundary.md)              | Joining is the only participation boundary — retires ADR-0037's rulings 4 and 5 (the start-week controls)   |
+| [ADR-0040](0040-unpickable-games-cannot-cost-points.md)                     | An unpickable game cannot cost you points — the missed-penalty pickability gate                             |
 
-_The numbering is sequential; the next ADR is 0040._
+_The numbering is sequential; the next ADR is 0041._

@@ -66,6 +66,14 @@ cross join public.teams away
 where home.external_key = 'RGSH' and away.external_key = 'RGSA'
 on conflict (external_game_id) do nothing;
 
+-- A pre-kickoff line per game, the shape every real gradable game has. Since ADR-0040 (#803)
+-- an unlined game owes no settlement rows, so _settlement_owed would let the stranded week go
+-- and this fixture would stop exercising the sweep at all.
+insert into public.game_lines (game_id, source, spread_team_id, spread_value, is_active_line, fetched_at)
+select g.id, 'fanduel', g.home_team_id, 6, true, g.commence_time - interval '30 minutes'
+from public.games g
+where g.external_game_id like 'rgs-%';
+
 -- Picker picks home in every game.
 insert into public.picks (
   group_id, user_id, game_id, picked_team_id, weight,
