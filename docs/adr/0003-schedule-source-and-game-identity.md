@@ -228,3 +228,35 @@ Worth noting how long this hid. Seasons 2022–2025 all carry correct 7-day wind
 they were **imported** by `supabase/scripts/import-historical`, never produced by
 `syncSchedule` — 2026 is the first season this code path has ever created. Suspect the same
 class of defect in anything else whose first live exercise is the 2026 season.
+
+## Amendment (2026-08-11, issue #801): odds sync also primes the upcoming week
+
+The Context above describes odds sync as "scoped to the active week". That was a
+description of the pre-ADR implementation, not a decided boundary — but it stayed true
+after this ADR shipped, and it turned out to be a defect. A week could acquire lines only
+_after_ it was already the active week, so every newly-active slate rendered as all
+"No line" until the next daily sync landed: a hole of roughly half a day, every week,
+falling on the evening people opened the app to look at the new slate. Cron scheduling
+could not fix it, because GitHub's scheduler drifts by up to two hours and a single
+failed run stretched the hole past a day.
+
+**Odds sync now covers the active week _and_ the next week that has not started yet**,
+so a slate is lined days before players ever see it and cron timing stops mattering. The
+upcoming week is resolved by `start_ts`, never by week number — preseason weeks count
+DOWN under ADR-0016, so "the next higher week number" walks backwards into a week already
+played. Priming is best-effort: a failure there is reported in the run's per-week results
+rather than thrown, because the active week is the slate players are actually looking at
+and its completed work must survive.
+
+This sits inside the model Decision §3 already establishes — schedule sync still owns
+creating `games` rows, and odds sync still only attaches lines to matchups that already
+exist, by unordered team pair. It adds no trust boundary and touches no scoring or
+fairness semantics; the only cost is one extra Odds API request per run against a monthly
+cap the app uses a low single-digit percentage of. The Alternatives note about the
+`/events` endpoint is unaffected: this widens the window by one week, and still cannot
+produce a full forward season.
+
+**The durable rule this establishes:** an ingestion job's scope should be set by what
+players will need next, not by what they are looking at now. Anything that fetches "the
+current thing" should be checked for whether the next thing is ready before it becomes
+current.
