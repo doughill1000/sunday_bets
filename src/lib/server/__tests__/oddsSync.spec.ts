@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { syncOddsForActiveWeek, syncOddsForActiveAndUpcomingWeeks } from '../oddsSync';
 import { fetchNFLSpreadsForWeek, extractFanduelSpread } from '../odds';
 import { findActiveWeek } from '../db/queries/findActiveWeek';
@@ -52,6 +52,23 @@ vi.mock('$lib/supabase/service', () => {
 // Helper to control the mocked maybeSingle() return value
 const mockMaybeSingle = (supabaseService as unknown as { maybeSingle: ReturnType<typeof vi.fn> })
   .maybeSingle;
+
+// The sync now compares each returned game's kickoff against the wall clock (#804),
+// so every fixture below is dated relative to a pinned instant rather than to
+// whenever the suite happens to run. Without the pin these specs would quietly
+// start failing the day real time passed their hard-coded September kickoffs.
+// This one sits mid-preseason, days ahead of every slate the file fixtures use;
+// the #804 block re-pins itself to a Sunday afternoon.
+const DAYS_BEFORE_KICKOFF = '2026-08-25T12:00:00Z';
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(DAYS_BEFORE_KICKOFF));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('syncOddsForActiveWeek', () => {
   beforeEach(() => {
@@ -430,5 +447,161 @@ describe('syncOddsForActiveAndUpcomingWeeks', () => {
 
     expect(result).toEqual({ ok: false, reason: 'No active week' });
     expect(fetchNFLSpreadsForWeek).not.toHaveBeenCalled();
+  });
+});
+
+// #804: the Odds API `/odds` window returns *live* events alongside upcoming ones,
+// and FanDuel quotes in-play spreads for them. The hourly `pregame` cron self-gates
+// on any active-week game kicking off within six hours — true on an NFL Sunday from
+// roughly 7am to 2pm ET — so it runs while the early slate is being played, and the
+// sync had no kickoff filter of its own. Twelve genuine in-play rows exist in prod
+// for 2025, written 4 minutes to 3h10m after kickoff and still the active line
+// today; the worst reads -29.5 on a game that closed at -3, favorite flipped.
+//
+// Nothing was mis-graded, but only because three unrelated downstream filters each
+// happened to exclude the bad row. The fixture below is the write itself.
+describe('a slate already in progress (#804)', () => {
+  const WEEK = {
+    id: 2,
+    week_number: 2,
+    start_ts: '2026-09-08T04:00:00Z',
+    end_ts: '2026-09-15T04:00:00Z'
+  };
+
+  // A real Sunday: the 1pm ET games are mid-second-quarter, the 4:25pm ET games
+  // have not kicked off, and a `pregame` run lands right between them.
+  const EARLY_KICKOFF = '2026-09-13T17:00:00Z'; // 1:00pm ET
+  const LATE_KICKOFF = '2026-09-13T20:25:00Z'; // 4:25pm ET
+  const MID_SLATE = '2026-09-13T18:05:00Z'; // 2:05pm ET
+
+  const TEAMS = [
+    { id: 10, name: 'Team A' },
+    { id: 20, name: 'Team B' },
+    { id: 30, name: 'Team C' },
+    { id: 40, name: 'Team D' }
+  ];
+
+  // Keyed by game rather than call order, so a regression shows up as the wrong
+  // write rather than as a fixture that quietly slid onto the wrong game.
+  function armSlate() {
+    (extractFanduelSpread as ReturnType<typeof vi.fn>).mockImplementation((g: { id: string }) =>
+      g.id === 'ext-early'
+        ? // The live in-play number: Team A is running away with it.
+          { spreadTeamName: 'Team A', spreadValue: 29.5 }
+        : { spreadTeamName: 'Team C', spreadValue: 6.5 }
+    );
+    (attachLineToMatchup as ReturnType<typeof vi.fn>).mockImplementation(
+      async ({ externalGameId }: { externalGameId: string }) =>
+        externalGameId.replace(/^ext-/, 'game-')
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.setSystemTime(new Date(MID_SLATE));
+    (findActiveWeek as ReturnType<typeof vi.fn>).mockResolvedValue(WEEK);
+    (findTeamsByNames as ReturnType<typeof vi.fn>).mockResolvedValue(TEAMS);
+    mockMaybeSingle.mockResolvedValue({ data: null });
+  });
+
+  it('lines the game that has not kicked off and never touches the one in progress', async () => {
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-early',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: EARLY_KICKOFF
+      },
+      {
+        id: 'ext-late',
+        home_team: 'Team C',
+        away_team: 'Team D',
+        commence_time: LATE_KICKOFF
+      }
+    ]);
+    armSlate();
+
+    const result = await syncOddsForActiveWeek();
+
+    // The started game is out before the write path begins — no line, and no
+    // `external_game_id` attachment either.
+    expect(setActiveLine).toHaveBeenCalledTimes(1);
+    expect(setActiveLine).toHaveBeenCalledWith({
+      gameId: 'game-late',
+      spreadTeamId: 30,
+      spreadValue: 6.5,
+      source: 'fanduel'
+    });
+    expect(attachLineToMatchup).toHaveBeenCalledTimes(1);
+    expect(attachLineToMatchup).toHaveBeenCalledWith(
+      expect.objectContaining({ externalGameId: 'ext-late' })
+    );
+    // Its existing active line is not even read, let alone deactivated.
+    expect(supabaseService.from).toHaveBeenCalledTimes(1);
+
+    // Observable in `cron_run_log` and in both cron endpoints' responses: a
+    // non-zero count mid-slate is the guard working, not a fault.
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, totalGames: 2, count: 1, skippedStarted: 1 })
+    );
+    expect((result as SyncStats).weeks).toEqual([
+      expect.objectContaining({ role: 'active', ok: true, count: 1, skippedStarted: 1 })
+    ]);
+  });
+
+  it('treats a game kicking off exactly now as started', async () => {
+    vi.setSystemTime(new Date(EARLY_KICKOFF));
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>).mockResolvedValue([
+      {
+        id: 'ext-early',
+        home_team: 'Team A',
+        away_team: 'Team B',
+        commence_time: EARLY_KICKOFF
+      }
+    ]);
+    armSlate();
+
+    const result = await syncOddsForActiveWeek();
+
+    // Kickoff is the boundary picks lock on, so it is the boundary the line
+    // stops moving on too — the last pre-kickoff number is the canonical one.
+    expect(setActiveLine).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, count: 0, skippedStarted: 1, processed: 0 })
+    );
+  });
+
+  it('primes an upcoming week untouched while the live slate is skipped', async () => {
+    (findUpcomingWeek as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 3,
+      week_number: 3,
+      start_ts: '2026-09-15T04:00:00Z',
+      end_ts: '2026-09-22T04:00:00Z'
+    });
+    (fetchNFLSpreadsForWeek as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce([
+        { id: 'ext-early', home_team: 'Team A', away_team: 'Team B', commence_time: EARLY_KICKOFF }
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'ext-next',
+          home_team: 'Team C',
+          away_team: 'Team D',
+          commence_time: '2026-09-20T17:00:00Z'
+        }
+      ]);
+    armSlate();
+
+    const result = await syncOddsForActiveAndUpcomingWeeks();
+
+    // Next week's slate is days out, so it lines normally; the guard is per-game,
+    // not per-week, and the totals carry the skip through both windows.
+    expect(setActiveLine).toHaveBeenCalledTimes(1);
+    expect(setActiveLine).toHaveBeenCalledWith(
+      expect.objectContaining({ gameId: 'game-next', spreadValue: 6.5 })
+    );
+    expect(result).toEqual(
+      expect.objectContaining({ ok: true, totalGames: 2, count: 1, skippedStarted: 1 })
+    );
   });
 });
