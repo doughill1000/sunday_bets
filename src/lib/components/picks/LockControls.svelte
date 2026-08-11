@@ -7,15 +7,18 @@
   interface Props {
     game: PickGame;
     started?: boolean;
+    /** False when the game has no posted line (#802) — nothing can be locked in yet. */
+    lined?: boolean;
   }
-  let { game, started = false }: Props = $props();
+  let { game, started = false, lined = true }: Props = $props();
   const picks = usePicksStore();
 
   const entry = $derived($picks[game.id] ?? {});
   const staged = $derived(entry.selected);
   const saveState = $derived(entry.saveState);
-  // Lock in enables only once both halves are staged (and the game hasn't started).
-  const canLock = $derived(!started && !!staged?.team && !!staged?.weight);
+  // Lock in enables only once both halves are staged, the game hasn't started, and there
+  // is a line to pick against — the server would refuse an unlined game outright (#802).
+  const canLock = $derived(!started && lined && !!staged?.team && !!staged?.weight);
   const hasPick = $derived(!!staged?.team || !!staged?.weight);
 
   async function onLock() {
@@ -56,7 +59,14 @@
 
   <div aria-live="polite" class="min-h-[1rem] text-xs">
     {#if saveState === 'error'}
-      <span class="text-destructive">Couldn’t lock in — tap Lock in to retry.</span>
+      {#if lined}
+        <span class="text-destructive">Couldn’t lock in — tap Lock in to retry.</span>
+      {:else}
+        <!-- Retrying is guaranteed to fail while the line is missing, so don't invite it. -->
+        <span class="text-muted-foreground">
+          Couldn’t lock in — the line isn’t posted yet. Try again once it’s up.
+        </span>
+      {/if}
     {/if}
   </div>
 </div>

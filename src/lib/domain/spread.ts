@@ -11,6 +11,17 @@ export function favoriteSide(g: PickGame): TeamSide | null {
   return g.spreadTeamId === g.homeTeamId ? 'home' : 'away';
 }
 
+/**
+ * Whether the game has an active posted line, i.e. whether it can be picked at all (#802).
+ * A pick'em (`spreadValue === 0`) **is** a line and stays fully pickable — only `null`
+ * means "not posted yet". The client gate this feeds is defense in depth; the real
+ * integrity boundary is the `no active line` guard in `lock_pick` /
+ * `lock_pick_all_groups`.
+ */
+export function hasLine(g: PickGame): boolean {
+  return g.spreadValue != null;
+}
+
 export function spreadLine(g: PickGame): string {
   if (g.spreadValue == null) return 'No line';
   if (g.spreadValue === 0) return 'PK';

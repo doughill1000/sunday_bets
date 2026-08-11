@@ -34,6 +34,20 @@ describe('LockControls (Lock in button)', () => {
     await waitFor(() => expect(get(picks).g1.lockedPick).toEqual({ team: 'home', weight: 'M' }));
   });
 
+  // #802 — a game with no posted line can never be locked in; don't advertise the action.
+  it('disables Lock in when the game has no posted line, even with a full pick staged', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' } } });
+    render(LockControls, { props: { game, started: false, lined: false } });
+    expect(screen.getByTestId('lock-in')).toBeDisabled();
+  });
+
+  it('does not invite a retry when the failure was a missing line', () => {
+    setPicks({ g1: { selected: { team: 'home', weight: 'M' }, saveState: 'error' } });
+    render(LockControls, { props: { game, started: false, lined: false } });
+    expect(screen.getByText(/the line isn.t posted yet/)).toBeInTheDocument();
+    expect(screen.queryByText(/tap Lock in to retry/)).not.toBeInTheDocument();
+  });
+
   it('shows the in-flight label while a lock-in is saving', () => {
     setPicks({ g1: { selected: { team: 'home', weight: 'M' }, saveState: 'saving' } });
     render(LockControls, { props: { game, started: false } });

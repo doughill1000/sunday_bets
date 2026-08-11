@@ -1,6 +1,6 @@
 // tests/domain/spread.test.ts
 import { describe, it, expect } from 'vitest';
-import { spreadLine, signedSpreadForTeam } from '../../domain/spread';
+import { hasLine, spreadLine, signedSpreadForTeam } from '../../domain/spread';
 import type { PickGame } from '../../types/games';
 
 // ---------------------------------------------------------------------------
@@ -135,6 +135,15 @@ describe('spread helpers', () => {
   });
   it('signedSpreadForTeam returns empty string when null', () => {
     expect(signedSpreadForTeam(g({ spreadValue: null as any }), 'home')).toBe('');
+  });
+
+  // #802 — the pickability predicate. A pick'em is a real line; only null is "not posted".
+  it('hasLine is false only when spreadValue is null', () => {
+    expect(hasLine(g())).toBe(true);
+    expect(hasLine(g({ spreadValue: 0 }))).toBe(true); // PK is a real line
+    expect(hasLine(g({ spreadValue: -3.5 }))).toBe(true);
+    expect(hasLine(g({ spreadValue: null as any }))).toBe(false);
+    expect(hasLine(g({ spreadValue: undefined as any }))).toBe(false);
   });
 });
 

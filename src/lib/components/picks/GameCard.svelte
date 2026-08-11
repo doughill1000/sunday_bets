@@ -4,7 +4,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { kickoffPassed } from '$lib/domain/rules';
   import { formatKickoff } from '$lib/ui/format';
-  import { spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
+  import { hasLine, spreadLine, signedSpreadForTeam } from '$lib/domain/spread';
   import { nuggetForSide } from '$lib/utils/leagueNugget';
   import TeamSelect from './TeamSelect.svelte';
   import WeightSelect from './WeightSelect.svelte';
@@ -38,7 +38,11 @@
   const current = $derived(entry.selected ?? entry.lockedPick);
   const started = $derived(kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
-  const canChange = $derived(!readonly && initialized && !started && !locked);
+  // A game with no posted line can't be picked (#802) — the server RPC refuses it, so the
+  // card must not offer the controls. `hasLine` is `$derived` off the prop, so the card
+  // flips to pickable on its own the moment the query cache lands a line (ADR-0017).
+  const lined = $derived(hasLine(game));
+  const canChange = $derived(!readonly && initialized && !started && !locked && lined);
 
   // Undefined when no weight is chosen yet, so no chip looks pre-selected.
   const weightValue = $derived(current?.weight);
@@ -72,7 +76,18 @@
   <CardHeader class="grid-cols-[1fr_auto] items-start gap-x-3">
     <div class="min-w-0 space-y-0.5">
       <h2 class="truncate font-semibold text-foreground">{game.away} @ {game.home}</h2>
-      <p class="truncate text-sm font-medium text-foreground/70">{lineText}</p>
+      {#if lined}
+        <p class="truncate text-sm font-medium text-foreground/70">{lineText}</p>
+      {:else}
+        <p>
+          <span
+            class="inline-block rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground"
+            data-testid="no-line-chip"
+          >
+            Line not posted yet
+          </span>
+        </p>
+      {/if}
       <time class="block text-xs font-medium text-foreground/60" datetime={game.kickoff}>
         {kickoffText}
       </time>
@@ -106,11 +121,15 @@
     />
 
     {#if !readonly}
-      <LockControls {game} {started} />
+      <LockControls {game} {started} {lined} />
     {/if}
 
     {#if started}
       <p class="mt-2 text-xs text-muted-foreground">Kickoff passed — picks locked.</p>
+    {:else if !lined}
+      <p class="mt-2 text-xs text-muted-foreground" data-testid="no-line-note">
+        The line for this game hasn't been posted yet. You can pick it once it's up.
+      </p>
     {/if}
   </CardContent>
 </Card>
