@@ -68,6 +68,7 @@ describe('POST /api/cron/sync-odds', () => {
       totalGames: 32,
       processed: 32,
       unchanged: 14,
+      skippedStarted: 0,
       skippedNoTeams: 0,
       skippedNoSpread: 0,
       skippedNoMatchup: 0,
@@ -81,6 +82,7 @@ describe('POST /api/cron/sync-odds', () => {
           totalGames: 16,
           processed: 16,
           unchanged: 14,
+          skippedStarted: 0,
           skippedNoTeams: 0,
           skippedNoSpread: 0,
           skippedNoMatchup: 0
@@ -94,6 +96,7 @@ describe('POST /api/cron/sync-odds', () => {
           totalGames: 16,
           processed: 16,
           unchanged: 0,
+          skippedStarted: 0,
           skippedNoTeams: 0,
           skippedNoSpread: 0,
           skippedNoMatchup: 0
