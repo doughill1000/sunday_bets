@@ -4,6 +4,13 @@ export type WeekSyncCounts = {
   totalGames: number;
   processed: number;
   unchanged: number;
+  /**
+   * Games the window returned that had already kicked off (#804). The Odds API
+   * `/odds` endpoint answers with live events as well as upcoming ones, so on a
+   * Sunday the hourly `pregame` run sees the in-progress slate; a non-zero count
+   * here mid-slate is the guard working, not a fault.
+   */
+  skippedStarted: number;
   skippedNoTeams: number;
   skippedNoSpread: number;
   skippedNoMatchup: number;

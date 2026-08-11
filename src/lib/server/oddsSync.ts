@@ -25,6 +25,7 @@ const NO_COUNTS: WeekSyncCounts = {
   totalGames: 0,
   processed: 0,
   unchanged: 0,
+  skippedStarted: 0,
   skippedNoTeams: 0,
   skippedNoSpread: 0,
   skippedNoMatchup: 0
@@ -53,12 +54,42 @@ async function syncOddsForWeek(week: SyncableWeek, source: string): Promise<Week
   let inserted = 0;
   let processed = 0;
   let unchanged = 0;
+  let skippedStarted = 0;
   let skippedNoTeams = 0;
   let skippedNoSpread = 0;
   let skippedNoMatchup = 0;
 
+  // One timestamp for the whole loop, so a slow run cannot judge two games of the
+  // same slate against different clocks.
+  const nowMs = Date.now();
+
   // Process sequentially; easy to read and keeps DB load tame.
   for (const g of games) {
+    // A started game is not a candidate for anything this path does (#804). The
+    // `/odds` window answers with live events as well as upcoming ones and FanDuel
+    // quotes in-play spreads, so the hourly `pregame` run used to overwrite a
+    // started game's active line with the in-play number — permanently, since
+    // nothing downstream re-derives it (a -3 game left reading -29.5 in prod). A
+    // game's active line is the last pre-kickoff market number, which is the
+    // premise ADR-0007's closing-line capture rests on.
+    //
+    // Two placement calls, both deliberate. It skips *before* `attachLineToMatchup`
+    // because the guard belongs to the whole write path; the only cost is failing
+    // to attach an `external_game_id` a game never got pre-kickoff, which reaches
+    // just the Odds `/scores` grading fallback (ESPN, the primary, matches on the
+    // ADR-0003 matchup identity). And it lives here rather than in
+    // `set_active_line` because historical imports legitimately write one
+    // post-kickoff row as a past game's active line — that fallback is the only
+    // reason 2022–24 appear in `league_ats_base`.
+    //
+    // An unparseable kickoff falls through: it cannot prove the game started, and
+    // refusing to line the game would be the worse failure.
+    const kickoffMs = new Date(g.commence_time).getTime();
+    if (Number.isFinite(kickoffMs) && kickoffMs <= nowMs) {
+      skippedStarted++;
+      continue;
+    }
+
     const home = byName.get(g.home_team);
     const away = byName.get(g.away_team);
     if (!home || !away) {
@@ -125,6 +156,7 @@ async function syncOddsForWeek(week: SyncableWeek, source: string): Promise<Week
     totalGames: games.length,
     processed,
     unchanged,
+    skippedStarted,
     skippedNoTeams,
     skippedNoSpread,
     skippedNoMatchup
@@ -154,6 +186,7 @@ function totals(weeks: WeekSyncResult[]): WeekSyncCounts {
             totalGames: sum.totalGames + w.totalGames,
             processed: sum.processed + w.processed,
             unchanged: sum.unchanged + w.unchanged,
+            skippedStarted: sum.skippedStarted + w.skippedStarted,
             skippedNoTeams: sum.skippedNoTeams + w.skippedNoTeams,
             skippedNoSpread: sum.skippedNoSpread + w.skippedNoSpread,
             skippedNoMatchup: sum.skippedNoMatchup + w.skippedNoMatchup
