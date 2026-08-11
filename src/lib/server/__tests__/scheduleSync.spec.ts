@@ -83,8 +83,17 @@ describe('syncSchedule', () => {
 
     expect(upsertSeasonByYear).toHaveBeenCalledTimes(1);
     expect(upsertWeek).toHaveBeenCalledTimes(1);
+    // Window boundaries come from weekBoundaries() — Tuesday-to-Tuesday, anchored at
+    // midnight Eastern (#791). Covered exhaustively in weekWindow.spec.ts; asserted here so
+    // the wiring between the two cannot silently come apart.
     expect(upsertWeek).toHaveBeenCalledWith(
-      expect.objectContaining({ seasonId: 99, weekNumber: 1, isScoring: true })
+      expect.objectContaining({
+        seasonId: 99,
+        weekNumber: 1,
+        isScoring: true,
+        startTs: '2026-09-08T04:00:00.000Z',
+        endTs: '2026-09-15T04:00:00.000Z'
+      })
     );
     expect(upsertGameByMatchup).toHaveBeenCalledTimes(1);
     expect(result).toEqual(
