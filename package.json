@@ -107,7 +107,7 @@
     "@tanstack/query-async-storage-persister": "^5.101.4",
     "@tanstack/svelte-query": "^6.1.38",
     "@tanstack/svelte-query-persist-client": "^6.1.38",
-    "ai": "^7.0.55",
+    "ai": "^7.0.58",
     "date-fns": "^4.4.0",
     "idb-keyval": "^6.3.0",
     "layerchart": "2.1.0",
