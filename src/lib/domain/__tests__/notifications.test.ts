@@ -8,6 +8,8 @@ import {
   pregamePushBody,
   formatRecapBody,
   recapPushBody,
+  holdsDedupSlot,
+  testPushMessage,
   LINE_SHIFT_THRESHOLD_POINTS
 } from '../notifications';
 
@@ -310,5 +312,81 @@ describe('pregamePushBody', () => {
       title: 'Heads up before kickoff',
       body: 'The line on your Bills pick moved 2.5 pts, and you have 2 unpicked games kicking off soon. Your shot to react before kickoff.'
     });
+  });
+});
+
+describe('holdsDedupSlot (#815)', () => {
+  const delivery = (sent: number, total: number) => ({ delivery: { sent, total, pruned: 0 } });
+
+  it('holds when the push reached at least one device', () => {
+    expect(holdsDedupSlot(delivery(1, 1))).toBe(true);
+    expect(holdsDedupSlot(delivery(2, 6))).toBe(true);
+  });
+
+  it('releases when devices existed and every one of them failed', () => {
+    // The bug: this row used to permanently suppress a notification nobody received.
+    expect(holdsDedupSlot(delivery(0, 6))).toBe(false);
+  });
+
+  it('holds when the user has no subscriptions at all', () => {
+    // Nothing to retry, and releasing here would re-attempt and re-log every run
+    // for as long as the user stays unsubscribed.
+    expect(holdsDedupSlot(delivery(0, 0))).toBe(true);
+  });
+
+  it('holds for pre-#815 rows and any unreadable detail', () => {
+    expect(holdsDedupSlot(null)).toBe(true);
+    expect(holdsDedupSlot({})).toBe(true);
+    expect(holdsDedupSlot({ from: -3, to: -1, points: 2 })).toBe(true);
+    expect(holdsDedupSlot('nonsense')).toBe(true);
+    expect(holdsDedupSlot({ delivery: 'nonsense' })).toBe(true);
+    expect(holdsDedupSlot({ delivery: { sent: '0', total: 6 } })).toBe(true);
+  });
+
+  it('preserves the line-shift detail alongside the delivery result', () => {
+    expect(holdsDedupSlot({ from: -3, to: -1, points: 2, delivery: { sent: 0, total: 4 } })).toBe(
+      false
+    );
+  });
+});
+
+describe('testPushMessage (#815)', () => {
+  it('tells the operator to subscribe only when there are no subscriptions', () => {
+    expect(testPushMessage({ sent: 0, total: 0, pruned: 0 })).toEqual({
+      kind: 'warn',
+      text: 'No active subscriptions — enable notifications on this device first.'
+    });
+  });
+
+  it('reports a total failure as a failure, not as missing subscriptions', () => {
+    // The old card said "no active subscriptions" here, sending the operator to
+    // re-subscribe — minting another dead row and hiding the real error.
+    expect(testPushMessage({ sent: 0, total: 6, pruned: 0 })).toEqual({
+      kind: 'error',
+      text: '0 of 6 subscriptions accepted the push — they exist, but every one failed. Check Sentry for the push-service error.'
+    });
+  });
+
+  it('names pruned rows so dead subscriptions stop accumulating unnoticed', () => {
+    expect(testPushMessage({ sent: 0, total: 2, pruned: 2 }).text).toContain(
+      '2 subscriptions were stale and have been removed.'
+    );
+  });
+
+  it('flags a partial delivery rather than calling it a clean success', () => {
+    expect(testPushMessage({ sent: 1, total: 3, pruned: 0 })).toEqual({
+      kind: 'warn',
+      text: 'Sent test to 1 of 3 subscriptions — 2 failed.'
+    });
+  });
+
+  it('reports a clean success', () => {
+    expect(testPushMessage({ sent: 2, total: 2, pruned: 0 })).toEqual({
+      kind: 'success',
+      text: 'Sent test to 2 subscriptions.'
+    });
+    expect(testPushMessage({ sent: 1, total: 1, pruned: 0 }).text).toBe(
+      'Sent test to 1 subscription.'
+    );
   });
 });

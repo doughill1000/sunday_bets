@@ -146,12 +146,19 @@ import { sendResultsRecap, sendAIRecapPushes, runPregameNotifications } from '..
 
 const PREFS_ON = { enabled: true, pick_reminders: true, results_recap: true };
 
+// #815: every log row records what its push achieved. These are the two outcomes the
+// specs assert against — one device took it, or the push died on the wire.
+const DELIVERED = { delivery: { sent: 1, total: 1, pruned: 0 } };
+const UNDELIVERED = { sent: 0, pruned: 0, total: 1 };
+
 beforeEach(() => {
   vi.clearAllMocks();
   db = {
     gamesNullCount: 0,
     gameRows: [{ id: 'g1' }, { id: 'g2' }],
-    week: { week_number: 5, is_scoring: true },
+    // Every `weeks` lookup resolves to this one fixture, so it carries the
+    // `seasons!inner(year)` join both recap senders now select (#818).
+    week: { week_number: 5, is_scoring: true, seasons: { year: 2026 } },
     users: [],
     notificationLogs: [],
     settlements: [],
@@ -162,7 +169,7 @@ beforeEach(() => {
     teams: [],
     insertedLogs: []
   };
-  sendToUser.mockResolvedValue({ sent: 1, pruned: 0 });
+  sendToUser.mockResolvedValue({ sent: 1, pruned: 0, total: 1 });
 });
 
 // A preseason round (ADR-0016): negative week_number, is_scoring false.
@@ -178,7 +185,7 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(112);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
     expect(db.insertedLogs).toEqual([]);
   });
@@ -190,7 +197,7 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 
@@ -203,12 +210,12 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(5);
 
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Your Week 5 results',
       body: '1-1 · +2 points this week. Tap for the breakdown.',
-      url: '/week',
+      url: '/week?season=2026&week=5',
       tag: 'results-recap-week-5'
     });
     expect(db.insertedLogs).toEqual([
@@ -218,9 +225,65 @@ describe('sendResultsRecap', () => {
         game_id: null,
         week_id: 5,
         group_id: null,
-        detail: { wins: 1, losses: 1, pushes: 0, missed: 0, net: 2 }
+        detail: { wins: 1, losses: 1, pushes: 0, missed: 0, net: 2, ...DELIVERED }
       }
     ]);
+  });
+
+  // #818 regression: the cron fires Tuesday 14:00 UTC, 14 hours after week N+1's window
+  // opened, so `/week`'s "latest started week" default would land the tap on the empty
+  // next week. The link names the graded week outright, so nothing defers to that default.
+  it('deep-links to the graded week, not whichever week is active at send time', async () => {
+    db.week = { week_number: 12, is_scoring: true, seasons: { year: 2026 } };
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+
+    await sendResultsRecap(42);
+
+    const payload = sendToUser.mock.calls[0][1];
+    expect(payload.url).toBe('/week?season=2026&week=12');
+    // Copy and link agree on which week this push is about.
+    expect(payload.title).toBe('Your Week 12 results');
+  });
+
+  // #815 regression: the outage that used to grade green.
+  it('reports zero delivered when every send reaches no device', async () => {
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+    sendToUser.mockResolvedValue(UNDELIVERED);
+
+    const res = await sendResultsRecap(5);
+
+    // Attempted 1, delivered 0 — the two numbers a healthy run can't produce together.
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 0 });
+    expect(db.insertedLogs[0].detail).toMatchObject({
+      delivery: { sent: 0, total: 1, pruned: 0 }
+    });
+  });
+
+  it('retries a user whose previous recap reached no device', async () => {
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+    // Logged last run, but it died on the wire — the slot was never really spent.
+    db.notificationLogs = [{ user_id: 'u1', detail: { delivery: { sent: 0, total: 2 } } }];
+
+    const res = await sendResultsRecap(5);
+
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry a user who has no subscriptions to deliver to', async () => {
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+    // total: 0 — nothing to retry. Releasing the slot here would re-push and re-log
+    // on every run for as long as they stay unsubscribed.
+    db.notificationLogs = [{ user_id: 'u1', detail: { delivery: { sent: 0, total: 0 } } }];
+
+    const res = await sendResultsRecap(5);
+
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
   });
 
   it('aggregates a user settlements across all of their groups', async () => {
@@ -254,7 +317,7 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 
@@ -265,7 +328,7 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 
@@ -275,7 +338,7 @@ describe('sendResultsRecap', () => {
 
     const res = await sendResultsRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 });
@@ -295,7 +358,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(112);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
     expect(db.insertedLogs).toEqual([]);
   });
@@ -307,7 +370,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 
@@ -320,7 +383,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(5);
 
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Week 5 recap is ready',
@@ -335,9 +398,26 @@ describe('sendAIRecapPushes', () => {
         game_id: null,
         week_id: 5,
         group_id: 'g1',
-        detail: null
+        // Was `null` before #815: a row that recorded intent and nothing else.
+        detail: DELIVERED
       }
     ]);
+  });
+
+  // #815 regression.
+  it('reports zero delivered and retries a (user, group) whose push reached no device', async () => {
+    db.aiRecapRows = [{ group_id: 'g1' }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.notificationLogs = [
+      { user_id: 'u1', group_id: 'g1', detail: { delivery: { sent: 0, total: 3 } } }
+    ];
+    sendToUser.mockResolvedValue(UNDELIVERED);
+
+    const res = await sendAIRecapPushes(5);
+
+    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 0 });
+    expect(sendToUser).toHaveBeenCalledTimes(1);
   });
 
   it('sends a separate push per group when a user belongs to more than one', async () => {
@@ -350,7 +430,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(5);
 
-    expect(res).toEqual({ evaluated: 2, sent: 2, skipped: 0 });
+    expect(res).toEqual({ evaluated: 2, sent: 2, skipped: 0, delivered: 2 });
     expect(sendToUser).toHaveBeenCalledTimes(2);
   });
 
@@ -367,7 +447,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0 });
+    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 
@@ -379,7 +459,7 @@ describe('sendAIRecapPushes', () => {
 
     const res = await sendAIRecapPushes(5);
 
-    expect(res).toEqual({ evaluated: 1, sent: 0, skipped: 1 });
+    expect(res).toEqual({ evaluated: 1, sent: 0, skipped: 1, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
   });
 });
@@ -430,7 +510,8 @@ describe('runPregameNotifications', () => {
     expect(res).toEqual({
       reminders: { evaluated: 1, sent: 0, skipped: 1 },
       lineShifts: { evaluated: 1, sent: 1 },
-      pushes: 1
+      pushes: 1,
+      delivered: 1
     });
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
@@ -446,7 +527,8 @@ describe('runPregameNotifications', () => {
         game_id: 'g1',
         week_id: WEEK_ID,
         group_id: null,
-        detail: { from: -3, to: -1, points: 2, threshold: 2 }
+        // The delivery result rides alongside the line-shift detail, not instead of it.
+        detail: { from: -3, to: -1, points: 2, threshold: 2, ...DELIVERED }
       }
     ]);
   });
@@ -538,7 +620,8 @@ describe('runPregameNotifications', () => {
     expect(res).toEqual({
       reminders: { evaluated: 0, sent: 0, skipped: 0 },
       lineShifts: { evaluated: 0, sent: 0 },
-      pushes: 0
+      pushes: 0,
+      delivered: 0
     });
     expect(sendToUser).not.toHaveBeenCalled();
   });
@@ -610,7 +693,8 @@ describe('runPregameNotifications', () => {
     expect(res).toEqual({
       reminders: { evaluated: 1, sent: 1, skipped: 0 },
       lineShifts: { evaluated: 2, sent: 2 },
-      pushes: 1
+      pushes: 1,
+      delivered: 1
     });
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
@@ -722,7 +806,8 @@ describe('runPregameNotifications', () => {
       expect(res).toEqual({
         reminders: { evaluated: 1, sent: 0, skipped: 1 },
         lineShifts: { skipped: true, reason: 'non-scoring round' },
-        pushes: 0
+        pushes: 0,
+        delivered: 0
       });
       expect(sendToUser).not.toHaveBeenCalled();
       expect(db.insertedLogs).toEqual([]);
@@ -750,7 +835,7 @@ describe('runPregameNotifications', () => {
           game_id: 'g1',
           week_id: WEEK_ID,
           group_id: null,
-          detail: null
+          detail: DELIVERED
         }
       ]);
     });
@@ -765,7 +850,8 @@ describe('runPregameNotifications', () => {
       expect(res).toEqual({
         reminders: { evaluated: 1, sent: 1, skipped: 0 },
         lineShifts: { skipped: true, reason: 'non-scoring round' },
-        pushes: 1
+        pushes: 1,
+        delivered: 1
       });
       // One push, reminder copy only — no trace of the line move in body or log.
       expect(sendToUser).toHaveBeenCalledTimes(1);
@@ -782,9 +868,118 @@ describe('runPregameNotifications', () => {
           game_id: 'g3',
           week_id: WEEK_ID,
           group_id: null,
-          detail: null
+          detail: DELIVERED
         }
       ]);
+    });
+  });
+
+  // #815: the run in the issue report — pushes: 1, everything green, nothing on any
+  // device. Delivery is now counted separately, and an undelivered notification does
+  // not spend its dedup slot.
+  describe('when a push reaches no device (#815)', () => {
+    it('separates attempts from deliveries in the summary', async () => {
+      seedShiftScenario();
+      sendToUser.mockResolvedValue(UNDELIVERED);
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.pushes).toBe(1);
+      expect(res.delivered).toBe(0);
+    });
+
+    it('records the delivery result on the log row it writes', async () => {
+      seedShiftScenario();
+      sendToUser.mockResolvedValue(UNDELIVERED);
+
+      await runPregameNotifications(NOW);
+
+      expect(db.insertedLogs).toHaveLength(1);
+      expect(db.insertedLogs[0].detail).toEqual({
+        from: -3,
+        to: -1,
+        points: 2,
+        threshold: 2,
+        delivery: { sent: 0, total: 1, pruned: 0 }
+      });
+    });
+
+    it('re-nudges a game whose reminder reached no device', async () => {
+      db.week = { id: WEEK_ID, week_number: 5, is_scoring: true };
+      db.gameRows = [{ id: 'g1', home_team_id: 1, commence_time: mins(60) }];
+      db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+      // The row from the issue: logged, deduped forever, never seen by anyone.
+      db.notificationLogs = [
+        {
+          user_id: 'u1',
+          game_id: 'g1',
+          kind: 'pick_reminder',
+          week_id: WEEK_ID,
+          detail: { delivery: { sent: 0, total: 6 } }
+        }
+      ];
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.reminders).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+      expect(res.delivered).toBe(1);
+      expect(sendToUser).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not re-nudge when the user has no subscriptions to reach', async () => {
+      db.week = { id: WEEK_ID, week_number: 5, is_scoring: true };
+      db.gameRows = [{ id: 'g1', home_team_id: 1, commence_time: mins(60) }];
+      db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+      db.notificationLogs = [
+        {
+          user_id: 'u1',
+          game_id: 'g1',
+          kind: 'pick_reminder',
+          week_id: WEEK_ID,
+          detail: { delivery: { sent: 0, total: 0 } }
+        }
+      ];
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.reminders).toEqual({ evaluated: 1, sent: 0, skipped: 1 });
+      expect(sendToUser).not.toHaveBeenCalled();
+    });
+
+    it('does not spend the 24h line-shift cap on an undelivered alert', async () => {
+      seedShiftScenario();
+      db.notificationLogs = [
+        {
+          user_id: 'u1',
+          game_id: 'g1',
+          kind: 'line_shift',
+          created_at: mins(-60),
+          detail: { delivery: { sent: 0, total: 2 } }
+        }
+      ];
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.lineShifts).toEqual({ evaluated: 1, sent: 1 });
+      expect(sendToUser).toHaveBeenCalledTimes(1);
+    });
+
+    it('still honors the cap for an alert that was delivered', async () => {
+      seedShiftScenario();
+      db.notificationLogs = [
+        {
+          user_id: 'u1',
+          game_id: 'g1',
+          kind: 'line_shift',
+          created_at: mins(-60),
+          detail: { delivery: { sent: 2, total: 2 } }
+        }
+      ];
+
+      const res = await runPregameNotifications(NOW);
+
+      expect(res.lineShifts).toEqual({ evaluated: 1, sent: 0 });
+      expect(sendToUser).not.toHaveBeenCalled();
     });
   });
 });

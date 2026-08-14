@@ -1,5 +1,6 @@
 // Browser-side push subscription helpers. Used by the /settings page.
 import { env } from '$env/dynamic/public';
+import type { PushDeviceStatus } from './state';
 
 export type PushResult = { ok: boolean; reason?: string };
 
@@ -64,6 +65,22 @@ export async function hasPushSubscription(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Everything this device knows about its own push state, in one read. Callers that show
+ * device-accurate state (the /settings card) need all three together — support, permission
+ * and an actual live subscription — and the third is the one that gets forgotten.
+ */
+export async function readDeviceStatus(): Promise<PushDeviceStatus> {
+  if (!isPushSupported()) {
+    return { supported: false, permission: 'unsupported', subscribed: false };
+  }
+  return {
+    supported: true,
+    permission: Notification.permission,
+    subscribed: await hasPushSubscription()
+  };
 }
 
 /** Tear down the browser subscription and remove it server-side. */

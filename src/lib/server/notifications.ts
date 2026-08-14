@@ -6,7 +6,7 @@ import { supabaseService } from '$lib/supabase/service';
 import { findActiveWeek } from './db/queries/findActiveWeek';
 import { isScoringWeek } from './db/queries/isScoringWeek';
 import { isWeekFullyGraded } from './db/queries/isWeekFullyGraded';
-import { sendToUser } from './push';
+import { sendToUser, type SendResult } from './push';
 import {
   parseNotificationPrefs,
   lineShiftForPick,
@@ -15,6 +15,7 @@ import {
   pregamePushBody,
   formatRecapBody,
   recapPushBody,
+  holdsDedupSlot,
   LINE_SHIFT_THRESHOLD_POINTS,
   type NotificationPrefs,
   type PregameLineShift,
@@ -35,6 +36,15 @@ const LINE_SHIFT_CAP_MS = 24 * 60 * 60 * 1000;
 // set_active_line default). The previous-row comparison must stay within it.
 const LINE_SOURCE = 'fanduel';
 
+/**
+ * Every push-sending pass in this module reports attempts and deliveries separately
+ * (#815). The `sent`/`pushes` counters are **attempts** — what the run decided to
+ * push. `delivered` sums `sendToUser`'s own `sent`, i.e. the subscriptions that
+ * actually took it. A pass with attempts > 0 and `delivered: 0` is a delivery
+ * outage; before this distinction existed such a run was indistinguishable from a
+ * healthy one in `cron_run_log.summary`, which is how a seven-week silent-push
+ * failure went unnoticed.
+ */
 export type ReminderSummary = { evaluated: number; sent: number; skipped: number };
 export type LineShiftSummary = { evaluated: number; sent: number };
 /**
@@ -46,11 +56,27 @@ export type LineShiftSkipped = { skipped: true; reason: 'no odds sync' | 'non-sc
 export type PregameSummary = {
   reminders: ReminderSummary;
   lineShifts: LineShiftSummary | LineShiftSkipped | { error: string };
-  /** Merged pushes actually delivered (at most one per user per run). */
+  /** Merged pushes **attempted** (at most one per user per run). */
   pushes: number;
+  /** Subscriptions that accepted one of those pushes. `pushes > 0, delivered: 0` = outage. */
+  delivered: number;
 };
-export type RecapSummary = { evaluated: number; sent: number; skipped: number };
-export type AIRecapPushSummary = { evaluated: number; sent: number; skipped: number };
+export type RecapSummary = {
+  evaluated: number;
+  /** Recap pushes attempted. */
+  sent: number;
+  skipped: number;
+  /** Subscriptions that accepted one of them. `sent > 0, delivered: 0` = outage. */
+  delivered: number;
+};
+export type AIRecapPushSummary = {
+  evaluated: number;
+  /** Recap-ready pushes attempted. */
+  sent: number;
+  skipped: number;
+  /** Subscriptions that accepted one of them. `sent > 0, delivered: 0` = outage. */
+  delivered: number;
+};
 
 async function loadPrefs(userIds: string[]): Promise<Map<string, NotificationPrefs>> {
   const map = new Map<string, NotificationPrefs>();
@@ -66,21 +92,30 @@ async function loadPrefs(userIds: string[]): Promise<Map<string, NotificationPre
   return map;
 }
 
+/**
+ * Write one `notification_log` row. `delivery` is mandatory (#815): these rows are
+ * both the audit trail and the dedup ledger, so every one of them records what its
+ * push actually achieved under `detail.delivery`. A row that claims a notification
+ * without that evidence is the bug this closes — and `holdsDedupSlot` reads the
+ * value back to decide whether the row suppresses a re-send.
+ */
 async function logNotification(entry: {
   user_id: string;
   kind: string;
   game_id?: string | null;
   week_id?: number | null;
   group_id?: string | null;
-  detail?: Json;
+  detail?: Record<string, Json>;
+  delivery: SendResult;
 }) {
+  const { sent, total, pruned } = entry.delivery;
   const { error } = await supabaseService.from('notification_log').insert({
     user_id: entry.user_id,
     kind: entry.kind,
     game_id: entry.game_id ?? null,
     week_id: entry.week_id ?? null,
     group_id: entry.group_id ?? null,
-    detail: entry.detail ?? null
+    detail: { ...(entry.detail ?? {}), delivery: { sent, total, pruned } }
   });
   if (error) throw error;
 }
@@ -104,7 +139,7 @@ export async function gamesKickingOffWithin(hours: number, now = new Date()): Pr
 }
 
 /** One user's qualifying line move, carried from detection to delivery/logging. */
-type LineShiftIntent = PregameLineShift & { gameId: string; detail: Json };
+type LineShiftIntent = PregameLineShift & { gameId: string; detail: Record<string, Json> };
 
 /**
  * The single pregame notification pass (#731): evaluate pick reminders and
@@ -129,7 +164,8 @@ export async function runPregameNotifications(
     return {
       reminders: emptyReminders,
       lineShifts: includeLineShifts ? { evaluated: 0, sent: 0 } : noOddsSync,
-      pushes: 0
+      pushes: 0,
+      delivered: 0
     };
   }
 
@@ -164,7 +200,7 @@ export async function runPregameNotifications(
   const gameById = new Map((games ?? []).map((g) => [g.id, g]));
   const gameIds = [...gameById.keys()];
   if (gameIds.length === 0) {
-    return { reminders: emptyReminders, lineShifts: idleLineShifts(), pushes: 0 };
+    return { reminders: emptyReminders, lineShifts: idleLineShifts(), pushes: 0, delivered: 0 };
   }
 
   const { data: allUsers, error: usersErr } = await supabaseService
@@ -211,14 +247,19 @@ export async function runPregameNotifications(
       boundariesByUser.set(m.user_id, list);
     }
 
+    // #815: a logged reminder only suppresses a re-send if it actually reached a
+    // device — see holdsDedupSlot. A push that died on the wire releases its slot
+    // and is retried next run, which the ~90-min window bounds to one extra attempt.
     const { data: logs, error: logsErr } = await supabaseService
       .from('notification_log')
-      .select('user_id, game_id')
+      .select('user_id, game_id, detail')
       .eq('kind', 'pick_reminder')
       .eq('week_id', week.id)
       .in('user_id', remindable);
     if (logsErr) throw logsErr;
-    const reminded = new Set((logs ?? []).map((l) => `${l.user_id}:${l.game_id}`));
+    const reminded = new Set(
+      (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => `${l.user_id}:${l.game_id}`)
+    );
 
     for (const userId of remindable) {
       reminders.evaluated++;
@@ -275,13 +316,16 @@ export async function runPregameNotifications(
         const capSince = new Date(now.getTime() - LINE_SHIFT_CAP_MS).toISOString();
         const { data: recentLogs, error: recentErr } = await supabaseService
           .from('notification_log')
-          .select('user_id, game_id')
+          .select('user_id, game_id, detail')
           .eq('kind', 'line_shift')
           .in('game_id', gameIds)
           .gte('created_at', capSince);
         if (recentErr) throw recentErr;
+        // An alert that reached nobody didn't spend the once-per-pick-per-day cap (#815).
         const recentlyNotified = new Set(
-          (recentLogs ?? []).filter((l) => l.game_id).map((l) => `${l.user_id}:${l.game_id}`)
+          (recentLogs ?? [])
+            .filter((l) => l.game_id && holdsDedupSlot(l.detail))
+            .map((l) => `${l.user_id}:${l.game_id}`)
         );
 
         // Short names for the push copy ("your Bills pick").
@@ -365,6 +409,7 @@ export async function runPregameNotifications(
 
   // ---- Merged delivery ------------------------------------------------------
   let pushes = 0;
+  let delivered = 0;
   const dueUsers = new Set([...pendingGamesByUser.keys(), ...shiftsByUser.keys()]);
   for (const userId of dueUsers) {
     const pendingGameIds = pendingGamesByUser.get(userId) ?? [];
@@ -376,19 +421,23 @@ export async function runPregameNotifications(
     });
     if (!content) continue;
 
-    await sendToUser(userId, {
+    // The one place that knows whether this push reached a device — carried into
+    // both the summary and every log row it writes, never discarded (#815).
+    const result = await sendToUser(userId, {
       ...content,
       url: '/picks',
       tag: `pregame-week-${week.id}`
     });
     pushes++;
+    delivered += result.sent;
 
     for (const gid of pendingGameIds) {
       await logNotification({
         user_id: userId,
         kind: 'pick_reminder',
         game_id: gid,
-        week_id: week.id
+        week_id: week.id,
+        delivery: result
       });
     }
     if (pendingGameIds.length > 0) reminders.sent++;
@@ -399,13 +448,14 @@ export async function runPregameNotifications(
         kind: 'line_shift',
         game_id: shift.gameId,
         week_id: week.id,
-        detail: shift.detail
+        detail: shift.detail,
+        delivery: result
       });
       if ('sent' in lineShifts) lineShifts.sent++;
     }
   }
 
-  return { reminders, lineShifts, pushes };
+  return { reminders, lineShifts, pushes, delivered };
 }
 
 /**
@@ -419,15 +469,19 @@ export async function runPregameNotifications(
  * read "Your Week -1 results" besides).
  */
 export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
-  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
-  if (!(await isWeekFullyGraded(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
+  if (!(await isWeekFullyGraded(weekId)))
+    return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
+  // The season year rides along for the deep link below — same `seasons!inner(year)`
+  // join sendAIRecapPushes uses, so there is one week-identity shape, not two (#818).
   const { data: week, error: weekErr } = await supabaseService
     .from('weeks')
-    .select('week_number')
+    .select('week_number, seasons!inner(year)')
     .eq('id', weekId)
     .single();
   if (weekErr) throw weekErr;
+  const seasonYear = (week.seasons as { year: number }).year;
 
   const { data: games, error: gamesErr } = await supabaseService
     .from('games')
@@ -435,7 +489,7 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
     .eq('week_id', weekId);
   if (gamesErr) throw gamesErr;
   const gameIds = (games ?? []).map((g) => g.id);
-  if (gameIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (gameIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
   const { data: allUsers, error: usersErr } = await supabaseService
     .from('users')
@@ -444,18 +498,21 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
   const notifiable = (allUsers ?? [])
     .map((u) => ({ id: u.id, prefs: parseNotificationPrefs(u.notification_prefs) }))
     .filter((u) => u.prefs.enabled && u.prefs.results_recap);
-  if (notifiable.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (notifiable.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
   const userIds = notifiable.map((u) => u.id);
 
-  // Per-(user, week) dedup: skip anyone already recapped for this week.
+  // Per-(user, week) dedup: skip anyone already recapped for this week — unless
+  // that recap reached no device (#815), in which case the slot was never spent.
   const { data: logs, error: logsErr } = await supabaseService
     .from('notification_log')
-    .select('user_id')
+    .select('user_id, detail')
     .eq('kind', 'results_recap')
     .eq('week_id', weekId)
     .in('user_id', userIds);
   if (logsErr) throw logsErr;
-  const recapped = new Set((logs ?? []).map((l) => l.user_id));
+  const recapped = new Set(
+    (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => l.user_id)
+  );
 
   // Aggregate each user's settlements across all groups for the week's games.
   const { data: settlements, error: setErr } = await supabaseService
@@ -479,6 +536,7 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
   let evaluated = 0;
   let sent = 0;
   let skipped = 0;
+  let delivered = 0;
 
   for (const user of notifiable) {
     const tally = tallies.get(user.id);
@@ -489,11 +547,14 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
     }
     evaluated++;
 
-    await sendToUser(user.id, {
+    const result = await sendToUser(user.id, {
       title: `Your Week ${week.week_number} results`,
       body: formatRecapBody(tally),
       // The week-scoped landing surface moved from /league's Week tab to /week (#776).
-      url: '/week',
+      // Fully qualified (#818): this cron fires Tuesday 14:00 UTC, 14 hours after week
+      // N+1 became active, so a bare `/week` — which defaults to the latest started
+      // week — would open the empty next week instead of the one this push reports on.
+      url: `/week?season=${seasonYear}&week=${week.week_number}`,
       tag: `results-recap-week-${weekId}`
     });
     await logNotification({
@@ -506,12 +567,14 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
         pushes: tally.pushes,
         missed: tally.missed,
         net: tally.net
-      }
+      },
+      delivery: result
     });
     sent++;
+    delivered += result.sent;
   }
 
-  return { evaluated, sent, skipped };
+  return { evaluated, sent, skipped, delivered };
 }
 
 /**
@@ -528,14 +591,14 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
  * before this fix shipped, or by any future backfill, would otherwise still push.
  */
 export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSummary> {
-  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
   const { data: weekRow, error: weekErr } = await supabaseService
     .from('weeks')
     .select('week_number, seasons!inner(year)')
     .eq('id', weekId)
     .single();
-  if (weekErr || !weekRow) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (weekErr || !weekRow) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
   const seasonYear = (weekRow.seasons as { year: number }).year;
   const weekNumber = weekRow.week_number;
 
@@ -551,7 +614,7 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
     if (!proseByGroup.has(r.group_id)) proseByGroup.set(r.group_id, r.prose);
   }
   const groupIds = [...proseByGroup.keys()];
-  if (groupIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (groupIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
   const { data: memberships, error: memErr } = await supabaseService
     .from('group_memberships')
@@ -559,23 +622,28 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
     .in('group_id', groupIds)
     .eq('status', 'active');
   if (memErr) throw memErr;
-  if (!memberships || memberships.length === 0) return { evaluated: 0, sent: 0, skipped: 0 };
+  if (!memberships || memberships.length === 0)
+    return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
   const prefsByUser = await loadPrefs([...new Set(memberships.map((m) => m.user_id))]);
 
-  // Per-(user, group, week) dedup: skip anyone already pushed for this group/week.
+  // Per-(user, group, week) dedup: skip anyone already pushed for this group/week —
+  // unless that push reached no device (#815), which never spent the slot.
   const { data: logs, error: logsErr } = await supabaseService
     .from('notification_log')
-    .select('user_id, group_id')
+    .select('user_id, group_id, detail')
     .eq('kind', 'ai_recap')
     .eq('week_id', weekId)
     .in('group_id', groupIds);
   if (logsErr) throw logsErr;
-  const notified = new Set((logs ?? []).map((l) => `${l.user_id}:${l.group_id}`));
+  const notified = new Set(
+    (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => `${l.user_id}:${l.group_id}`)
+  );
 
   let evaluated = 0;
   let sent = 0;
   let skipped = 0;
+  let delivered = 0;
 
   for (const { group_id, user_id } of memberships) {
     const prefs = prefsByUser.get(user_id);
@@ -587,7 +655,7 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
       continue;
     }
 
-    await sendToUser(user_id, {
+    const result = await sendToUser(user_id, {
       title: `Week ${weekNumber} recap is ready`,
       body: recapPushBody(proseByGroup.get(group_id) ?? ''),
       // Season-qualified deep link (#739): `?season=` lands on this week's archive even after a
@@ -599,11 +667,15 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
       user_id,
       kind: 'ai_recap',
       week_id: weekId,
-      group_id
+      group_id,
+      delivery: result
     });
+    // Guards against a duplicate membership row re-pushing within this same run;
+    // the cross-run decision is the holdsDedupSlot filter above.
     notified.add(`${user_id}:${group_id}`);
     sent++;
+    delivered += result.sent;
   }
 
-  return { evaluated, sent, skipped };
+  return { evaluated, sent, skipped, delivered };
 }

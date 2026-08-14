@@ -12,15 +12,26 @@ self.addEventListener('push', (event) => {
   }
 
   const title = data.title || 'Hotshot';
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body || '',
-      tag: data.tag,
-      data: { url: data.url || '/' },
-      icon: '/pwa-192x192.png',
-      badge: '/favicon-48x48.png'
-    })
-  );
+  const options = {
+    body: data.body || '',
+    data: { url: data.url || '/' },
+    icon: '/pwa-192x192.png',
+    badge: '/favicon-48x48.png'
+  };
+
+  // Coalescing by tag is deliberate (see PushPayload.tag) — repeat alerts for the same
+  // subject replace each other instead of stacking. But a replacement is *silent* unless
+  // `renotify` is set: no banner, no sound, just an in-place tray update. Every tag we
+  // send is a constant for its subject ('test' forever, 'pregame-week-N' for a week), so
+  // without this only the first push per tag ever alerted (#814). The two options always
+  // travel together — `renotify` without a `tag` is a TypeError, which would sink the
+  // notification entirely on the untagged fallback path above.
+  if (data.tag) {
+    options.tag = data.tag;
+    options.renotify = true;
+  }
+
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
