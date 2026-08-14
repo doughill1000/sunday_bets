@@ -5,13 +5,26 @@
 // import from either side — it must never pull in `$lib/server/*`.
 
 /**
- * How long after kickoff a game is still considered "live" for board purposes — it
- * covers a ~3.5h game plus overtime plus a short tail of `Final — unofficial` before the
- * grade cron runs. Past this window a game ages out of the board entirely, so the graded
- * result (shown on the standings surfaces) supersedes the unofficial live one and the
- * server stops hitting ESPN for it. Display-only; grading/settlement are untouched.
+ * How long after kickoff a game is still considered "live" for board purposes — a ~3.5h game
+ * plus overtime, plus the tail of `Final — unofficial` before the grade cron runs. Past this
+ * window a game ages out of the board entirely, so the graded result supersedes the unofficial
+ * live one and the server stops hitting ESPN for it. Display-only; grading is untouched.
+ *
+ * SIZED BY THE GRADE CRON, not by game length (#823/#831). The window has to reach the grade
+ * that replaces it, or a finished game falls into a gap where the feed has aged out and nothing
+ * has been settled yet. At 6h the gap was routine; the binding case is the late-season
+ * **Saturday** slate, which `cron-grade.yml` grades only at Sun 04:00 UTC — a Saturday 1pm ET
+ * final (≈17:00 UTC) needs ~11h of cover. The Sunday slate (graded hourly, Sun 21:00–Mon 06:00
+ * UTC) and TNF/MNF already land at or inside their close. 12h covers the Saturday case with a
+ * little room and nothing wider.
+ *
+ * The cost of a wider window is bounded on the other end rather than by this number: a caller
+ * stops repolling once every in-window game reports `final` (`allGamesFinal`), and a graded
+ * game is excluded from the window outright, so a load in the gap costs ONE ESPN fetch to learn
+ * the game is over and then holds. The shared server cache still collapses concurrent viewers to
+ * ≤1 fetch regardless of headcount, so this does not scale with the audience.
  */
-export const LIVE_WINDOW_MS = 6 * 60 * 60 * 1000; // 6h
+export const LIVE_WINDOW_MS = 12 * 60 * 60 * 1000; // 12h
 
 /**
  * Client poll cadence during a live window. ~25s reads as real-time while staying well
@@ -67,4 +80,22 @@ export function activeLiveScores<T>(
   windowActive: boolean
 ): Record<string, T> {
   return windowActive ? scores : NO_SCORES;
+}
+
+/**
+ * True once the feed reports `final` for every one of `gameIds` — the point past which polling
+ * can learn nothing more, so a board should stop and hold the unofficial final it already has
+ * (#823/#831).
+ *
+ * This is what makes the wider `LIVE_WINDOW_MS` cheap: without it a 12h window would mean 12h of
+ * 25s polling for a slate that stopped moving in hour four. A game with no entry yet is NOT
+ * final — an id we haven't seen (not yet listed by ESPN, or a mapping miss) is unknown, not
+ * settled, and treating unknown as done would strand the board before the game even started.
+ * An empty list is vacuously final; callers gate on the window having games in it first.
+ */
+export function allGamesFinal(
+  gameIds: string[],
+  scores: Record<string, { status: 'in_progress' | 'final' } | undefined>
+): boolean {
+  return gameIds.every((id) => scores[id]?.status === 'final');
 }

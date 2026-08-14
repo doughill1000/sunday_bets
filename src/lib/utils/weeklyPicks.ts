@@ -216,3 +216,27 @@ export function assembleWeeklyLiveStandings(
 
   return standings;
 }
+
+/**
+ * Orders the Weekly tab's game cards so the games actually in play lead the board — above
+ * every already-final and not-yet-started game (#831). At 4:40pm on a Sunday the finished 1pm
+ * games sat above the 4:25s actually deciding the week; at 390px that was the entire first
+ * screen.
+ *
+ * Stable sort on `(isLive ? 0 : 1)`, then kickoff ascending. `liveScores` is expected to already
+ * be gated to the live window (`activeLiveScores`, #822) rather than carrying a separate mode
+ * flag: outside the window every game reads not-live here, so this collapses to exactly today's
+ * kickoff order with no special-casing — the zero-live regression the acceptance criteria call
+ * out.
+ */
+export function orderWeeklyBreakdown(
+  breakdown: WeeklyGameBreakdown[],
+  liveScores: Record<string, LiveScoreEntry> = {}
+): WeeklyGameBreakdown[] {
+  return [...breakdown].sort((a, b) => {
+    const aRank = liveScores[a.gameId]?.status === 'in_progress' ? 0 : 1;
+    const bRank = liveScores[b.gameId]?.status === 'in_progress' ? 0 : 1;
+    if (aRank !== bRank) return aRank - bRank;
+    return Date.parse(a.kickoff) - Date.parse(b.kickoff);
+  });
+}

@@ -12,6 +12,9 @@
     live?: boolean;
     /** The live feed has gone stale; the board keeps its last order but stops asserting "live". */
     stale?: boolean;
+    /** Every in-window game has reported `final` (#831) — the slate is over and the poll has
+     *  stopped, so the row holds its number instead of claiming to be live. */
+    settled?: boolean;
     /** Honest age of the last real ESPN fetch (drives the "Updated Ns ago" stamp). */
     fetchedAt?: string | null;
     /** 1s-ticking clock from the parent, so the freshness caption counts up. */
@@ -21,6 +24,7 @@
     standings,
     live = false,
     stale = false,
+    settled = false,
     fetchedAt = null,
     now = Date.now()
   }: Props = $props();
@@ -58,6 +62,17 @@
             <span class="size-1.5 rounded-full bg-muted-foreground"></span>
             Stale · reconnecting
           </span>
+        {:else if settled}
+          <!-- Nothing is still moving, so don't pulse LIVE at it. The 12h window (#831) means
+               this state can sit on screen for hours waiting on the grade cron; "unofficial"
+               below is still the honest caveat, but the number itself has stopped changing. -->
+          <span
+            class="inline-flex items-center gap-1 font-semibold text-destructive"
+            data-testid="live-board-status"
+          >
+            <span class="size-1.5 rounded-full bg-destructive"></span>
+            FINAL
+          </span>
         {:else}
           <span
             class="inline-flex items-center gap-1 font-semibold text-destructive"
@@ -75,6 +90,10 @@
           Final for this week
         {:else if stale}
           reconnecting…
+        {:else if settled}
+          <!-- An age counter on a number that will never change again is noise; say what the
+               board is actually waiting on instead. -->
+          Awaiting grade
         {:else if fetchedAgeSec != null}
           Updated {fetchedAgeSec}s ago
         {:else}
@@ -112,7 +131,11 @@
 
     {#if live && !stale}
       <p class="px-1.5 pt-1 text-[11px] text-muted-foreground">
-        Reorders live as covers flip · unofficial until grading settles.
+        {#if settled}
+          Unofficial until grading settles.
+        {:else}
+          Reorders live as covers flip · unofficial until grading settles.
+        {/if}
       </p>
     {/if}
   </CardContent>
