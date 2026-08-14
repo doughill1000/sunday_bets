@@ -1,13 +1,9 @@
 <script lang="ts">
   import AdminCard from './AdminCard.svelte';
   import { Button } from '$lib/components/ui/button';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { addMember } from '$lib/api/admin/members';
   import { onMount } from 'svelte';
-
-  interface Props {
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
-  }
-  let { onNote }: Props = $props();
 
   let email = $state('');
   let displayName = $state('');
@@ -15,13 +11,14 @@
   let busy = $state(false);
   let mounted = $state(false);
   let lastResult: { email: string; temporaryPassword: string } | null = $state(null);
+  let msg: { kind: 'warn' | 'error'; text: string } | null = $state(null);
 
   onMount(() => {
     mounted = true;
   });
 
-  function note(kind: 'success' | 'warn' | 'error', text: string) {
-    onNote?.(kind, text);
+  function note(kind: 'warn' | 'error', text: string) {
+    msg = { kind, text };
   }
 
   async function submit() {
@@ -31,6 +28,7 @@
     }
     busy = true;
     lastResult = null;
+    msg = null;
     try {
       const result = await addMember({
         email: email.trim(),
@@ -38,7 +36,6 @@
         password: password.trim() || undefined
       });
       lastResult = { email: result.email, temporaryPassword: result.temporaryPassword };
-      note('success', `Added ${result.displayName} (${result.email}) to the league.`);
       email = '';
       displayName = '';
       password = '';
@@ -118,6 +115,8 @@
           {lastResult.temporaryPassword}
         </div>
       </div>
+    {:else if msg}
+      <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
     {/if}
   </AdminCard>
 </div>

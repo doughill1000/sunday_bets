@@ -7,17 +7,14 @@
     CardContent
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { testPushMessage } from '$lib/domain/notifications';
 
-  interface Props {
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
-  }
-  let { onNote }: Props = $props();
-
   let sending = $state(false);
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
-    onNote?.(kind, text);
+    msg = { kind, text };
   }
 
   async function sendTest() {
@@ -63,5 +60,9 @@
         {#if sending}Sending…{:else}Send Test Notification{/if}
       </Button>
     </div>
+
+    {#if msg}
+      <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
+    {/if}
   </CardContent>
 </Card>

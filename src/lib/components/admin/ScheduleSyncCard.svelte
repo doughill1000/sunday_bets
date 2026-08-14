@@ -7,19 +7,16 @@
     CardContent
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { syncSchedule as syncScheduleApi } from '$lib/api/admin/schedule';
-
-  interface Props {
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
-  }
-  let { onNote }: Props = $props();
 
   let syncing = $state(false);
   // Jan–Aug = current year (upcoming season); Sep–Dec = current year (in-season).
   const year = new Date().getFullYear();
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
-    onNote?.(kind, text);
+    msg = { kind, text };
   }
 
   async function syncSchedule() {
@@ -58,5 +55,9 @@
     <Button variant="default" onclick={syncSchedule} disabled={syncing}>
       {#if syncing}Syncing…{:else}Sync Schedule{/if}
     </Button>
+
+    {#if msg}
+      <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
+    {/if}
   </CardContent>
 </Card>
