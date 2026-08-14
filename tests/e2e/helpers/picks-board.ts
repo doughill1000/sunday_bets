@@ -101,9 +101,41 @@ export function picksBoard(page: Page) {
       return page.getByTestId('committed-row').nth(index);
     },
 
+    /**
+     * A committed row addressed by its game id. Prefer this over the index form: the committed
+     * section is ordered by kickoff, so a week holding more than one committed game (the graded
+     * fixture, #823) makes "the first row" mean whichever kicked off earliest — not the one the
+     * spec just locked.
+     */
+    committedRowFor(gameId: string): Locator {
+      return page.locator(`[data-testid="committed-row"][data-game-id="${gameId}"]`);
+    },
+
     /** The "🔓 Unlock" control that returns a committed pick to the board. */
     unlock(index = 0): Locator {
       return api.committedRow(index).getByTestId('unlock-pick');
+    },
+
+    /** The "🔓 Unlock" control on a specific game's committed row. */
+    unlockFor(gameId: string): Locator {
+      return api.committedRowFor(gameId).getByTestId('unlock-pick');
+    },
+
+    // --- graded committed row (#823) -----------------------------------------
+
+    /** The settled "Final" chip on a graded committed row. */
+    gradedFlag(gameId: string): Locator {
+      return api.committedRowFor(gameId).getByTestId('graded-flag');
+    },
+
+    /** The final-score line on a graded committed row. */
+    gradedResult(gameId: string): Locator {
+      return api.committedRowFor(gameId).getByTestId('graded-result');
+    },
+
+    /** The settled outcome label ("Win +3") on a graded committed row. */
+    gradedOutcome(gameId: string): Locator {
+      return api.committedRowFor(gameId).getByTestId('graded-outcome');
     },
 
     // --- assertions ---------------------------------------------------------

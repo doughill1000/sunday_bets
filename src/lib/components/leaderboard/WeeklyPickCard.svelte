@@ -3,6 +3,7 @@
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { liveCoverState, type CoverVerdict, type LiveCoverState } from '$lib/domain/liveCover';
   import { verdictTextClass, verdictDotClass, verdictAria, fmtPoints } from '$lib/live/display';
+  import { outcomeTextClass, outcomeRowClass } from '$lib/ui/outcome';
   import type { LiveScoreEntry } from '$lib/live/types';
   import type { WeeklyGameBreakdown, WeeklyPickRow } from '$lib/types/leaderboard';
 
@@ -111,20 +112,9 @@
     return list;
   });
 
-  type Outcome = WeeklyPickRow['outcome'];
-
-  // Graded (settled) team colouring.
-  function teamRowClass(outcome: Outcome) {
-    if (outcome === 'win') return 'bg-success/10';
-    if (outcome === 'loss') return 'bg-destructive/10';
-    return '';
-  }
-  function teamLabelClass(outcome: Outcome) {
-    if (outcome === 'win') return 'text-success';
-    if (outcome === 'loss') return 'text-destructive';
-    if (outcome === 'push') return 'text-warning';
-    return '';
-  }
+  // Graded (settled) team colouring lives in `$lib/ui/outcome` so this card and the picks
+  // board's graded row (#823) can't drift apart — `outcomeRowClass`/`outcomeTextClass` are the
+  // maps that used to be `teamRowClass`/`teamLabelClass` here.
 
   // Live (unofficial) team colouring — same verdict tokens the picks board uses.
   function verdictRowClass(v: CoverVerdict) {
@@ -167,10 +157,12 @@
         {@const first = team.members[0]}
         {@const liveState = liveLit ? coverStateOf(first) : null}
         {@const outcome = first?.outcome}
-        {@const rowClass = liveState ? verdictRowClass(liveState.verdict) : teamRowClass(outcome)}
+        {@const rowClass = liveState
+          ? verdictRowClass(liveState.verdict)
+          : outcomeRowClass(outcome)}
         {@const labelClass = liveState
           ? verdictTextClass(liveState.verdict)
-          : teamLabelClass(outcome)}
+          : outcomeTextClass(outcome)}
         <div class="flex gap-2 rounded px-1 {rowClass}">
           <span class="mt-0.5 w-12 shrink-0 text-xs font-semibold {labelClass}">
             <span class="block leading-tight">{team.label}</span>

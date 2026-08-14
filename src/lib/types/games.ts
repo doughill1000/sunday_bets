@@ -10,6 +10,17 @@ export type PickGame = {
   awayTeamId: number | null;
   spreadTeamId: number | null;
   spreadValue: number | null;
+  /**
+   * The graded final score, or `null` while the game is unplayed or ungraded (#823).
+   *
+   * Grading is the ONLY writer of `games.final_scores` (`$lib/server/grading.ts`) — schedule
+   * sync never touches it — so a non-null value means "the grade cron has settled this game",
+   * not "someone recorded a running score". That makes it the same `isFinal = scores != null`
+   * signal `$lib/utils/weeklyPicks.ts` already uses on the Weekly tab; don't invent a second
+   * convention. Optional because the pre-kickoff projections that reuse this shape (e.g. the
+   * All-In declaration RPC) neither need nor select it.
+   */
+  finalScores?: { home: number; away: number } | null;
 };
 
 /** Game response returned by the week-games endpoint. */

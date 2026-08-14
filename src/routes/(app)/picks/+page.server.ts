@@ -1,6 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
+import { getFinalScoresForWeek } from '$lib/server/db/queries/getFinalScoresForWeek';
+import { getMySettlements } from '$lib/server/db/queries/getMySettlements';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
 import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
@@ -112,16 +114,33 @@ async function loadPicks(
   const gamesPromise = getGamesWithActiveLines(week.id);
   const socialPromise = gamesPromise.then((games) => loadSocial(event, groupId, games));
 
+  // Graded results for the committed rows (#823). Without these the board could only ever read
+  // the live ESPN feed, which ages out with its window — so a finished, graded game rendered a
+  // bare "⏱ Kicked off" indefinitely. Both are DB reads: no per-visitor ESPN call is added.
+  // Final scores are week-scoped and independent; settlements need the week's game ids, so they
+  // chain off `gamesPromise` (the same trick `socialPromise` uses) to stay in this one wave
+  // rather than becoming a second serial round-trip.
+  const finalScoresPromise = getFinalScoresForWeek(week.id);
+  const settlementsPromise = gamesPromise.then((games) =>
+    getMySettlements(
+      games.map((g) => g.id),
+      groupId,
+      userId
+    )
+  );
+
   const [
-    games,
-    picks,
+    baseGames,
+    basePicks,
     groupPicks,
     allInDeclarations,
     pickStatusBoard,
     gameplay,
     lastWeek,
     situational,
-    social
+    social,
+    finalScores,
+    settlements
   ] = await Promise.all([
     gamesPromise,
     getMyPicks(event, week.id, groupId),
@@ -134,8 +153,24 @@ async function loadPicks(
     showTrends
       ? event.locals.getCurrentSeasonYear().then((year) => getLeagueSituational(year))
       : Promise.resolve<LeagueSituationalRecord[]>([]),
-    socialPromise
+    socialPromise,
+    finalScoresPromise,
+    settlementsPromise
   ]);
+
+  const games = baseGames.map((g) => ({ ...g, finalScores: finalScores[g.id] ?? null }));
+
+  // Merge the settled outcome onto my pick entry. A settlement can exist without a pick — that
+  // is exactly what `'missed'` is — so iterate the settlements too rather than only decorating
+  // rows `getMyPicks` already returned, or a missed game would silently keep no outcome.
+  const picks = { ...basePicks };
+  for (const [gameId, settlement] of Object.entries(settlements)) {
+    picks[gameId] = {
+      ...picks[gameId],
+      outcome: settlement.outcome,
+      pointsDelta: settlement.pointsDelta
+    };
+  }
 
   return {
     week,

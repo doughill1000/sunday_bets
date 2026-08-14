@@ -74,6 +74,48 @@ export async function resolveSeededGameId(supabase: SupabaseClient): Promise<str
 }
 
 /**
+ * Resolve the id of the graded DAL @ PHI game `global-setup.ts` seeds into the SAME active week
+ * (#823) — played, graded, and outside the live window, so `/picks` can only render it from the
+ * DB. Same order-independent matchup lookup as `resolveSeededGameId`.
+ */
+export async function resolveGradedGameId(supabase: SupabaseClient): Promise<string> {
+  const { data: season } = await supabase
+    .from('seasons')
+    .select('id')
+    .eq('year', SEASON_YEAR)
+    .maybeSingle();
+  if (!season) throw new Error(`resolveGradedGameId: season ${SEASON_YEAR} not found`);
+
+  const { data: week } = await supabase
+    .from('weeks')
+    .select('id')
+    .eq('season_id', season.id)
+    .eq('week_number', WEEK_NUMBER)
+    .maybeSingle();
+  if (!week) throw new Error(`resolveGradedGameId: week ${WEEK_NUMBER} not found`);
+
+  const { data: teams } = await supabase
+    .from('teams')
+    .select('id, short_name')
+    .in('short_name', ['PHI', 'DAL']);
+  const phi = teams?.find((t) => t.short_name === 'PHI');
+  const dal = teams?.find((t) => t.short_name === 'DAL');
+  if (!phi || !dal) throw new Error('resolveGradedGameId: PHI/DAL teams not found');
+
+  const { data: game } = await supabase
+    .from('games')
+    .select('id')
+    .eq('week_id', week.id)
+    .or(
+      `and(home_team_id.eq.${phi.id},away_team_id.eq.${dal.id}),` +
+        `and(home_team_id.eq.${dal.id},away_team_id.eq.${phi.id})`
+    )
+    .maybeSingle();
+  if (!game) throw new Error('resolveGradedGameId: seeded graded game not found');
+  return game.id;
+}
+
+/**
  * Delete every pick for a game so a spec starts from a clean "0 saved" board.
  * Same statement `global-setup.ts` runs once globally — called per-test here so
  * picks specs don't inherit rows auto-saved by a previous test.

@@ -6,8 +6,9 @@
   import { usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { signedSpreadForTeam } from '$lib/domain/spread';
-  import { liveCoverState } from '$lib/domain/liveCover';
+  import { resolvePickResult } from '$lib/domain/pickResult';
   import { verdictTextClass, verdictLabel } from '$lib/live/display';
+  import { outcomeTextClass, outcomeLabel } from '$lib/ui/outcome';
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';
   import type { SocialComment } from '$lib/server/db/queries/getCommentsForGame';
@@ -50,24 +51,17 @@
     return new Date(g.kickoff).getTime();
   }
 
-  // Live cover state for my locked pick on a game, or null when there's no live score / no
-  // pick. Mirrors grading against the live score using the line frozen on my pick (#386).
-  function myCover(g: PickGame) {
-    const entry = $picks[g.id];
-    const lp = entry?.lockedPick;
-    const ls = liveScores[g.id];
-    if (!lp || !ls) return null;
-    const pickedTeamId = lp.team === 'home' ? g.homeTeamId : g.awayTeamId;
-    const state = liveCoverState({
-      homeScore: ls.homeScore,
-      awayScore: ls.awayScore,
-      homeTeamId: g.homeTeamId,
-      awayTeamId: g.awayTeamId,
-      pickedTeamId,
-      lockedSpreadTeamId: entry?.lockedSpreadTeamId ?? g.spreadTeamId,
-      lockedSpreadValue: entry?.lockedSpreadValue ?? g.spreadValue
+  // How this row's pick reads right now: the settled result once grading has run, otherwise the
+  // display-only live mirror, otherwise nothing (#823). The precedence — and the reason a graded
+  // result can never be superseded by a live payload — lives in `resolvePickResult`, so this
+  // component just renders whichever state it's handed.
+  function myResult(g: PickGame) {
+    return resolvePickResult({
+      entry: $picks[g.id],
+      game: g,
+      liveScore: liveScores[g.id],
+      liveStale
     });
-    return state ? { ...state, score: ls } : null;
   }
 
   const hasMissed = $derived(games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick));
@@ -170,22 +164,30 @@
 
             <div class="flex shrink-0 items-center gap-2">
               {#if started}
-                {@const cover = myCover(g)}
-                {#if cover}
+                {@const result = myResult(g)}
+                {#if result?.kind === 'graded'}
+                  <!-- Settled and done: calm muted "Final", no dot and no pulse. The live chip
+                       below keeps the red dot and the shouty uppercase precisely so the two
+                       don't read alike — an unofficial score is still moving, this one isn't. -->
+                  <span class="text-xs font-medium text-muted-foreground" data-testid="graded-flag">
+                    Final
+                  </span>
+                {:else if result}
+                  {@const stale = result.kind === 'live' && result.stale}
                   <span
-                    class="inline-flex items-center gap-1 text-xs font-semibold {liveStale
+                    class="inline-flex items-center gap-1 text-xs font-semibold {stale
                       ? 'text-muted-foreground'
                       : 'text-destructive'}"
                     data-testid="live-flag"
                   >
                     <span
-                      class="size-1.5 rounded-full {liveStale
+                      class="size-1.5 rounded-full {stale
                         ? 'bg-muted-foreground'
-                        : 'bg-destructive'} {cover.score.status === 'in_progress' && !liveStale
+                        : 'bg-destructive'} {result.kind === 'live' && !stale
                         ? 'animate-pulse'
                         : ''}"
                     ></span>
-                    {liveStale ? 'Stale' : cover.score.status === 'final' ? 'FINAL' : 'LIVE'}
+                    {result.kind === 'unofficial' ? 'FINAL' : stale ? 'Stale' : 'LIVE'}
                   </span>
                 {:else}
                   <span class="text-xs text-muted-foreground">⏱ Kicked off</span>
@@ -218,38 +220,65 @@
           </div>
 
           {#if started}
-            {@const cover = myCover(g)}
-            {#if cover}
+            {@const result = myResult(g)}
+            {#if result?.kind === 'graded'}
+              {@const label = outcomeLabel(result.outcome, result.pointsDelta)}
+              <div class="mt-1 flex items-center gap-2 text-xs" data-testid="graded-result">
+                <span class="text-muted-foreground tabular-nums">
+                  {g.away}
+                  {result.awayScore}–{result.homeScore}
+                  {g.home}
+                </span>
+                {#if label}
+                  <!-- Points, not a spread cushion — hence "Win +3" rather than the live row's
+                       "Covering +3". No outcome renders no label at all: grading wrote nothing
+                       for this member (e.g. the ADR-0037 participation boundary), and the score
+                       alone is still worth showing. -->
+                  <span
+                    class="ml-auto font-semibold {outcomeTextClass(result.outcome)}"
+                    data-testid="graded-outcome"
+                  >
+                    {label}
+                  </span>
+                {/if}
+              </div>
+            {:else if result}
+              {@const stale = result.kind === 'live' && result.stale}
               <div class="mt-1 flex items-center gap-2 text-xs" data-testid="live-cover">
                 <span class="text-muted-foreground tabular-nums">
                   {g.away}
-                  {cover.score.awayScore}–{cover.score.homeScore}
+                  {result.score.awayScore}–{result.score.homeScore}
                   {g.home}
-                  {#if cover.score.status === 'in_progress' && cover.score.period}
-                    · Q{cover.score.period}
-                    {cover.score.displayClock ?? ''}
-                  {:else if cover.score.status === 'final'}
+                  {#if result.kind === 'live' && result.score.period}
+                    · Q{result.score.period}
+                    {result.score.displayClock ?? ''}
+                  {:else if result.kind === 'unofficial'}
                     · unofficial
                   {/if}
                 </span>
                 <span
-                  class="ml-auto font-semibold {liveStale
+                  class="ml-auto font-semibold {stale
                     ? 'text-muted-foreground'
-                    : verdictTextClass(cover.verdict)}"
+                    : verdictTextClass(result.cover.verdict)}"
                   data-testid="live-verdict"
                 >
-                  {verdictLabel(cover.verdict, cover.cushion)}
+                  {verdictLabel(result.cover.verdict, result.cover.cushion)}
                 </span>
               </div>
             {/if}
           {/if}
 
           {#if started && userId}
+            <!-- Graded beats live for the group dots too (#823). The two can coexist now that
+                 the window is wide enough to still be open when the grade cron runs, and a
+                 provisional dot over a settled game asserts something that is no longer true.
+                 Dropping the score falls back to no dots rather than to a wrong colour — the
+                 settled per-member results are the Week tab's job, not this row's. -->
             <RevealedGroupPicks
               picks={picksForGame(g.id)}
               myUserId={userId}
               game={g}
-              liveScore={liveScores[g.id] ?? null}
+              liveScore={g.finalScores ? null : (liveScores[g.id] ?? null)}
               {liveStale}
             />
           {/if}

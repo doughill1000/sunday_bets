@@ -22,6 +22,18 @@ const ORIGINAL_GROUP_ID = '00000000-0000-4000-8000-000000000017';
 const SETTLED_WEEK_NUMBER = 18;
 const SETTLED_GAME_TAG = 'e2e-settled-game';
 
+// A SECOND game in the ACTIVE week, already played and graded (#823). It is what proves the
+// picks board can show a completed game's score and outcome with no live feed at all — the
+// defect was that it could not, and rendered a bare "⏱ Kicked off" forever.
+//
+// It is deliberately a different matchup (DAL @ PHI) so it never collides with the picks specs'
+// BUF @ KC game on `uq_games_matchup`, and it carries a LOCKED PICK so it lands in the board's
+// "saved" count rather than manufacturing a `missed` state that would put a red banner over
+// every other picks spec. Its kickoff is well outside `LIVE_WINDOW_MS`, so the board issues no
+// live fetch for it and the graded DB read is the only thing that can render it — exactly the
+// state the bug report described.
+const GRADED_GAME_TAG = 'e2e-graded-game';
+
 // Dedicated second group for the group-switcher (#150) multi-group specs. A
 // fixed id/name owned by this setup (not reused from another spec's fixture) so
 // the switcher tests stay deterministic. The E2E_MULTIGROUP_USER belongs to
@@ -193,13 +205,17 @@ export default async function globalSetup() {
     );
   }
 
-  // Teams
+  // Teams. PHI/DAL exist only to give the graded active-week game (#823) a matchup of its own —
+  // reusing KC/BUF would collide with the picks game on `uq_games_matchup`, which is scoped per
+  // week. On CI's clean database seed.sql creates no teams at all, so these must be seeded here.
   const { data: teams, error: teamErr } = await supabase
     .from('teams')
     .upsert(
       [
         { name: 'Kansas City Chiefs', short_name: 'KC' },
-        { name: 'Buffalo Bills', short_name: 'BUF' }
+        { name: 'Buffalo Bills', short_name: 'BUF' },
+        { name: 'Philadelphia Eagles', short_name: 'PHI' },
+        { name: 'Dallas Cowboys', short_name: 'DAL' }
       ],
       { onConflict: 'name' }
     )
@@ -207,6 +223,8 @@ export default async function globalSetup() {
   if (teamErr) throw new Error('seed teams: ' + teamErr.message);
   const home = teams!.find((t) => t.short_name === 'KC')!;
   const away = teams!.find((t) => t.short_name === 'BUF')!;
+  const gradedHome = teams!.find((t) => t.short_name === 'PHI')!;
+  const gradedAway = teams!.find((t) => t.short_name === 'DAL')!;
 
   // Season (find-or-create)
   let seasonId: number;
@@ -254,14 +272,14 @@ export default async function globalSetup() {
     }
   }
 
-  // Remove any non-e2e games from this week so the picks board shows exactly
-  // the one BUF @ KC card the specs expect. The demo seed may populate week 1
-  // with graded games that break per-week game-count assertions (e.g. "1/5 saved").
+  // Remove any non-e2e games from this week so the picks board shows exactly the two cards the
+  // specs expect — the unplayed BUF @ KC one and the graded DAL @ PHI one (#823). The demo seed
+  // may populate week 1 with graded games that break per-week game-count assertions.
   const { data: nonE2eGames } = await supabase
     .from('games')
     .select('id')
     .eq('week_id', weekId)
-    .neq('external_game_id', GAME_TAG);
+    .not('external_game_id', 'in', `(${GAME_TAG},${GRADED_GAME_TAG})`);
   if (nonE2eGames?.length) {
     const staleIds = nonE2eGames.map((g: { id: string }) => g.id);
     await supabase.from('picks').delete().in('game_id', staleIds);
@@ -331,6 +349,107 @@ export default async function globalSetup() {
     }
   ]);
   if (lineErr) throw new Error('seed lines: ' + lineErr.message);
+
+  // ---------------------------------------------------------------------------
+  // Graded active-week game (#823)
+  //
+  // A completed, graded game sitting in the SAME week as the pickable one, so `/picks` has to
+  // render both the open board and a settled committed row. Kickoff is 20h back — comfortably
+  // past `LIVE_WINDOW_MS`, so the board opens no live query for it and the only thing that can
+  // produce a score is the graded DB read this issue added. That is the reproduction: before
+  // #823 this row showed "⏱ Kicked off" and nothing else, permanently.
+  //
+  // The settlement is written directly rather than through the `grade_game` RPC, matching the
+  // commissioner-standings fixture below. Calling grade_game would make this seed depend on the
+  // group's grading preset, which is NOT the same on a clean CI database as on a prod-cloned
+  // local one: under the House preset it refuses to grade without a captured closing line
+  // (ADR-0007, #735), so the fixture would seed on one machine and throw on the other. What this
+  // spec exercises is the board READING a settled result; grading correctness has its own pgTAP
+  // and integration cover.
+  // ---------------------------------------------------------------------------
+  if (e2eUserId) {
+    const gradedKickoff = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
+    let gradedGameId: string;
+    {
+      const { data: existing } = await supabase
+        .from('games')
+        .select('id')
+        .eq('week_id', weekId)
+        .or(
+          `and(home_team_id.eq.${gradedHome.id},away_team_id.eq.${gradedAway.id}),` +
+            `and(home_team_id.eq.${gradedAway.id},away_team_id.eq.${gradedHome.id})`
+        )
+        .maybeSingle();
+      const payload = {
+        week_id: weekId,
+        home_team_id: gradedHome.id,
+        away_team_id: gradedAway.id,
+        external_game_id: GRADED_GAME_TAG,
+        status: 'final',
+        commence_time: gradedKickoff,
+        // PHI wins by 7 at -6.5 → the home pick covers by half a point.
+        final_scores: { home: 27, away: 20 }
+      };
+      if (existing) {
+        gradedGameId = existing.id;
+        await supabase.from('games').update(payload).eq('id', gradedGameId);
+      } else {
+        const { data, error } = await supabase.from('games').insert(payload).select('id').single();
+        if (error) throw new Error('seed graded game: ' + error.message);
+        gradedGameId = data.id;
+      }
+    }
+
+    // Picks reference locked_line_id, so clear them before replacing the line.
+    await supabase.from('picks').delete().eq('game_id', gradedGameId);
+    await supabase.from('game_lines').delete().eq('game_id', gradedGameId);
+    const { error: gradedLineErr } = await supabase.from('game_lines').insert({
+      game_id: gradedGameId,
+      source: 'fanduel',
+      spread_team_id: gradedHome.id,
+      spread_value: 6.5,
+      is_active_line: true,
+      fetched_at: now
+    });
+    if (gradedLineErr) throw new Error('seed graded line: ' + gradedLineErr.message);
+
+    // A locked pick on the winning side. It also keeps this game out of the `missed` state,
+    // which would otherwise paint a red "missed" banner across every other picks spec.
+    const { data: gradedPick, error: gradedPickErr } = await supabase
+      .from('picks')
+      .upsert(
+        {
+          group_id: ORIGINAL_GROUP_ID,
+          user_id: e2eUserId,
+          game_id: gradedGameId,
+          picked_team_id: gradedHome.id,
+          locked_spread_team_id: gradedHome.id,
+          locked_spread_value: 6.5,
+          weight: 'M',
+          locked_by: e2eUserId,
+          locked_at: gradedKickoff
+        },
+        { onConflict: 'group_id,user_id,game_id' }
+      )
+      .select('id')
+      .single();
+    if (gradedPickErr) throw new Error('seed graded pick: ' + gradedPickErr.message);
+
+    // PHI -6.5 won by 7, so the settled result is a win; 'M' is worth 3 points (WEIGHTS in
+    // $lib/domain/scoring), which is what the spec asserts the row renders as "Win +3".
+    const { error: gradedSettleErr } = await supabase.from('pick_settlement').upsert(
+      {
+        group_id: ORIGINAL_GROUP_ID,
+        user_id: e2eUserId,
+        game_id: gradedGameId,
+        pick_id: gradedPick.id,
+        outcome: 'win' as const,
+        points_delta: 3
+      },
+      { onConflict: 'group_id,user_id,game_id' }
+    );
+    if (gradedSettleErr) throw new Error('seed graded settlement: ' + gradedSettleErr.message);
+  }
 
   // ---------------------------------------------------------------------------
   // Commissioner standings row (#660)

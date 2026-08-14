@@ -16,6 +16,9 @@
     liveFetchedAt?: string | null;
     liveStale?: boolean;
     liveActive?: boolean;
+    /** Every in-window game has reported `final` (#823) — the slate is over and the poll has
+     *  stopped, so the row holds its number instead of claiming to be live. */
+    liveSettled?: boolean;
   }
   let {
     games,
@@ -23,16 +26,24 @@
     liveScores = {},
     liveFetchedAt = null,
     liveStale = false,
-    liveActive = false
+    liveActive = false,
+    liveSettled = false
   }: Props = $props();
   const picks = usePicksStore();
 
   // --- Live "week so far" projection (#386) -----------------------------------------------
   // For each of my locked picks that has a live/final score, mirror grading against the live
   // score to get its current verdict, then project points. Display-only, unofficial.
+  //
+  // Graded games are excluded here and counted from their settled `pointsDelta` below (#823) —
+  // the same "graded wins, and the board converges to the graded order" split
+  // `assembleWeeklyLiveStandings` uses on the Weekly tab. It matters for a MISSED pick: the live
+  // path can't see one (there's no locked pick to project from) but grading settles it with a
+  // real penalty, so projecting alone would quietly overstate the week.
   const myLivePicks = $derived.by<WeekSoFarPick[]>(() => {
     const out: WeekSoFarPick[] = [];
     for (const g of games) {
+      if (g.finalScores) continue;
       const entry = $picks[g.id];
       const lp = entry?.lockedPick;
       const ls = liveScores[g.id];
@@ -52,9 +63,20 @@
     return out;
   });
 
-  const decidedCount = $derived(myLivePicks.filter((p) => p.verdict != null).length);
-  const weekSoFar = $derived(weekSoFarPoints(myLivePicks));
-  // Show the live row only when a game is live AND at least one of my picks is decided.
+  // My settled games this week: authoritative points, already carrying any missed-pick penalty.
+  const myGraded = $derived(
+    games
+      .filter((g) => g.finalScores && $picks[g.id]?.outcome != null)
+      .map((g) => $picks[g.id]?.pointsDelta ?? 0)
+  );
+
+  const decidedCount = $derived(
+    myLivePicks.filter((p) => p.verdict != null).length + myGraded.length
+  );
+  const weekSoFar = $derived(
+    myGraded.reduce((sum, pts) => sum + pts, 0) + weekSoFarPoints(myLivePicks)
+  );
+  // Show the row only when the week is in play AND at least one of my picks is decided.
   const showLive = $derived(liveActive && decidedCount > 0);
 
   const fetchedAgeSec = $derived(
@@ -148,6 +170,14 @@
           <span class="size-1.5 rounded-full bg-muted-foreground"></span>
           Stale · reconnecting
         </span>
+      {:else if liveSettled}
+        <!-- Nothing is still moving, so don't pulse LIVE at it. The 12h window (#823) means this
+             state can sit on screen for hours waiting on the grade cron; "unofficial" below is
+             still the honest caveat, but the number itself has stopped changing. -->
+        <span class="inline-flex items-center gap-1 font-semibold text-destructive">
+          <span class="size-1.5 rounded-full bg-destructive"></span>
+          FINAL
+        </span>
       {:else}
         <span class="inline-flex items-center gap-1 font-semibold text-destructive">
           <span class="size-1.5 animate-pulse rounded-full bg-destructive"></span>
@@ -171,6 +201,10 @@
       <span class="ml-auto text-[11px] text-muted-foreground" data-testid="freshness-stamp">
         {#if liveStale}
           reconnecting…
+        {:else if liveSettled}
+          <!-- An age counter on a number that will never change again is noise; say what the
+               board is actually waiting on instead. -->
+          Awaiting grade
         {:else if fetchedAgeSec != null}
           Updated {fetchedAgeSec}s ago
         {:else}

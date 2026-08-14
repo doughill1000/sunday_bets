@@ -167,6 +167,20 @@ describe('demo surfaces render against the fixture', () => {
     expect(getAllByTestId('committed-row').length).toBeGreaterThan(0);
     // No unlock/lock-in write controls in readonly mode.
     expect(queryByTestId('unlock-pick')).not.toBeInTheDocument();
+
+    // #823 routed every committed row through `resolvePickResult`, whose FIRST branch is the
+    // graded one. The demo must not fall into it: `liveWeek` is a mid-sweat board by design
+    // (open / in-progress / final-unofficial — see the `DemoGameStatus` union), it carries no
+    // `finalScores`, and a graded row would replace the "Final — unofficial" state the demo
+    // exists to show off with a settled one it has no settlement for.
+    expect(queryByTestId('graded-flag')).not.toBeInTheDocument();
+    expect(queryByTestId('graded-result')).not.toBeInTheDocument();
+    // The unofficial state still renders, and still says so.
+    const flags = getAllByTestId('live-flag').map((el) => el.textContent?.trim());
+    expect(flags).toContain('FINAL');
+    expect(getAllByTestId('live-cover').some((el) => el.textContent?.includes('unofficial'))).toBe(
+      true
+    );
   });
 
   it('weekly provisional live board (#584 surface)', () => {

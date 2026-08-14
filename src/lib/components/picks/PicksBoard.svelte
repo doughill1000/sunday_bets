@@ -10,7 +10,8 @@
     LIVE_POLL_MS,
     STALE_THRESHOLD_MS,
     isWithinLiveWindow,
-    activeLiveScores
+    activeLiveScores,
+    allGamesFinal
   } from '$lib/live/config';
   import { lockMotionMs } from '$lib/ui/motion';
   import { providePicksStore } from '$lib/stores/picks';
@@ -172,9 +173,15 @@
   // the tab is visible (TanStack pauses `refetchInterval` on a backgrounded tab by default);
   // `refetchOnWindowFocus` fires one immediate refetch on refocus. Display-only — grading is
   // untouched. `['live-scores']` is not a shareable root, so it's never persisted.
-  const liveWindowActive = $derived(
-    !readonly && games.some((g) => isWithinLiveWindow(kickoffMs(g), now))
+  // Games the feed could still tell us something about: inside their window AND not already
+  // graded. Excluding graded games is the first half of what keeps the wider 12h window (#823)
+  // cheap — once the grade cron settles a game the DB has the authoritative score, so fetching
+  // ESPN for it buys nothing and would only produce a live payload that must then lose to the
+  // graded one anyway.
+  const liveWindowGames = $derived(
+    games.filter((g) => !g.finalScores && isWithinLiveWindow(kickoffMs(g), now))
   );
+  const liveWindowActive = $derived(!readonly && liveWindowGames.length > 0);
 
   // Never polled in readonly mode (`enabled` stays false — no fetch is ever issued, per
   // ADR-0026 §4's "zero per-visitor live calls"); the frozen scores come from the snapshot.
@@ -182,7 +189,20 @@
     queryKey: queryKeys.liveScores(),
     queryFn: () => fetchLiveScores(fetch),
     enabled: liveWindowActive,
-    refetchInterval: LIVE_POLL_MS,
+    // Second half of the cost bound: stop repolling once every in-window game reports `final`,
+    // and just hold the unofficial score until grading replaces it. Someone landing in the gap
+    // between the final whistle and the grade cron therefore costs ONE fetch, not 25s polling
+    // for the rest of the window. Read through the query's own state rather than `liveQuery.data`
+    // — referencing the query from inside its own options would be a cycle. The resolved value
+    // (not this closure's identity) is what TanStack diffs, so re-deriving on the 1s tick does
+    // not restart the interval.
+    refetchInterval: (query) =>
+      allGamesFinal(
+        liveWindowGames.map((g) => g.id),
+        query.state.data?.scores ?? {}
+      )
+        ? false
+        : LIVE_POLL_MS,
     refetchOnWindowFocus: true,
     staleTime: 0,
     gcTime: 60_000
@@ -199,13 +219,30 @@
     readonly ? frozenLiveFetchedAt : (liveQuery.data?.fetchedAt ?? null)
   );
 
+  // Every in-window game has reported `final`: the slate is over, we've stopped polling, and the
+  // scores in hand are the last word until grading replaces them.
+  const liveSettled = $derived(
+    liveWindowActive &&
+      allGamesFinal(
+        liveWindowGames.map((g) => g.id),
+        liveQuery.data?.scores ?? {}
+      )
+  );
+
   // Stale once the honest data age crosses the threshold, or on an errored/never-arrived
   // fetch while a game is live — the board stops asserting a number and shows
   // "Stale · reconnecting". Recomputes on the 1s `now` tick, so the freshness caption is live.
   // A frozen board is never stale — it has no live feed to lose.
+  //
+  // A settled feed is exempt (#823). Staleness exists to stop the board passing a *moving*
+  // number off as current; a final score does not move, so ageing it out would grey a correct
+  // answer into "Stale · reconnecting" — and, worse, it would do so by construction, because
+  // stopping the poll is exactly what makes `fetchedAt` cross the threshold. A quiet
+  // in-progress feed still clears, which is the case #822 built this guard for.
   const liveStale = $derived.by(() => {
     if (readonly) return false;
     if (!liveWindowActive) return false;
+    if (liveSettled) return false;
     if (liveQuery.isError) return true;
     if (!liveFetchedAt) return true;
     return now - new Date(liveFetchedAt).getTime() > STALE_THRESHOLD_MS;
@@ -245,6 +282,7 @@
     {liveScores}
     {liveFetchedAt}
     {liveStale}
+    {liveSettled}
     liveActive={liveWindowActive}
   />
 
