@@ -22,7 +22,22 @@ export function hasLine(g: PickGame): boolean {
   return g.spreadValue != null;
 }
 
-export function spreadLine(g: PickGame): string {
+/**
+ * The minimum shape the ADR-0007 line convention needs in order to be printed: the two team
+ * short names, the home team's id, and the posted line. `PickGame` satisfies it structurally,
+ * and so does `/week`'s `WeeklyGameBreakdown` (#836) — so both surfaces render the convention
+ * through one implementation instead of each re-deriving favorite/underdog, and neither can
+ * reach for the sign of `spreadValue` to do it (the #734 inversion).
+ */
+export type SpreadShape = {
+  home: string;
+  away: string;
+  homeTeamId: number | null;
+  spreadTeamId: number | null;
+  spreadValue: number | null;
+};
+
+export function spreadLine(g: SpreadShape): string {
   if (g.spreadValue == null) return 'No line';
   if (g.spreadValue === 0) return 'PK';
   const favIsHome = g.spreadTeamId === g.homeTeamId;

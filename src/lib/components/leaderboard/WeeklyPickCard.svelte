@@ -3,6 +3,7 @@
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { liveCoverState, type CoverVerdict, type LiveCoverState } from '$lib/domain/liveCover';
   import { verdictTextClass, verdictDotClass, verdictAria, fmtPoints } from '$lib/live/display';
+  import { spreadLine } from '$lib/domain/spread';
   import type { LiveScoreEntry } from '$lib/live/types';
   import type { WeeklyGameBreakdown, WeeklyPickRow } from '$lib/types/leaderboard';
 
@@ -25,6 +26,12 @@
   const liveLit = $derived(liveScore != null && !liveStale && !isGraded);
   const inProgress = $derived(liveLit && liveScore?.status === 'in_progress');
   const finalUnofficial = $derived(liveLit && liveScore?.status === 'final');
+
+  // The game's line, as context for what the picks were played against (#836). Rendered through
+  // the shared ADR-0007 formatter so /week and /picks print the convention identically. `null`
+  // when the game has no line — an unlined game was never pickable (#802/#803), so the header
+  // stays exactly as it is today rather than showing a placeholder that reads as an error.
+  const lineLabel = $derived(game.spreadValue == null ? null : spreadLine(game));
 
   const scoreLabel = $derived(game.isFinal ? `${game.awayScore} – ${game.homeScore}` : null);
   const liveScoreLabel = $derived(
@@ -138,6 +145,11 @@
   <CardHeader class="pb-2">
     <CardTitle class="flex flex-wrap items-center gap-2 text-base font-semibold">
       <span>{game.away} @ {game.home}</span>
+      {#if lineLabel}
+        <span class="text-sm font-normal text-muted-foreground tabular-nums" data-testid="game-line"
+          >{lineLabel}</span
+        >
+      {/if}
       {#if inProgress}
         <span class="inline-flex items-center gap-1 text-sm font-normal" data-testid="live-score">
           <span class="size-1.5 animate-pulse rounded-full bg-destructive" aria-hidden="true"

@@ -1,6 +1,6 @@
 // tests/domain/spread.test.ts
 import { describe, it, expect } from 'vitest';
-import { hasLine, spreadLine, signedSpreadForTeam } from '../../domain/spread';
+import { hasLine, spreadLine, signedSpreadForTeam, type SpreadShape } from '../../domain/spread';
 import type { PickGame } from '../../types/games';
 
 // ---------------------------------------------------------------------------
@@ -119,6 +119,21 @@ describe('spread helpers', () => {
   });
   it('spreadLine away team as favorite', () => {
     expect(spreadLine(g({ spreadTeamId: 2 }))).toBe('JAX -3.5');
+  });
+
+  // #836 — /week's WeeklyGameBreakdown renders the line through this same formatter rather than
+  // re-deriving the convention, so it has to accept any shape carrying the line, not a PickGame.
+  it('spreadLine accepts a bare structural shape (the /week card)', () => {
+    const weekCard: SpreadShape = {
+      home: 'BUF',
+      away: 'CIN',
+      homeTeamId: 4,
+      spreadTeamId: 4,
+      spreadValue: 3.5
+    };
+    expect(spreadLine(weekCard)).toBe('BUF -3.5');
+    expect(spreadLine({ ...weekCard, spreadTeamId: 9 })).toBe('CIN -3.5');
+    expect(spreadLine({ ...weekCard, spreadValue: 0 })).toBe('PK');
   });
 
   it('signedSpreadForTeam uses +/- from team perspective', () => {

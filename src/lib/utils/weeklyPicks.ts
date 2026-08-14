@@ -10,6 +10,15 @@ import { liveCoverState, weekSoFarPoints, type WeekSoFarPick } from '$lib/domain
 import { isWithinParticipation } from '$lib/domain/participation';
 import type { LiveScoreEntry } from '$lib/live/types';
 
+export type GameLineRow = {
+  spread_team_id: number | null;
+  spread_value: number | null;
+  source: string | null;
+  is_closing_line: boolean;
+  is_active_line: boolean;
+  fetched_at: string | null;
+};
+
 export type GameInputRow = {
   id: string;
   commence_time: string;
@@ -18,7 +27,40 @@ export type GameInputRow = {
   away_team_id: number | null;
   home: { short_name: string } | null;
   away: { short_name: string } | null;
+  /** Closing/active line rows only — see `getGamesForWeeksWithScores`. Optional so older
+   *  callers and fixtures that don't care about the line stay valid. */
+  game_lines?: GameLineRow[] | null;
 };
+
+/**
+ * The one line to show for a game on the /week card (#836).
+ *
+ * 1. the `is_closing_line` row where one is flagged — the last pre-kickoff line, captured
+ *    write-once at first grade (#735), and the right number for a settled week;
+ * 2. otherwise the `is_active_line` row, which covers an in-progress or ungraded week;
+ * 3. otherwise `null` — the game carries no line and the header renders unchanged, because an
+ *    unlined game was never pickable (#802/#803) and a placeholder there would read as an error.
+ *
+ * `fanduel` breaks a tie inside a tier, mirroring `league_ats_base` and grading's own
+ * `coalesce(cfg.line_source, 'fanduel')` so the whole app reads one book. That tie is only
+ * reachable for closing lines — `is_active_line` is unique per game, while `is_closing_line` is
+ * unique per game *and source* — but leaving the order to the database would let the number on
+ * the card change between loads.
+ *
+ * Context only: this is the *game's* line, never the per-pick line a member was graded against
+ * (each pick freezes its own at lock time, `picks.locked_spread_value`), so nothing downstream
+ * may attach it to a member's row.
+ */
+export function selectGameLine(lines: GameLineRow[] | null | undefined): GameLineRow | null {
+  const usable = (lines ?? []).filter((l) => l.is_closing_line || l.is_active_line);
+  if (usable.length === 0) return null;
+  return usable.toSorted(
+    (a, b) =>
+      Number(b.is_closing_line) - Number(a.is_closing_line) ||
+      Number(b.source === 'fanduel') - Number(a.source === 'fanduel') ||
+      (b.fetched_at ?? '').localeCompare(a.fetched_at ?? '')
+  )[0];
+}
 
 /**
  * The Weekly tab's per-game × per-member grid.
@@ -53,6 +95,7 @@ export function assembleWeeklyBreakdown(
   return games.map((game) => {
     const scores = game.final_scores;
     const isFinal = scores != null;
+    const line = selectGameLine(game.game_lines);
 
     const picks: WeeklyPickRow[] = players.map((player) => {
       const pick = picksByGameUser.get(`${game.id}:${player.id}`);
@@ -101,6 +144,8 @@ export function assembleWeeklyBreakdown(
       isFinal,
       homeTeamId: game.home_team_id,
       awayTeamId: game.away_team_id,
+      spreadTeamId: line?.spread_team_id ?? null,
+      spreadValue: line?.spread_value ?? null,
       picks
     };
   });
