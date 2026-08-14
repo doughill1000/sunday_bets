@@ -40,6 +40,8 @@ function game(
     isFinal: false,
     homeTeamId: HOME_ID,
     awayTeamId: AWAY_ID,
+    spreadTeamId: HOME_ID,
+    spreadValue: 3.5,
     picks,
     ...over
   };

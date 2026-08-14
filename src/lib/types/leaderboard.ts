@@ -90,6 +90,16 @@ export type WeeklyGameBreakdown = {
   // right side and evaluate liveCoverState for each pick (#584).
   homeTeamId: number | null;
   awayTeamId: number | null;
+  // The GAME's line — closing where captured, else active (#836, `selectGameLine`) — shown on
+  // the card header as context for what the picks were against. `null` when the game carries no
+  // line at all. `spreadTeamId` is the FAVORITE and `spreadValue` a non-negative magnitude
+  // (ADR-0007); derive fav/dog from the team identity, never the sign (#734).
+  //
+  // Explicitly NOT what any member was graded against: each pick freezes its own line at lock
+  // time (`WeeklyPickRow.lockedSpreadValue`), so two members on the same side can carry
+  // different numbers. Never attach this to a member's row.
+  spreadTeamId: number | null;
+  spreadValue: number | null;
   picks: WeeklyPickRow[];
 };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { assembleWeeklyBreakdown, orderWeeklyBreakdown } from '../weeklyPicks';
-import type { GameInputRow } from '../weeklyPicks';
+import type { GameInputRow, GameLineRow } from '../weeklyPicks';
 import type { GroupPickEntry } from '$lib/types/picks';
 import type { LeaderboardPlayer, Settlement, WeeklyGameBreakdown } from '$lib/types/leaderboard';
 import type { LiveScoreEntry } from '$lib/live/types';
@@ -18,6 +18,18 @@ function makeGame(overrides: Partial<GameInputRow> = {}): GameInputRow {
     away_team_id: 2,
     home: { short_name: 'KC' },
     away: { short_name: 'BUF' },
+    ...overrides
+  };
+}
+
+function makeLine(overrides: Partial<GameLineRow> = {}): GameLineRow {
+  return {
+    spread_team_id: 1,
+    spread_value: 3.5,
+    source: 'fanduel',
+    is_closing_line: false,
+    is_active_line: true,
+    fetched_at: '2025-01-05T17:00:00Z',
     ...overrides
   };
 }
@@ -229,6 +241,93 @@ describe('assembleWeeklyBreakdown', () => {
   });
 });
 
+// #836 — the game's line on the /week card. Context only: this is never the per-pick locked
+// line a member was graded against, so it is a property of the game, not of any pick row.
+describe('assembleWeeklyBreakdown — line selection', () => {
+  const players = [makePlayer(USER_A, 'Alice')];
+
+  function lineOf(game: GameInputRow) {
+    const [g] = assembleWeeklyBreakdown([game], [], [], players, null);
+    return { spreadTeamId: g.spreadTeamId, spreadValue: g.spreadValue };
+  }
+
+  it('uses the active line for an in-progress or ungraded week', () => {
+    const game = makeGame({ game_lines: [makeLine({ spread_value: 6.5 })] });
+    expect(lineOf(game)).toEqual({ spreadTeamId: 1, spreadValue: 6.5 });
+  });
+
+  it('prefers the closing line over the active line once one is flagged', () => {
+    // A settled week: capture flagged the last pre-kickoff line at first grade (#735), while a
+    // post-kickoff sync may have left is_active_line pointing at a later, irrelevant number.
+    const game = makeGame({
+      game_lines: [
+        makeLine({ spread_value: 9.5, is_active_line: true, fetched_at: '2025-01-05T19:00:00Z' }),
+        makeLine({
+          spread_value: 3.5,
+          is_active_line: false,
+          is_closing_line: true,
+          fetched_at: '2025-01-05T17:55:00Z'
+        })
+      ]
+    });
+    expect(lineOf(game)).toEqual({ spreadTeamId: 1, spreadValue: 3.5 });
+  });
+
+  it('reads no line when the game has none — the game was never pickable (#802/#803)', () => {
+    expect(lineOf(makeGame())).toEqual({ spreadTeamId: null, spreadValue: null });
+    expect(lineOf(makeGame({ game_lines: [] }))).toEqual({ spreadTeamId: null, spreadValue: null });
+    expect(lineOf(makeGame({ game_lines: null }))).toEqual({
+      spreadTeamId: null,
+      spreadValue: null
+    });
+  });
+
+  it('ignores a superseded row that is neither closing nor active', () => {
+    const game = makeGame({
+      game_lines: [
+        makeLine({ spread_value: 1.5, is_active_line: false, fetched_at: '2025-01-01T12:00:00Z' })
+      ]
+    });
+    expect(lineOf(game)).toEqual({ spreadTeamId: null, spreadValue: null });
+  });
+
+  it('keeps a pick’em as 0, not as "no line"', () => {
+    const game = makeGame({ game_lines: [makeLine({ spread_value: 0 })] });
+    expect(lineOf(game)).toEqual({ spreadTeamId: 1, spreadValue: 0 });
+  });
+
+  it('carries the away team as favorite through unchanged (the #734 inversion shape)', () => {
+    // spread_team_id IS the favorite and spread_value is a non-negative magnitude (ADR-0007);
+    // the assembler must pass both through verbatim so the renderer derives fav/dog from the
+    // team identity rather than the sign.
+    const game = makeGame({ game_lines: [makeLine({ spread_team_id: 2, spread_value: 3.5 })] });
+    expect(lineOf(game)).toEqual({ spreadTeamId: 2, spreadValue: 3.5 });
+  });
+
+  it('breaks a multi-book closing tie deterministically on fanduel', () => {
+    const game = makeGame({
+      game_lines: [
+        makeLine({
+          source: 'draftkings',
+          spread_value: 4.5,
+          is_closing_line: true,
+          is_active_line: false
+        }),
+        makeLine({
+          source: 'fanduel',
+          spread_value: 3.5,
+          is_closing_line: true,
+          is_active_line: false
+        })
+      ]
+    });
+    expect(lineOf(game).spreadValue).toBe(3.5);
+    // Order of arrival must not change the answer.
+    const reversed = makeGame({ game_lines: [...(game.game_lines ?? [])].reverse() });
+    expect(lineOf(reversed).spreadValue).toBe(3.5);
+  });
+});
+
 function makeBreakdownGame(overrides: Partial<WeeklyGameBreakdown> = {}): WeeklyGameBreakdown {
   return {
     gameId: 'g1',
@@ -240,6 +339,8 @@ function makeBreakdownGame(overrides: Partial<WeeklyGameBreakdown> = {}): Weekly
     isFinal: false,
     homeTeamId: 1,
     awayTeamId: 2,
+    spreadTeamId: 1,
+    spreadValue: 3.5,
     picks: [],
     ...overrides
   };
