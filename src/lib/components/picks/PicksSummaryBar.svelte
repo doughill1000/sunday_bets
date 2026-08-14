@@ -2,64 +2,19 @@
   import { usePicksStore } from '$lib/stores/picks';
   import { findAllInHolder, pickStatus } from '$lib/domain/rules';
   import { WEIGHTS } from '$lib/domain/scoring';
-  import { liveCoverState, weekSoFarPoints, type WeekSoFarPick } from '$lib/domain/liveCover';
-  import { fmtPoints } from '$lib/live/display';
-  import type { LiveScoreEntry } from '$lib/live/types';
   import type { WeightCode } from '$lib/types/domain';
   import type { PickGame } from '$lib/types/games';
 
+  // The sticky week summary: how much of the slate you've committed, and where the All-In sits.
+  // The live "week so far" row and its freshness stamp left with the rest of the #386 sweat
+  // layer (#832) — `/week` owns that, and the handoff strip below carries the underway counts
+  // (including missed) so this bar isn't restating them one line above.
   interface Props {
     games: PickGame[];
     now: number;
-    /** Live sweat board (#386). All display-only; grading is untouched. */
-    liveScores?: Record<string, LiveScoreEntry>;
-    liveFetchedAt?: string | null;
-    liveStale?: boolean;
-    liveActive?: boolean;
   }
-  let {
-    games,
-    now,
-    liveScores = {},
-    liveFetchedAt = null,
-    liveStale = false,
-    liveActive = false
-  }: Props = $props();
+  let { games, now }: Props = $props();
   const picks = usePicksStore();
-
-  // --- Live "week so far" projection (#386) -----------------------------------------------
-  // For each of my locked picks that has a live/final score, mirror grading against the live
-  // score to get its current verdict, then project points. Display-only, unofficial.
-  const myLivePicks = $derived.by<WeekSoFarPick[]>(() => {
-    const out: WeekSoFarPick[] = [];
-    for (const g of games) {
-      const entry = $picks[g.id];
-      const lp = entry?.lockedPick;
-      const ls = liveScores[g.id];
-      if (!lp || !ls) continue;
-      const pickedTeamId = lp.team === 'home' ? g.homeTeamId : g.awayTeamId;
-      const state = liveCoverState({
-        homeScore: ls.homeScore,
-        awayScore: ls.awayScore,
-        homeTeamId: g.homeTeamId,
-        awayTeamId: g.awayTeamId,
-        pickedTeamId,
-        lockedSpreadTeamId: entry?.lockedSpreadTeamId ?? g.spreadTeamId,
-        lockedSpreadValue: entry?.lockedSpreadValue ?? g.spreadValue
-      });
-      out.push({ weight: lp.weight, verdict: state?.verdict ?? null });
-    }
-    return out;
-  });
-
-  const decidedCount = $derived(myLivePicks.filter((p) => p.verdict != null).length);
-  const weekSoFar = $derived(weekSoFarPoints(myLivePicks));
-  // Show the live row only when a game is live AND at least one of my picks is decided.
-  const showLive = $derived(liveActive && decidedCount > 0);
-
-  const fetchedAgeSec = $derived(
-    liveFetchedAt ? Math.max(0, Math.round((now - new Date(liveFetchedAt).getTime()) / 1000)) : null
-  );
 
   const statuses = $derived(games.map((g) => pickStatus($picks[g.id], g.kickoff, now)));
   const savedCount = $derived(statuses.filter((s) => s === 'saved').length);
@@ -96,7 +51,7 @@
            `openCount === 0` is exactly `upcoming.length === 0` (pickStatus: a game is 'open'
            iff it's unlocked with a future kickoff), so this fires on the same condition the
            card did. Stays muted when picks were missed, so a clean-sweep green never sits
-           next to the destructive "N missed" count on the row below. -->
+           above the destructive "N missed" the handoff strip reports. -->
       <span class={missedCount > 0 ? 'text-muted-foreground' : 'text-success'} data-testid="all-set"
         >✓ All set</span
       >
@@ -120,12 +75,6 @@
       <span data-testid="all-in-summary">No All-In</span>
     {/if}
 
-    <!-- Missed -->
-    {#if missedCount > 0}
-      <span aria-hidden="true">·</span>
-      <span class="font-medium text-destructive">{missedCount} missed</span>
-    {/if}
-
     <!-- Weight breakdown -->
     {#if weightCounts.length > 0}
       <span class="ml-auto flex items-center gap-2">
@@ -135,48 +84,4 @@
       </span>
     {/if}
   </div>
-
-  <!-- Live "week so far" (#386) — unofficial, display-only. Yields to graded standings. -->
-  {#if showLive}
-    <div
-      class="mt-1 flex items-center gap-x-2 border-t pt-1 text-xs"
-      data-testid="week-so-far"
-      aria-live="polite"
-    >
-      {#if liveStale}
-        <span class="inline-flex items-center gap-1 font-semibold text-muted-foreground">
-          <span class="size-1.5 rounded-full bg-muted-foreground"></span>
-          Stale · reconnecting
-        </span>
-      {:else}
-        <span class="inline-flex items-center gap-1 font-semibold text-destructive">
-          <span class="size-1.5 animate-pulse rounded-full bg-destructive"></span>
-          LIVE
-        </span>
-      {/if}
-
-      <span class="text-muted-foreground">Week so far</span>
-      <span
-        class="font-semibold tabular-nums {weekSoFar > 0
-          ? 'text-success'
-          : weekSoFar < 0
-            ? 'text-destructive'
-            : 'text-foreground'}"
-        data-testid="week-so-far-points"
-      >
-        {weekSoFar > 0 ? '+' : ''}{fmtPoints(weekSoFar)}
-      </span>
-      <span class="text-muted-foreground">· unofficial</span>
-
-      <span class="ml-auto text-[11px] text-muted-foreground" data-testid="freshness-stamp">
-        {#if liveStale}
-          reconnecting…
-        {:else if fetchedAgeSec != null}
-          Updated {fetchedAgeSec}s ago
-        {:else}
-          Connecting…
-        {/if}
-      </span>
-    </div>
-  {/if}
 </div>

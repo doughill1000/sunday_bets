@@ -1,18 +1,15 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
+import { getFinalScoresForWeek } from '$lib/server/db/queries/getFinalScoresForWeek';
+import { getMySettlements } from '$lib/server/db/queries/getMySettlements';
 import { findActiveWeek } from '$lib/server/db/queries/findActiveWeek';
 import { getMyPicks } from '$lib/server/db/queries/getMyPicks';
-import { getCommentsForGames } from '$lib/server/db/queries/getCommentsForGame';
-import { getReactionsForComments } from '$lib/server/db/queries/getReactionsForComments';
-import { getGroupPicks } from '$lib/server/db/queries/getGroupPicks';
 import { getAllInDeclarations } from '$lib/server/db/queries/getAllInDeclarations';
 import { getPicksStatusBoard } from '$lib/server/db/queries/getPicksStatusBoard';
 import { getLeagueSituational } from '$lib/server/db/queries/league';
 import type { LeagueSituationalRecord } from '$lib/types/server/league';
-import type { PickGame } from '$lib/types/games';
 import { getGameplaySettings } from '$lib/server/admin';
-import { kickoffPassed } from '$lib/domain/rules';
 import { supabaseService } from '$lib/supabase/service';
 import { tracePageLoad } from '$lib/server/observability';
 
@@ -25,36 +22,6 @@ async function isLastWeekOfSeason(weekNumber: number, seasonId: number): Promise
     .limit(1)
     .maybeSingle();
   return data?.week_number === weekNumber;
-}
-
-// Comments for started games only (RLS also enforces this gate). Depends only on
-// the games, so the caller chains it off the games promise to overlap the other
-// per-week reads rather than running it as a second serial wave. Reactions attach
-// to comments (#689), so they load in a second batched round-trip keyed by the
-// comment ids we just fetched, then hang off each comment.
-async function loadSocial(
-  event: Parameters<PageServerLoad>[0],
-  groupId: string,
-  games: PickGame[]
-) {
-  const now = Date.now();
-  const startedGameIds = games.filter((g) => kickoffPassed(g.kickoff, now)).map((g) => g.id);
-
-  const commentsByGame = await getCommentsForGames(event, groupId, startedGameIds);
-  const allCommentIds = [...commentsByGame.values()].flat().map((c) => c.id);
-  const reactionsByComment = await getReactionsForComments(event, groupId, allCommentIds);
-
-  return Object.fromEntries(
-    startedGameIds.map((gameId) => [
-      gameId,
-      {
-        comments: (commentsByGame.get(gameId) ?? []).map((c) => ({
-          ...c,
-          reactions: reactionsByComment.get(c.id) ?? []
-        }))
-      }
-    ])
-  );
 }
 
 export const load: PageServerLoad = async (event) => {
@@ -79,23 +46,15 @@ async function loadPicks(
   // Rides the cached users profile, so it's read straight off locals — no extra query.
   const showTrends = event.locals.userProfile?.showTeamTrends ?? true;
 
-  // Display name also rides the ADR-0014-cached users profile (hooks.server.ts) —
-  // no extra round-trip. Empty string (no name set) collapses to null to preserve
-  // the previous query's contract.
-  const currentUserDisplayName = event.locals.userProfile?.displayName || null;
-
   const week = await findActiveWeek();
   if (!week)
     return {
       week: null,
       games: [],
       picks: {},
-      social: {},
-      groupPicks: [],
       allInDeclarations: [],
       pickStatusBoard: [],
       userId,
-      currentUserDisplayName,
       isLastWeek: false,
       finalWeekUnlimitedAllin: true,
       membershipCount,
@@ -103,29 +62,38 @@ async function loadPicks(
       showTrends
     };
 
-  // Games resolve as their own promise: everything week-scoped needs `week.id`, and
-  // the social fetch needs the resolved games. Chaining social off the games promise
-  // lets it overlap the other per-week reads in a single Promise.all wave instead of
-  // running as a second serial round-trip after them. (We already have `week` from
-  // findActiveWeek, so read games directly rather than re-resolving the week via
-  // getActiveWeekGames.)
+  // Games resolve as their own promise because the settlement read needs the week's game ids.
+  // Chaining it off the games promise keeps it inside the single Promise.all wave rather than
+  // running as a second serial round-trip. (We already have `week` from findActiveWeek, so read
+  // games directly rather than re-resolving the week via getActiveWeekGames.)
+  //
+  // These two reads replace the comments + reactions pair this load used to await
+  // sequentially, outside the wave — a waterfall on the app's highest-frequency arrival, the
+  // pick-reminder push (#832). Both are ordinary DB reads: the page adds no ESPN call, and with
+  // the sweat board gone it makes none at all.
   const gamesPromise = getGamesWithActiveLines(week.id);
-  const socialPromise = gamesPromise.then((games) => loadSocial(event, groupId, games));
+  const finalScoresPromise = getFinalScoresForWeek(week.id);
+  const settlementsPromise = gamesPromise.then((games) =>
+    getMySettlements(
+      games.map((g) => g.id),
+      groupId,
+      userId
+    )
+  );
 
   const [
-    games,
-    picks,
-    groupPicks,
+    baseGames,
+    basePicks,
     allInDeclarations,
     pickStatusBoard,
     gameplay,
     lastWeek,
     situational,
-    social
+    finalScores,
+    settlements
   ] = await Promise.all([
     gamesPromise,
     getMyPicks(event, week.id, groupId),
-    getGroupPicks(event, week.id, groupId),
     getAllInDeclarations(event, week.id, groupId),
     getPicksStatusBoard(event, week.id, groupId),
     getGameplaySettings(),
@@ -134,19 +102,32 @@ async function loadPicks(
     showTrends
       ? event.locals.getCurrentSeasonYear().then((year) => getLeagueSituational(year))
       : Promise.resolve<LeagueSituationalRecord[]>([]),
-    socialPromise
+    finalScoresPromise,
+    settlementsPromise
   ]);
+
+  const games = baseGames.map((g) => ({ ...g, finalScores: finalScores[g.id] ?? null }));
+
+  // Merge the settled outcome onto my pick entry. A settlement can exist without a pick — that
+  // is exactly what `'missed'` is — so iterate the settlements too rather than only decorating
+  // rows `getMyPicks` already returned, or a missed game would silently keep no outcome and the
+  // handoff strip would fall back to its heuristic on a game grading has already ruled on.
+  const picks = { ...basePicks };
+  for (const [gameId, settlement] of Object.entries(settlements)) {
+    picks[gameId] = {
+      ...picks[gameId],
+      outcome: settlement.outcome,
+      pointsDelta: settlement.pointsDelta
+    };
+  }
 
   return {
     week,
     games,
     picks,
-    social,
-    groupPicks,
     allInDeclarations,
     pickStatusBoard,
     userId,
-    currentUserDisplayName,
     isLastWeek: lastWeek,
     finalWeekUnlimitedAllin: gameplay.finalWeekUnlimitedAllin,
     membershipCount,

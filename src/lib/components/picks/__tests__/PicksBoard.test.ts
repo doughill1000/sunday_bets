@@ -1,15 +1,12 @@
 // tests/components/PicksBoard.test.ts
 import { render } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
-import { QueryClient } from '@tanstack/svelte-query';
-import Harness from './PicksBoardHarness.svelte';
+import PicksBoard from '../PicksBoard.svelte';
 import { picks } from '../../../stores/picks';
 import { get } from 'svelte/store';
 
-// PicksBoard opens a live-scores `createQuery` (#386), so it needs a QueryClient in context.
-function makeClient() {
-  return new QueryClient({ defaultOptions: { queries: { retry: false } } });
-}
+// PicksBoard opens no query of its own since #832 (the #386 live sweat board moved wholly to
+// `/week`), so it renders directly — the QueryClient harness it used to need is gone.
 
 const FUTURE = new Date(Date.now() + 24 * 3600_000).toISOString();
 
@@ -51,9 +48,8 @@ const games = [
 
 describe('PicksBoard', () => {
   it('seeds the spread favorite (no weight) for un-picked games and preserves existing picks', () => {
-    render(Harness, {
+    render(PicksBoard, {
       props: {
-        client: makeClient(),
         games,
         initialPicks: { g1: { selected: { team: 'away' } } as any }
       }

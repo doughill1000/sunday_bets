@@ -8,11 +8,10 @@
 // staleness prevention (the AGENTS.md refresh rule covers coverage drift).
 import { render } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
-import { QueryClient } from '@tanstack/svelte-query';
 import { getDemoSnapshot } from '../snapshot';
 import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
 import { BADGE_GLOSSARY } from '$lib/domain/badges';
-import DemoPicksPageHarness from './DemoPicksPageHarness.svelte';
+import DemoPicksPage from '../../../../routes/demo/+page.svelte';
 import DemoStatsPage from '../../../../routes/demo/stats/+page.svelte';
 import DemoMarketPage from '../../../../routes/demo/market/+page.svelte';
 import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
@@ -149,11 +148,10 @@ describe('frozen live-week sweat states (#585)', () => {
 describe('demo surfaces render against the fixture', () => {
   it('picks screen — the real PicksBoard in readonly mode (#669)', () => {
     // `/demo/+page.svelte` itself reshapes `snapshot.liveWeek` into the readonly PicksBoard's
-    // props (seeded `lockedPick`s, frozen live scores, committed-vs-open split) — rendering the
-    // page directly exercises that reshape, not a hand-duplicated copy of it.
-    const { getByText, getByTestId, getAllByTestId, queryByTestId } = render(DemoPicksPageHarness, {
+    // props (seeded `lockedPick`s, started-vs-open split) — rendering the page directly
+    // exercises that reshape, not a hand-duplicated copy of it.
+    const { getByText, getByTestId, queryByTestId } = render(DemoPicksPage, {
       props: {
-        client: new QueryClient({ defaultOptions: { queries: { retry: false } } }),
         data: {
           liveWeek: snapshot.liveWeek,
           personaName: snapshot.persona.displayName,
@@ -162,9 +160,12 @@ describe('demo surfaces render against the fixture', () => {
       }
     });
     expect(getByText('My Picks')).toBeInTheDocument();
-    // The frozen live week always carries committed (live/final) games.
-    expect(getByTestId('committed-section')).toBeInTheDocument();
-    expect(getAllByTestId('committed-row').length).toBeGreaterThan(0);
+    // Since #832 kickoff is a hard boundary: the frozen week's started games leave the board
+    // for the handoff strip, and only the un-started ones remain as cards. (The follow-up
+    // `/demo` issue reshapes the snapshot around this; the fixture itself is unchanged.)
+    expect(getByTestId('week-underway-strip')).toBeInTheDocument();
+    expect(getByTestId('see-the-week')).toHaveAttribute('href', '/demo/week');
+    expect(getByTestId('game-card')).toBeInTheDocument();
     // No unlock/lock-in write controls in readonly mode.
     expect(queryByTestId('unlock-pick')).not.toBeInTheDocument();
   });

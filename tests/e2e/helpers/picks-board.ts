@@ -106,6 +106,49 @@ export function picksBoard(page: Page) {
       return api.committedRow(index).getByTestId('unlock-pick');
     },
 
+    // --- the kickoff boundary (#832) -----------------------------------------
+
+    /**
+     * Everything on the board that is addressed to one specific game — its open card wrapper
+     * and its committed row. A kicked-off game must match NEITHER: "appears nowhere" is the
+     * acceptance criterion, so it needs a locator that spans both homes a game can have.
+     */
+    anythingFor(gameId: string): Locator {
+      return page.locator(
+        `#game-${gameId}, [data-testid="committed-row"][data-game-id="${gameId}"]`
+      );
+    },
+
+    /** The handoff strip that stands in for every game that has kicked off. */
+    underwayStrip(): Locator {
+      return page.getByTestId('week-underway-strip');
+    },
+
+    /** The strip's "N in play" clause (absent when nothing is mid-game). */
+    underwayInPlay(): Locator {
+      return page.getByTestId('underway-in-play');
+    },
+
+    /** The strip's "N final" clause (absent when nothing has graded yet). */
+    underwayFinal(): Locator {
+      return page.getByTestId('underway-final');
+    },
+
+    /** The strip's destructive "N missed" pill (absent when nothing was missed). */
+    underwayMissed(): Locator {
+      return page.getByTestId('underway-missed');
+    },
+
+    /** The strip's settled "+N so far" points. */
+    underwayPoints(): Locator {
+      return page.getByTestId('underway-points');
+    },
+
+    /** The strip's one action — the link onward to `/week`. */
+    seeTheWeek(): Locator {
+      return page.getByTestId('see-the-week');
+    },
+
     // --- assertions ---------------------------------------------------------
 
     /** Assert the saved/total counter, e.g. `expectSaved(1, 1)` → "1/1 saved". */

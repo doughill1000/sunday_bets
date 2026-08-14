@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/svelte';
+﻿import { render, screen } from '@testing-library/svelte';
 import { describe, it, expect, beforeEach } from 'vitest';
 import LockedPicksSection from '../LockedPicksSection.svelte';
 import { setPicks } from '../../../stores/picks';
 import type { PickGame } from '$lib/types/games';
+
+// Every game this section receives is pre-kickoff by construction since #832 — the board hands
+// over only `!started && lockedPick` — so there is no `now` prop and no started branch left to
+// exercise. The 2099 kickoff below was always future; it is now the only shape that reaches here.
 
 const game: PickGame = {
   id: 'g1',
@@ -24,14 +28,14 @@ describe('LockedPicksSection (committed pick warnings, issue #542)', () => {
     setPicks({
       g1: {
         lockedPick: { team: 'home', weight: 'M' },
-        saveError: "Saved — couldn't apply to 2 groups"
+        saveError: "Saved â€” couldn't apply to 2 groups"
       }
     });
 
-    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+    render(LockedPicksSection, { props: { games: [game] } });
 
     const note = screen.getByRole('status');
-    expect(note).toHaveTextContent("Saved — couldn't apply to 2 groups");
+    expect(note).toHaveTextContent("Saved â€” couldn't apply to 2 groups");
   });
 
   it('renders nothing extra when the lock fully applied (no saveError)', () => {
@@ -39,7 +43,7 @@ describe('LockedPicksSection (committed pick warnings, issue #542)', () => {
       g1: { lockedPick: { team: 'home', weight: 'M' } }
     });
 
-    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+    render(LockedPicksSection, { props: { games: [game] } });
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
@@ -51,9 +55,9 @@ describe('LockedPicksSection (status vs action on a committed row, issue #787)',
   });
 
   it('renders "Locked" as status text, not a control', () => {
-    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+    render(LockedPicksSection, { props: { games: [game] } });
 
-    // The only button on the row is Unlock — "Locked" must not be pressable, or the
+    // The only button on the row is Unlock â€” "Locked" must not be pressable, or the
     // two read as a segmented toggle pair.
     const buttons = screen.getAllByRole('button');
     expect(buttons).toHaveLength(1);
@@ -62,22 +66,22 @@ describe('LockedPicksSection (status vs action on a committed row, issue #787)',
   });
 
   it('labels the action "Unlock" without a redundant lock glyph', () => {
-    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+    render(LockedPicksSection, { props: { games: [game] } });
 
     expect(screen.getByTestId('unlock-pick').textContent?.trim()).toBe('Unlock');
   });
 
   // Svelte trims leading whitespace inside an element, so a plain space in the sr-only
   // span collapsed the label to "Committedpicks (1)". Guard the spacing, not just the text.
-  it('keeps the pick count in the summary’s accessible name, correctly spaced', () => {
-    render(LockedPicksSection, { props: { games: [game], now: Date.now() } });
+  it('keeps the pick count in the summaryâ€™s accessible name, correctly spaced', () => {
+    render(LockedPicksSection, { props: { games: [game] } });
 
     const summary = screen.getByTestId('committed-summary');
     expect(summary.textContent?.replace(/\s+/g, ' ').trim()).toBe('Committed picks (1)');
   });
 
   it('hides the Unlock action in readonly/demo mode but keeps the locked status', () => {
-    render(LockedPicksSection, { props: { games: [game], now: Date.now(), readonly: true } });
+    render(LockedPicksSection, { props: { games: [game], readonly: true } });
 
     expect(screen.queryByTestId('unlock-pick')).not.toBeInTheDocument();
     expect(screen.getByText('Locked')).toBeInTheDocument();

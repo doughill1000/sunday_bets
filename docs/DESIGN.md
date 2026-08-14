@@ -91,6 +91,30 @@ changes what the entire page is, it's Tabs. Never both on one screen for sibling
 > mechanism), each tab keeps exactly one control, and a third `/league` view again
 > requires a new design study and a revision of this note.
 
+> **Decision note (2026-08-14, #832) — kickoff is the boundary between `/picks` and
+> `/week`.** `/picks` holds only what you can still act on: the unpicked game cards and
+> the locked-but-not-yet-started picks (still unlockable). **At kickoff a game leaves the
+> page entirely** — live, final-unofficial and graded alike — replaced by a single
+> server-rendered handoff strip (`N in play · N final · N missed · +X so far`, and a link
+> onward). `/picks` issues **zero** live-feed calls in any state.
+>
+> This **reverses #386's split** ("/picks = your sweat, /league Weekly = the race"), which
+> was decided before #776 above gave Week its own nav tab with a live dot — the
+> "buried behind a tab" problem that justified mirroring live state onto `/picks` no longer
+> exists. `/week` was already the superset (a graded final fallback `/picks` lacked, every
+> member grouped by team with cover dots and cushion, everyone ranked by live week-so-far),
+> and the duplication had a bug record: #822 and #823 are the same failure twice — two poll
+> hosts, two staleness gates, two verdict renderers for one job, which is exactly what
+> principle 2 forbids. **Per-game comments were switched off** in the same move rather than
+> relocated: the group chat is where banter lives and the app should feed it, not compete
+> with it. Nothing underneath was deleted (table, RLS, API route, #689's reactions repoint),
+> so re-enabling is one PR.
+>
+> Binding conditions: a pre-kickoff locked pick keeps its Unlock on `/picks`; the all-kicked-
+> off state is the strip, never an empty husk; the missed-pick moment is carried by the strip
+> and appears in exactly one place on the page; and any future live/sweat surface on `/picks`
+> requires a new design study and a revision of this note.
+
 _Why:_ two controls for one job doubles what a user has to learn and invites drift.
 _Example:_ the `/stats` breakdowns switch cuts with the **same** chip radiogroup as the
 situational explorer directly above them — #538 replaced an accordion that had been doing
