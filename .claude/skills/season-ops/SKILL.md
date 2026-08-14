@@ -87,14 +87,24 @@ a green grade.
    is a real gap, not noise).
 2. **Grading actually produced settlements**, not just a 200: spot-check that the week's
    games have `final_scores` and matching `pick_settlement` rows.
-3. **Matview freshness via Sentry, not `cron_run_log`** (see note above) — search for
+3. **Pushes were delivered, not merely attempted** (#815). Every notification summary
+   reports attempts and deliveries separately, so read both: `pregame` logs
+   `pushes` (attempted) beside `delivered` (subscriptions that accepted), and
+   `weekly-recap`'s `recaps`/`aiRecapPushes` entries each carry `sent` beside
+   `delivered`. **Attempts > 0 with `delivered: 0` is a delivery outage, not a quiet
+   week** — treat it as a finding even though `ok: true`. Confirm against
+   `notification_log.detail->'delivery'` for the affected rows, which records
+   `{sent, total, pruned}` per notification; `total: 0` there means nobody is
+   subscribed (a subscription problem), while `sent: 0` with `total > 0` means the
+   push service rejected every device (check Sentry).
+4. **Matview freshness via Sentry, not `cron_run_log`** (see note above) — search for
    `refresh_leaderboard_stats` errors since the last grade. Use
    `mcp__sentry__search_issues` / `mcp__sentry__search_events` (resolve the org/project
    first with `mcp__sentry__find_organizations` / `find_projects` if not already known
    in this session).
-4. **Odds quota trend** — confirm usage is tracking toward, not past, the monthly cap
+5. **Odds quota trend** — confirm usage is tracking toward, not past, the monthly cap
    ahead of `reset-odds-usage`'s reset on the 1st.
-5. **Any new Sentry issues** touching the cron endpoints or `src/lib/server/odds.ts`
+6. **Any new Sentry issues** touching the cron endpoints or `src/lib/server/odds.ts`
    since the last check.
 
 ## Remember

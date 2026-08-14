@@ -41,6 +41,86 @@ export type PushPayload = {
 };
 
 /**
+ * What one push attempt actually achieved (#815). Returned by `sendToUser` and
+ * recorded on every `notification_log` row, so "we sent a notification" is never
+ * again reported without evidence that a device took it.
+ */
+export type DeliveryOutcome = {
+  /** Subscriptions the push service accepted. */
+  sent: number;
+  /**
+   * Subscriptions the user had when the send started — the denominator `sent` is
+   * measured against. Without it `sent: 0` is ambiguous: no devices to push to, or
+   * devices that all rejected the push. Those need different answers everywhere.
+   */
+  total: number;
+  /** Subscriptions deleted because the push service reported them gone (404/410). */
+  pruned: number;
+};
+
+/**
+ * Does this `notification_log` row hold its dedup slot — i.e. does its existence
+ * still suppress a re-send? Rows carry their delivery result under
+ * `detail.delivery` (#815); a push that reached **zero devices while devices
+ * existed** is a delivery failure, not a notification, so it releases the slot and
+ * the next cron run retries it.
+ *
+ * The deliberate exception is `total === 0`: a user with no push subscriptions has
+ * nothing to retry, and releasing the slot there would re-attempt — and re-log —
+ * on every run for as long as they stay unsubscribed. Those rows hold.
+ *
+ * Rows written before #815 carry no `delivery` key and hold unconditionally: absent
+ * evidence, treat history as delivered rather than re-notifying a league about games
+ * that are long over.
+ */
+export function holdsDedupSlot(detail: unknown): boolean {
+  if (!detail || typeof detail !== 'object') return true;
+  const delivery = (detail as { delivery?: unknown }).delivery;
+  if (!delivery || typeof delivery !== 'object') return true;
+  const { sent, total } = delivery as { sent?: unknown; total?: unknown };
+  if (typeof sent !== 'number' || typeof total !== 'number') return true;
+  return sent > 0 || total === 0;
+}
+
+/** How the admin test-notification result should be surfaced. */
+export type PushNoteKind = 'success' | 'warn' | 'error';
+
+/**
+ * Operator-facing verdict on an admin test push (#815). The old card mapped every
+ * `sent === 0` to "No active subscriptions", which sent the operator off to
+ * re-subscribe whenever subscriptions existed but all failed — minting another dead
+ * row and hiding the real failure. The two zero-delivery cases are distinct
+ * diagnoses and get distinct messages.
+ */
+export function testPushMessage(result: DeliveryOutcome): { kind: PushNoteKind; text: string } {
+  const { sent, total, pruned } = result;
+  const subs = (n: number) => `${n} subscription${n === 1 ? '' : 's'}`;
+  // Pruned rows are already deleted by the time this renders — say so, because dead
+  // rows silently accumulating is exactly what made this surface untrustworthy.
+  const prunedNote = pruned > 0 ? ` ${subs(pruned)} were stale and have been removed.` : '';
+
+  if (total === 0) {
+    return {
+      kind: 'warn',
+      text: 'No active subscriptions — enable notifications on this device first.'
+    };
+  }
+  if (sent === 0) {
+    return {
+      kind: 'error',
+      text: `0 of ${subs(total)} accepted the push — they exist, but every one failed. Check Sentry for the push-service error.${prunedNote}`
+    };
+  }
+  if (sent < total) {
+    return {
+      kind: 'warn',
+      text: `Sent test to ${sent} of ${subs(total)} — ${total - sent} failed.${prunedNote}`
+    };
+  }
+  return { kind: 'success', text: `Sent test to ${subs(sent)}.` };
+}
+
+/**
  * Coerce the free-form jsonb `users.notification_prefs` into a fully-populated,
  * defensively-defaulted NotificationPrefs. Never throws.
  */

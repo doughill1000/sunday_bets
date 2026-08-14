@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/sveltekit';
 import { supabaseService } from '$lib/supabase/service';
 import { env as publicEnv } from '$env/dynamic/public';
 import { env as privateEnv } from '$env/dynamic/private';
-import type { PushPayload } from '$lib/domain/notifications';
+import type { DeliveryOutcome, PushPayload } from '$lib/domain/notifications';
 
 let configured = false;
 
@@ -24,12 +24,21 @@ function ensureConfigured() {
   configured = true;
 }
 
-export type SendResult = { sent: number; pruned: number };
+/**
+ * What one `sendToUser` call achieved. Structurally the shape recorded on every
+ * `notification_log` row and returned to the admin test card, so it is defined once
+ * in the pure-domain module (#815) rather than mirrored per surface.
+ */
+export type SendResult = DeliveryOutcome;
 
 /**
  * Push `payload` to every subscription belonging to `userId`. Subscriptions
  * that the push service reports as gone (404/410) are pruned; other failures
  * are reported to Sentry but don't abort the batch.
+ *
+ * The returned SendResult is the only place in the system that knows what a push
+ * actually achieved — every caller is expected to carry it into whatever it
+ * reports or logs (#815), never to discard it.
  */
 export async function sendToUser(userId: string, payload: PushPayload): Promise<SendResult> {
   ensureConfigured();
@@ -40,7 +49,7 @@ export async function sendToUser(userId: string, payload: PushPayload): Promise<
     .eq('user_id', userId);
 
   if (error) throw error;
-  if (!subs || subs.length === 0) return { sent: 0, pruned: 0 };
+  if (!subs || subs.length === 0) return { sent: 0, pruned: 0, total: 0 };
 
   const body = JSON.stringify(payload);
   const deadIds: string[] = [];
@@ -67,5 +76,5 @@ export async function sendToUser(userId: string, payload: PushPayload): Promise<
     await supabaseService.from('push_subscriptions').delete().in('id', deadIds);
   }
 
-  return { sent, pruned: deadIds.length };
+  return { sent, pruned: deadIds.length, total: subs.length };
 }

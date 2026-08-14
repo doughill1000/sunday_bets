@@ -7,6 +7,7 @@
     CardContent
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import { testPushMessage } from '$lib/domain/notifications';
 
   interface Props {
     onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
@@ -26,6 +27,7 @@
       const body = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         sent?: number;
+        total?: number;
         pruned?: number;
         reason?: string;
       };
@@ -33,11 +35,14 @@
         note('error', body.reason ?? 'Failed to send test notification.');
         return;
       }
-      if ((body.sent ?? 0) === 0) {
-        note('warn', 'No active subscriptions — enable notifications on this device first.');
-      } else {
-        note('success', `Sent test to ${body.sent} subscription(s).`);
-      }
+      // The verdict is a pure rule (#815) so the two zero-delivery cases — no
+      // subscriptions vs. subscriptions that all failed — stay unit-tested.
+      const verdict = testPushMessage({
+        sent: body.sent ?? 0,
+        total: body.total ?? 0,
+        pruned: body.pruned ?? 0
+      });
+      note(verdict.kind, verdict.text);
     } catch (e) {
       note('error', e instanceof Error ? e.message : 'Unknown error.');
     } finally {
