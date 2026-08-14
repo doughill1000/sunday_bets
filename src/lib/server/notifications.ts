@@ -473,12 +473,15 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
   if (!(await isWeekFullyGraded(weekId)))
     return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
+  // The season year rides along for the deep link below — same `seasons!inner(year)`
+  // join sendAIRecapPushes uses, so there is one week-identity shape, not two (#818).
   const { data: week, error: weekErr } = await supabaseService
     .from('weeks')
-    .select('week_number')
+    .select('week_number, seasons!inner(year)')
     .eq('id', weekId)
     .single();
   if (weekErr) throw weekErr;
+  const seasonYear = (week.seasons as { year: number }).year;
 
   const { data: games, error: gamesErr } = await supabaseService
     .from('games')
@@ -548,7 +551,10 @@ export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
       title: `Your Week ${week.week_number} results`,
       body: formatRecapBody(tally),
       // The week-scoped landing surface moved from /league's Week tab to /week (#776).
-      url: '/week',
+      // Fully qualified (#818): this cron fires Tuesday 14:00 UTC, 14 hours after week
+      // N+1 became active, so a bare `/week` — which defaults to the latest started
+      // week — would open the empty next week instead of the one this push reports on.
+      url: `/week?season=${seasonYear}&week=${week.week_number}`,
       tag: `results-recap-week-${weekId}`
     });
     await logNotification({
