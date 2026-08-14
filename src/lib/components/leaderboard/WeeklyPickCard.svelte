@@ -223,20 +223,23 @@
               {statusLabel}
             </p>
           {/if}
-          <!-- Deliberately NOT `text-stat`: that token is the page-hero numeral (2rem), and at
-               sixteen cards to a week it shouted. 24px still reads as the card's anchor against
-               the 16px matchup without turning the grid into a wall of scoreboards.
+          <!-- Set at the matchup's own size, so WEIGHT carries the emphasis rather than scale.
+               `text-stat` (the 2rem page-hero numeral) and even 24px both shouted across a
+               sixteen-card week; at 16px/bold the score still lands harder than the semibold
+               matchup opposite it without the grid reading as a wall of scoreboards.
 
                `live-score` vs `final-score` tracks the SOURCE, not the game state: a
                final-but-ungraded score still comes off the ESPN feed. -->
           <p
-            class="text-2xl leading-tight font-bold tabular-nums"
+            class="mt-1 text-base leading-none font-bold tabular-nums"
             data-testid={liveLit ? 'live-score' : 'final-score'}
           >
             {scoreLabel}
           </p>
           {#if coverLabel}
-            <p class="text-xs font-medium {coverClass}" data-testid="game-cover">{coverLabel}</p>
+            <p class="mt-1 text-xs font-medium {coverClass}" data-testid="game-cover">
+              {coverLabel}
+            </p>
           {/if}
         </div>
       {/if}
