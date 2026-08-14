@@ -10,6 +10,7 @@
   import FormNote from '$lib/components/FormNote.svelte';
   import { AVATAR_PRESETS } from '$lib/avatars';
   import { THEME_MODES, DEFAULT_THEME_MODE, applyThemeMode, type ThemeMode } from '$lib/theme';
+  import { resolvePushCardState, type PushCardState, type PushDeviceStatus } from '$lib/push/state';
 
   type PushClient = typeof import('$lib/push/client');
 
@@ -289,20 +290,38 @@
   let aiRecap = $state(data.prefs.ai_recap);
   let lineShiftEnabled = $state(data.prefs.line_shift.enabled);
 
-  let supported = $state(true);
-  let permission = $state<NotificationPermission | 'unsupported'>('default');
   let busy = $state(false);
-  let msg = $state<{ kind: 'success' | 'error' | 'warn'; text: string } | null>(null);
+  let msg = $state<{ kind: 'success' | 'error' | 'warning'; text: string } | null>(null);
   let pushClient = $state<PushClient | null>(null);
+  // null until the device read resolves — a distinct case from "no subscription", see
+  // resolvePushCardState.
+  let device = $state<PushDeviceStatus | null>(null);
+
+  // #814: `enabled` is account-level and says nothing about whether *this* device will
+  // ever see a notification. The card renders the reconciliation of the two, so a device
+  // that lost its subscription stops being offered a Disable button.
+  const cardState = $derived(resolvePushCardState(enabled, device));
+
+  // 'Turn on' rather than 'Enable' for the mismatch state: a different verb for a
+  // different job — repairing this device, not switching the account on.
+  const MASTER_SWITCH = 'Master switch for all notifications on this device.';
+  const CARD_COPY: Record<PushCardState, { action: string; subtitle: string }> = {
+    unsupported: { action: 'Enable', subtitle: MASTER_SWITCH },
+    blocked: { action: 'Enable', subtitle: MASTER_SWITCH },
+    off: { action: 'Enable', subtitle: MASTER_SWITCH },
+    on: { action: 'Disable', subtitle: 'On for this device — master switch for everything below.' },
+    'device-unsubscribed': {
+      action: 'Turn on',
+      subtitle: 'On for your account, but not on this device.'
+    }
+  };
 
   onMount(async () => {
     try {
       pushClient = await import('$lib/push/client');
-      supported = pushClient.isPushSupported();
-      permission = pushClient.notificationPermission();
+      device = await pushClient.readDeviceStatus();
     } catch {
-      supported = false;
-      permission = 'unsupported';
+      device = { supported: false, permission: 'unsupported', subscribed: false };
     }
   });
 
@@ -329,20 +348,27 @@
     if (busy) return;
     busy = true;
     msg = null;
+    // 'device-unsubscribed' subscribes as well: the account switch is already on, what is
+    // missing is this device's endpoint. Captured up front because cardState is derived
+    // and moves as soon as the work below lands.
+    const turnOn = cardState !== 'on';
     try {
       if (!pushClient) {
         msg = {
-          kind: 'warn',
+          kind: 'warning',
           text: 'This browser/device does not support push notifications.'
         };
         return;
       }
 
-      if (!enabled) {
+      if (turnOn) {
         const r = await pushClient.subscribeToPush();
         if (!r.ok) {
+          // A fresh denial flips this device's permission — re-read so the blocked banner
+          // replaces the button rather than waiting for a reload.
+          device = await pushClient.readDeviceStatus();
           msg = {
-            kind: 'warn',
+            kind: 'warning',
             text:
               r.reason === 'permission-denied'
                 ? 'Notification permission was denied in your browser settings.'
@@ -357,8 +383,13 @@
         await pushClient.unsubscribeFromPush();
         enabled = false;
       }
-      permission = pushClient.notificationPermission();
-      if (await savePrefs()) msg = { kind: 'success', text: 'Settings saved.' };
+      device = await pushClient.readDeviceStatus();
+      if (await savePrefs()) {
+        msg = {
+          kind: 'success',
+          text: turnOn ? 'Notifications are on for this device.' : 'Notifications are off.'
+        };
+      }
     } finally {
       busy = false;
     }
@@ -733,31 +764,36 @@
       <CardTitle class="text-xl font-bold">Notifications</CardTitle>
     </CardHeader>
     <CardContent class="space-y-5 p-0 pt-2">
-      {#if !supported}
-        <div class="rounded-xl border border-warning p-3 text-sm">
-          This browser doesn't support push notifications. On iPhone, add Hotshot to your Home
-          Screen (Share → Add to Home Screen) and use iOS 16.4 or later.
-        </div>
-      {:else if permission === 'denied'}
-        <div class="rounded-xl border border-warning p-3 text-sm">
-          Notifications are blocked in your browser settings. Re-allow them for this site, then
-          enable below.
-        </div>
+      <!-- One banner per cause: 'blocked' already implies no subscription on this device,
+           so the device-unsubscribed note never doubles up with it. -->
+      {#if cardState === 'unsupported'}
+        <FormNote
+          kind="warning"
+          text="This browser doesn't support push notifications. On iPhone, add Hotshot to your Home Screen (Share → Add to Home Screen) and use iOS 16.4 or later."
+        />
+      {:else if cardState === 'blocked'}
+        <FormNote
+          kind="warning"
+          text="Notifications are blocked in your browser settings. Re-allow them for this site, then enable below."
+        />
+      {:else if cardState === 'device-unsubscribed'}
+        <FormNote
+          kind="warning"
+          text="Notifications are on for your account, but this device isn't set up to receive them — which happens after reinstalling the app or clearing its data. Turn them on below to start getting them again."
+        />
       {/if}
 
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="font-medium">Push notifications</div>
-          <p class="text-sm text-muted-foreground">
-            Master switch for all notifications on this device.
-          </p>
+          <p class="text-sm text-muted-foreground">{CARD_COPY[cardState].subtitle}</p>
         </div>
         <Button
           onclick={toggleMaster}
-          disabled={busy || !supported}
-          variant={enabled ? 'secondary' : 'default'}
+          disabled={busy || cardState === 'unsupported'}
+          variant={cardState === 'on' ? 'secondary' : 'default'}
         >
-          {busy ? 'Working…' : enabled ? 'Disable' : 'Enable'}
+          {busy ? 'Working…' : CARD_COPY[cardState].action}
         </Button>
       </div>
 
@@ -828,14 +864,7 @@
       </div>
 
       {#if msg}
-        <div
-          class="rounded-xl border p-3 text-sm"
-          class:border-success={msg.kind === 'success'}
-          class:border-warning={msg.kind === 'warn'}
-          class:border-destructive={msg.kind === 'error'}
-        >
-          {msg.text}
-        </div>
+        <FormNote kind={msg.kind} text={msg.text} />
       {/if}
     </CardContent>
   </Card>
