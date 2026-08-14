@@ -1,4 +1,4 @@
-import type { TeamSide, WeightCode } from './domain';
+import type { GameResult, TeamSide, WeightCode } from './domain';
 
 /** A complete, savable pick — both halves chosen. */
 export type PickSelection = {
@@ -27,6 +27,18 @@ export type PickEntry = {
   unlocksUsed?: number;
   lockedSpreadValue?: number;
   lockedSpreadTeamId?: number;
+  /**
+   * The settled `pick_settlement.outcome` for this game once grading has run (#832), or
+   * `undefined`/`null` while it is still ungraded. Grading is the sole settlement authority
+   * (ADR-0007) — this is a read of what it wrote, never a client-side derivation.
+   * `'missed'` is a real settled outcome: grading writes a row for a member who owed a pick
+   * and didn't make one, and it already applies ADR-0040's unlined-game exemption, which is
+   * why the handoff strip prefers it over its own kickoff-vs-line heuristic.
+   */
+  outcome?: GameResult | null;
+  /** The settled points swing that came with `outcome` (already carries any missed-pick
+   *  penalty). Nullable in the DB, so nullable here. */
+  pointsDelta?: number | null;
   /** Transient: live status of an in-flight "Lock in" (never persisted). */
   saveState?: SaveState;
   /** Transient: human-readable reason shown alongside a failed lock-in. */

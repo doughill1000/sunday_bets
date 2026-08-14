@@ -6,92 +6,34 @@
   import { usePicksStore } from '$lib/stores/picks';
   import { unlockPick as unlockPickApi } from '$lib/api/picks';
   import { signedSpreadForTeam } from '$lib/domain/spread';
-  import { liveCoverState } from '$lib/domain/liveCover';
-  import { verdictTextClass, verdictLabel } from '$lib/live/display';
   import { toast } from 'svelte-sonner';
   import type { PickGame } from '$lib/types/games';
-  import type { SocialComment } from '$lib/server/db/queries/getCommentsForGame';
-  import CommentsSection from './CommentsSection.svelte';
-  import type { GroupPickEntry } from '$lib/types/picks';
-  import type { LiveScoreEntry } from '$lib/live/types';
-  import RevealedGroupPicks from './RevealedGroupPicks.svelte';
   import FormNote from '$lib/components/FormNote.svelte';
 
-  type SocialData = { comments: SocialComment[] };
-
+  // Locked in, still changeable — every game here is pre-kickoff by construction (#832). The
+  // board hands over only `!started && lockedPick` games; anything that has kicked off left the
+  // page for the handoff strip, taking the live chip, the graded row, the revealed group picks,
+  // the comments and the missed badge with it. What remains is the one thing this section was
+  // always for: your commitments, and the way back out of them before kickoff.
   interface Props {
     games: PickGame[];
-    now: number;
-    social?: Record<string, SocialData>;
-    groupPicks?: GroupPickEntry[];
-    /** Live sweat board (#386) — display-only per-pick cover state. */
-    liveScores?: Record<string, LiveScoreEntry>;
-    liveStale?: boolean;
-    userId?: string | null;
-    currentUserDisplayName?: string | null;
     /** Frozen/read-only mode (#669) — see `PicksBoard`'s `readonly` doc; hides the Unlock
      *  action, which would otherwise call the real unlock RPC. */
     readonly?: boolean;
   }
-  let {
-    games,
-    now,
-    social = {},
-    groupPicks = [],
-    liveScores = {},
-    liveStale = false,
-    userId = null,
-    currentUserDisplayName = null,
-    readonly = false
-  }: Props = $props();
+  let { games, readonly = false }: Props = $props();
   const picks = usePicksStore();
-
-  function kickoffMs(g: PickGame) {
-    return new Date(g.kickoff).getTime();
-  }
-
-  // Live cover state for my locked pick on a game, or null when there's no live score / no
-  // pick. Mirrors grading against the live score using the line frozen on my pick (#386).
-  function myCover(g: PickGame) {
-    const entry = $picks[g.id];
-    const lp = entry?.lockedPick;
-    const ls = liveScores[g.id];
-    if (!lp || !ls) return null;
-    const pickedTeamId = lp.team === 'home' ? g.homeTeamId : g.awayTeamId;
-    const state = liveCoverState({
-      homeScore: ls.homeScore,
-      awayScore: ls.awayScore,
-      homeTeamId: g.homeTeamId,
-      awayTeamId: g.awayTeamId,
-      pickedTeamId,
-      lockedSpreadTeamId: entry?.lockedSpreadTeamId ?? g.spreadTeamId,
-      lockedSpreadValue: entry?.lockedSpreadValue ?? g.spreadValue
-    });
-    return state ? { ...state, score: ls } : null;
-  }
-
-  const hasMissed = $derived(games.some((g) => kickoffMs(g) <= now && !$picks[g.id]?.lockedPick));
 
   // Enter/exit duration for the committed row as a pick lands here on lock (or
   // leaves on unlock). Matches the exit on the upcoming card in PicksBoard;
   // `prefersReducedMotion` collapses it to 0 (instant). The keyed `{#each}` (by
-  // `g.id`) keeps the 1s `now` ticker from restarting a row's in-flight
-  // transition. See `$lib/ui/motion` and issue #478.
+  // `g.id`) keeps a re-render from restarting a row's in-flight transition.
+  // See `$lib/ui/motion` and issue #478.
   const motionMs = $derived(lockMotionMs(prefersReducedMotion.current));
 
   // Default open (most people want to glance at their locked picks right after
-  // making them). `open` only tracks user/missed-pick intent from here on — the
-  // ticking `now` prop must never re-assert it, or the section snaps shut on
-  // every 1s tick while someone is trying to expand it.
+  // making them), and user intent from there on.
   let sectionOpen = $state(true);
-
-  $effect(() => {
-    if (hasMissed) sectionOpen = true;
-  });
-
-  function picksForGame(gameId: string) {
-    return groupPicks.filter((p) => p.gameId === gameId);
-  }
 
   async function onEdit(g: PickGame) {
     const res = await unlockPickApi(g.id);
@@ -129,18 +71,11 @@
            because Svelte trims leading whitespace inside an element, which would otherwise
            announce this as "Committedpicks (1)". -->
       Committed<span class="sr-only">&nbsp;picks ({games.length})</span>
-      {#if hasMissed}
-        <span
-          class="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive"
-          >missed</span
-        >
-      {/if}
     </summary>
 
     <div class="mt-1 divide-y rounded-lg border">
       {#each games as g (g.id)}
         {@const entry = $picks[g.id]}
-        {@const started = kickoffMs(g) <= now}
         {@const lp = entry?.lockedPick}
         <div
           class="px-3 py-2 text-sm"
@@ -158,10 +93,6 @@
                   {lp.team === 'home' ? g.home : g.away}{signedSpreadForTeam(g, lp.team)}
                   · {lp.weight}
                 </p>
-              {:else}
-                <p class="text-xs font-medium text-destructive" data-testid="committed-detail">
-                  No pick recorded
-                </p>
               {/if}
               {#if entry?.saveError}
                 <FormNote kind="warning" text={entry.saveError} class="mt-1 px-2 py-1" />
@@ -169,102 +100,29 @@
             </div>
 
             <div class="flex shrink-0 items-center gap-2">
-              {#if started}
-                {@const cover = myCover(g)}
-                {#if cover}
-                  <span
-                    class="inline-flex items-center gap-1 text-xs font-semibold {liveStale
-                      ? 'text-muted-foreground'
-                      : 'text-destructive'}"
-                    data-testid="live-flag"
-                  >
-                    <span
-                      class="size-1.5 rounded-full {liveStale
-                        ? 'bg-muted-foreground'
-                        : 'bg-destructive'} {cover.score.status === 'in_progress' && !liveStale
-                        ? 'animate-pulse'
-                        : ''}"
-                    ></span>
-                    {liveStale ? 'Stale' : cover.score.status === 'final' ? 'FINAL' : 'LIVE'}
-                  </span>
-                {:else}
-                  <span class="text-xs text-muted-foreground">⏱ Kicked off</span>
-                {/if}
-              {:else}
-                <!-- Status, not a control (#787). This used to be a filled `Badge variant="secondary"`
+              <!-- Status, not a control (#787). This used to be a filled `Badge variant="secondary"`
                    sitting beside a muted ghost button, so the element you *can't* press outweighed
                    the one you can, and the twin lock emoji made the pair read as a segmented
-                   toggle. Flat text matches its own siblings above — "⏱ Kicked off", LIVE, FINAL —
-                   and leaves Unlock as the only bordered thing on the row (DESIGN.md principle 5:
-                   keep `status` and `actionable` visually distinct). The scale-in still plays; it
-                   wraps the status element, not the badge chrome. -->
-                <span
-                  class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
-                  in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}
+                   toggle. Flat text leaves Unlock as the only bordered thing on the row
+                   (DESIGN.md principle 5: keep `status` and `actionable` visually distinct). -->
+              <span
+                class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"
+                in:scale={{ duration: motionMs, start: 0.85, opacity: 1, easing: backOut }}
+              >
+                <span aria-hidden="true">🔒</span> Locked
+              </span>
+              {#if !readonly}
+                <button
+                  class="rounded border px-2 py-0.5 text-xs font-medium text-foreground underline-offset-2 hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  data-testid="unlock-pick"
+                  onclick={() => onEdit(g)}
                 >
-                  <span aria-hidden="true">🔒</span> Locked
-                </span>
-                {#if !readonly}
-                  <button
-                    class="rounded border px-2 py-0.5 text-xs font-medium text-foreground underline-offset-2 hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                    data-testid="unlock-pick"
-                    onclick={() => onEdit(g)}
-                  >
-                    Unlock
-                  </button>
-                {/if}
+                  Unlock
+                </button>
               {/if}
             </div>
           </div>
-
-          {#if started}
-            {@const cover = myCover(g)}
-            {#if cover}
-              <div class="mt-1 flex items-center gap-2 text-xs" data-testid="live-cover">
-                <span class="text-muted-foreground tabular-nums">
-                  {g.away}
-                  {cover.score.awayScore}–{cover.score.homeScore}
-                  {g.home}
-                  {#if cover.score.status === 'in_progress' && cover.score.period}
-                    · Q{cover.score.period}
-                    {cover.score.displayClock ?? ''}
-                  {:else if cover.score.status === 'final'}
-                    · unofficial
-                  {/if}
-                </span>
-                <span
-                  class="ml-auto font-semibold {liveStale
-                    ? 'text-muted-foreground'
-                    : verdictTextClass(cover.verdict)}"
-                  data-testid="live-verdict"
-                >
-                  {verdictLabel(cover.verdict, cover.cushion)}
-                </span>
-              </div>
-            {/if}
-          {/if}
-
-          {#if started && userId}
-            <RevealedGroupPicks
-              picks={picksForGame(g.id)}
-              myUserId={userId}
-              game={g}
-              liveScore={liveScores[g.id] ?? null}
-              {liveStale}
-            />
-          {/if}
         </div>
-
-        {#if started && social[g.id]}
-          <div class="px-3 pb-3">
-            <CommentsSection
-              gameId={g.id}
-              comments={social[g.id].comments}
-              currentUserId={userId}
-              {currentUserDisplayName}
-            />
-          </div>
-        {/if}
       {/each}
     </div>
   </details>
