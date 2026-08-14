@@ -39,3 +39,32 @@ export const STALE_THRESHOLD_MS = 90_000; // 90s
 export function isWithinLiveWindow(kickoffMs: number, now: number = Date.now()): boolean {
   return kickoffMs <= now && now < kickoffMs + LIVE_WINDOW_MS;
 }
+
+// Stable identity so a board re-deriving on the 1s tick doesn't hand children a fresh
+// object every second once the window has closed.
+const NO_SCORES: Record<string, never> = {};
+
+/**
+ * The live scores a board may actually render: the polled payload while a game is inside its
+ * window, nothing once every game has aged out.
+ *
+ * Gate the derived VALUE, not just the fetch. `enabled: false` stops TanStack from *fetching*
+ * but does not drop the cached payload — `gcTime` only starts counting once the query loses
+ * its last observer, and a mounted component is an observer. A board that reads
+ * `query.data.scores` directly therefore keeps rendering the final poll indefinitely: a frozen
+ * mid-game score, still lit `LIVE` with a dead clock. `refetchOnWindowFocus` respects
+ * `enabled` too, so reopening a backgrounded PWA never corrects it, and the `liveStale` guard
+ * can't catch it either — that guard is itself gated on the window being active, so it is off
+ * at exactly the moment the number becomes permanently frozen (#822).
+ *
+ * Outside the window, hand children nothing and let them fall back to their static/graded
+ * presentation — the graded result is the authority there anyway (`$lib/server/liveScores.ts`
+ * "yields to graded"). Callers in frozen/read-only mode (ADR-0026 `/demo`) bypass this
+ * entirely: a frozen board has no live window and no poll to go stale.
+ */
+export function activeLiveScores<T>(
+  scores: Record<string, T>,
+  windowActive: boolean
+): Record<string, T> {
+  return windowActive ? scores : NO_SCORES;
+}

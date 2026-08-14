@@ -6,7 +6,12 @@
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
   import { fetchLiveScores } from '$lib/query/fetchers';
-  import { LIVE_POLL_MS, STALE_THRESHOLD_MS, isWithinLiveWindow } from '$lib/live/config';
+  import {
+    LIVE_POLL_MS,
+    STALE_THRESHOLD_MS,
+    isWithinLiveWindow,
+    activeLiveScores
+  } from '$lib/live/config';
   import { lockMotionMs } from '$lib/ui/motion';
   import { providePicksStore } from '$lib/stores/picks';
   import { favoriteSide } from '$lib/domain/spread';
@@ -183,7 +188,13 @@
     gcTime: 60_000
   }));
 
-  const liveScores = $derived(readonly ? frozenLiveScores : (liveQuery.data?.scores ?? {}));
+  // `enabled: false` stops the poll at the window edge but TanStack keeps the cached payload
+  // while this component stays mounted, so reading `liveQuery.data` raw would pin the board to
+  // its final poll forever — see `activeLiveScores` for the full mechanism (#822). Frozen mode
+  // bypasses the gate: the demo's snapshot is the whole feed and has no window.
+  const liveScores = $derived(
+    readonly ? frozenLiveScores : activeLiveScores(liveQuery.data?.scores ?? {}, liveWindowActive)
+  );
   const liveFetchedAt = $derived(
     readonly ? frozenLiveFetchedAt : (liveQuery.data?.fetchedAt ?? null)
   );

@@ -6,7 +6,12 @@
   import WeeklyLiveBoard from './WeeklyLiveBoard.svelte';
   import { queryKeys } from '$lib/query/keys';
   import { fetchLiveScores } from '$lib/query/fetchers';
-  import { LIVE_POLL_MS, STALE_THRESHOLD_MS, isWithinLiveWindow } from '$lib/live/config';
+  import {
+    LIVE_POLL_MS,
+    STALE_THRESHOLD_MS,
+    isWithinLiveWindow,
+    activeLiveScores
+  } from '$lib/live/config';
   import { assembleWeeklyLiveStandings } from '$lib/utils/weeklyPicks';
   import type { SeasonWeekOption, WeeklyGameBreakdown } from '$lib/types/leaderboard';
 
@@ -61,8 +66,11 @@
   // its last-known number through a brief stale blip (like the picks summary bar), flagging it
   // with the header stamp; the per-card cover dots vanish on stale instead (like the #386 group
   // dots) — see WeeklyPickCard's `liveStale` gate.
-  const activeLiveScores = $derived(liveWindowActive ? liveScores : {});
-  const standings = $derived(assembleWeeklyLiveStandings(breakdown, activeLiveScores));
+  //
+  // Shared with PicksBoard via `activeLiveScores` (#822): this gate was correct here and simply
+  // missing there, so it now lives in one place with the reasoning attached.
+  const gatedLiveScores = $derived(activeLiveScores(liveScores, liveWindowActive));
+  const standings = $derived(assembleWeeklyLiveStandings(breakdown, gatedLiveScores));
   // Show the board once at least one pick has a result (graded or live). Hidden on a
   // not-yet-started week, where every total is a flat zero.
   const showBoard = $derived(standings.some((s) => s.decided > 0));
@@ -96,7 +104,7 @@
     {/if}
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {#each breakdown as game (game.gameId)}
-        <WeeklyPickCard {game} liveScore={activeLiveScores[game.gameId] ?? null} {liveStale} />
+        <WeeklyPickCard {game} liveScore={gatedLiveScores[game.gameId] ?? null} {liveStale} />
       {/each}
     </div>
   {/if}
