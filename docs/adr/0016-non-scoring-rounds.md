@@ -129,3 +129,17 @@ each view definition, refreshed by the same path.
   grading, settlement, and per-game result display remain unchanged. Note for future
   notification work — #731 merged both pregame lanes into one push per user per run, so a
   gate of this kind belongs on **detection**, not on the shared delivery step.
+- 2026-08-14 (#824) — Corrects boundary 2 and records the display half of boundary 1. The
+  clause "hiding the round from the leaderboard week dropdown's default" describes behaviour
+  that no longer exists: `getSeasonWeekOptions` dropped its `.gte('week_number', 0)` filter and
+  now includes non-scoring rounds on purpose, ordered by `start_ts` so a negative week still
+  sorts chronologically ahead of week 1. `week_number < 0` is now the **preseason odds signal
+  only**. Amended rule: **the Week tab shows the non-scoring round, and by default.** `/week`
+  anchors its season on the most recently _started_ week rather than on the newest season with
+  standings, because the exclusion this ADR decided means a preseason round produces no matview
+  rows and so its season is invisible to any default derived from them — which left the live
+  round reachable only by hand-editing the URL, on the very runway the #793 amendment named as
+  the onboarding path. Nothing here re-opens aggregation: the six browse surfaces
+  (`/league`, `/stats`, `/market`, `/recap`, `/wrapped`, `/league/manage`) keep the last-graded
+  default, and a non-scoring round still contributes zero to every standings, stats, awards and
+  recap surface. Display was always the point — "we exclude at aggregation, not at grading."
