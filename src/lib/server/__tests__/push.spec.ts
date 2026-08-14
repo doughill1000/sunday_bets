@@ -52,7 +52,8 @@ describe('sendToUser', () => {
   it('returns zero when the user has no subscriptions', async () => {
     subsData = [];
     const res = await sendToUser('u1', { title: 't', body: 'b' });
-    expect(res).toEqual({ sent: 0, pruned: 0 });
+    // total: 0 is what makes this distinguishable from a total delivery failure (#815).
+    expect(res).toEqual({ sent: 0, pruned: 0, total: 0 });
     expect(mockSendNotification).not.toHaveBeenCalled();
   });
 
@@ -65,7 +66,7 @@ describe('sendToUser', () => {
 
     const res = await sendToUser('u1', { title: 't', body: 'b', url: '/x' });
 
-    expect(res).toEqual({ sent: 2, pruned: 0 });
+    expect(res).toEqual({ sent: 2, pruned: 0, total: 2 });
     expect(mockSendNotification).toHaveBeenCalledTimes(2);
     expect(mockSendNotification).toHaveBeenCalledWith(
       { endpoint: 'e1', keys: { p256dh: 'p1', auth: 'a1' } },
@@ -87,8 +88,24 @@ describe('sendToUser', () => {
 
     const res = await sendToUser('u1', { title: 't', body: 'b' });
 
-    expect(res).toEqual({ sent: 1, pruned: 1 });
+    expect(res).toEqual({ sent: 1, pruned: 1, total: 3 });
     expect(deletedIds).toEqual(['s2']);
     expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  // #815: the case the admin card used to misreport as "no active subscriptions".
+  it('reports total delivery failure as sent 0 against a non-zero total', async () => {
+    subsData = [
+      { id: 's1', endpoint: 'e1', p256dh: 'p1', auth_key: 'a1' },
+      { id: 's2', endpoint: 'e2', p256dh: 'p2', auth_key: 'a2' }
+    ];
+    mockSendNotification.mockRejectedValue({ statusCode: 403 });
+
+    const res = await sendToUser('u1', { title: 't', body: 'b' });
+
+    expect(res).toEqual({ sent: 0, pruned: 0, total: 2 });
+    // Non-404/410 failures must still reach Sentry — one per subscription.
+    expect(captureException).toHaveBeenCalledTimes(2);
+    expect(deletedIds).toBeNull();
   });
 });

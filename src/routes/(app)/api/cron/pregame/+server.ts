@@ -35,6 +35,10 @@ export const POST: RequestHandler = async (event) => {
     let lineShifts: unknown;
     let reminders: unknown;
     let pushes: unknown;
+    // Subscriptions that actually accepted a push this run (#815). Logged beside
+    // `pushes` (attempts) so a total delivery outage — pushes: 6, delivered: 0 —
+    // is visible here instead of grading green and hiding in Sentry.
+    let delivered: unknown;
     // A notification failure must not fail the sync/job.
     try {
       const summary = await runPregameNotifications(new Date(), {
@@ -42,6 +46,7 @@ export const POST: RequestHandler = async (event) => {
       });
       reminders = summary.reminders;
       pushes = summary.pushes;
+      delivered = summary.delivered;
       lineShifts =
         near > 0 && !syncOk ? { skipped: true, reason: 'sync failed' } : summary.lineShifts;
     } catch (e) {
@@ -50,9 +55,10 @@ export const POST: RequestHandler = async (event) => {
       reminders = { error };
       lineShifts = { error };
       pushes = 0;
+      delivered = 0;
     }
 
-    return { near, synced, lineShifts, reminders, pushes };
+    return { near, synced, lineShifts, reminders, pushes, delivered };
   });
 
   return new Response(JSON.stringify(jobResult), {
