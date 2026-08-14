@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { assembleWeeklyBreakdown } from '../weeklyPicks';
+import { assembleWeeklyBreakdown, orderWeeklyBreakdown } from '../weeklyPicks';
 import type { GameInputRow } from '../weeklyPicks';
 import type { GroupPickEntry } from '$lib/types/picks';
-import type { LeaderboardPlayer, Settlement } from '$lib/types/leaderboard';
+import type { LeaderboardPlayer, Settlement, WeeklyGameBreakdown } from '$lib/types/leaderboard';
+import type { LiveScoreEntry } from '$lib/live/types';
 
 const GAME_ID = 'game-1';
 const USER_A = 'user-a';
@@ -225,5 +226,84 @@ describe('assembleWeeklyBreakdown', () => {
   it('returns empty array when no games', () => {
     const result = assembleWeeklyBreakdown([], [], [], players, null);
     expect(result).toHaveLength(0);
+  });
+});
+
+function makeBreakdownGame(overrides: Partial<WeeklyGameBreakdown> = {}): WeeklyGameBreakdown {
+  return {
+    gameId: 'g1',
+    away: 'BUF',
+    home: 'KC',
+    homeScore: null,
+    awayScore: null,
+    kickoff: '2025-09-07T17:00:00Z',
+    isFinal: false,
+    homeTeamId: 1,
+    awayTeamId: 2,
+    picks: [],
+    ...overrides
+  };
+}
+
+function liveScore(overrides: Partial<LiveScoreEntry> = {}): LiveScoreEntry {
+  return {
+    homeScore: 10,
+    awayScore: 7,
+    status: 'in_progress',
+    displayClock: '5:00',
+    period: 2,
+    ...overrides
+  };
+}
+
+describe('orderWeeklyBreakdown', () => {
+  // The regression the acceptance criteria call out by name: with zero live games the order
+  // must be byte-identical to today's kickoff-ascending order, no mode flag involved.
+  it('with zero live games, order is unchanged — kickoff ascending', () => {
+    const early = makeBreakdownGame({ gameId: 'early', kickoff: '2025-09-07T17:00:00Z' });
+    const late = makeBreakdownGame({ gameId: 'late', kickoff: '2025-09-07T20:25:00Z' });
+    const result = orderWeeklyBreakdown([late, early], {});
+    expect(result.map((g) => g.gameId)).toEqual(['early', 'late']);
+  });
+
+  it('with one live game, it leads every final and every not-yet-started game', () => {
+    const final = makeBreakdownGame({
+      gameId: 'final',
+      kickoff: '2025-09-07T17:00:00Z',
+      isFinal: true
+    });
+    const live = makeBreakdownGame({ gameId: 'live', kickoff: '2025-09-07T20:25:00Z' });
+    const upcoming = makeBreakdownGame({ gameId: 'upcoming', kickoff: '2025-09-08T00:20:00Z' });
+
+    const result = orderWeeklyBreakdown([final, live, upcoming], { live: liveScore() });
+    expect(result.map((g) => g.gameId)).toEqual(['live', 'final', 'upcoming']);
+  });
+
+  it('with N live games, they lead together and keep kickoff order among themselves', () => {
+    const finalGame = makeBreakdownGame({
+      gameId: 'final',
+      kickoff: '2025-09-07T17:00:00Z',
+      isFinal: true
+    });
+    const liveLate = makeBreakdownGame({ gameId: 'live-late', kickoff: '2025-09-07T20:25:00Z' });
+    const liveEarly = makeBreakdownGame({ gameId: 'live-early', kickoff: '2025-09-07T17:00:00Z' });
+
+    const result = orderWeeklyBreakdown([finalGame, liveLate, liveEarly], {
+      'live-late': liveScore(),
+      'live-early': liveScore()
+    });
+    expect(result.map((g) => g.gameId)).toEqual(['live-early', 'live-late', 'final']);
+  });
+
+  // A `final` live-feed entry (unofficial, not yet graded) is not "in play" for ordering
+  // purposes — only `in_progress` earns the top slot.
+  it('does not promote a final-but-ungraded live entry above kickoff order', () => {
+    const early = makeBreakdownGame({ gameId: 'early', kickoff: '2025-09-07T17:00:00Z' });
+    const unofficial = makeBreakdownGame({ gameId: 'unofficial', kickoff: '2025-09-07T20:25:00Z' });
+
+    const result = orderWeeklyBreakdown([unofficial, early], {
+      unofficial: liveScore({ status: 'final' })
+    });
+    expect(result.map((g) => g.gameId)).toEqual(['early', 'unofficial']);
   });
 });

@@ -10,9 +10,10 @@
     LIVE_POLL_MS,
     STALE_THRESHOLD_MS,
     isWithinLiveWindow,
-    activeLiveScores
+    activeLiveScores,
+    allGamesFinal
   } from '$lib/live/config';
-  import { assembleWeeklyLiveStandings } from '$lib/utils/weeklyPicks';
+  import { assembleWeeklyLiveStandings, orderWeeklyBreakdown } from '$lib/utils/weeklyPicks';
   import type { SeasonWeekOption, WeeklyGameBreakdown } from '$lib/types/leaderboard';
 
   let {
@@ -40,13 +41,30 @@
   function kickoffMs(g: WeeklyGameBreakdown) {
     return new Date(g.kickoff).getTime();
   }
-  const liveWindowActive = $derived(breakdown.some((g) => isWithinLiveWindow(kickoffMs(g), now)));
+
+  // Games the feed could still tell us something about: inside their window AND not already
+  // graded (#831). Excluding graded games keeps the wide 12h window cheap — once the grade cron
+  // settles a game the DB has the authoritative score, so fetching ESPN for it buys nothing and
+  // would only produce a live payload that must then lose to the graded one anyway.
+  const liveWindowGames = $derived(
+    breakdown.filter((g) => !g.isFinal && isWithinLiveWindow(kickoffMs(g), now))
+  );
+  const liveWindowActive = $derived(liveWindowGames.length > 0);
 
   const liveQuery = createQuery(() => ({
     queryKey: queryKeys.liveScores(),
     queryFn: () => fetchLiveScores(fetch),
     enabled: liveWindowActive,
-    refetchInterval: LIVE_POLL_MS,
+    // Stop repolling once every in-window game reports `final`, and just hold the unofficial
+    // score until grading replaces it (#831). Landing in the gap between the final whistle and
+    // the grade cron therefore costs ONE fetch, not 25s polling for the rest of the window.
+    refetchInterval: (query) =>
+      allGamesFinal(
+        liveWindowGames.map((g) => g.gameId),
+        query.state.data?.scores ?? {}
+      )
+        ? false
+        : LIVE_POLL_MS,
     refetchOnWindowFocus: true,
     staleTime: 0,
     gcTime: 60_000
@@ -54,8 +72,26 @@
 
   const liveScores = $derived(liveQuery.data?.scores ?? {});
   const liveFetchedAt = $derived(liveQuery.data?.fetchedAt ?? null);
+
+  // Every in-window game has reported `final`: the slate is over, we've stopped polling, and
+  // the scores in hand are the last word until grading replaces them (#831).
+  const liveSettled = $derived(
+    liveWindowActive &&
+      allGamesFinal(
+        liveWindowGames.map((g) => g.gameId),
+        liveQuery.data?.scores ?? {}
+      )
+  );
+
+  // Stale once the honest data age crosses the threshold, or on an errored/never-arrived fetch
+  // while a game is live. A settled feed is exempt (#831) — staleness exists to stop the board
+  // passing a *moving* number off as current, and a final score does not move; ageing it out
+  // would grey a correct answer into "Stale · reconnecting" precisely because stopping the poll
+  // is what makes `fetchedAt` cross the threshold. A quiet in-progress feed still clears, which
+  // is the case #822 built this guard for.
   const liveStale = $derived.by(() => {
     if (!liveWindowActive) return false;
+    if (liveSettled) return false;
     if (liveQuery.isError) return true;
     if (!liveFetchedAt) return true;
     return now - new Date(liveFetchedAt).getTime() > STALE_THRESHOLD_MS;
@@ -74,6 +110,11 @@
   // Show the board once at least one pick has a result (graded or live). Hidden on a
   // not-yet-started week, where every total is a flat zero.
   const showBoard = $derived(standings.some((s) => s.decided > 0));
+
+  // The games in play lead the board, above every final and every not-yet-started game (#831).
+  // Reading the *gated* scores — not the raw query — is what makes this collapse to today's
+  // exact kickoff order outside the live window, so no mode flag and no new state are required.
+  const orderedBreakdown = $derived(orderWeeklyBreakdown(breakdown, gatedLiveScores));
 </script>
 
 <div class="space-y-4" data-testid="weekly-breakdown">
@@ -98,12 +139,13 @@
         {standings}
         live={liveWindowActive}
         stale={liveStale}
+        settled={liveSettled}
         fetchedAt={liveFetchedAt}
         {now}
       />
     {/if}
     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {#each breakdown as game (game.gameId)}
+      {#each orderedBreakdown as game (game.gameId)}
         <WeeklyPickCard {game} liveScore={gatedLiveScores[game.gameId] ?? null} {liveStale} />
       {/each}
     </div>
