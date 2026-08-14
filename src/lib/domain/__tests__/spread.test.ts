@@ -1,6 +1,13 @@
 // tests/domain/spread.test.ts
 import { describe, it, expect } from 'vitest';
-import { hasLine, spreadLine, signedSpreadForTeam, type SpreadShape } from '../../domain/spread';
+import {
+  gameCover,
+  hasLine,
+  spreadLine,
+  signedSpreadForTeam,
+  type GameCoverShape,
+  type SpreadShape
+} from '../../domain/spread';
 import type { PickGame } from '../../types/games';
 
 // ---------------------------------------------------------------------------
@@ -159,6 +166,116 @@ describe('spread helpers', () => {
     expect(hasLine(g({ spreadValue: -3.5 }))).toBe(true);
     expect(hasLine(g({ spreadValue: null as any }))).toBe(false);
     expect(hasLine(g({ spreadValue: undefined as any }))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// gameCover — the /week card's "who beat the number, and by how much" (#838)
+//
+// Settles the GAME's line, not any member's frozen one. It reuses the same
+// ats_margin_at_lock mirror grading uses, so these cases double as a check that
+// favorite/underdog is read from spread_team_id's identity rather than the sign
+// of spread_value (the #734 inversion).
+// ---------------------------------------------------------------------------
+
+describe('gameCover', () => {
+  // CIN home (id 1) vs JAX away (id 2), CIN favoured by 3.5.
+  const card = (overrides: Partial<GameCoverShape> = {}): GameCoverShape => ({
+    home: 'CIN',
+    away: 'JAX',
+    homeTeamId: 1,
+    awayTeamId: 2,
+    spreadTeamId: 1,
+    spreadValue: 3.5,
+    homeScore: null,
+    awayScore: null,
+    ...overrides
+  });
+
+  it('home favourite covers → names the home team and the daylight', () => {
+    // CIN -3.5 wins 27-20 (margin 7): 7 - 3.5 = +3.5.
+    expect(gameCover(card({ homeScore: 27, awayScore: 20 }))).toEqual({
+      side: 'home',
+      team: 'CIN',
+      by: 3.5
+    });
+  });
+
+  it('home favourite fails → the underdog covered, by the shortfall', () => {
+    // CIN -3.5 wins 24-21 (margin 3): 3 - 3.5 = -0.5, so JAX covered by 0.5.
+    expect(gameCover(card({ homeScore: 24, awayScore: 21 }))).toEqual({
+      side: 'away',
+      team: 'JAX',
+      by: 0.5
+    });
+  });
+
+  it('away favourite covers → names the away team', () => {
+    // JAX -3 wins 28-20 (home margin -8): -8 + 3 = -5, so JAX covered by 5.
+    expect(
+      gameCover(card({ spreadTeamId: 2, spreadValue: 3, homeScore: 20, awayScore: 28 }))
+    ).toEqual({ side: 'away', team: 'JAX', by: 5 });
+  });
+
+  it('away favourite fails → the home underdog covered', () => {
+    // JAX -7 wins 24-21 (home margin -3): -3 + 7 = +4, so CIN covered by 4.
+    expect(
+      gameCover(card({ spreadTeamId: 2, spreadValue: 7, homeScore: 21, awayScore: 24 }))
+    ).toEqual({ side: 'home', team: 'CIN', by: 4 });
+  });
+
+  it('landing exactly on the number is a push with no side', () => {
+    // CIN -7 wins 31-24 (margin 7): 7 - 7 = 0.
+    expect(gameCover(card({ spreadValue: 7, homeScore: 31, awayScore: 24 }))).toEqual({
+      side: null,
+      team: null,
+      by: 0
+    });
+  });
+
+  // A pick'em is a real line (#802), and it needs no special case: the adjustment is zero, so
+  // the straight-up winner covers and a tie is a push.
+  it('pick’em resolves to the straight-up margin', () => {
+    expect(gameCover(card({ spreadValue: 0, homeScore: 24, awayScore: 20 }))).toEqual({
+      side: 'home',
+      team: 'CIN',
+      by: 4
+    });
+    expect(gameCover(card({ spreadValue: 0, homeScore: 20, awayScore: 24 }))).toEqual({
+      side: 'away',
+      team: 'JAX',
+      by: 4
+    });
+    expect(gameCover(card({ spreadValue: 0, homeScore: 20, awayScore: 20 }))?.side).toBeNull();
+  });
+
+  // Same regression spreadLine/signedSpreadForTeam carry: a legacy negative magnitude must not
+  // flip which side is favoured.
+  it('a negative stored magnitude settles identically to its absolute value', () => {
+    expect(gameCover(card({ spreadValue: -3.5, homeScore: 27, awayScore: 20 }))).toEqual(
+      gameCover(card({ spreadValue: 3.5, homeScore: 27, awayScore: 20 }))
+    );
+  });
+
+  it('returns null when it cannot be settled', () => {
+    // No line at all — an unlined game was never pickable (#802/#803).
+    expect(gameCover(card({ spreadValue: null, homeScore: 27, awayScore: 20 }))).toBeNull();
+    // No score yet (pre-kickoff, or a stale feed we stopped asserting).
+    expect(gameCover(card())).toBeNull();
+    expect(gameCover(card({ homeScore: 27 }))).toBeNull();
+    expect(gameCover(card({ awayScore: 20 }))).toBeNull();
+    // Missing team ids — the sides cannot be joined to the line.
+    expect(gameCover(card({ homeTeamId: null, homeScore: 27, awayScore: 20 }))).toBeNull();
+    expect(gameCover(card({ awayTeamId: null, homeScore: 27, awayScore: 20 }))).toBeNull();
+  });
+
+  it('settles a 0-0 game rather than treating it as no score', () => {
+    // JAX +3.5 with nothing on the board: 0 - 3.5 = -3.5, the dog is covering.
+    expect(gameCover(card({ homeScore: 0, awayScore: 0 }))).toEqual({
+      side: 'away',
+      team: 'JAX',
+      by: 3.5
+    });
   });
 });
 
