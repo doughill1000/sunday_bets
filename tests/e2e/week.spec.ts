@@ -16,13 +16,18 @@ test(
 
     await expect(wk.weekNavigator()).toBeVisible();
     await expect(wk.weeklyBreakdown()).toBeVisible();
-    await expect(wk.subtitle()).toHaveText(/^\d{4} season · /);
+    // A bare /week opens on the season in play (#824) — the seed's active week belongs to
+    // SEASON_YEAR, so that is the season the tab must land on with no `?season=` at all. It
+    // used to open on the newest season with graded standings, which all preseason is the
+    // season BEFORE the one people are playing (ADR-0016 keeps non-scoring rounds out of
+    // every aggregation, so the live season has no standings to be newest by).
+    await expect(wk.subtitle()).toHaveText(new RegExp(`^${SEASON_YEAR} season · `));
   }
 );
 
 test('the week picker offers a jump-to-week dropdown', async ({ page }) => {
-  // Pin the seeded season: without it the page defaults to the newest season the DB knows,
-  // which on a prod-cloned local DB can be a schedule-less year whose dropdown is empty.
+  // Pin the seeded season explicitly — the dropdown's contents are what this spec is about,
+  // so it should not depend on the default resolving to the same year (asserted above).
   const wk = weekPage(page);
   await wk.goto({ season: SEASON_YEAR });
 

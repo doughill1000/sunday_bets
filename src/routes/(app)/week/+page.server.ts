@@ -2,7 +2,8 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getAvailableSeasons } from '$lib/server/db/queries/leaderboard';
 import { getSeasonWeekOptions, getWeeklyPickBreakdown } from '$lib/server/weeklyPicks';
-import { resolveSeasonYear } from '$lib/server/seasonDefault';
+import { resolveLiveSeasonYear } from '$lib/server/seasonDefault';
+import { findStartedSeasonYear } from '$lib/server/db/queries/findStartedSeasonYear';
 import { tracePageLoad } from '$lib/server/observability';
 
 export const load: PageServerLoad = async (event) => {
@@ -21,16 +22,28 @@ async function loadWeek(event: Parameters<PageServerLoad>[0], groupId: string) {
   const seasonParam = event.url.searchParams.get('season');
   const weekParam = event.url.searchParams.get('week');
 
-  const [currentSeasonYear, availableSeasons] = await Promise.all([
+  const [currentSeasonYear, availableSeasons, startedSeasonYear] = await Promise.all([
     event.locals.getCurrentSeasonYear(),
-    getAvailableSeasons(groupId)
+    getAvailableSeasons(groupId),
+    findStartedSeasonYear()
   ]);
 
-  // Default to the last graded season (#737's "default to the last graded thing"): Schedule Sync
-  // seeds the upcoming season months early, so the calendar season would show empty rows. An
-  // explicit `?season=` — the form a `/league?view=weekly&season=` bookmark redirects into — is
-  // always honoured so deep links land on the season they named.
-  const seasonYear = resolveSeasonYear(seasonParam, availableSeasons, currentSeasonYear);
+  // Default to the season that is actually in play, not the last graded one (#824). Week is the
+  // "what just happened" surface, so it anchors on a started week the way /picks anchors on
+  // `findActiveWeek()` — the six browse surfaces keep `resolveSeasonYear`'s last-graded default.
+  // The distinction is invisible mid-season and decisive in August: a preseason round is
+  // non-scoring, so per ADR-0016 it contributes no matview rows and its season never enters
+  // `availableSeasons`, which left the live round unreachable without hand-editing the URL.
+  // Falls back to that same last-graded default when no week has started (the true off-season),
+  // so the empty-summer guard survives; an explicit `?season=` — the form a
+  // `/league?view=weekly&season=` bookmark redirects into — still wins over both, so deep links
+  // land on the season they named.
+  const seasonYear = resolveLiveSeasonYear(
+    seasonParam,
+    startedSeasonYear,
+    availableSeasons,
+    currentSeasonYear
+  );
 
   // The hook (injectSession) already validated the JWT, so trust locals.user rather than a
   // second auth.getUser() round-trip.
