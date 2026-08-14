@@ -3,7 +3,7 @@
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import { liveCoverState, type CoverVerdict, type LiveCoverState } from '$lib/domain/liveCover';
   import { verdictTextClass, verdictDotClass, verdictAria, fmtPoints } from '$lib/live/display';
-  import { spreadLine } from '$lib/domain/spread';
+  import { gameCover, spreadLine } from '$lib/domain/spread';
   import type { LiveScoreEntry } from '$lib/live/types';
   import type { WeeklyGameBreakdown, WeeklyPickRow } from '$lib/types/leaderboard';
 
@@ -33,15 +33,62 @@
   // stays exactly as it is today rather than showing a placeholder that reads as an error.
   const lineLabel = $derived(game.spreadValue == null ? null : spreadLine(game));
 
-  const scoreLabel = $derived(game.isFinal ? `${game.awayScore} – ${game.homeScore}` : null);
-  const liveScoreLabel = $derived(
-    liveScore ? `${liveScore.awayScore} – ${liveScore.homeScore}` : null
-  );
+  // --- The header's result column (#838) ------------------------------------------------------
+  // One score, one source. The live feed owns the number while the game is live-lit; the settled
+  // final owns it otherwise. `null` before kickoff, and on an ungraded game whose feed went stale
+  // — the same "stop asserting" rule the per-member cover dots follow.
+  const shownScore = $derived.by(() => {
+    if (liveLit && liveScore) return { home: liveScore.homeScore, away: liveScore.awayScore };
+    if (game.isFinal && game.homeScore != null && game.awayScore != null) {
+      return { home: game.homeScore, away: game.awayScore };
+    }
+    return null;
+  });
+  const scoreLabel = $derived(shownScore ? `${shownScore.away} – ${shownScore.home}` : null);
+
   const clockLabel = $derived.by(() => {
     if (!liveScore) return null;
     const q = liveScore.period ? `Q${liveScore.period}` : '';
     return liveScore.displayClock ? [q, liveScore.displayClock].filter(Boolean).join(' · ') : q;
   });
+
+  // The eyebrow over the score, saying what kind of number it is. An unofficial final is the one
+  // state that needs a colour: the score is real but grading has not blessed it yet.
+  const statusLabel = $derived.by(() => {
+    if (inProgress) return clockLabel || 'Live';
+    if (finalUnofficial) return 'Final · unofficial';
+    if (game.isFinal) return 'Final';
+    return null;
+  });
+
+  // Who beat the number, and by how much, at the line the header is already printing (#838).
+  // Deliberately the GAME's line, not any member's frozen one — see `gameCover`'s contract.
+  const cover = $derived.by(() => {
+    if (!shownScore) return null;
+    return gameCover({
+      home: game.home,
+      away: game.away,
+      homeTeamId: game.homeTeamId,
+      awayTeamId: game.awayTeamId,
+      spreadTeamId: game.spreadTeamId,
+      spreadValue: game.spreadValue,
+      homeScore: shownScore.home,
+      awayScore: shownScore.away
+    });
+  });
+
+  // Present tense only while the ball is still in play; an unofficial final is already decided,
+  // and its "Final · unofficial" eyebrow carries the caveat.
+  const coverLabel = $derived.by(() => {
+    if (!cover) return null;
+    if (cover.side == null) return 'Push';
+    return `${cover.team} ${inProgress ? 'covering' : 'covered'} by ${fmtPoints(cover.by)}`;
+  });
+
+  // Green for the side that beat the number, amber for a push — never red. The team rows below
+  // already spend green/red on "these picks won / lost", and on an underdog-covers game a red
+  // header would sit directly over a green underdog row that also covered.
+  const coverClass = $derived(cover?.side == null ? 'text-warning' : 'text-success');
 
   // Live cover state for one pick, mirroring grade_pick against the live score (display-only).
   function coverStateOf(p: WeeklyPickRow): LiveCoverState | null {
@@ -141,37 +188,61 @@
   }
 </script>
 
-<Card>
-  <CardHeader class="pb-2">
-    <CardTitle class="flex flex-wrap items-center gap-2 text-base font-semibold">
-      <span>{game.away} @ {game.home}</span>
-      {#if lineLabel}
-        <span class="text-sm font-normal text-muted-foreground tabular-nums" data-testid="game-line"
-          >{lineLabel}</span
-        >
-      {/if}
-      {#if inProgress}
-        <span class="inline-flex items-center gap-1 text-sm font-normal" data-testid="live-score">
-          <span class="size-1.5 animate-pulse rounded-full bg-destructive" aria-hidden="true"
-          ></span>
-          <span class="tabular-nums">{liveScoreLabel}</span>
-          {#if clockLabel}
-            <span class="text-xs text-muted-foreground">{clockLabel}</span>
+<!-- Density follows the task (DESIGN principle 15): a week is a grid of up to sixteen of these
+     side by side, so the card trims the vendored `px-6`/`py-6` to `px-4`/`py-4` and buys back
+     ~16px of content width at 390px, where the member lists are what needs it. -->
+<Card class="gap-3 py-4">
+  <CardHeader class="gap-0 px-4 pb-0">
+    <!-- Two columns, one job each: identity on the left (which game, at what number), result on
+         the right (what happened, and who beat that number). Before #838 all four lived in one
+         wrapping row at near-identical weights, so the score — the thing a settled card exists
+         to report — read as a footnote to the matchup. -->
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <CardTitle class="text-base font-semibold">{game.away} @ {game.home}</CardTitle>
+        {#if lineLabel}
+          <p class="mt-0.5 text-xs text-muted-foreground tabular-nums" data-testid="game-line">
+            {lineLabel}
+          </p>
+        {/if}
+      </div>
+
+      {#if scoreLabel}
+        <div class="shrink-0 text-right">
+          {#if statusLabel}
+            <p
+              class="flex items-center justify-end gap-1 text-eyebrow uppercase {finalUnofficial
+                ? 'text-warning'
+                : 'text-muted-foreground'}"
+              data-testid={finalUnofficial ? 'final-unofficial' : undefined}
+            >
+              {#if inProgress}
+                <span class="size-1.5 animate-pulse rounded-full bg-destructive" aria-hidden="true"
+                ></span>
+              {/if}
+              {statusLabel}
+            </p>
           {/if}
-        </span>
-      {:else if finalUnofficial}
-        <span class="inline-flex items-center gap-1.5 text-sm font-normal">
-          <span class="tabular-nums">{liveScoreLabel}</span>
-          <span class="text-xs font-medium text-warning" data-testid="final-unofficial"
-            >Final — unofficial</span
+          <!-- Deliberately NOT `text-stat`: that token is the page-hero numeral (2rem), and at
+               sixteen cards to a week it shouted. 24px still reads as the card's anchor against
+               the 16px matchup without turning the grid into a wall of scoreboards.
+
+               `live-score` vs `final-score` tracks the SOURCE, not the game state: a
+               final-but-ungraded score still comes off the ESPN feed. -->
+          <p
+            class="text-2xl leading-tight font-bold tabular-nums"
+            data-testid={liveLit ? 'live-score' : 'final-score'}
           >
-        </span>
-      {:else if scoreLabel}
-        <span class="text-sm font-normal text-muted-foreground">Final {scoreLabel}</span>
+            {scoreLabel}
+          </p>
+          {#if coverLabel}
+            <p class="text-xs font-medium {coverClass}" data-testid="game-cover">{coverLabel}</p>
+          {/if}
+        </div>
       {/if}
-    </CardTitle>
+    </div>
   </CardHeader>
-  <CardContent class="space-y-1.5 pt-0">
+  <CardContent class="space-y-1.5 px-4 pt-0">
     {#if !showNoPick && picked.length === 0}
       <p class="text-sm text-muted-foreground">Picks reveal at kickoff.</p>
     {:else}
@@ -187,7 +258,7 @@
           <span class="mt-0.5 w-12 shrink-0 text-xs font-semibold {labelClass}">
             <span class="block leading-tight">{team.label}</span>
             {#if liveState}
-              <span class="block text-[10px] font-medium tabular-nums" data-testid="cover-cushion"
+              <span class="block text-xs font-medium tabular-nums" data-testid="cover-cushion"
                 >{cushionText(liveState)}</span
               >
             {/if}
@@ -213,7 +284,7 @@
                   {p.displayName}{p.isYou ? ' (you)' : ''}
                 </span>
                 <span
-                  class="rounded bg-muted px-1 text-[10px] leading-tight font-medium text-muted-foreground"
+                  class="rounded bg-muted px-1 text-xs leading-tight font-medium text-muted-foreground"
                 >
                   {p.weight ?? '—'}
                 </span>
