@@ -156,7 +156,9 @@ beforeEach(() => {
   db = {
     gamesNullCount: 0,
     gameRows: [{ id: 'g1' }, { id: 'g2' }],
-    week: { week_number: 5, is_scoring: true },
+    // Every `weeks` lookup resolves to this one fixture, so it carries the
+    // `seasons!inner(year)` join both recap senders now select (#818).
+    week: { week_number: 5, is_scoring: true, seasons: { year: 2026 } },
     users: [],
     notificationLogs: [],
     settlements: [],
@@ -213,7 +215,7 @@ describe('sendResultsRecap', () => {
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Your Week 5 results',
       body: '1-1 · +2 points this week. Tap for the breakdown.',
-      url: '/week',
+      url: '/week?season=2026&week=5',
       tag: 'results-recap-week-5'
     });
     expect(db.insertedLogs).toEqual([
@@ -226,6 +228,22 @@ describe('sendResultsRecap', () => {
         detail: { wins: 1, losses: 1, pushes: 0, missed: 0, net: 2, ...DELIVERED }
       }
     ]);
+  });
+
+  // #818 regression: the cron fires Tuesday 14:00 UTC, 14 hours after week N+1's window
+  // opened, so `/week`'s "latest started week" default would land the tap on the empty
+  // next week. The link names the graded week outright, so nothing defers to that default.
+  it('deep-links to the graded week, not whichever week is active at send time', async () => {
+    db.week = { week_number: 12, is_scoring: true, seasons: { year: 2026 } };
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+
+    await sendResultsRecap(42);
+
+    const payload = sendToUser.mock.calls[0][1];
+    expect(payload.url).toBe('/week?season=2026&week=12');
+    // Copy and link agree on which week this push is about.
+    expect(payload.title).toBe('Your Week 12 results');
   });
 
   // #815 regression: the outage that used to grade green.
