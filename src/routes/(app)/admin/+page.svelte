@@ -6,7 +6,6 @@
   import TestNotificationCard from '$lib/components/admin/TestNotificationCard.svelte';
   import AddMemberCard from '$lib/components/admin/AddMemberCard.svelte';
   import GameplaySettingsCard from '$lib/components/admin/GameplaySettingsCard.svelte';
-  import FormNote from '$lib/components/FormNote.svelte';
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import {
     Table,
@@ -18,13 +17,6 @@
   } from '$lib/components/ui/table';
 
   let { data }: { data: PageData } = $props();
-
-  // shared notification state
-  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
-
-  function handleNote(kind: 'success' | 'warn' | 'error', text: string) {
-    msg = { kind, text };
-  }
 
   function formatDuration(started_at: string, finished_at: string | null): string {
     if (!finished_at) return 'running';
@@ -47,29 +39,17 @@
     <span aria-hidden="true">→</span>
   </a>
 
-  <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} onNote={handleNote} />
+  <OddsSyncCard settings={data.settings} activeWeek={data.activeWeek} />
 
-  <ScheduleSyncCard onNote={handleNote} />
+  <ScheduleSyncCard />
 
-  <GradingCard
-    activeWeek={data.activeWeek}
-    weeks={data.weeks}
-    seasons={data.seasons}
-    onNote={handleNote}
-  />
+  <GradingCard activeWeek={data.activeWeek} weeks={data.weeks} seasons={data.seasons} />
 
-  <TestNotificationCard onNote={handleNote} />
+  <TestNotificationCard />
 
-  <AddMemberCard onNote={handleNote} />
+  <AddMemberCard />
 
-  <GameplaySettingsCard
-    finalWeekUnlimitedAllin={data.gameplay.finalWeekUnlimitedAllin}
-    onNote={handleNote}
-  />
-
-  {#if msg}
-    <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-2" />
-  {/if}
+  <GameplaySettingsCard finalWeekUnlimitedAllin={data.gameplay.finalWeekUnlimitedAllin} />
 
   <Card class="p-6">
     <CardHeader class="mb-4">

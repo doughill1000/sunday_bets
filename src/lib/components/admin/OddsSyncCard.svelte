@@ -8,20 +8,21 @@
     CardContent
   } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { syncOdds as syncOddsApi } from '$lib/api/admin/odds'; // Import the new helper
 
   interface Props {
     settings: { cap: number; used: number; remaining: number; usagePct: number };
     activeWeek: { id: number; week_number: number } | null;
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
   }
-  let { settings, activeWeek, onNote }: Props = $props();
+  let { settings, activeWeek }: Props = $props();
 
   let localSettings = $state({ ...settings });
   let syncing = $state(false);
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
-    onNote?.(kind, text);
+    msg = { kind, text };
   }
 
   async function syncOdds() {
@@ -95,5 +96,9 @@
         {#if syncing}Syncing…{:else}Sync Odds{/if}
       </Button>
     </div>
+
+    {#if msg}
+      <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
+    {/if}
   </CardContent>
 </Card>

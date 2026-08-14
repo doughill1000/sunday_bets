@@ -1,16 +1,17 @@
 <script lang="ts">
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card';
   import { Button } from '$lib/components/ui/button';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { updateFinalWeekAllin } from '$lib/api/admin/settings';
 
   interface Props {
     finalWeekUnlimitedAllin: boolean;
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
   }
-  let { finalWeekUnlimitedAllin: initialEnabled, onNote }: Props = $props();
+  let { finalWeekUnlimitedAllin: initialEnabled }: Props = $props();
 
   let enabled = $state(initialEnabled);
   let saving = $state(false);
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   async function toggle() {
     const next = !enabled;
@@ -18,10 +19,13 @@
     try {
       await updateFinalWeekAllin(next);
       enabled = next;
-      onNote?.('success', `Final-week All-In exception ${next ? 'enabled' : 'disabled'}.`);
+      msg = {
+        kind: 'success',
+        text: `Final-week All-In exception ${next ? 'enabled' : 'disabled'}.`
+      };
     } catch (err) {
       const e = err as { message?: string };
-      onNote?.('error', e.message ?? 'Failed to update setting.');
+      msg = { kind: 'error', text: e.message ?? 'Failed to update setting.' };
     } finally {
       saving = false;
     }
@@ -50,5 +54,9 @@
         {enabled ? 'On' : 'Off'}
       </Button>
     </div>
+
+    {#if msg}
+      <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
+    {/if}
   </CardContent>
 </Card>

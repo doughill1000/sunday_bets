@@ -2,6 +2,7 @@
   import AdminCard from './AdminCard.svelte';
   import { Button } from '$lib/components/ui/button';
   import { Label } from '$lib/components/ui/label';
+  import FormNote from '$lib/components/FormNote.svelte';
   import { gradeWeek, gradeGame, gradeSeason, type GradeResult } from '$lib/api/admin/grading';
   import { useQueryClient } from '@tanstack/svelte-query';
   import { SHAREABLE_QUERY_ROOTS } from '$lib/query/keys';
@@ -28,13 +29,13 @@
     activeWeek: { id: number; week_number: number } | null;
     weeks?: WeekOption[];
     seasons?: SeasonOption[];
-    onNote?: (kind: 'success' | 'warn' | 'error', text: string) => void;
   }
-  let { activeWeek, weeks = [], seasons = [], onNote }: Props = $props();
+  let { activeWeek, weeks = [], seasons = [] }: Props = $props();
 
   const queryClient = useQueryClient();
 
   let grading = $state(false);
+  let msg: { kind: 'success' | 'warn' | 'error'; text: string } | null = $state(null);
 
   // Primary: grade a week. Default to the active week if we have one, else the newest.
   let selectedWeekId = $state<number | ''>(activeWeek?.id ?? weeks[0]?.id ?? '');
@@ -53,7 +54,7 @@
   const selectedWeek = $derived(weeks.find((w) => w.id === Number(selectedWeekId)) ?? null);
 
   function note(kind: 'success' | 'warn' | 'error', text: string) {
-    onNote?.(kind, text);
+    msg = { kind, text };
   }
 
   function fmtRange(startTs: string, endTs: string): string {
@@ -275,5 +276,9 @@
         </div>
       </div>
     </details>
+  {/if}
+
+  {#if msg}
+    <FormNote kind={msg.kind === 'warn' ? 'warning' : msg.kind} text={msg.text} class="mt-4" />
   {/if}
 </AdminCard>
