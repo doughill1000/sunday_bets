@@ -72,7 +72,7 @@
 
       <span class="ml-auto text-[11px] text-muted-foreground" data-testid="live-board-freshness">
         {#if !live}
-          Final for this week
+          Points for the week
         {:else if stale}
           reconnecting…
         {:else if fetchedAgeSec != null}
