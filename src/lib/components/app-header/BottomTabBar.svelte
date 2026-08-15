@@ -31,10 +31,16 @@
   ];
 </script>
 
+<!-- `transform: translateZ(0)` promotes the bar onto its own GPU compositing layer. Without it,
+     iOS Safari intermittently leaves this `position: fixed` bar (and the sibling FeedbackWidget)
+     painted at a stale scroll offset after momentum scrolling — it appears stranded mid-screen
+     with page content bleeding through below it, until the next repaint. The hoist is inert
+     visually (translateZ(0) has no 2D effect) and safe here: the bar has no fixed-positioned
+     descendants whose containing block the transform would capture. -->
 <nav
   data-testid="bottom-tab-bar"
   class="fixed right-0 bottom-0 left-0 z-40 flex border-t bg-background/95 backdrop-blur-sm sm:hidden"
-  style="padding-bottom: env(safe-area-inset-bottom)"
+  style="padding-bottom: env(safe-area-inset-bottom); transform: translateZ(0)"
 >
   {#each tabs as { href, label, Icon } (href)}
     {@const pendingPath = navigating?.to?.url.pathname ?? page.url.pathname}
