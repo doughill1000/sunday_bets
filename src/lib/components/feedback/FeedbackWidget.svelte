@@ -80,11 +80,15 @@
 </script>
 
 <!-- Persistent floating entry point on authed app routes. Sits above the mobile
-     bottom tab bar (bottom-20) and clears it on desktop (sm:bottom-6). -->
+     bottom tab bar (bottom-20) and clears it on desktop (sm:bottom-6).
+     `transform: translateZ(0)` forces its own GPU compositing layer so it doesn't get
+     stranded mid-screen alongside the tab bar during iOS Safari's stale-fixed-layer repaint
+     glitch (see BottomTabBar for the full note). -->
 <button
   type="button"
   data-testid="feedback-open"
   class="fixed right-4 bottom-20 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:brightness-110 sm:bottom-6"
+  style="transform: translateZ(0)"
   aria-label="Send feedback"
   onclick={() => feedbackOpen.set(true)}
 >
