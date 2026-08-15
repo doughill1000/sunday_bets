@@ -223,14 +223,13 @@
               {statusLabel}
             </p>
           {/if}
-          <!-- Deliberately NOT `text-stat`: that token is the page-hero numeral (2rem), and at
-               sixteen cards to a week it shouted. 24px still reads as the card's anchor against
-               the 16px matchup without turning the grid into a wall of scoreboards.
+          <!-- Same size as the matchup title (text-base): the score is the card's anchor by
+               weight and position, not by towering over the rest of the header.
 
                `live-score` vs `final-score` tracks the SOURCE, not the game state: a
                final-but-ungraded score still comes off the ESPN feed. -->
           <p
-            class="text-2xl leading-tight font-bold tabular-nums"
+            class="text-base leading-tight font-bold tabular-nums"
             data-testid={liveLit ? 'live-score' : 'final-score'}
           >
             {scoreLabel}
