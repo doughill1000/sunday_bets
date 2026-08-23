@@ -14,10 +14,12 @@
   // collides. Wrapped is a seasonal moment, not a year-round destination — it is surfaced via the
   // League honors card's Wrapped link when one exists (#737 retired the separate WrappedPromo CTA).
   //
-  // `weekLive` renders a pulsing dot on the Week tab while an active-week game is inside its live
-  // window (#776, replacing #584's auto-flip of /league onto the Week tab). It reuses the red
-  // live-signal of WeeklyLiveBoard's LIVE badge — one pattern per job — rather than gold, which
-  // already marks the active tab and is reserved for the champion crown (DESIGN.md P13).
+  // `weekLive` renders a pulsing dot on the Week tab while an active-week game is actually being
+  // played (#776, replacing #584's auto-flip of /league onto the Week tab). "Being played", not
+  // "inside the board's 12h window" — the looser reading left the dot pulsing all Friday morning
+  // after Thursday night (#843). It reuses the red live-signal of WeeklyLiveBoard's LIVE badge —
+  // one pattern per job — rather than gold, which already marks the active tab and is reserved
+  // for the champion crown (DESIGN.md P13).
   let { weekLive = false }: { weekLive?: boolean } = $props();
 
   const tabs = [
