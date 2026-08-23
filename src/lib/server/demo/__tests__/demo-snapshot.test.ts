@@ -7,11 +7,13 @@
 // dependency the frozen fixture doesn't yet satisfy — the shape-drift half of ADR-0026's
 // staleness prevention (the AGENTS.md refresh rule covers coverage drift).
 import { render } from '@testing-library/svelte';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { getDemoSnapshot } from '../snapshot';
+import { load as loadDemoWeek } from '../../../../routes/demo/week/+page.server';
 import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
 import { BADGE_GLOSSARY } from '$lib/domain/badges';
 import DemoPicksPage from '../../../../routes/demo/+page.svelte';
+import DemoWeekPage from '../../../../routes/demo/week/+page.svelte';
 import DemoStatsPage from '../../../../routes/demo/stats/+page.svelte';
 import DemoMarketPage from '../../../../routes/demo/market/+page.svelte';
 import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
@@ -160,9 +162,6 @@ describe('demo surfaces render against the fixture', () => {
       }
     });
     expect(getByText('My Picks')).toBeInTheDocument();
-    // Since #832 kickoff is a hard boundary: the frozen week's started games leave the board
-    // for the handoff strip, and only the un-started ones remain as cards. (The follow-up
-    // `/demo` issue reshapes the snapshot around this; the fixture itself is unchanged.)
     expect(getByTestId('week-underway-strip')).toBeInTheDocument();
     expect(getByTestId('see-the-week')).toHaveAttribute('href', '/demo/week');
     expect(getByTestId('game-card')).toBeInTheDocument();
@@ -289,5 +288,78 @@ describe('demo surfaces render against the fixture', () => {
       props: { personaName: snapshot.persona.displayName }
     });
     expect(getByTestId('demo-persona-banner')).toBeInTheDocument();
+  });
+});
+
+// #833: the demo mirrors the shipped IA — the picking board on `/demo`, the sweat on
+// `/demo/week`. These are the assertions that fail if `/demo` regrows a post-kickoff row, if the
+// live board or the per-game cards vanish from `/demo/week`, or if either page acquires a live
+// feed (ADR-0026 §4).
+describe('demo follows the /picks–/week IA split (#833)', () => {
+  const demoPicksData = {
+    liveWeek: snapshot.liveWeek,
+    personaName: snapshot.persona.displayName,
+    personaUserId: snapshot.persona.userId
+  } as unknown as import('../../../../routes/demo/$types').PageData;
+
+  // The real loader, not a hand-built stand-in — so a loader that stops deriving the breakdown
+  // fails here rather than passing against a fixture the page never actually receives.
+  const demoWeekData = loadDemoWeek(
+    {} as never
+  ) as unknown as import('../../../../routes/demo/week/$types').PageData;
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it('leaves no post-kickoff game row on the /demo board', () => {
+    const { queryAllByTestId } = render(DemoPicksPage, { props: { data: demoPicksData } });
+    const openIds = snapshot.liveWeek.games.filter((g) => g.status === 'open').map((g) => g.id);
+    const rendered = queryAllByTestId('game-card').map((el) => el.getAttribute('data-game-id'));
+    expect(
+      rendered.toSorted(),
+      'only games that have NOT kicked off may render as cards on /demo (#832 boundary)'
+    ).toEqual(openIds.toSorted());
+    // Nor may the board smuggle the live layer back in via a score readout.
+    expect(queryAllByTestId('live-score')).toHaveLength(0);
+    expect(queryAllByTestId('final-unofficial')).toHaveLength(0);
+  });
+
+  it('/demo/week shows the ranked live board and a card per game', () => {
+    const { getByTestId, queryAllByTestId } = render(DemoWeekPage, {
+      props: { data: demoWeekData }
+    });
+    expect(getByTestId('demo-weekly-breakdown')).toBeInTheDocument();
+    expect(getByTestId('weekly-live-board')).toBeInTheDocument();
+    expect(queryAllByTestId('live-board-row')).toHaveLength(snapshot.liveWeek.standings.length);
+    // The hardware payoff still sits below the sweat.
+    expect(getByTestId('demo-week-hardware')).toBeInTheDocument();
+  });
+
+  it('/demo/week lights the live cover dots off the frozen scores', () => {
+    const { queryAllByTestId } = render(DemoWeekPage, { props: { data: demoWeekData } });
+    expect(queryAllByTestId('member-cover-dot').length).toBeGreaterThan(0);
+    expect(queryAllByTestId('live-score').length).toBeGreaterThan(0);
+    // The `final_unofficial` game is the one state the demo exists to show that /demo cannot.
+    expect(queryAllByTestId('final-unofficial').length).toBeGreaterThan(0);
+  });
+
+  it('/demo/week leads with the games in play (#831 ordering)', () => {
+    const inProgress = demoWeekData.breakdown.filter(
+      (g) => demoWeekData.liveScores[g.gameId]?.status === 'in_progress'
+    );
+    expect(inProgress.length, 'the frozen week must still have games in play').toBeGreaterThan(0);
+    expect(
+      demoWeekData.breakdown.slice(0, inProgress.length).map((g) => g.gameId),
+      'every in-progress game must sort above every final and not-yet-started one'
+    ).toEqual(inProgress.map((g) => g.gameId));
+  });
+
+  it('neither demo screen issues a per-visitor live-feed call (ADR-0026 §4)', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    render(DemoPicksPage, { props: { data: demoPicksData } }).unmount();
+    render(DemoWeekPage, { props: { data: demoWeekData } }).unmount();
+    expect(
+      fetchSpy.mock.calls.map((c) => String(c[0])),
+      'the frozen demo must never reach for /api/live-scores'
+    ).toEqual([]);
   });
 });

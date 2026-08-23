@@ -13,10 +13,14 @@ export type PickStatus = 'saved' | 'open' | 'missed';
 export function pickStatus(
   entry: PickEntry | undefined,
   kickoff: string,
-  now = Date.now()
+  now = Date.now(),
+  /** Overrides the wall-clock kickoff comparison. A frozen/readonly board (#669, #833) carries
+   *  its own started set: a snapshot's kickoff timestamps age into the past in real wall-clock
+   *  time, but the games' frozen states must not follow them. */
+  started = kickoffPassed(kickoff, now)
 ): PickStatus {
   if (entry?.lockedPick) return 'saved';
-  if (kickoffPassed(kickoff, now)) return 'missed';
+  if (started) return 'missed';
   return 'open';
 }
 

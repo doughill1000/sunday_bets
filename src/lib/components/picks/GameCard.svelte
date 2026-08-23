@@ -36,7 +36,11 @@
 
   const entry = $derived($picks[game.id] ?? {});
   const current = $derived(entry.selected ?? entry.lockedPick);
-  const started = $derived(kickoffPassed(game.kickoff));
+  // On a frozen board a card only reaches this component if the board's own started set says the
+  // game has NOT kicked off (#669, #833) — the snapshot's kickoff timestamps age into the past in
+  // real wall-clock time, so comparing against `now` would print "Kickoff passed" over the demo's
+  // one still-pickable game. Same rule as `PicksBoard`'s `started()`; see its `readonly` doc.
+  const started = $derived(!readonly && kickoffPassed(game.kickoff));
   const locked = $derived(!!entry.lockedPick);
   // A game with no posted line can't be picked (#802) — the server RPC refuses it, so the
   // card must not offer the controls. `hasLine` is `$derived` off the prop, so the card
