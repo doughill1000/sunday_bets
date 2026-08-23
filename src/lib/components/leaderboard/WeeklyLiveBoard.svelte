@@ -19,6 +19,11 @@
     fetchedAt?: string | null;
     /** 1s-ticking clock from the parent, so the freshness caption counts up. */
     now?: number;
+    /** Frozen snapshot board (#833, ADR-0026): the public demo bakes a mid-Sunday with no feed
+     *  behind it, so the freshness stamp is dropped rather than counting up from a generation
+     *  time the visitor never asked about. The LIVE pill and the "unofficial" caveat still hold —
+     *  the board really is showing games in play, they are just frozen ones. */
+    frozen?: boolean;
   }
   let {
     standings,
@@ -26,7 +31,8 @@
     stale = false,
     settled = false,
     fetchedAt = null,
-    now = Date.now()
+    now = Date.now(),
+    frozen = false
   }: Props = $props();
 
   // Reorder animation as covers flip; collapses to instant under reduced-motion.
@@ -86,7 +92,9 @@
       {/if}
 
       <span class="ml-auto text-[11px] text-muted-foreground" data-testid="live-board-freshness">
-        {#if !live}
+        {#if frozen}
+          <!-- Nothing to date-stamp: a frozen board has no fetch behind it. -->
+        {:else if !live}
           Points for the week
         {:else if stale}
           reconnecting…

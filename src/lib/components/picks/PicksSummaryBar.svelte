@@ -12,11 +12,19 @@
   interface Props {
     games: PickGame[];
     now: number;
+    /** Frozen/readonly board (#669, #833): the board's own started set replaces the wall-clock
+     *  kickoff comparison, so the demo's aged-out timestamps can't report its one still-open
+     *  game as missed. `null` on a real board, which compares against `now`. */
+    startedIds?: ReadonlySet<string> | null;
   }
-  let { games, now }: Props = $props();
+  let { games, now, startedIds = null }: Props = $props();
   const picks = usePicksStore();
 
-  const statuses = $derived(games.map((g) => pickStatus($picks[g.id], g.kickoff, now)));
+  const statuses = $derived(
+    games.map((g) =>
+      pickStatus($picks[g.id], g.kickoff, now, startedIds ? startedIds.has(g.id) : undefined)
+    )
+  );
   const savedCount = $derived(statuses.filter((s) => s === 'saved').length);
   const openCount = $derived(statuses.filter((s) => s === 'open').length);
   const missedCount = $derived(statuses.filter((s) => s === 'missed').length);
