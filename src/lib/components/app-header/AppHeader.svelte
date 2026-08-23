@@ -11,8 +11,8 @@
   // console at /league/manage); Market is the NFL-wide ATS surface (renamed from "Teams" so the tab
   // names the market concept and never collides with "League", the user's group). Wrapped is
   // intentionally absent: a seasonal moment surfaced via the League honors card link, not a
-  // permanent nav destination. `weekLive` puts the red live-pulse dot on Week during the live
-  // window — same signal as WeeklyLiveBoard's LIVE badge (one pattern per job).
+  // permanent nav destination. `weekLive` puts the red live-pulse dot on Week while a game is
+  // actually being played — same signal as WeeklyLiveBoard's LIVE badge (one pattern per job).
   const navLinks = [
     { href: '/picks', label: 'Picks' },
     { href: '/week', label: 'Week' },
