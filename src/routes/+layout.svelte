@@ -27,6 +27,12 @@
 
   let { children, data } = $props();
 
+  // How often a *visible* tab re-asks whether a game is live, for the Week tab's pulse dot
+  // (#843). Deliberately human-paced rather than real-time: the dot is a cue, and the sweat
+  // board owns the fast poll. The endpoint behind it is memoized server-side and shared at the
+  // CDN, so this never turns into per-viewer ESPN traffic.
+  const WEEK_LIVE_REVALIDATE_MS = 60_000;
+
   // One QueryClient per environment: the browser singleton (so SPA navigations reuse one
   // cache) on the client, a fresh per-request client on the server (ADR-0017). The same
   // provider renders on the server and client (no `{#if browser}` swap, which would
@@ -110,6 +116,8 @@
   // The Week nav tab's live-pulse dot (#776): streamed from the layout server load like
   // championUserId above, resolved here so the dot appears on every page without ever blocking
   // navigation. False until the promise resolves — the dot fades in, never flashes wrongly.
+  // Every navigation re-streams it; a resumed-but-not-navigated PWA is corrected by the
+  // revalidation wired up in onMount below (#843).
   let weekLive = $state(false);
   $effect(() => {
     void Promise.resolve(data.weekLive).then((live) => {
@@ -165,6 +173,33 @@
         document.removeEventListener('visibilitychange', handleVisibility);
     }
 
+    // Keep the Week tab's live dot honest without a navigation (#843). The streamed value is
+    // resolved once per load, so an app left open across a whole game night would still be
+    // pulsing long after the final whistle — the exact "cries wolf" failure the server-side gate
+    // fixes for fresh loads. Re-ask on resume, and on a slow tick while the tab is visible, so
+    // the dot can both light up and go dark on its own.
+    let weekLiveInFlight = false;
+    const refreshWeekLive = async () => {
+      if (!user || weekLiveInFlight || document.visibilityState !== 'visible') return;
+      weekLiveInFlight = true;
+      try {
+        const res = await fetch('/api/week-live');
+        if (res.ok) {
+          const body: { live?: boolean } = await res.json();
+          weekLive = body.live === true;
+        }
+      } catch {
+        // Offline or a transient failure: hold the value we have rather than blanking the dot.
+      } finally {
+        weekLiveInFlight = false;
+      }
+    };
+    const handleWeekLiveVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshWeekLive();
+    };
+    document.addEventListener('visibilitychange', handleWeekLiveVisibility);
+    const weekLiveTimer = setInterval(() => void refreshWeekLive(), WEEK_LIVE_REVALIDATE_MS);
+
     const { data: sub } = supabase.auth.onAuthStateChange((_, newSession) => {
       if (newSession?.expires_at !== session?.expires_at) {
         invalidate('supabase:auth');
@@ -173,6 +208,8 @@
 
     return () => {
       removeVisibilityListener?.();
+      document.removeEventListener('visibilitychange', handleWeekLiveVisibility);
+      clearInterval(weekLiveTimer);
       sub.subscription.unsubscribe();
       unsubscribePersist?.();
     };

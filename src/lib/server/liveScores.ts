@@ -70,22 +70,37 @@ export function selectLiveScores(
 }
 
 /**
- * Cheap, DB-only check (no ESPN) for whether the active week has a game inside its live
- * window. Since #776 this drives the live-pulse dot on the Week nav tab (it previously drove
- * #584's `liveDefaultWeekly` auto-flip, retired when Week became its own nav destination).
- * Degrades to `false` on any error so navigation never breaks. Prefer {@link isActiveWeekLiveCached}
- * for the nav dot — this raw form runs a DB read every call.
+ * Is a game in the active week actually being played *right now*? Since #776 this drives the
+ * live-pulse dot on the Week nav tab (it previously drove #584's `liveDefaultWeekly` auto-flip,
+ * retired when Week became its own nav destination).
+ *
+ * It used to answer a much looser question — "is any active-week game inside its 12h live
+ * window" — which made the dot lie for hours. `LIVE_WINDOW_MS` is sized by the GRADE CRON, not
+ * by game length (#823/#831), so a Thursday-night kickoff kept the dot pulsing until ~8am Friday,
+ * long after the game had ended and been settled (#843). A "live now" light that is lit when
+ * nothing is live trains people to ignore it, which costs it the one job it has on a real Sunday
+ * slate.
+ *
+ * So the dot now reads the same display-only feed the board reads and asks the literal question:
+ * does the feed report an active-week game as `in_progress`? That decouples the dot from
+ * `LIVE_WINDOW_MS` — the window still decides when we may *ask* ESPN (the board's contract,
+ * untouched), but only a genuinely in-progress game lights it.
+ *
+ * Cost: none of its own whenever the board is being watched — {@link getLiveScoresForActiveWeek}
+ * is the same memoized call `/api/live-scores` makes, so concurrent readers still collapse to ≤1
+ * ESPN fetch per `LIVE_CACHE_TTL_MS`. Outside a live window it never touches ESPN at all (that
+ * call self-gates on the window), and offseason it costs one `findActiveWeek` read.
+ *
+ * Fails DARK: any error resolves false, and an ESPN outage degrades the payload to empty, which
+ * reads as "nothing in progress". For a cue like this a missed light beats a false one — the
+ * failure mode #843 is about is the dot insisting a game is on when none is.
+ *
+ * Prefer {@link isActiveWeekLiveCached} for the nav dot — this raw form re-checks every call.
  */
 export async function isActiveWeekLive(now = Date.now()): Promise<boolean> {
   try {
-    const week = await findActiveWeek();
-    if (!week) return false;
-    const { data: games, error } = await supabaseService
-      .from('games')
-      .select('commence_time')
-      .eq('week_id', week.id);
-    if (error) return false;
-    return (games ?? []).some((g) => isWithinLiveWindow(new Date(g.commence_time).getTime(), now));
+    const { scores } = await getLiveScoresForActiveWeek(now);
+    return Object.values(scores).some((s) => s.status === 'in_progress');
   } catch {
     return false;
   }
@@ -101,11 +116,12 @@ export function __resetActiveWeekLiveCache(): void {
 
 /**
  * Cached wrapper over {@link isActiveWeekLive} for the nav-wide live-pulse dot (#776). The dot is
- * read on every authenticated page load, so a bare call would put a DB check on the navigation hot
- * path. A short module-level memo collapses all viewers to ≤1 DB check per window regardless of
- * headcount — the same goodwill property `getLiveScoresForActiveWeek` relies on. The in-season gate
- * is inherent: offseason there is no active week, so the underlying call returns false after a
- * single `findActiveWeek` read. Degrades to false on any error (inherited).
+ * read on every authenticated page load, so a bare call would put a read on the navigation hot
+ * path. A short module-level memo collapses all viewers to ≤1 underlying check per window
+ * regardless of headcount — layered on top of, not instead of, the shared live-scores memo the
+ * underlying call rides. The in-season gate is inherent: offseason there is no active week, so
+ * the underlying call returns false after a single `findActiveWeek` read. Degrades to false on
+ * any error (inherited).
  */
 export async function isActiveWeekLiveCached(now = Date.now()): Promise<boolean> {
   if (liveFlagMemo && now - liveFlagMemo.at < LIVE_FLAG_TTL_MS) return liveFlagMemo.value;
