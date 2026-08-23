@@ -71,11 +71,14 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
         .catch(() => true)
     : Promise.resolve(true);
 
-  // Whether the active week has a game inside its live window — the Week nav tab's pulse dot
-  // (#776, reusing #584's check after its auto-flip retired). Streamed like championUserId so it
-  // never blocks navigation, and short-TTL cached module-side (isActiveWeekLiveCached) so the
-  // nav-wide read adds no per-navigation DB query; offseason it costs one findActiveWeek read per
-  // TTL window and resolves false. Degrades to false on any error.
+  // Whether a game in the active week is being played right now — the Week nav tab's pulse dot
+  // (#776, reusing #584's check after its auto-flip retired). "Right now" means the feed says
+  // in progress, NOT merely inside the board's 12h window, which kept the dot lit until Friday
+  // morning after a Thursday-night game (#843). Streamed like championUserId so it never blocks
+  // navigation, and short-TTL cached module-side (isActiveWeekLiveCached) so the nav-wide read
+  // adds nothing per navigation; offseason it costs one findActiveWeek read per TTL window and
+  // resolves false. Degrades to false on any error. /api/week-live serves the same value to a
+  // resumed PWA that never re-navigates.
   const weekLive: Promise<boolean> = user
     ? isActiveWeekLiveCached().catch(() => false)
     : Promise.resolve(false);
