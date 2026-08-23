@@ -518,10 +518,10 @@
               onclick={() => selectAvatar(preset.key)}
               onkeydown={onAvatarKeydown}
               title={preset.key}
-              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-              class:ring-2={avatarKey === preset.key}
-              class:ring-offset-2={avatarKey === preset.key}
-              class:ring-foreground={avatarKey === preset.key}
+              class="flex size-10 items-center justify-center rounded-full text-xl transition-transform hover:scale-110 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none {avatarKey ===
+              preset.key
+                ? 'ring-2 ring-foreground ring-offset-2'
+                : 'ring-1 ring-foreground/15 ring-inset'}"
               style="background:{preset.bg};"
             >
               {preset.emoji}
