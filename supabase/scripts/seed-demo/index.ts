@@ -98,23 +98,41 @@ const PLAYERS: Player[] = [
 
 // Per-player archetypes drive the awards engine. `skill` is the probability a pick covers
 // the spread; the other knobs steer specific badges (homer/choker/hunter/ghost).
+//
+// Calibrated to the market, not to fantasy (#844). These knobs are what the demo's credibility
+// ratings are ultimately made of: the rating is a shrunk CAREER COVER RATE mapped onto the 1500
+// scale (ADR-0032 v2), and a career here runs ~220 settled decisions, so each extra point of
+// cover rate is worth ~6 rating points. The old 0.50-0.70 band produced a demo ladder topping
+// out at 1720 -- a number no real bettor sustains -- so the shop window oversold the product.
+// These sit in a believable band instead, and it is the SPREAD between them, not their height,
+// that still separates the contender from the square. Two read high on purpose: a forced-outcome
+// knob pulls the realized rate back down (Mike's All-Ins are forced to lose) or up (Hank's are
+// forced to win), and what has to land in band is the REALIZED career cover rate -- which the
+// demo drift-guard asserts off the regenerated fixture.
 interface Archetype {
   skill: number; // base P(pick covers)
   allInRate: number; // P(a given pick is upgraded to All-In, capped 1/week)
   skipRate: number; // P(skip a game -> graded as 'missed')
   homerTeam?: string; // always picks this team's side when it plays (-> The Homer)
-  allInForce?: 'win' | 'lose'; // force All-In outcomes (-> Big Game Hunter / The Choker)
+  // Force every All-In to cover / not cover (-> The Whale / The Choker, the two surviving
+  // All-In badges after #647). An All-In is worth 10 points against 1/3/5, and it is an
+  // ABSOLUTE override, so `allInRate` is really this knob's volume dial: at 0.2-0.3 it handed
+  // one player ~35 forced wins and another ~35 forced losses across a career, which both
+  // decided every season title and dragged the two cover rates out of any believable band
+  // (#844). The Choker needs only 3 All-Ins and zero wins in a season, and The Whale only 3
+  // and a winning rate, so a low rate still seats both badges.
+  allInForce?: 'win' | 'lose';
 }
 // Indexed parallel to PLAYERS.
 const ARCHETYPES: Archetype[] = [
-  { skill: 0.7, allInRate: 0.2, skipRate: 0.03 }, // Doug  — balanced, perennial contender
-  { skill: 0.52, allInRate: 0.12, skipRate: 0.02, allInForce: 'win' }, // Hank — Big Game Hunter
-  { skill: 0.56, allInRate: 0.15, skipRate: 0.05 }, // Charlie — streaky / contrarian-ish
-  { skill: 0.58, allInRate: 0.15, skipRate: 0.32 }, // Marcus — The Ghost (skips a lot)
-  { skill: 0.7, allInRate: 0.2, skipRate: 0.03, homerTeam: 'PHI' }, // Beth — The Homer (PHI)
-  { skill: 0.5, allInRate: 0.3, skipRate: 0.05, allInForce: 'lose' }, // Mike — The Choker
-  { skill: 0.64, allInRate: 0.2, skipRate: 0.04 }, // Nate
-  { skill: 0.66, allInRate: 0.22, skipRate: 0.04 } // Olivia
+  { skill: 0.494, allInRate: 0.2, skipRate: 0.03 }, // Doug  — balanced, perennial contender
+  { skill: 0.47, allInRate: 0.08, skipRate: 0.02, allInForce: 'win' }, // Hank — The Whale
+  { skill: 0.492, allInRate: 0.15, skipRate: 0.05 }, // Charlie — streaky / contrarian-ish
+  { skill: 0.496, allInRate: 0.15, skipRate: 0.32 }, // Marcus — The Ghost (skips a lot)
+  { skill: 0.527, allInRate: 0.2, skipRate: 0.03, homerTeam: 'PHI' }, // Beth — The Homer (PHI)
+  { skill: 0.534, allInRate: 0.1, skipRate: 0.05, allInForce: 'lose' }, // Mike — The Choker
+  { skill: 0.505, allInRate: 0.2, skipRate: 0.04 }, // Nate
+  { skill: 0.474, allInRate: 0.22, skipRate: 0.04 } // Olivia
 ];
 
 // --- Groups ------------------------------------------------------------------
@@ -698,14 +716,42 @@ function coveringSideOf(g: PriorGame): Side | 'push' {
   return 'push';
 }
 
-// Season "form" boost so the trophy case shows different champions year over year.
+// The season index decidePick sees, for the CURRENT (in-progress) season. The two completed
+// seasons are 0 (oldest) and 1 (most recent), which fall out of the `completedYears` loop below.
+// The current season used to be generated as `seasonIdx: 1` too, and so quietly collected the
+// most-recent completed season's form (below) on top of the largest block of decisions in a
+// career -- CUR_BULK_WEEKS x 8 games, against COMPLETED_WEEKS x 4 in a completed season. That
+// one mislabel is most of how the demo ladder ended up topping out at 1720 (#844).
+const SEASON_IDX_CURRENT = 2;
+
+// Season "form" so the trophy case shows different champions year over year — a REDISTRIBUTION,
+// not a boost (#844). Each row is a per-season offset on top of the player's `skill`, and the
+// rows are weighted-ZERO-SUM: a hot season is paid for by cooler ones, with the current season
+// weighted roughly double because it carries roughly twice a completed season's decisions. That
+// is what lets `skill` stay an honest CAREER cover rate — and the credibility rating is a career
+// number (ADR-0032), so a season lifted without a matching dip lifts the ladder with it. The old
+// shape (a bare +0.22/+0.25/+0.28 on one season and nothing anywhere else) had no dip, which is
+// why its champions read as 1547-1720 bettors rather than as players who had a year.
+//
+// Sizing: the offsets stay small enough that no season reads as engineered. A 14-week season is
+// ~56 decisions, so ordinary sampling noise alone is worth ±7 points of cover rate — a champion
+// landing near 58% is a good year, one landing at 65% is a seeding artifact. These produce a
+// 2024 champion around 32-22 and leave every CAREER cover rate (the number the ladder actually
+// shows) inside 46-55%.
+//
+// Who ends up with the trophy is checked, not assumed — the archetypes' own knobs still swing it.
+// Hank's forced All-In wins are worth 10 points each and take group A's most-recent season even
+// though no form row names him, which is the intended texture: form is a nudge, not a script.
+//
+// Indexed by player, then by season: [oldest completed, most-recent completed, current].
+const SEASON_FORM: Record<number, [oldest: number, recent: number, current: number]> = {
+  2: [0.06, -0.1, 0.02], // Charlie — a big year then a cold one (takes group A's oldest season)
+  7: [0.06, -0.02, -0.02], // Olivia — the same shape, one group over (takes group B's oldest)
+  0: [-0.03, 0.09, -0.03] // Doug — peaks late (takes group B's most-recent season)
+};
+
 function seasonBoost(seasonIdx: number, playerIdx: number): number {
-  // Oldest completed season: Charlie tops group A, Olivia tops group B.
-  if (seasonIdx === 0 && playerIdx === 2) return 0.25; // Charlie
-  if (seasonIdx === 0 && playerIdx === 7) return 0.28; // Olivia
-  // Most-recent completed season: Doug tops both groups.
-  if (seasonIdx === 1 && playerIdx === 0) return 0.22; // Doug
-  return 0;
+  return SEASON_FORM[playerIdx]?.[seasonIdx] ?? 0;
 }
 
 // Decide one player's pick on one game. Returns null = no pick (-> 'missed' on grading).
@@ -1154,7 +1200,7 @@ async function run() {
           const allInKey = `${group.id}:${playerIdx}:curbw${bw}`;
           const decided = decidePick({
             playerIdx,
-            seasonIdx: 1,
+            seasonIdx: SEASON_IDX_CURRENT,
             gameIdx: i,
             homeCode,
             awayCode,
@@ -1248,7 +1294,7 @@ async function run() {
         const allInKey = `${GROUP_B_ID}:${playerIdx}:cur${wi}`;
         const decided = decidePick({
           playerIdx,
-          seasonIdx: 1,
+          seasonIdx: SEASON_IDX_CURRENT,
           gameIdx: gi,
           homeCode: g.home,
           awayCode: g.away,
@@ -1349,7 +1395,7 @@ async function run() {
       for (const playerIdx of groupBOnly.memberIdx) {
         const decided = decidePick({
           playerIdx,
-          seasonIdx: 1,
+          seasonIdx: SEASON_IDX_CURRENT,
           gameIdx: gi,
           homeCode: g.home,
           awayCode: g.away,
