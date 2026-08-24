@@ -173,6 +173,27 @@ function toGroupPick(
   };
 }
 
+/**
+ * One member's locked All-In, shaped like the `all_in_declarations` RPC projection (#844,
+ * ADR-0023) — deliberately WITHOUT the frozen-line fields `toGroupPick` carries: the reveal is
+ * pre-kickoff, so there is no cover dot to light and nothing settled to describe.
+ */
+function toAllInDeclaration(
+  g: PickGame,
+  member: LeaderboardPlayer,
+  side: TeamSide
+): GroupPickEntry {
+  return {
+    userId: member.id,
+    displayName: member.display_name,
+    avatarKey: member.avatar_key ?? null,
+    gameId: g.id,
+    pickedSide: side,
+    weight: 'A',
+    pickedTeamShort: side === 'home' ? g.home : g.away
+  };
+}
+
 /** A non-persona member's pick on one game, or null for a deterministic "hasn't picked" gap. */
 function memberPickFor(
   gameIdx: number,
@@ -214,11 +235,11 @@ async function buildDemoLiveWeek(personaId: string, members: GroupMember[]): Pro
       .maybeSingle();
     week = fallback.data ?? null;
   }
-  if (!week) return { weekNumber: 0, games: [], standings: [] };
+  if (!week) return { weekNumber: 0, games: [], standings: [], allIns: [] };
 
   const pickGames = await getGamesWithActiveLines(week.id);
   const weekNumber = week.week_number as number;
-  if (pickGames.length === 0) return { weekNumber, games: [], standings: [] };
+  if (pickGames.length === 0) return { weekNumber, games: [], standings: [], allIns: [] };
 
   // Stable, deterministic member + game order so the fixture regenerates byte-identically.
   const players = demoPlayers(members);
@@ -297,7 +318,20 @@ async function buildDemoLiveWeek(personaId: string, members: GroupMember[]): Pro
   const breakdown = demoWeeklyBreakdown(games, members, personaId);
   const standings = assembleWeeklyLiveStandings(breakdown, demoLiveScores(games));
 
-  return { weekNumber, games, standings };
+  // One seeded All-In (#844). The ADR-0023 reveal fires when a pick LOCKS, not at kickoff, so
+  // the example rides the OPEN game — the one the visitor can still pick — and survives the
+  // #832 boundary that moved every started game off this board. It belongs to a co-member
+  // rather than the persona for the same reason: a persona All-In here would move the only
+  // open game into the locked section and leave `/demo` a picking board with nothing to pick.
+  // One declaration, on the underdog: a rival shoving before you have answered is the moment
+  // the banner exists to show, and a second row would make it a list instead.
+  const declarer = players.find((m) => m.id !== personaId);
+  const allIns =
+    openGame && declarer
+      ? [toAllInDeclaration(openGame, declarer, favoredSide(openGame) === 'home' ? 'away' : 'home')]
+      : [];
+
+  return { weekNumber, games, standings, allIns };
 }
 
 async function assembleDemoSnapshot(params: {

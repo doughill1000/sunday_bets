@@ -11,6 +11,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { getDemoSnapshot } from '../snapshot';
 import { load as loadDemoWeek } from '../../../../routes/demo/week/+page.server';
 import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
+import { MIN_QUALIFIED_DECISIONS, RATING_PAR, ratingTier } from '$lib/domain/rating';
 import { BADGE_GLOSSARY } from '$lib/domain/badges';
 import DemoPicksPage from '../../../../routes/demo/+page.svelte';
 import DemoWeekPage from '../../../../routes/demo/week/+page.svelte';
@@ -361,5 +362,102 @@ describe('demo follows the /picks–/week IA split (#833)', () => {
       fetchSpy.mock.calls.map((c) => String(c[0])),
       'the frozen demo must never reach for /api/live-scores'
     ).toEqual([]);
+  });
+});
+
+// #844: the demo is the shop window, so its numbers have to be the ones a real season produces.
+// These are EDITORIAL guards on the regenerated fixture, not domain rules — they fail if the
+// seeded league's cover rates drift back up and the ladder regrows the 1547-1720 spread it used
+// to show, which oversold the product to exactly the visitors it was built to convince.
+describe('demo credibility ratings read as a real season (#844, ADR-0032)', () => {
+  // Half the credibility meter's window (METER_HALF_WINDOW = 50). The honest v2 spread is only
+  // ~±35 points — conviction-flat shrinkage pulls hard toward par — so a demo rating outside
+  // par ± 25 is a seeding artifact, not a bettor.
+  const BAND = 25;
+  const rated = snapshot.allTime.ladder.filter((r) => r.entry.rating != null);
+
+  it('populates the ladder — every rated member past the qualification gate', () => {
+    expect(rated.length, 'the demo ladder must not be a card of Unrated rows').toBeGreaterThan(0);
+    for (const r of rated) {
+      expect(r.entry.decisions, `${r.display_name} is rated below the gate`).toBeGreaterThanOrEqual(
+        MIN_QUALIFIED_DECISIONS
+      );
+    }
+  });
+
+  it('keeps every rating inside the honest v2 band', () => {
+    for (const r of rated) {
+      expect(
+        r.entry.rating,
+        `${r.display_name} reads ${r.entry.rating} — outside ${RATING_PAR - BAND}-${RATING_PAR + BAND}. ` +
+          'Recalibrate ARCHETYPES/SEASON_FORM in supabase/scripts/seed-demo, then regenerate.'
+      ).toBeGreaterThanOrEqual(RATING_PAR - BAND);
+      expect(r.entry.rating).toBeLessThanOrEqual(RATING_PAR + BAND);
+    }
+  });
+
+  it('shows a believable tier mix — mostly Solid/Sharp, at most one Hotshot', () => {
+    const tiers = rated.map((r) => ratingTier(r.entry.rating!));
+    expect(tiers.filter((t) => t === 'hotshot')).toHaveLength(1);
+    expect(
+      tiers.filter((t) => t === 'solid' || t === 'sharp').length,
+      `tier mix ${tiers.join('/')} — the middle of the ladder must be its majority`
+    ).toBeGreaterThan(rated.length / 2);
+  });
+
+  it('backs those ratings with realistic career cover rates', () => {
+    for (const t of snapshot.allTime.totals) {
+      const settled = t.wins + t.losses + t.pushes;
+      const cover = (t.wins + 0.5 * t.pushes) / settled;
+      expect(
+        cover,
+        `${t.display_name} covered ${(cover * 100).toFixed(1)}% of ${settled} career decisions`
+      ).toBeGreaterThanOrEqual(0.46);
+      expect(cover).toBeLessThanOrEqual(0.55);
+    }
+  });
+
+  it('feeds the /stats Career hero the same in-band numbers', () => {
+    const ladderById = new Map(snapshot.allTime.ladder.map((r) => [r.user_id, r.entry.rating]));
+    for (const e of snapshot.stats.playerRatings) {
+      expect(e.rating, `${e.user_id} disagrees between the Career hero and the ladder`).toBe(
+        ladderById.get(e.user_id)
+      );
+    }
+  });
+});
+
+// #844: the All-In reveal is the one signature moment ADR-0023 fires BEFORE kickoff, which is
+// what keeps it on the picking board after #832 moved everything under way to /demo/week.
+describe('the demo board shows the All-In reveal (#844, ADR-0023)', () => {
+  const demoPicksData = {
+    liveWeek: snapshot.liveWeek,
+    personaName: snapshot.persona.displayName,
+    personaUserId: snapshot.persona.userId
+  } as unknown as import('../../../../routes/demo/$types').PageData;
+
+  it('carries exactly one seeded, locked, pre-kickoff All-In', () => {
+    const [declaration, ...rest] = snapshot.liveWeek.allIns;
+    expect(declaration, 'the frozen week must seed an All-In to reveal').toBeTruthy();
+    expect(rest, 'one declaration is a showcase; several are clutter').toHaveLength(0);
+    expect(declaration.weight).toBe('A');
+    expect(declaration.pickedTeamShort).toBeTruthy();
+    expect(
+      declaration.userId,
+      'a persona All-In would move the only open game into the locked section and leave /demo ' +
+        'a picking board with nothing to pick'
+    ).not.toBe(snapshot.persona.userId);
+    expect(
+      snapshot.liveWeek.games.find((g) => g.id === declaration.gameId)?.status,
+      'the example must ride a game that has NOT kicked off, so it survives the /demo–/demo/week split'
+    ).toBe('open');
+  });
+
+  it('renders the "This week\'s All-Ins" banner on /demo', () => {
+    const { getByTestId, queryAllByTestId } = render(DemoPicksPage, {
+      props: { data: demoPicksData }
+    });
+    expect(getByTestId('all-in-declarations')).toBeInTheDocument();
+    expect(queryAllByTestId('all-in-entry')).toHaveLength(snapshot.liveWeek.allIns.length);
   });
 });
