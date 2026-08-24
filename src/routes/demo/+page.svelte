@@ -13,8 +13,12 @@
   //
   // Since #832 that split is the kickoff boundary: a started game leaves the board for the
   // handoff strip, which points at the demo's own frozen `/demo/week`. The frozen live scores
-  // the board used to take went with the sweat layer — the follow-up `/demo` issue owns
-  // reshaping the snapshot around the new board.
+  // the board used to take went with the sweat layer.
+  //
+  // What did NOT go with it is the All-In reveal (#844): ADR-0023 reveals a locked All-In
+  // pre-kickoff, which puts it on this side of the boundary. The snapshot seeds one on the game
+  // that has not started, so a first-time visitor meets the signature moment on the board where
+  // they can still answer it.
   const initialPicks = $derived(
     Object.fromEntries(
       data.liveWeek.games
@@ -36,6 +40,7 @@
 <PicksBoard
   games={data.liveWeek.games}
   {initialPicks}
+  allInDeclarations={data.liveWeek.allIns}
   userId={data.personaUserId}
   readonly
   weekHref="/demo/week"

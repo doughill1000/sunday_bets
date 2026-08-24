@@ -67,6 +67,18 @@ export type DemoLiveWeek = {
    * `assembleWeeklyLiveStandings` (#584) so the demo Weekly board reuses the shipped component.
    */
   standings: WeeklyLiveStanding[];
+  /**
+   * The week's locked All-In declarations (#844), shaped exactly like the `all_in_declarations`
+   * RPC projection the real /picks board reads — so it carries no frozen-line fields, because
+   * the reveal happens BEFORE kickoff and has no settlement to describe.
+   *
+   * Deliberately its own field rather than a slice of `games[].groupPicks`: those are the
+   * post-kickoff cover-dot grid that lives on `/demo/week`, while an All-In is the one pick the
+   * whole group sees the moment it LOCKS (ADR-0023). That is why the demo's example rides a game
+   * that has not kicked off — it belongs on the `/demo` picking board, on the far side of the
+   * #832 boundary from the sweat.
+   */
+  allIns: GroupPickEntry[];
 };
 
 /** The designated "you" persona the visitor inhabits. */

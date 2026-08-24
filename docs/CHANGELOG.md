@@ -68,6 +68,58 @@ This only happens at release-cut time and only for that release's window — ent
 prior releases are never touched, and `finish-pr` still adds one fragment per PR the rest
 of the time.
 
+## v4.0.0 — 2026-08-24
+
+- **PR #848** Release v4.0.0.
+- **PR #847** Raise contrast on avatar presets and the champion badge, and give the
+  champion Crown badge its own background chip. files: `src/lib/avatars.ts`
+- **#833** `/demo` follows the new IA — the picking board stays on `/demo`, the frozen
+  sweat moves to `/demo/week`, derived from the existing fixture. ADR-0026 (amended)
+- **PR #841** Fix fixed bottom chrome (tab bar, feedback button) stranding mid-screen
+  on iOS Safari after momentum scrolling.
+- **#843** The Week tab's live dot now means a game is on right now, not just "in the
+  grading window" — follows the live feed's own in-progress verdict.
+- **PR #840** Drop the week-card score from `text-2xl` to `text-base` to match the
+  matchup title's weight.
+- **#838** `/week` scorecards split into identity (matchup + line) and result (score +
+  cover verdict), framed by the covering side, never red. ADR-0007 · ADR-0029 ·
+  ADR-0030
+- **#836** `/week` scorecards show the game's line beside the matchup. ADR-0007
+- **#832** Kickoff is now a hard boundary on `/picks` — the board holds only games you
+  can still act on; a kicked-off game hands off to `/week`. Reverses #386's split,
+  closes #823. ADR-0030
+- **#831** `/week` game cards lead with what's actually in progress; the live window
+  now reaches the grade cron that replaces it.
+- **PR #830** Relabel the weekly sweat board's "Final for this week" caption to
+  "Points for the week" — it overclaimed completeness between two live windows.
+- **#816** Each `/admin` card renders its own result inline instead of one shared
+  status note below all six.
+- **#824** The Week tab now opens on the season actually in play, not the last one
+  with standings. ADR-0016 (amended)
+- **#822** The picks board no longer leaves a finished game lit as `LIVE` — shares the
+  window gate the weekly board already had.
+- **#818** The Tuesday results push now deep-links to the week it's reporting on,
+  instead of a bare `/week`.
+- **#815** Push delivery is now reported separately from push attempts, so a delivery
+  outage no longer logs as a healthy run.
+- **#814** Push notifications alert again on repeat sends instead of silently updating
+  the tray; `/settings` reconciles the device's real subscription state.
+- **#802** A game with no posted line no longer renders as pickable.
+  ADR-0040
+- **#804** A game's betting line stops moving once it kicks off. ADR-0003 (amended)
+- **#803** A game nobody could pick no longer costs anybody the missed-pick penalty.
+  ADR-0040
+- **#801** Odds sync now primes the upcoming week as well as the active one. ADR-0003
+  (amended)
+- **PR #807** Flip ADR-0039 to Accepted.
+- **#782** Retire the competition-start controls — joining is the only participation
+  boundary. ADR-0039 (supersedes ADR-0037 rulings 4-5)
+- **#792** Anchor the unlimited-All-In exemption on the last scoring week. ADR-0016
+- **#791** Anchor NFL week windows in US Eastern instead of UTC. ADR-0003 amendment
+- **#793** A non-scoring round now notifies about picking only, not line-shifts.
+  ADR-0016
+- **PR #795** Hold back TypeScript majors in dependabot.
+
 ## v3.12.0 — 2026-08-09
 
 - **PR #794** Release v3.12.0.
