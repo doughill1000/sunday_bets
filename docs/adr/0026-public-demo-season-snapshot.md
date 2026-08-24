@@ -179,3 +179,31 @@ Product questions settled with the owner before writing:
   a PR that adds a first-class tab to the authed app is not done until `/demo` gains the matching
   surface in the same PR or a tracked follow-up — mirrors the existing "shipping a marketing-worthy
   surface? refresh the demo snapshot" AGENTS.md rule, but for structural IA rather than content.
+- 2026-08-23 (#833) — **A composition move, not a contract change.** §2's two vantage points are
+  unchanged and the snapshot's shape is untouched; what moved is _which route renders which part
+  of it_. #832 made kickoff the boundary between `/picks` (what you can still act on) and `/week`
+  (the live layer), so the frozen mid-Sunday sweat (#585) now renders on **`/demo/week`** —
+  `WeeklyLiveBoard` + `WeeklyPickCard`, live cards leading (#831) — while **`/demo`** keeps the
+  picking board and the handoff strip and nothing post-kickoff. This is the #669 rule above
+  applied to a reshuffle rather than a new tab: an IA change in the authed app is an IA change in
+  the demo.
+
+  Two consequences worth recording, because either could be quietly undone later:
+
+  - **The demo derives; it does not store.** `/demo/week` needs a `WeeklyGameBreakdown[]`, which
+    is fully derivable from the committed `liveWeek.games`. Rather than widen the fixture, both
+    the snapshot generator and the `/demo/week` loader call one shared `demoWeeklyBreakdown`
+    (`$lib/server/demo/liveWeek.ts`), so the frozen `standings` and the cards rendered beside them
+    cannot be assembled two different ways. The fixture keeps **one representation per fact**;
+    `liveWeek.standings` stays stored only because it is _not_ derivable from the games alone.
+  - **§4's "zero per-visitor calls" now has teeth on the live feed too.** `/demo/week`
+    deliberately does **not** reuse `WeeklyPicksBreakdown` — that component _is_ the live-scores
+    query — and composes the two presentational components directly instead. The drift-guard
+    asserts it rather than trusting it: it renders both demo screens with `fetch` spied and fails
+    on any call.
+
+  A frozen board also may not read its state off the wall clock. A snapshot's kickoff timestamps
+  age into the past while the games' frozen states must not follow them, so `readonly` mode now
+  carries that rule all the way down — `GameCard` and `PicksSummaryBar` take the board's started
+  set instead of comparing against `now`, as `PicksBoard` already did. Without it the demo's one
+  still-open game rendered "Kickoff passed — picks locked" and counted as a miss.

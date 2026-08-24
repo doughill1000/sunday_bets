@@ -6,16 +6,16 @@ export interface AvatarPreset {
 
 export const AVATAR_PRESETS: AvatarPreset[] = [
   { key: 'football', emoji: '🏈', bg: '#7c3aed' },
-  { key: 'fire', emoji: '🔥', bg: '#dc2626' },
-  { key: 'trophy', emoji: '🏆', bg: '#d97706' },
+  { key: 'fire', emoji: '🔥', bg: '#7f1d1d' },
+  { key: 'trophy', emoji: '🏆', bg: '#134e4a' },
   { key: 'shark', emoji: '🦈', bg: '#0284c7' },
   { key: 'goat', emoji: '🐐', bg: '#16a34a' },
-  { key: 'lightning', emoji: '⚡', bg: '#ca8a04' },
+  { key: 'lightning', emoji: '⚡', bg: '#1e3a8a' },
   { key: 'skull', emoji: '💀', bg: '#475569' },
-  { key: 'crown', emoji: '👑', bg: '#b45309' },
+  { key: 'crown', emoji: '👑', bg: '#9f1239' },
   { key: 'rocket', emoji: '🚀', bg: '#7c3aed' },
   { key: 'wolf', emoji: '🐺', bg: '#374151' },
-  { key: 'clover', emoji: '🍀', bg: '#15803d' },
+  { key: 'clover', emoji: '🍀', bg: '#78350f' },
   { key: 'ghost', emoji: '👻', bg: '#6b7280' }
 ];
 

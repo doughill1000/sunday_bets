@@ -186,7 +186,7 @@
     {/if}
   </Alert>
 {:else}
-  <PicksSummaryBar {games} {now} />
+  <PicksSummaryBar {games} {now} startedIds={readonly ? committedGameIds : null} />
 
   <!-- No "You're all set" card (#787): PicksSummaryBar already asserts the done-state on its
        own line, so a second card restating it just pushed the committed pick further down. -->

@@ -30,11 +30,8 @@ import { getRecentRecaps, upsertRecap, type RecapRow } from '$lib/server/db/quer
 import { buildRecapFacts } from '$lib/server/recap/facts';
 import { generateRecapProse } from '$lib/server/recap/voice';
 import { getGamesWithActiveLines } from '$lib/server/db/queries/getGamesWithActiveLines';
-import {
-  assembleWeeklyBreakdown,
-  assembleWeeklyLiveStandings,
-  type GameInputRow
-} from '$lib/utils/weeklyPicks';
+import { assembleWeeklyLiveStandings } from '$lib/utils/weeklyPicks';
+import { demoLiveScores, demoPlayers, demoWeeklyBreakdown } from '$lib/server/demo/liveWeek';
 import { favoriteSide } from '$lib/domain/spread';
 import type { SeasonWrappedRow } from '$lib/types/server/seasonWrapped';
 import type { DemoSnapshot, DemoLiveGame, DemoLiveWeek, DemoGameStatus } from '$lib/types/demo';
@@ -224,9 +221,7 @@ async function buildDemoLiveWeek(personaId: string, members: GroupMember[]): Pro
   if (pickGames.length === 0) return { weekNumber, games: [], standings: [] };
 
   // Stable, deterministic member + game order so the fixture regenerates byte-identically.
-  const players: LeaderboardPlayer[] = [...members]
-    .sort((a, b) => a.userId.localeCompare(b.userId))
-    .map((m) => ({ id: m.userId, display_name: m.displayName, avatar_key: m.avatarKey }));
+  const players = demoPlayers(members);
   const sorted = [...pickGames].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
   // The latest kickoff stays OPEN (the "still to pick" affordance) as long as we keep four in-play
@@ -296,21 +291,11 @@ async function buildDemoLiveWeek(personaId: string, members: GroupMember[]): Pro
     return { ...g, status, personaPick, liveScore, groupPicks };
   });
 
-  // Provisional Weekly board — assembled through the shipped #584 path (no graded settlements yet).
-  const gameInputRows: GameInputRow[] = sorted.map((g) => ({
-    id: g.id,
-    commence_time: g.kickoff,
-    final_scores: null,
-    home_team_id: g.homeTeamId,
-    away_team_id: g.awayTeamId,
-    home: { short_name: g.home },
-    away: { short_name: g.away }
-  }));
-  const allGroupPicks = games.flatMap((dg) => dg.groupPicks);
-  const liveScores: Record<string, LiveScoreEntry> = {};
-  for (const dg of games) if (dg.liveScore) liveScores[dg.id] = dg.liveScore;
-  const breakdown = assembleWeeklyBreakdown(gameInputRows, allGroupPicks, [], players, personaId);
-  const standings = assembleWeeklyLiveStandings(breakdown, liveScores);
+  // Provisional Weekly board — assembled through the shipped #584 path (no graded settlements
+  // yet). `demoWeeklyBreakdown` is the SAME reshape `/demo/week` runs at load time (#833), so
+  // the standings frozen here and the cards rendered next to them can't disagree.
+  const breakdown = demoWeeklyBreakdown(games, members, personaId);
+  const standings = assembleWeeklyLiveStandings(breakdown, demoLiveScores(games));
 
   return { weekNumber, games, standings };
 }
