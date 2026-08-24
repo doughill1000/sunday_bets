@@ -48,12 +48,12 @@ import type { LeaderboardPlayer } from '$lib/types/leaderboard';
 // same reason. The honest provenance (real LLM vs deterministic) lives in `meta.aiProse`.
 function presentAsFinished(row: SeasonWrappedRow | null): SeasonWrappedRow | null {
   if (!row) return null;
-  return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.4' };
+  return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.6-sol' };
 }
 
 /** Same "curated artifact, not an AI-unavailable note" presentation for the weekly recaps. */
 function presentRecapAsFinished(row: RecapRow): RecapRow {
-  return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.4' };
+  return { ...row, is_fallback: false, model: row.model ?? 'openai/gpt-5.6-sol' };
 }
 
 /**

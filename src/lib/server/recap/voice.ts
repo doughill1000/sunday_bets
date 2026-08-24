@@ -7,13 +7,21 @@ import type { SeasonWrappedSubject } from '$lib/types/server/seasonWrapped';
 import type { BadgeFlavorSubject } from '$lib/types/server/badgeFlavor';
 import { renderSeasonFallback } from '$lib/server/recap/seasonFacts';
 
-const MODEL = 'openai/gpt-5.4';
-const MAX_TOKENS = 500;
+const MODEL = 'openai/gpt-5.6-sol';
+
+// Reasoning tokens bill as output AND count against this ceiling, so it is not just a prose
+// budget: too low and the model spends the whole allowance thinking and returns empty content,
+// which `callGateway` treats as a failure and degrades to deterministic copy (#849). Sized with
+// room for both — a recap's prose is ~300 tokens and observed reasoning runs a few hundred.
+const MAX_TOKENS = 1200;
 const TIMEOUT_MS = 20_000;
 
-// Cost estimates for openai/gpt-5.4 from #189 spike (~$0.006/run at 540in/310out).
-const COST_PER_INPUT_TOKEN = 1.0 / 1_000_000; // $1/1M
-const COST_PER_OUTPUT_TOKEN = 3.0 / 1_000_000; // $3/1M
+// Per-token list price of MODEL, used ONLY when the gateway does not report what a call cost.
+// Keep in step with MODEL: these two constants sat at $1/$3 while the model actually billed
+// $2.50/$15.00, so the "$0.05" cap was really letting ~$0.20 through (#849). Prefer the
+// gateway's own figure — see estimateCostUsd.
+const COST_PER_INPUT_TOKEN = 2.0 / 1_000_000; // $2/1M
+const COST_PER_OUTPUT_TOKEN = 10.0 / 1_000_000; // $10/1M
 const MAX_COST_USD = 0.05;
 
 // Season Wrapped (#347) generates (players + 1) blurbs per group per season. This aggregate
@@ -22,11 +30,25 @@ const MAX_COST_USD = 0.05;
 // ~$0.006/run, so a 30-player group (~$0.18) clears it comfortably.
 export const SEASON_MAX_COST_USD = 0.5;
 
-/** Estimated USD cost of one gateway call from its token usage. */
+/**
+ * USD cost of one gateway call.
+ *
+ * Prefers `reportedCostUsd` — the Gateway returns what it actually billed on `usage.cost`, so
+ * the caps in this module can measure real spend instead of a local price list that silently
+ * rots every time a model or a rate changes (#849). The token estimate is the fallback for a
+ * response that carries no cost field; it is only ever as right as the two constants above.
+ */
 export function estimateCostUsd(
   promptTokens: number | null,
-  completionTokens: number | null
+  completionTokens: number | null,
+  reportedCostUsd?: number | null
 ): number {
+  if (
+    typeof reportedCostUsd === 'number' &&
+    Number.isFinite(reportedCostUsd) &&
+    reportedCostUsd >= 0
+  )
+    return reportedCostUsd;
   return (
     (promptTokens ?? 0) * COST_PER_INPUT_TOKEN + (completionTokens ?? 0) * COST_PER_OUTPUT_TOKEN
   );
@@ -77,6 +99,10 @@ export type VoiceResult = {
   model: string | null;
   prompt_tokens: number | null;
   completion_tokens: number | null;
+  /** What the Gateway billed for this call, when it said. Null for a fallback (no call was
+   *  made, or it failed) or a response without a cost field — callers fall back to the token
+   *  estimate. Carried so the multi-call budgets accumulate real spend (#849). */
+  cost_usd: number | null;
 };
 
 // Shared gateway call (ADR-0008, boundary 1). Builds the request, enforces the timeout and
@@ -97,7 +123,8 @@ async function callGateway(
       is_fallback: true,
       model: null,
       prompt_tokens: null,
-      completion_tokens: null
+      completion_tokens: null,
+      cost_usd: null
     };
   }
 
@@ -133,23 +160,27 @@ async function callGateway(
 
     const data = (await response.json()) as {
       choices: { message: { content: string } }[];
-      usage?: { prompt_tokens: number; completion_tokens: number };
+      // `cost` is what the Gateway billed for this call, in USD. Optional because it is a
+      // Gateway extension to the OpenAI usage shape, not part of the standard one.
+      usage?: { prompt_tokens: number; completion_tokens: number; cost?: number };
     };
 
     const prose = data.choices?.[0]?.message?.content?.trim() ?? '';
     const promptTokens = data.usage?.prompt_tokens ?? null;
     const completionTokens = data.usage?.completion_tokens ?? null;
+    const costUsd = data.usage?.cost ?? null;
 
     if (!prose) throw new Error('empty response from gateway');
 
     // Per-call cost guard: serve fallback if a single call exceeded the per-call cap.
-    if (estimateCostUsd(promptTokens, completionTokens) > MAX_COST_USD) {
+    if (estimateCostUsd(promptTokens, completionTokens, costUsd) > MAX_COST_USD) {
       return {
         prose: fallback(),
         is_fallback: true,
         model: MODEL,
         prompt_tokens: promptTokens,
-        completion_tokens: completionTokens
+        completion_tokens: completionTokens,
+        cost_usd: costUsd
       };
     }
 
@@ -158,7 +189,8 @@ async function callGateway(
       is_fallback: false,
       model: MODEL,
       prompt_tokens: promptTokens,
-      completion_tokens: completionTokens
+      completion_tokens: completionTokens,
+      cost_usd: costUsd
     };
   } catch {
     return {
@@ -166,7 +198,8 @@ async function callGateway(
       is_fallback: true,
       model: MODEL,
       prompt_tokens: null,
-      completion_tokens: null
+      completion_tokens: null,
+      cost_usd: null
     };
   }
 }

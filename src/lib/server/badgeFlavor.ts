@@ -88,11 +88,12 @@ export async function generateBadgeFlavors(
           is_fallback: true,
           model: null,
           prompt_tokens: null,
-          completion_tokens: null
+          completion_tokens: null,
+          cost_usd: null
         };
       } else {
         voice = await generateBadgeFlavorProse(subject);
-        spentUsd += estimateCostUsd(voice.prompt_tokens, voice.completion_tokens);
+        spentUsd += estimateCostUsd(voice.prompt_tokens, voice.completion_tokens, voice.cost_usd);
       }
 
       // Upsert on the full unique tuple — replaces the existing row in place, only now that a
