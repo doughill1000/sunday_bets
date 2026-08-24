@@ -1000,7 +1000,7 @@ async function upsertRecap(supabase: SupabaseClient, facts: RecapFacts) {
       // Demo prose is generated locally (no live AI call), but presented as real commentary
       // so the recap UI renders cleanly rather than showing the "unavailable" fallback note.
       is_fallback: false,
-      model: 'openai/gpt-5.4',
+      model: 'openai/gpt-5.6-sol',
       prompt_tokens: 540,
       completion_tokens: 300
     },

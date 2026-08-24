@@ -101,11 +101,12 @@ export async function generateSeasonWrapped(
           is_fallback: true,
           model: null,
           prompt_tokens: null,
-          completion_tokens: null
+          completion_tokens: null,
+          cost_usd: null
         };
       } else {
         voice = await generateSeasonProse(subject);
-        spentUsd += estimateCostUsd(voice.prompt_tokens, voice.completion_tokens);
+        spentUsd += estimateCostUsd(voice.prompt_tokens, voice.completion_tokens, voice.cost_usd);
       }
 
       // Replace only after a successful voice: drop the stale row, then insert the new one.

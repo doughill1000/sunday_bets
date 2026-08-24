@@ -121,6 +121,14 @@ scope for this foundation and remain a separate future decision.
   and confirmed fact-faithful, on-topic output across spice levels, settling the model,
   budget cap, and retention stance above. AI feature-build issues (#284 onward) are now
   unblocked.
+- **Current default model (#849, 2026-08):** **`openai/gpt-5.6-sol`**, replacing the
+  `openai/gpt-5.4` that boundary 1 names above. A newer generation that is also cheaper —
+  $2.00/$10.00 per 1M input/output tokens against $2.50/$15.00 — taking a weekly recap from
+  ~$0.0060 to ~$0.0042 at the shape #189 measured. Boundary 1's "swapping models later is a
+  one-string change" held: nothing moved but the string, its price-fallback constants, and two
+  display literals. The same issue repaired boundary 6's arithmetic — the cap now reads the
+  Gateway's own reported `usage.cost` instead of a local price list that had understated
+  output cost 5×, which had quietly made "$0.05 per call" mean about $0.20.
 
 ## Alternatives considered
 
