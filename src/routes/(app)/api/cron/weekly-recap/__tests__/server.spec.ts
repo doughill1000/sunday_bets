@@ -1,17 +1,19 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-// The weekly-recap endpoint's dependencies. sendResultsRecap/sendAIRecapPushes are the pair
-// under test — this suite is about the endpoint's fan-out/error-isolation shape, not their
-// (already unit-tested, see notifications.spec.ts) internal behavior.
+// The weekly-recap endpoint's dependency. sendWeeklyRecap is the pass under test —
+// this suite is about the endpoint's fan-out/error-isolation shape, not its (already
+// unit-tested, see notifications.spec.ts) internal behavior.
 const calls: string[] = [];
+const SUMMARY = {
+  results: { evaluated: 1, sent: 1, skipped: 0 },
+  aiRecaps: { evaluated: 1, sent: 1, skipped: 0 },
+  pushes: 1,
+  delivered: 1
+};
 vi.mock('$lib/server/notifications', () => ({
-  sendResultsRecap: vi.fn(async (weekId: number) => {
-    calls.push(`sendResultsRecap:${weekId}`);
-    return { evaluated: 1, sent: 1, skipped: 0 };
-  }),
-  sendAIRecapPushes: vi.fn(async (weekId: number) => {
-    calls.push(`sendAIRecapPushes:${weekId}`);
-    return { evaluated: 1, sent: 1, skipped: 0 };
+  sendWeeklyRecap: vi.fn(async (weekId: number) => {
+    calls.push(`sendWeeklyRecap:${weekId}`);
+    return SUMMARY;
   })
 }));
 
@@ -31,10 +33,9 @@ vi.mock('$lib/server/cron', () => ({
 vi.mock('@sentry/sveltekit', () => ({ captureException: vi.fn() }));
 
 import { POST } from '../+server';
-import { sendResultsRecap, sendAIRecapPushes } from '$lib/server/notifications';
+import { sendWeeklyRecap } from '$lib/server/notifications';
 
-const mockRecap = sendResultsRecap as ReturnType<typeof vi.fn>;
-const mockAiRecapPush = sendAIRecapPushes as ReturnType<typeof vi.fn>;
+const mockRecap = sendWeeklyRecap as ReturnType<typeof vi.fn>;
 
 function makeEvent(): Parameters<typeof POST>[0] {
   return {
@@ -49,15 +50,16 @@ describe('POST /api/cron/weekly-recap', () => {
     recentWeeks = [];
   });
 
-  it('pushes results recap + AI recap for every recent week', async () => {
+  // #813 collapsed two passes into one: each recent week is now visited exactly once,
+  // so the two post-grading concerns share a delivery instead of racing each other.
+  it('runs one merged recap pass per recent week', async () => {
     recentWeeks = [{ id: 301 }, { id: 302 }];
 
     await POST(makeEvent());
 
     expect(mockRecap).toHaveBeenCalledWith(301);
     expect(mockRecap).toHaveBeenCalledWith(302);
-    expect(mockAiRecapPush).toHaveBeenCalledWith(301);
-    expect(mockAiRecapPush).toHaveBeenCalledWith(302);
+    expect(calls).toEqual(['sendWeeklyRecap:301', 'sendWeeklyRecap:302']);
   });
 
   it('is a no-op when there is no recent week', async () => {
@@ -66,10 +68,9 @@ describe('POST /api/cron/weekly-recap', () => {
     await POST(makeEvent());
 
     expect(mockRecap).not.toHaveBeenCalled();
-    expect(mockAiRecapPush).not.toHaveBeenCalled();
   });
 
-  it("isolates one week's recap failure from the others and from AI recap pushes", async () => {
+  it("isolates one week's failure from the others", async () => {
     recentWeeks = [{ id: 301 }, { id: 302 }];
     mockRecap.mockImplementationOnce(async () => {
       throw new Error('boom');
@@ -81,9 +82,7 @@ describe('POST /api/cron/weekly-recap', () => {
     expect(response.status).toBe(200);
     expect(body.result.recaps).toEqual([
       { weekId: 301, error: 'boom' },
-      { weekId: 302, evaluated: 1, sent: 1, skipped: 0 }
+      { weekId: 302, ...SUMMARY }
     ]);
-    expect(mockAiRecapPush).toHaveBeenCalledWith(301);
-    expect(mockAiRecapPush).toHaveBeenCalledWith(302);
   });
 });
