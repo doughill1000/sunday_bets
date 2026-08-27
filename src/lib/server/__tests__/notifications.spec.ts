@@ -142,7 +142,7 @@ vi.mock('$lib/supabase/service', () => ({
   }
 }));
 
-import { sendResultsRecap, sendAIRecapPushes, runPregameNotifications } from '../notifications';
+import { sendWeeklyRecap, runPregameNotifications } from '../notifications';
 
 const PREFS_ON = { enabled: true, pick_reminders: true, results_recap: true };
 
@@ -175,48 +175,135 @@ beforeEach(() => {
 // A preseason round (ADR-0016): negative week_number, is_scoring false.
 const NON_SCORING_WEEK = { week_number: -1, is_scoring: false, seasons: { year: 2026 } };
 
-describe('sendResultsRecap', () => {
-  it('is a no-op on a non-scoring round (#789)', async () => {
-    // Preseason is typically a single game, so it reads fully-graded the moment that
-    // game ends — the completeness gate alone never stopped it.
-    db.week = NON_SCORING_WEEK;
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-
-    const res = await sendResultsRecap(112);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-    expect(db.insertedLogs).toEqual([]);
-  });
-
-  it('is a no-op until the week is fully graded', async () => {
-    db.gamesNullCount = 1; // one game still ungraded
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-
-    const res = await sendResultsRecap(5);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-  });
-
-  it('sends one push per opted-in user with results and logs it', async () => {
+// The merged Tuesday-morning pass (#813). These replace the separate sendResultsRecap /
+// sendAIRecapPushes blocks: the two concerns are still independently detected, gated and
+// logged, but they now share one delivery.
+//
+// Fixture note: the query mock passes any filter on a column a row doesn't model, so
+// notification_log rows here always state their `kind` — without it a single fixture row
+// would satisfy BOTH concerns' dedup queries and quietly prove nothing.
+describe('sendWeeklyRecap', () => {
+  const PROSE = 'Kefke ran the table this week. Nobody else was close.';
+  const BEAT = 'Kefke ran the table this week.';
+  const bothDue = () => {
     db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
     db.settlements = [
       { user_id: 'u1', outcome: 'win', points_delta: 3 },
       { user_id: 'u1', outcome: 'loss', points_delta: -1 }
     ];
+    db.aiRecapRows = [{ group_id: 'g1', prose: PROSE }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+  };
+  const ZERO = { evaluated: 0, sent: 0, skipped: 0 };
 
-    const res = await sendResultsRecap(5);
+  it('is a no-op on a non-scoring round (#789)', async () => {
+    // Preseason is typically a single game, so it reads fully-graded the moment that
+    // game ends — the completeness gate alone never stopped it.
+    db.week = NON_SCORING_WEEK;
+    bothDue();
 
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
+    const res = await sendWeeklyRecap(112);
+
+    expect(res).toEqual({ results: ZERO, aiRecaps: ZERO, pushes: 0, delivered: 0 });
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(db.insertedLogs).toEqual([]);
+  });
+
+  // AC #1 + #2 + #4: the whole point of the issue.
+  it('delivers ONE push carrying both halves, and logs both concerns against it', async () => {
+    bothDue();
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith('u1', {
+      title: 'Your Week 5 results',
+      body: `1-1 · +2 points. “${BEAT}”`,
+      url: '/week?season=2026&week=5',
+      tag: 'weekly-recap-g1-week-5'
+    });
+    expect(res).toEqual({
+      results: { evaluated: 1, sent: 1, skipped: 0 },
+      aiRecaps: { evaluated: 1, sent: 1, skipped: 0 },
+      pushes: 1,
+      delivered: 1
+    });
+    // Both ledgers still written, both carrying the one delivery result (#815), and
+    // results_recap stays group-less so its cross-group dedup is unchanged.
+    expect(db.insertedLogs).toEqual([
+      {
+        user_id: 'u1',
+        kind: 'ai_recap',
+        game_id: null,
+        week_id: 5,
+        group_id: 'g1',
+        detail: DELIVERED
+      },
+      {
+        user_id: 'u1',
+        kind: 'results_recap',
+        game_id: null,
+        week_id: 5,
+        group_id: null,
+        detail: { wins: 1, losses: 1, pushes: 0, missed: 0, net: 2, ...DELIVERED }
+      }
+    ]);
+  });
+
+  // AC #6 / the asymmetric-gate trap: isWeekFullyGraded belongs to results DETECTION.
+  // The AI half's gate is "an ai_recaps row exists", written by the grade cron ~9h
+  // earlier — hoisting completeness up a level would silently kill the recap push.
+  it('still sends the recap half when the week is not fully graded', async () => {
+    bothDue();
+    db.gamesNullCount = 1; // one game still ungraded
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ title: 'Week 5 recap is ready', body: BEAT })
+    );
+    expect(res.results).toEqual(ZERO);
+    expect(res.aiRecaps).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+  });
+
+  // AC #9: this was a whole-function early return in sendResultsRecap, so a week with
+  // no game rows took the AI recap down with it.
+  it('still sends the recap half when the week has no games', async () => {
+    bothDue();
+    db.gameRows = [];
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ title: 'Week 5 recap is ready' })
+    );
+    expect(res.results).toEqual(ZERO);
+    expect(res.aiRecaps).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+  });
+
+  // AC #3, results side: unchanged in content and destination.
+  it('sends a results-only push, keyed (user, null), when no recap row exists', async () => {
+    bothDue();
+    db.aiRecapRows = [];
+
+    const res = await sendWeeklyRecap(5);
+
     expect(sendToUser).toHaveBeenCalledTimes(1);
     expect(sendToUser).toHaveBeenCalledWith('u1', {
       title: 'Your Week 5 results',
       body: '1-1 · +2 points this week. Tap for the breakdown.',
       url: '/week?season=2026&week=5',
-      tag: 'results-recap-week-5'
+      tag: 'weekly-recap-you-week-5'
+    });
+    expect(res).toEqual({
+      results: { evaluated: 1, sent: 1, skipped: 0 },
+      aiRecaps: ZERO,
+      pushes: 1,
+      delivered: 1
     });
     expect(db.insertedLogs).toEqual([
       {
@@ -230,15 +317,32 @@ describe('sendResultsRecap', () => {
     ]);
   });
 
-  // #818 regression: the cron fires Tuesday 14:00 UTC, 14 hours after week N+1's window
-  // opened, so `/week`'s "latest started week" default would land the tap on the empty
-  // next week. The link names the graded week outright, so nothing defers to that default.
-  it('deep-links to the graded week, not whichever week is active at send time', async () => {
-    db.week = { week_number: 12, is_scoring: true, seasons: { year: 2026 } };
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
+  // AC #3, recap side.
+  it('sends a recap-only push when the user has nothing settled', async () => {
+    bothDue();
+    db.settlements = [];
 
-    await sendResultsRecap(42);
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith('u1', {
+      title: 'Week 5 recap is ready',
+      body: BEAT,
+      url: '/week?season=2026&week=5',
+      tag: 'weekly-recap-g1-week-5'
+    });
+    expect(res.results).toEqual({ evaluated: 1, sent: 0, skipped: 1 });
+    expect(res.aiRecaps).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+  });
+
+  // AC #7 / #818 regression: the cron fires Tuesday 14:00 UTC, 14 hours after week N+1's
+  // window opened, so `/week`'s "latest started week" default would land the tap on the
+  // empty next week. Both halves now share one link, so it is named once, outright.
+  it('deep-links to the reported week, not whichever week is active at send time', async () => {
+    db.week = { week_number: 12, is_scoring: true, seasons: { year: 2026 } };
+    bothDue();
+
+    await sendWeeklyRecap(42);
 
     const payload = sendToUser.mock.calls[0][1];
     expect(payload.url).toBe('/week?season=2026&week=12');
@@ -246,48 +350,149 @@ describe('sendResultsRecap', () => {
     expect(payload.title).toBe('Your Week 12 results');
   });
 
-  // #815 regression: the outage that used to grade green.
-  it('reports zero delivered when every send reaches no device', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-    sendToUser.mockResolvedValue(UNDELIVERED);
+  // AC #8 + the tag trap: push-handler.js sets `renotify` whenever a tag is present
+  // (#814), so a shared tag would leave one buzz and one surviving notification.
+  it('sends one push per group, tagged per group, with the record on the first only', async () => {
+    bothDue();
+    db.aiRecapRows = [
+      { group_id: 'g1', prose: PROSE },
+      { group_id: 'g2', prose: 'Sam finally showed up. Barely.' }
+    ];
+    db.memberships = [
+      { group_id: 'g1', user_id: 'u1' },
+      { group_id: 'g2', user_id: 'u1' }
+    ];
 
-    const res = await sendResultsRecap(5);
+    const res = await sendWeeklyRecap(5);
 
-    // Attempted 1, delivered 0 — the two numbers a healthy run can't produce together.
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 0 });
-    expect(db.insertedLogs[0].detail).toMatchObject({
-      delivery: { sent: 0, total: 1, pruned: 0 }
+    expect(sendToUser).toHaveBeenCalledTimes(2);
+    const [first, second] = sendToUser.mock.calls.map((c) => c[1]);
+    expect(first).toEqual({
+      title: 'Your Week 5 results',
+      body: `1-1 · +2 points. “${BEAT}”`,
+      url: '/week?season=2026&week=5',
+      tag: 'weekly-recap-g1-week-5'
+    });
+    // The record is cross-group, so it is told once — the second push is the beat alone.
+    expect(second).toEqual({
+      title: 'Week 5 recap is ready',
+      body: 'Sam finally showed up.',
+      url: '/week?season=2026&week=5',
+      tag: 'weekly-recap-g2-week-5'
+    });
+    expect(first.tag).not.toBe(second.tag);
+    expect(res).toEqual({
+      results: { evaluated: 1, sent: 1, skipped: 0 },
+      aiRecaps: { evaluated: 2, sent: 2, skipped: 0 },
+      pushes: 2,
+      delivered: 2
+    });
+    // One results_recap row across both groups — its dedup is keyed on kind + week + user.
+    expect(db.insertedLogs.filter((l) => l.kind === 'results_recap')).toHaveLength(1);
+    expect(db.insertedLogs.filter((l) => l.kind === 'ai_recap').map((l) => l.group_id)).toEqual([
+      'g1',
+      'g2'
+    ]);
+  });
+
+  it('dedupes a user already pushed for both concerns', async () => {
+    bothDue();
+    db.notificationLogs = [
+      { user_id: 'u1', kind: 'results_recap' },
+      { user_id: 'u1', kind: 'ai_recap', group_id: 'g1' }
+    ];
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(res).toEqual({
+      results: { evaluated: 1, sent: 0, skipped: 1 },
+      aiRecaps: { evaluated: 1, sent: 0, skipped: 1 },
+      pushes: 0,
+      delivered: 0
     });
   });
 
-  it('retries a user whose previous recap reached no device', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-    // Logged last run, but it died on the wire — the slot was never really spent.
-    db.notificationLogs = [{ user_id: 'u1', detail: { delivery: { sent: 0, total: 2 } } }];
+  // AC #4, the partial-failure half: the results push landed last week's run, the recap
+  // row only showed up afterwards. The next tick owes the recap and nothing else.
+  it('sends only the missing concern when the other already landed', async () => {
+    bothDue();
+    db.notificationLogs = [{ user_id: 'u1', kind: 'results_recap', detail: DELIVERED }];
 
-    const res = await sendResultsRecap(5);
+    const res = await sendWeeklyRecap(5);
 
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
     expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ title: 'Week 5 recap is ready', body: BEAT })
+    );
+    expect(res.results).toEqual({ evaluated: 1, sent: 0, skipped: 1 });
+    expect(res.aiRecaps).toEqual({ evaluated: 1, sent: 1, skipped: 0 });
+    expect(db.insertedLogs.map((l) => l.kind)).toEqual(['ai_recap']);
   });
 
-  it('does not retry a user who has no subscriptions to deliver to', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-    // total: 0 — nothing to retry. Releasing the slot here would re-push and re-log
-    // on every run for as long as they stay unsubscribed.
-    db.notificationLogs = [{ user_id: 'u1', detail: { delivery: { sent: 0, total: 0 } } }];
+  // #815 regression: the outage that used to grade green.
+  it('reports zero delivered when the merged push reaches no device', async () => {
+    bothDue();
+    sendToUser.mockResolvedValue(UNDELIVERED);
 
-    const res = await sendResultsRecap(5);
+    const res = await sendWeeklyRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
+    // Attempted 1, delivered 0 — the two numbers a healthy run can't produce together.
+    expect(res.pushes).toBe(1);
+    expect(res.delivered).toBe(0);
+    for (const log of db.insertedLogs) {
+      expect(log.detail).toMatchObject({ delivery: { sent: 0, total: 1, pruned: 0 } });
+    }
+  });
+
+  // A failed merged push spent neither slot, so the next tick owes both again.
+  it('re-sends both concerns after a merged push that died on the wire', async () => {
+    bothDue();
+    db.notificationLogs = [
+      { user_id: 'u1', kind: 'results_recap', detail: { delivery: { sent: 0, total: 2 } } },
+      {
+        user_id: 'u1',
+        kind: 'ai_recap',
+        group_id: 'g1',
+        detail: { delivery: { sent: 0, total: 2 } }
+      }
+    ];
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ body: `1-1 · +2 points. “${BEAT}”` })
+    );
+    expect(res.results.sent).toBe(1);
+    expect(res.aiRecaps.sent).toBe(1);
+  });
+
+  // total: 0 — nothing to retry. Releasing these slots would re-push and re-log on
+  // every run for as long as the user stays unsubscribed.
+  it('holds both slots for a user with no subscriptions to deliver to', async () => {
+    bothDue();
+    db.notificationLogs = [
+      { user_id: 'u1', kind: 'results_recap', detail: { delivery: { sent: 0, total: 0 } } },
+      {
+        user_id: 'u1',
+        kind: 'ai_recap',
+        group_id: 'g1',
+        detail: { delivery: { sent: 0, total: 0 } }
+      }
+    ];
+
+    const res = await sendWeeklyRecap(5);
+
     expect(sendToUser).not.toHaveBeenCalled();
+    expect(res.pushes).toBe(0);
   });
 
   it('aggregates a user settlements across all of their groups', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    bothDue();
+    db.aiRecapRows = [];
     // Same user, same week, two different groups.
     db.settlements = [
       { user_id: 'u1', outcome: 'win', points_delta: 5 },
@@ -295,7 +500,7 @@ describe('sendResultsRecap', () => {
       { user_id: 'u1', outcome: 'win', points_delta: 4 }
     ];
 
-    await sendResultsRecap(5);
+    await sendWeeklyRecap(5);
 
     expect(sendToUser).toHaveBeenCalledWith(
       'u1',
@@ -305,162 +510,63 @@ describe('sendResultsRecap', () => {
     );
   });
 
-  it('respects opt-out (master off or results_recap off)', async () => {
-    db.users = [
-      { id: 'u1', notification_prefs: { ...PREFS_ON, enabled: false } },
-      { id: 'u2', notification_prefs: { ...PREFS_ON, results_recap: false } }
-    ];
-    db.settlements = [
-      { user_id: 'u1', outcome: 'win', points_delta: 3 },
-      { user_id: 'u2', outcome: 'win', points_delta: 3 }
-    ];
+  it('respects the master switch', async () => {
+    bothDue();
+    db.users = [{ id: 'u1', notification_prefs: { ...PREFS_ON, enabled: false } }];
 
-    const res = await sendResultsRecap(5);
+    const res = await sendWeeklyRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
     expect(sendToUser).not.toHaveBeenCalled();
+    expect(res).toEqual({ results: ZERO, aiRecaps: ZERO, pushes: 0, delivered: 0 });
   });
 
-  it('dedupes a user already recapped for the week', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = [{ user_id: 'u1', outcome: 'win', points_delta: 3 }];
-    db.notificationLogs = [{ user_id: 'u1' }];
+  // Decision 3 of the scoping interview: only delivery merges, the two toggles stay
+  // independent — so turning one off leaves the other's push exactly as it was.
+  it('sends the recap half alone when only results_recap is off', async () => {
+    bothDue();
+    db.users = [{ id: 'u1', notification_prefs: { ...PREFS_ON, results_recap: false } }];
 
-    const res = await sendResultsRecap(5);
+    const res = await sendWeeklyRecap(5);
 
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-  });
-
-  it('skips opted-in users with no settlements this week', async () => {
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.settlements = []; // user picked nothing / nothing settled
-
-    const res = await sendResultsRecap(5);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 1, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-  });
-});
-
-describe('sendAIRecapPushes', () => {
-  beforeEach(() => {
-    db.week = { week_number: 5, is_scoring: true, seasons: { year: 2025 } };
-  });
-
-  it('is a no-op on a non-scoring round even when a recap row exists (#789)', async () => {
-    // Belt-and-braces: generation is the usual gate, but a row written before the fix
-    // shipped (or by a backfill) must still not push.
-    db.week = NON_SCORING_WEEK;
-    db.aiRecapRows = [{ group_id: 'g1', prose: 'Nothing that counted happened.' }];
-    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-
-    const res = await sendAIRecapPushes(112);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-    expect(db.insertedLogs).toEqual([]);
-  });
-
-  it('is a no-op when no ai_recaps rows exist for the week', async () => {
-    db.aiRecapRows = [];
-    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-  });
-
-  it('sends one push per opted-in group member and logs it with group_id', async () => {
-    db.aiRecapRows = [
-      { group_id: 'g1', prose: 'Kefke ran the table this week. Nobody else was close.' }
-    ];
-    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 1 });
     expect(sendToUser).toHaveBeenCalledTimes(1);
-    expect(sendToUser).toHaveBeenCalledWith('u1', {
-      title: 'Week 5 recap is ready',
-      body: 'Kefke ran the table this week.',
-      url: '/recap?season=2025#week-5',
-      tag: 'ai-recap-g1-week-5'
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({ title: 'Week 5 recap is ready', body: BEAT })
+    );
+    expect(res.results).toEqual(ZERO);
+  });
+
+  it('sends the results half alone when only ai_recap is off', async () => {
+    bothDue();
+    db.users = [{ id: 'u1', notification_prefs: { ...PREFS_ON, ai_recap: false } }];
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).toHaveBeenCalledTimes(1);
+    expect(sendToUser).toHaveBeenCalledWith(
+      'u1',
+      expect.objectContaining({
+        title: 'Your Week 5 results',
+        body: '1-1 · +2 points this week. Tap for the breakdown.',
+        tag: 'weekly-recap-you-week-5'
+      })
+    );
+    expect(res.aiRecaps).toEqual(ZERO);
+  });
+
+  it('is a no-op when no ai_recaps row exists and nobody has results', async () => {
+    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
+    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
+
+    const res = await sendWeeklyRecap(5);
+
+    expect(sendToUser).not.toHaveBeenCalled();
+    expect(res).toEqual({
+      results: { evaluated: 1, sent: 0, skipped: 1 },
+      aiRecaps: ZERO,
+      pushes: 0,
+      delivered: 0
     });
-    expect(db.insertedLogs).toEqual([
-      {
-        user_id: 'u1',
-        kind: 'ai_recap',
-        game_id: null,
-        week_id: 5,
-        group_id: 'g1',
-        // Was `null` before #815: a row that recorded intent and nothing else.
-        detail: DELIVERED
-      }
-    ]);
-  });
-
-  // #815 regression.
-  it('reports zero delivered and retries a (user, group) whose push reached no device', async () => {
-    db.aiRecapRows = [{ group_id: 'g1' }];
-    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.notificationLogs = [
-      { user_id: 'u1', group_id: 'g1', detail: { delivery: { sent: 0, total: 3 } } }
-    ];
-    sendToUser.mockResolvedValue(UNDELIVERED);
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 1, sent: 1, skipped: 0, delivered: 0 });
-    expect(sendToUser).toHaveBeenCalledTimes(1);
-  });
-
-  it('sends a separate push per group when a user belongs to more than one', async () => {
-    db.aiRecapRows = [{ group_id: 'g1' }, { group_id: 'g2' }];
-    db.memberships = [
-      { group_id: 'g1', user_id: 'u1' },
-      { group_id: 'g2', user_id: 'u1' }
-    ];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 2, sent: 2, skipped: 0, delivered: 2 });
-    expect(sendToUser).toHaveBeenCalledTimes(2);
-  });
-
-  it('respects opt-out (master off or ai_recap off)', async () => {
-    db.aiRecapRows = [{ group_id: 'g1' }];
-    db.memberships = [
-      { group_id: 'g1', user_id: 'u1' },
-      { group_id: 'g1', user_id: 'u2' }
-    ];
-    db.users = [
-      { id: 'u1', notification_prefs: { ...PREFS_ON, enabled: false } },
-      { id: 'u2', notification_prefs: { ...PREFS_ON, ai_recap: false } }
-    ];
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 0, sent: 0, skipped: 0, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
-  });
-
-  it('dedupes a (user, group) already pushed for the week', async () => {
-    db.aiRecapRows = [{ group_id: 'g1' }];
-    db.memberships = [{ group_id: 'g1', user_id: 'u1' }];
-    db.users = [{ id: 'u1', notification_prefs: PREFS_ON }];
-    db.notificationLogs = [{ user_id: 'u1', group_id: 'g1' }];
-
-    const res = await sendAIRecapPushes(5);
-
-    expect(res).toEqual({ evaluated: 1, sent: 0, skipped: 1, delivered: 0 });
-    expect(sendToUser).not.toHaveBeenCalled();
   });
 });
 

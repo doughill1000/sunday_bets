@@ -13,8 +13,7 @@ import {
   shouldNotifyLineShift,
   spreadRelativeToHome,
   pregamePushBody,
-  formatRecapBody,
-  recapPushBody,
+  weeklyRecapPushBody,
   holdsDedupSlot,
   LINE_SHIFT_THRESHOLD_POINTS,
   type NotificationPrefs,
@@ -61,20 +60,20 @@ export type PregameSummary = {
   /** Subscriptions that accepted one of those pushes. `pushes > 0, delivered: 0` = outage. */
   delivered: number;
 };
-export type RecapSummary = {
-  evaluated: number;
-  /** Recap pushes attempted. */
-  sent: number;
-  skipped: number;
-  /** Subscriptions that accepted one of them. `sent > 0, delivered: 0` = outage. */
-  delivered: number;
-};
-export type AIRecapPushSummary = {
-  evaluated: number;
-  /** Recap-ready pushes attempted. */
-  sent: number;
-  skipped: number;
-  /** Subscriptions that accepted one of them. `sent > 0, delivered: 0` = outage. */
+/**
+ * Per-concern accounting inside the merged weekly recap (#813). `evaluated` counts
+ * the candidates that concern considered after its opt-in filter — users for results,
+ * (user, group) pairs for AI recaps — and every one of them lands in exactly one of
+ * `sent` or `skipped`. Both concerns use the same definition, which the two
+ * pre-merge summaries did not.
+ */
+export type WeeklyRecapConcern = { evaluated: number; sent: number; skipped: number };
+export type WeeklyRecapSummary = {
+  results: WeeklyRecapConcern;
+  aiRecaps: WeeklyRecapConcern;
+  /** Merged pushes **attempted** (at most one per user per group per run). */
+  pushes: number;
+  /** Subscriptions that accepted one. `pushes > 0, delivered: 0` = outage. */
   delivered: number;
 };
 
@@ -459,150 +458,133 @@ export async function runPregameNotifications(
 }
 
 /**
- * Post-grading recap: once a week is fully settled, send each opted-in user a
- * single push summarizing their week (record + net points), aggregated across
- * all of their groups. Deduped per (user, week) via notification_log so repeated
- * grade-cron runs don't re-send. No-op until the week is complete.
+ * The single post-grading notification pass (#813), structured like
+ * `runPregameNotifications`: detect each concern independently, then deliver ONE
+ * merged push per (user, group). Before this, the Tuesday-morning cron called two
+ * senders back-to-back and an opted-in user's phone buzzed twice within seconds
+ * with the two halves of the same "your week is in" moment — their own record, and
+ * their league's AI beat. Only delivery merges; both preference toggles and both
+ * `notification_log` kinds stay exactly as they were.
  *
- * Also a no-op on a non-scoring round (#789): the body reports a record and a net
- * points swing, and on a preseason week neither moved anything (the title would
- * read "Your Week -1 results" besides).
- */
-export async function sendResultsRecap(weekId: number): Promise<RecapSummary> {
-  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
-  if (!(await isWeekFullyGraded(weekId)))
-    return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
-
-  // The season year rides along for the deep link below — same `seasons!inner(year)`
-  // join sendAIRecapPushes uses, so there is one week-identity shape, not two (#818).
-  const { data: week, error: weekErr } = await supabaseService
-    .from('weeks')
-    .select('week_number, seasons!inner(year)')
-    .eq('id', weekId)
-    .single();
-  if (weekErr) throw weekErr;
-  const seasonYear = (week.seasons as { year: number }).year;
-
-  const { data: games, error: gamesErr } = await supabaseService
-    .from('games')
-    .select('id')
-    .eq('week_id', weekId);
-  if (gamesErr) throw gamesErr;
-  const gameIds = (games ?? []).map((g) => g.id);
-  if (gameIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
-
-  const { data: allUsers, error: usersErr } = await supabaseService
-    .from('users')
-    .select('id, notification_prefs');
-  if (usersErr) throw usersErr;
-  const notifiable = (allUsers ?? [])
-    .map((u) => ({ id: u.id, prefs: parseNotificationPrefs(u.notification_prefs) }))
-    .filter((u) => u.prefs.enabled && u.prefs.results_recap);
-  if (notifiable.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
-  const userIds = notifiable.map((u) => u.id);
-
-  // Per-(user, week) dedup: skip anyone already recapped for this week — unless
-  // that recap reached no device (#815), in which case the slot was never spent.
-  const { data: logs, error: logsErr } = await supabaseService
-    .from('notification_log')
-    .select('user_id, detail')
-    .eq('kind', 'results_recap')
-    .eq('week_id', weekId)
-    .in('user_id', userIds);
-  if (logsErr) throw logsErr;
-  const recapped = new Set(
-    (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => l.user_id)
-  );
-
-  // Aggregate each user's settlements across all groups for the week's games.
-  const { data: settlements, error: setErr } = await supabaseService
-    .from('pick_settlement')
-    .select('user_id, outcome, points_delta')
-    .in('game_id', gameIds)
-    .in('user_id', userIds);
-  if (setErr) throw setErr;
-
-  const tallies = new Map<string, RecapTally>();
-  for (const s of settlements ?? []) {
-    const t = tallies.get(s.user_id) ?? { wins: 0, losses: 0, pushes: 0, missed: 0, net: 0 };
-    if (s.outcome === 'win') t.wins++;
-    else if (s.outcome === 'loss') t.losses++;
-    else if (s.outcome === 'push') t.pushes++;
-    else if (s.outcome === 'missed') t.missed++;
-    t.net += s.points_delta ?? 0;
-    tallies.set(s.user_id, t);
-  }
-
-  let evaluated = 0;
-  let sent = 0;
-  let skipped = 0;
-  let delivered = 0;
-
-  for (const user of notifiable) {
-    const tally = tallies.get(user.id);
-    // Nothing to report (no settlements) or already recapped this week.
-    if (!tally || recapped.has(user.id)) {
-      skipped++;
-      continue;
-    }
-    evaluated++;
-
-    const result = await sendToUser(user.id, {
-      title: `Your Week ${week.week_number} results`,
-      body: formatRecapBody(tally),
-      // The week-scoped landing surface moved from /league's Week tab to /week (#776).
-      // Fully qualified (#818): this cron fires Tuesday 14:00 UTC, 14 hours after week
-      // N+1 became active, so a bare `/week` — which defaults to the latest started
-      // week — would open the empty next week instead of the one this push reports on.
-      url: `/week?season=${seasonYear}&week=${week.week_number}`,
-      tag: `results-recap-week-${weekId}`
-    });
-    await logNotification({
-      user_id: user.id,
-      kind: 'results_recap',
-      week_id: weekId,
-      detail: {
-        wins: tally.wins,
-        losses: tally.losses,
-        pushes: tally.pushes,
-        missed: tally.missed,
-        net: tally.net
-      },
-      delivery: result
-    });
-    sent++;
-    delivered += result.sent;
-  }
-
-  return { evaluated, sent, skipped, delivered };
-}
-
-/**
- * Push each opted-in group member a "recap ready" notification once their
- * group's AI recap has been generated for a week (#302, reuses the #178
- * sendResultsRecap dedup shape). Evaluates whichever `ai_recaps` rows exist for
- * the week — generation (sendAIRecaps) is the gate, so a group with no row yet
- * (disabled, or not fully graded) is simply not evaluated here. Deduped per
- * (user, group, week) via notification_log so repeated grade-cron runs don't
- * re-send.
+ * The two gates are deliberately asymmetric and each stays on its own concern:
  *
- * Non-scoring rounds are gated here too (#789) rather than left to "sendAIRecaps
- * generated no row". Generation is the *usual* gate, not a guarantee: rows written
- * before this fix shipped, or by any future backfill, would otherwise still push.
+ * - `isScoringWeek` gates the whole pass (#789). Neither half has anything to say
+ *   about a round that moved nothing, and the title would read "Your Week -1 results".
+ * - `isWeekFullyGraded` gates results detection ONLY. The AI half's gate is "an
+ *   `ai_recaps` row exists", written by `sendAIRecaps` in the *grade* cron ~9h
+ *   earlier — hoisting completeness to this function would silently take the recap
+ *   push down with it. Same shape as the #793 note in `runPregameNotifications`.
+ *
+ * Delivery key is (user, group): each push carries that group's beat, and the first
+ * also carries the user's cross-group record. A user with results due but no recap
+ * row gets one results-only push on `(user, null)`. `results_recap` still logs once
+ * with `group_id: null` — the tally aggregates across groups by design and its dedup
+ * is keyed on kind + week + user, so a group-less row preserves that byte-for-byte.
  */
-export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSummary> {
-  if (!(await isScoringWeek(weekId))) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
+export async function sendWeeklyRecap(weekId: number): Promise<WeeklyRecapSummary> {
+  const empty = (): WeeklyRecapSummary => ({
+    results: { evaluated: 0, sent: 0, skipped: 0 },
+    aiRecaps: { evaluated: 0, sent: 0, skipped: 0 },
+    pushes: 0,
+    delivered: 0
+  });
 
+  if (!(await isScoringWeek(weekId))) return empty();
+
+  // One week-identity fetch for both concerns — the season year rides along for the
+  // deep link (#818), so there is one week shape here rather than the two that drifted.
   const { data: weekRow, error: weekErr } = await supabaseService
     .from('weeks')
     .select('week_number, seasons!inner(year)')
     .eq('id', weekId)
-    .single();
-  if (weekErr || !weekRow) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
+    .maybeSingle();
+  if (weekErr) throw weekErr;
+  if (!weekRow) return empty();
   const seasonYear = (weekRow.seasons as { year: number }).year;
   const weekNumber = weekRow.week_number;
 
-  const { data: recaps, error: recapErr } = await supabaseService
+  const results: WeeklyRecapConcern = { evaluated: 0, sent: 0, skipped: 0 };
+  const aiRecaps: WeeklyRecapConcern = { evaluated: 0, sent: 0, skipped: 0 };
+
+  // ---- Results detection ----------------------------------------------------
+  // Gated on completeness: a partly-graded week would report a record that is still
+  // moving. Note this is the ONLY thing that gate covers — see the header.
+  const tallies = new Map<string, RecapTally>();
+  if (await isWeekFullyGraded(weekId)) {
+    const { data: games, error: gamesErr } = await supabaseService
+      .from('games')
+      .select('id')
+      .eq('week_id', weekId);
+    if (gamesErr) throw gamesErr;
+    const gameIds = (games ?? []).map((g) => g.id);
+
+    // A week with no games has no settlements to report — but it must only skip
+    // results detection, never abort the pass. As a whole-function early return
+    // (which is what this was) it took the AI-recap half down with it.
+    if (gameIds.length > 0) {
+      const { data: allUsers, error: usersErr } = await supabaseService
+        .from('users')
+        .select('id, notification_prefs');
+      if (usersErr) throw usersErr;
+      const notifiable = (allUsers ?? [])
+        .filter((u) => {
+          const prefs = parseNotificationPrefs(u.notification_prefs);
+          return prefs.enabled && prefs.results_recap;
+        })
+        .map((u) => u.id);
+
+      if (notifiable.length > 0) {
+        // Per-(user, week) dedup: skip anyone already recapped for this week — unless
+        // that recap reached no device (#815), in which case the slot was never spent.
+        const { data: logs, error: logsErr } = await supabaseService
+          .from('notification_log')
+          .select('user_id, detail')
+          .eq('kind', 'results_recap')
+          .eq('week_id', weekId)
+          .in('user_id', notifiable);
+        if (logsErr) throw logsErr;
+        const recapped = new Set(
+          (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => l.user_id)
+        );
+
+        // Aggregate each user's settlements across all groups for the week's games.
+        const { data: settlements, error: setErr } = await supabaseService
+          .from('pick_settlement')
+          .select('user_id, outcome, points_delta')
+          .in('game_id', gameIds)
+          .in('user_id', notifiable);
+        if (setErr) throw setErr;
+        const byUser = new Map<string, RecapTally>();
+        for (const s of settlements ?? []) {
+          const t = byUser.get(s.user_id) ?? { wins: 0, losses: 0, pushes: 0, missed: 0, net: 0 };
+          if (s.outcome === 'win') t.wins++;
+          else if (s.outcome === 'loss') t.losses++;
+          else if (s.outcome === 'push') t.pushes++;
+          else if (s.outcome === 'missed') t.missed++;
+          t.net += s.points_delta ?? 0;
+          byUser.set(s.user_id, t);
+        }
+
+        for (const userId of notifiable) {
+          results.evaluated++;
+          const tally = byUser.get(userId);
+          // Nothing to report (no settlements) or already recapped this week.
+          if (!tally || recapped.has(userId)) {
+            results.skipped++;
+            continue;
+          }
+          tallies.set(userId, tally);
+        }
+      }
+    }
+  }
+
+  // ---- AI-recap detection ---------------------------------------------------
+  // The gate here is "generation already happened": whichever `ai_recaps` rows the
+  // grade cron wrote for this week, hours earlier. A group with no row (recaps off,
+  // or generation failed) is simply not evaluated.
+  const recapsByUser = new Map<string, Array<{ groupId: string; prose: string }>>();
+  const { data: recapRows, error: recapErr } = await supabaseService
     .from('ai_recaps')
     .select('group_id, prose')
     .eq('season_year', seasonYear)
@@ -610,72 +592,130 @@ export async function sendAIRecapPushes(weekId: number): Promise<AIRecapPushSumm
   if (recapErr) throw recapErr;
   // One recap row per (group, season, week); keep each group's prose for the push body.
   const proseByGroup = new Map<string, string>();
-  for (const r of recaps ?? []) {
+  for (const r of recapRows ?? []) {
     if (!proseByGroup.has(r.group_id)) proseByGroup.set(r.group_id, r.prose);
   }
   const groupIds = [...proseByGroup.keys()];
-  if (groupIds.length === 0) return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
 
-  const { data: memberships, error: memErr } = await supabaseService
-    .from('group_memberships')
-    .select('group_id, user_id')
-    .in('group_id', groupIds)
-    .eq('status', 'active');
-  if (memErr) throw memErr;
-  if (!memberships || memberships.length === 0)
-    return { evaluated: 0, sent: 0, skipped: 0, delivered: 0 };
+  if (groupIds.length > 0) {
+    const { data: memberships, error: memErr } = await supabaseService
+      .from('group_memberships')
+      .select('group_id, user_id')
+      .in('group_id', groupIds)
+      .eq('status', 'active');
+    if (memErr) throw memErr;
 
-  const prefsByUser = await loadPrefs([...new Set(memberships.map((m) => m.user_id))]);
+    if (memberships && memberships.length > 0) {
+      const prefsByUser = await loadPrefs([...new Set(memberships.map((m) => m.user_id))]);
 
-  // Per-(user, group, week) dedup: skip anyone already pushed for this group/week —
-  // unless that push reached no device (#815), which never spent the slot.
-  const { data: logs, error: logsErr } = await supabaseService
-    .from('notification_log')
-    .select('user_id, group_id, detail')
-    .eq('kind', 'ai_recap')
-    .eq('week_id', weekId)
-    .in('group_id', groupIds);
-  if (logsErr) throw logsErr;
-  const notified = new Set(
-    (logs ?? []).filter((l) => holdsDedupSlot(l.detail)).map((l) => `${l.user_id}:${l.group_id}`)
-  );
+      // Per-(user, group, week) dedup: skip anyone already pushed for this group/week —
+      // unless that push reached no device (#815), which never spent the slot.
+      const { data: logs, error: logsErr } = await supabaseService
+        .from('notification_log')
+        .select('user_id, group_id, detail')
+        .eq('kind', 'ai_recap')
+        .eq('week_id', weekId)
+        .in('group_id', groupIds);
+      if (logsErr) throw logsErr;
+      const notified = new Set(
+        (logs ?? [])
+          .filter((l) => holdsDedupSlot(l.detail))
+          .map((l) => `${l.user_id}:${l.group_id}`)
+      );
 
-  let evaluated = 0;
-  let sent = 0;
-  let skipped = 0;
-  let delivered = 0;
+      for (const { group_id, user_id } of memberships) {
+        const prefs = prefsByUser.get(user_id);
+        if (!prefs?.enabled || !prefs.ai_recap) continue;
+        aiRecaps.evaluated++;
 
-  for (const { group_id, user_id } of memberships) {
-    const prefs = prefsByUser.get(user_id);
-    if (!prefs?.enabled || !prefs.ai_recap) continue;
-    evaluated++;
+        if (notified.has(`${user_id}:${group_id}`)) {
+          aiRecaps.skipped++;
+          continue;
+        }
+        // Guards against a duplicate membership row re-pushing within this same run;
+        // the cross-run decision is the holdsDedupSlot filter above.
+        notified.add(`${user_id}:${group_id}`);
 
-    if (notified.has(`${user_id}:${group_id}`)) {
-      skipped++;
-      continue;
+        const list = recapsByUser.get(user_id) ?? [];
+        list.push({ groupId: group_id, prose: proseByGroup.get(group_id) ?? '' });
+        recapsByUser.set(user_id, list);
+      }
     }
-
-    const result = await sendToUser(user_id, {
-      title: `Week ${weekNumber} recap is ready`,
-      body: recapPushBody(proseByGroup.get(group_id) ?? ''),
-      // Season-qualified deep link (#739): `?season=` lands on this week's archive even after a
-      // newer season starts grading, and `#week-N` scrolls straight to its hardware + recap.
-      url: `/recap?season=${seasonYear}#week-${weekNumber}`,
-      tag: `ai-recap-${group_id}-week-${weekId}`
-    });
-    await logNotification({
-      user_id,
-      kind: 'ai_recap',
-      week_id: weekId,
-      group_id,
-      delivery: result
-    });
-    // Guards against a duplicate membership row re-pushing within this same run;
-    // the cross-run decision is the holdsDedupSlot filter above.
-    notified.add(`${user_id}:${group_id}`);
-    sent++;
-    delivered += result.sent;
   }
 
-  return { evaluated, sent, skipped, delivered };
+  // ---- Merged delivery ------------------------------------------------------
+  let pushes = 0;
+  let delivered = 0;
+  const dueUsers = new Set([...tallies.keys(), ...recapsByUser.keys()]);
+
+  for (const userId of dueUsers) {
+    const tally = tallies.get(userId) ?? null;
+    const groups = recapsByUser.get(userId) ?? [];
+    // No recap row for this user anywhere: still one push, carrying results alone.
+    const targets: Array<{ groupId: string | null; prose: string | null }> =
+      groups.length > 0 ? groups : [{ groupId: null, prose: null }];
+
+    for (const [index, target] of targets.entries()) {
+      // The record is cross-group, so it rides the first push only — a two-league
+      // user hears their week's record once, not once per league.
+      const carriesResults = index === 0 && tally !== null;
+      const content = weeklyRecapPushBody({
+        weekNumber,
+        tally: carriesResults ? tally : null,
+        prose: target.prose
+      });
+      if (!content) continue;
+
+      // The one place that knows whether this push reached a device — carried into
+      // both the summary and every log row it writes, never discarded (#815).
+      const result = await sendToUser(userId, {
+        ...content,
+        // The week-scoped landing surface is /week (#776), fully qualified (#818):
+        // this cron fires Tuesday 14:00 UTC, 14 hours after week N+1 became active,
+        // so a bare `/week` would open the empty next week rather than the one this
+        // push reports on. /week is also the only route carrying BOTH halves of the
+        // merged body — the same hardware /recap shows, plus the personal breakdown
+        // /recap has never rendered.
+        url: `/week?season=${seasonYear}&week=${weekNumber}`,
+        // Group-scoped so two leagues' pushes don't replace each other in the tray:
+        // push-handler.js sets `renotify` whenever a tag is present (#814), and a
+        // shared tag would leave one buzz and one surviving notification.
+        tag: `weekly-recap-${target.groupId ?? 'you'}-week-${weekId}`
+      });
+      pushes++;
+      delivered += result.sent;
+
+      // Per-concern log rows against the one delivery: dedup stays independent, so a
+      // failed merged push releases both slots and the next tick re-sends only what
+      // is still missing.
+      if (target.groupId) {
+        await logNotification({
+          user_id: userId,
+          kind: 'ai_recap',
+          week_id: weekId,
+          group_id: target.groupId,
+          delivery: result
+        });
+        aiRecaps.sent++;
+      }
+      if (carriesResults) {
+        await logNotification({
+          user_id: userId,
+          kind: 'results_recap',
+          week_id: weekId,
+          detail: {
+            wins: tally.wins,
+            losses: tally.losses,
+            pushes: tally.pushes,
+            missed: tally.missed,
+            net: tally.net
+          },
+          delivery: result
+        });
+        results.sent++;
+      }
+    }
+  }
+
+  return { results, aiRecaps, pushes, delivered };
 }
