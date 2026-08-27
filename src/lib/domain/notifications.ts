@@ -304,11 +304,18 @@ export type RecapTally = {
 };
 
 /**
- * One-line push body summarizing a user's week. Pure so it can be unit-tested
- * without a database. Push/missed clauses are omitted when zero.
- *   e.g. "3-1 with 1 push · +7 points this week. Tap for the breakdown."
+ * The record-and-net half of a recap push, with no trailing punctuation:
+ *   "3-1 with 1 push · +7 points this week" / "3-1 with 1 push · +7 points"
+ *
+ * Push/missed clauses are omitted when zero. `thisWeek` is dropped in the merged
+ * weekly-recap body (#813) — that push's title already names the week, and the room
+ * for the AI beat has to come from somewhere. It survives on the results-only form,
+ * whose copy stays byte-identical to what shipped.
  */
-export function formatRecapBody(t: RecapTally): string {
+export function recapStatLine(
+  t: RecapTally,
+  { thisWeek = false }: { thisWeek?: boolean } = {}
+): string {
   let record = `${t.wins}-${t.losses}`;
   const extras: string[] = [];
   if (t.pushes > 0) extras.push(`${t.pushes} push${t.pushes === 1 ? '' : 'es'}`);
@@ -316,12 +323,31 @@ export function formatRecapBody(t: RecapTally): string {
   if (extras.length > 0) record += ` with ${extras.join(' and ')}`;
 
   const sign = t.net > 0 ? '+' : '';
-  const points = `${sign}${t.net} point${Math.abs(t.net) === 1 ? '' : 's'} this week`;
+  const suffix = thisWeek ? ' this week' : '';
+  const points = `${sign}${t.net} point${Math.abs(t.net) === 1 ? '' : 's'}${suffix}`;
 
+  return `${record} · ${points}`;
+}
+
+/**
+ * One-line push body summarizing a user's week. Pure so it can be unit-tested
+ * without a database. Push/missed clauses are omitted when zero.
+ *   e.g. "3-1 with 1 push · +7 points this week. Tap for the breakdown."
+ */
+export function formatRecapBody(t: RecapTally): string {
   // The push lands on /week (#776 — the week's own destination), so the tail names the
   // pick breakdown it opens rather than the standings it used to.
-  return `${record} · ${points}. Tap for the breakdown.`;
+  return `${recapStatLine(t, { thisWeek: true })}. Tap for the breakdown.`;
 }
+
+/** Cap for the AI beat when it is the whole push body. */
+const RECAP_BEAT_MAX = 150;
+
+/**
+ * Tighter cap for the beat when it rides behind the user's record in the merged
+ * weekly-recap push (#813), so the two halves together still land near 150.
+ */
+const MERGED_RECAP_BEAT_MAX = 120;
 
 /**
  * Push body for the "recap ready" alert: the AI recap's opening sentence, so the
@@ -330,7 +356,7 @@ export function formatRecapBody(t: RecapTally): string {
  * voice is prompted to open with a self-contained hook, so sentence one is the
  * teaser; this isolates and length-caps it.
  */
-export function recapPushBody(prose: string): string {
+export function recapPushBody(prose: string, maxLength = RECAP_BEAT_MAX): string {
   const text = (prose ?? '').trim();
   // Defensive: prose is NOT NULL and always generated, but never ship an empty push.
   if (!text) return 'Your league’s AI recap just dropped.';
@@ -342,13 +368,51 @@ export function recapPushBody(prose: string): string {
   let sentence = (match?.index != null ? text.slice(0, match.index + 1) : text).trim();
 
   // Backstop so an unusually long opener stays lock-screen-friendly.
-  const MAX = 150;
-  if (sentence.length > MAX) {
+  if (sentence.length > maxLength) {
     sentence =
       sentence
-        .slice(0, MAX)
+        .slice(0, maxLength)
         .replace(/\s+\S*$/, '')
         .trimEnd() + '…';
   }
   return sentence;
+}
+
+/**
+ * Title + body for the single Tuesday-morning weekly-recap push (#813). The two
+ * post-grading pushes — the personal `results_recap` and the group `ai_recap` —
+ * used to fire seconds apart out of the same cron run; this composes whichever of
+ * them is due for one (user, group) into one notification. Pure, so the copy matrix
+ * is unit-testable without a database (mirrors `pregamePushBody`, including its
+ * null-when-nothing-to-say contract).
+ *
+ * The personal line leads and the beat follows: the record/net is short and
+ * deterministic (~29 chars) while the beat is variable, so an OS truncation eats
+ * flavour rather than substance. In the merged form the `Tap for the breakdown.`
+ * tail is dropped — it reads as a mid-thought beside a quote, and the beat is the
+ * better invitation anyway. Both single-concern forms stay byte-identical to what
+ * shipped, which is what their existing tests still prove.
+ *
+ * `prose: null` means "no `ai_recaps` row for this group/week". That is distinct
+ * from an empty string — a row whose prose came back blank still earns
+ * `recapPushBody`'s fallback copy rather than silence, exactly as before.
+ */
+export function weeklyRecapPushBody(args: {
+  weekNumber: number;
+  tally: RecapTally | null;
+  prose: string | null;
+}): { title: string; body: string } | null {
+  const { weekNumber, tally, prose } = args;
+  const resultsTitle = `Your Week ${weekNumber} results`;
+
+  if (prose === null) {
+    return tally ? { title: resultsTitle, body: formatRecapBody(tally) } : null;
+  }
+  if (!tally) {
+    return { title: `Week ${weekNumber} recap is ready`, body: recapPushBody(prose) };
+  }
+  return {
+    title: resultsTitle,
+    body: `${recapStatLine(tally)}. “${recapPushBody(prose, MERGED_RECAP_BEAT_MAX)}”`
+  };
 }
