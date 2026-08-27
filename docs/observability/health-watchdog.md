@@ -68,17 +68,64 @@ does not degrade).
 4. **Move the one free Sentry cron monitor** from `rollover-week` to
    `reset-odds-usage` — an independent backup on the highest-consequence job (a
    silently missed monthly reset disables odds sync for a whole month).
+5. **Add the stale-read-model Sentry alert** (#623) — see below.
 
 ## Coverage after this ships (all $0)
 
-| Failure class                | Caught by                                         |
-| ---------------------------- | ------------------------------------------------- |
-| Cron ran but errored         | GitHub Actions failure email (`exit 1`)           |
-| Cron didn't run / disabled   | Watchdog endpoint + external monitor              |
-| Site down / DB unreachable   | Same monitor (non-2xx / connection error)         |
-| Odds sync halted at cap      | Watchdog odds-usage check                         |
-| App crash / bug              | Sentry errors (free tier, unchanged)              |
-| Monthly reset silently fails | Watchdog **and** the one free Sentry cron monitor |
+| Failure class                | Caught by                                             |
+| ---------------------------- | ----------------------------------------------------- |
+| Cron ran but errored         | GitHub Actions failure email (`exit 1`)               |
+| Cron didn't run / disabled   | Watchdog endpoint + external monitor                  |
+| Site down / DB unreachable   | Same monitor (non-2xx / connection error)             |
+| Odds sync halted at cap      | Watchdog odds-usage check                             |
+| App crash / bug              | Sentry errors (free tier, unchanged)                  |
+| Monthly reset silently fails | Watchdog **and** the one free Sentry cron monitor     |
+| Read models silently stale   | `cron_run_log.summary` + /admin, plus the alert below |
+
+## Stale read models — the green-but-wrong class (#623)
+
+The grade cron's two post-grade read-model rebuilds — the leaderboard/stats matviews
+(ADR-0013) and the credibility ratings (ADR-0032 §8) — are **best-effort by design**:
+settlement has already committed, so a refresh failure is logged and swallowed rather
+than rolling the grade back, and the stale snapshot self-heals on the next grade. The
+cost is that the grade job returns **HTTP 200** with `cron_run_log.ok = true` and a
+green watchdog even when the leaderboard everyone reads is stale. Nothing above catches
+this: every signal in the table is about a job that _ran and failed_, and by contract
+this one didn't fail.
+
+Two independent things close it, and neither changes the best-effort contract:
+
+**1. The run reports its own outcome.** The grade job folds each step into its summary,
+which `withCronLog` persists to `cron_run_log.summary`:
+
+```json
+"readModels": {
+  "leaderboardStats": { "ok": true },
+  "playerRatings": { "ok": false, "error": "rating inputs unavailable" }
+}
+```
+
+`/admin` reads it back (`staleReadModels`) and renders such a run as **`ok · stale
+reads`** with the failing step named, so the degradation is visible on the same card
+that already shows the run. Rows written before #623 carry no `readModels` key and read
+as non-degraded — absent is not the same as healthy.
+
+**2. A Sentry alert makes it push, not pull.** The card only helps someone who opens it.
+Both steps already tag their capture, so no code is needed — create one issue alert in
+Sentry:
+
+- **When:** a new issue is created, **or** an issue is seen again (so a recurring stale
+  refresh re-alerts rather than staying quietly resolved).
+- **If:** the event's `step` tag equals `refresh_leaderboard_stats` **or**
+  `rebuild_player_ratings` (one rule with two conditions, `any` match). Both also carry
+  `area: grading`.
+- **Then:** email. Rate-limit to one notification per hour — a failing refresh recurs on
+  every grade tick.
+
+Verify it once by triggering a real event rather than trusting the rule text: break a
+matview dependency on a preview DB, run `grade` via `workflow_dispatch`, and confirm all
+three of the email, the `cron_run_log.summary`, and the `/admin` card — while the
+settlement rows still land.
 
 ## Sentry free-tier tuning (shipped with #206)
 

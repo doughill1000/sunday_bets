@@ -63,9 +63,13 @@ Boundaries future work must preserve:
    carries a unique index on its natural key so `REFRESH MATERIALIZED VIEW CONCURRENTLY`
    can run (it keeps the view readable during refresh and is transaction-safe inside the
    function). A refresh error is logged (Sentry + console) but **not** thrown: the grade
-   has already committed and the matview self-heals on the next grade. _Known open gaps in
-   this swallow-and-self-heal posture (2026-07-21): #623 (a silent matview/ratings refresh
-   failure is not surfaced out of the grade cron), #624 (timeout-headroom signal not
+   has already committed and the matview self-heals on the next grade. The refresh does now
+   **report** its outcome to its caller — still without throwing, so this ruling is
+   unchanged — and the grade cron records that in `cron_run_log.summary` so a swallowed
+   failure is visible on `/admin` rather than only in Sentry. _Known open gaps in
+   this swallow-and-self-heal posture (2026-07-21): ~~#623 (a silent matview/ratings refresh
+   failure is not surfaced out of the grade cron)~~ **shipped 2026-08-27** (see above),
+   #624 (timeout-headroom signal not
    pointed at the grade cron). #744 (the cron re-graded a finished season's final week,
    and re-ran this refresh for nothing, on every run) shipped 2026-07-21: the grade cron
    now drops a fully-settled prior week from its candidates instead of reselecting it

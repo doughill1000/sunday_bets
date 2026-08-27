@@ -344,10 +344,64 @@ describe('grading service', () => {
   });
 
   it('refreshReadModels refreshes the matviews and rebuilds the ratings, once', async () => {
-    await refreshReadModels();
+    const outcome = await refreshReadModels();
     expect(rpc).toHaveBeenCalledWith('refresh_leaderboard_stats');
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rebuildPlayerRatings).toHaveBeenCalledTimes(1);
+    // On the happy path both steps report ok, so the grade cron's summary shows nothing stale.
+    expect(outcome).toEqual({ leaderboardStats: { ok: true }, playerRatings: { ok: true } });
+  });
+
+  // #623: the two refreshes stay best-effort (never thrown, grade already committed) but must now
+  // REPORT their failure, so the cron can log it instead of leaving Sentry as the only witness.
+  it('refreshReadModels reports a matview refresh failure without throwing', async () => {
+    rpc = vi
+      .fn()
+      .mockImplementation(async (name: string) =>
+        name === 'refresh_leaderboard_stats'
+          ? { data: null, error: { message: 'deadlock detected' } }
+          : { data: null, error: null }
+      );
+
+    const outcome = await refreshReadModels();
+
+    expect(outcome.leaderboardStats).toEqual({ ok: false, error: 'deadlock detected' });
+    // The rebuild is not short-circuited by the matview failure — the two are independent.
+    expect(outcome.playerRatings).toEqual({ ok: true });
+    expect(rebuildPlayerRatings).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureException).toHaveBeenCalled();
+  });
+
+  it('refreshReadModels reports a ratings rebuild failure without throwing', async () => {
+    // rebuildPlayerRatings swallows its own error and surfaces it only through onError.
+    (rebuildPlayerRatings as unknown as Mock).mockImplementationOnce(
+      async (_client: unknown, opts: { onError?: (err: unknown) => void }) => {
+        opts.onError?.(new Error('rating inputs unavailable'));
+      }
+    );
+
+    const outcome = await refreshReadModels();
+
+    expect(outcome.leaderboardStats).toEqual({ ok: true });
+    expect(outcome.playerRatings).toEqual({ ok: false, error: 'rating inputs unavailable' });
+  });
+
+  it('gradeWeek still succeeds when a read-model refresh fails (best effort preserved)', async () => {
+    rpc = vi
+      .fn()
+      .mockImplementation(async (name: string) =>
+        name === 'refresh_leaderboard_stats'
+          ? { data: null, error: { message: 'deadlock detected' } }
+          : { data: null, error: null }
+      );
+
+    // The settlement write has already committed; a stale read model must not undo it.
+    await expect(gradeWeek(10)).resolves.toEqual({
+      ok: true,
+      week_id: 10,
+      gamesGraded: 2,
+      picksSettled: 5
+    });
   });
 
   it('gradeWeek with refresh triggers an ESPN score pull and updates', async () => {
