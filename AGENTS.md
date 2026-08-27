@@ -68,9 +68,11 @@ shadcn-svelte · vite-plugin-pwa · Sentry · Vercel.
 - **New `public` tables need explicit `grant` + `enable row level security` +
   policies** or the Data/REST API can't see them.
 - **Svelte 5 runes** is the target idiom. Match the style of the file you're editing.
-- **Naming (ADR-0027):** the product is **Hotshot** (one word) in all copy, UI,
-  headers, and AI personas. `hotshotcalls.com` / "Hotshot Calls" is the **domain
-  only** — never surface "Calls" in the product.
+- **Naming (ADR-0027, amended by ADR-0041):** the product is **Hotshot** (one word) in
+  all copy, UI, headers, and AI personas. `hotshotpickem.com` / "Hotshot Pick'em" is
+  the **domain and store-listing name only** — never surface "Pick'em" in the product.
+  The name is formally **UNCLEARED** (ADR-0041): store filing, public marketing, and
+  monetization are gated on attorney clearance; the invite-only beta is not.
 - **UI has a merge gate (ADR-0030 / ADR-0029):** `docs/DESIGN.md` governs every
   user-facing screen, and its "Hard constraints" checklist is **pass/fail at merge**
   (mirrored in the PR template's Design checklist). One pattern per job — e.g. a chip

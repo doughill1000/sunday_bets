@@ -6,6 +6,12 @@
 - Supersedes: ADR-0027 (the locked-mark clause in Decision only; the product name
   "Hotshot", the `hotshotcalls.com` domain-only "Calls" rule, and the charcoal /
   brass-gold / cream palette are retained unchanged)
+- Note: this ADR's two restatements of ADR-0027's domain-only "Calls" rule (the
+  `Supersedes:` line above and the "Everything else ADR-0027 decided" paragraph in
+  Decision) are superseded by
+  [ADR-0041](0041-hotshot-name-uncleared-and-domain.md): the domain is now
+  **`hotshotpickem.com`**, and the rule is a domain-only **"Pick'em"** rule. The mark
+  decided here, the product name **Hotshot**, and the palette are unchanged.
 
 ## Context
 
