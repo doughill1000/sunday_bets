@@ -24,9 +24,11 @@ PR #507 and is governed by ADR-0010; it is out of scope here.
   `auth`, `storage`, `realtime`, …).
 - **Location:** rclone remote `onedrive:supabase-backups/`. Filenames are
   `supabase_<UTC-timestamp>_<label>_<short-sha>.dump`, where `<label>` is `scheduled`
-  (weekly cron), `release` (pre-release snapshot), or empty. The filename UTC timestamp is
-  the snapshot instant.
-- **Cadence / retention:** weekly (Mon 08:00 UTC) + on every prod release + manual
+  (scheduled cron), `release` (pre-release snapshot), or empty. The filename UTC timestamp
+  is the snapshot instant.
+- **Cadence / retention:** daily (08:00 UTC) in-season, weekly (Mon 08:00 UTC) in the
+  offseason — see [the cadence flip](#season-start-flip-the-backup-cadence-weekly--daily) —
+  plus on every prod release and manual
   `workflow_dispatch`; dumps older than 90 days are pruned after each successful upload.
 
 ## Preconditions
@@ -194,6 +196,8 @@ Data growth over a season (picks/settlement) keeps restore in the seconds-to-low
 range, so these RTOs hold through NFL 2026.
 
 ## Season-start: flip the backup cadence weekly → daily
+
+**Current state: daily** — flipped for the NFL 2026 season on 2026-08-27.
 
 The scheduled backup runs **weekly** in the offseason. At NFL season start, when weekly
 picks make a day-level RPO worth the extra runs, flip it to **daily**: in

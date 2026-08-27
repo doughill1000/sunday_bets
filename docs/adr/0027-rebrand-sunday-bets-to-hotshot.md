@@ -9,23 +9,30 @@
   which replaces it with a simplified football-plus-rising-line mark. The product
   name, domain-only "Calls" rule, and charcoal/brass-gold/cream palette below are
   unchanged.
+- Note: the **domain clause** (`hotshotcalls.com`, including the domain-only "Calls"
+  rule) and the **"de-gambles the identity" benefit claim** are superseded by
+  [ADR-0041](0041-hotshot-name-uncleared-and-domain.md). The product name **Hotshot**
+  and the palette are unchanged.
 
-> **⚠ Contested as of 2026-07-21 — do not read this ADR as settled. See #677.**
-> Two of this ADR's clauses are under active review and are expected to be replaced by a
-> superseding ADR out of issue #677:
+> **⚠ Resolved 2026-08-27 by [ADR-0041](0041-hotshot-name-uncleared-and-domain.md) —
+> read that ADR for the current position.** Two clauses below no longer hold:
 >
-> - **The name.** This ADR's central justification is that "Hotshot" **de-gambles the
->   identity (unblocks store/ad policy)**. Scoping #661 surfaced evidence cutting against
->   exactly that claim — `HOT SHOT` is an active Light & Wonder federal registration
->   covering casino-game contests and social/mobile game delivery, and "Hotshot"/"Hot Shot"
->   are phonetically identical. The bare name is also unavailable on the App Store. A
->   2026-07-16 review concluded **Hotshot stays** for now, with plan-B "Laces Out" and
->   plan-C "Pecking Order" held in reserve; the name is **not trademark-cleared**.
-> - **The domain.** The `hotshotcalls.com` domain named throughout this ADR (and in the
->   "Calls" rule) is being replaced by **`hotshotpickem.com`** (#678, not yet purchased).
->   A stale `mailto:admin@hotshotcalls.com` VAPID fallback remains in
->   `src/lib/server/push.ts`; note that `VAPID_SUBJECT` is set in prod, so the fallback is
->   cosmetic. [ADR-0034](0034-simplified-hotshot-logo-mark.md) restates the old domain too.
+> - **The de-gambling claim.** This ADR's central justification is that "Hotshot"
+>   **de-gambles the identity (unblocks store/ad policy)**. Scoping #661 surfaced
+>   evidence cutting against exactly that claim — `HOT SHOT` is an active Light &
+>   Wonder federal registration covering casino-game contests and social/mobile game
+>   delivery, and "Hotshot"/"Hot Shot" are phonetically identical. The bare name is also
+>   unavailable on the App Store. ADR-0041 narrows the claim and records the name as
+>   formally **UNCLEARED**, gating store filing, public marketing, and monetization on
+>   attorney clearance (scheduled for the January 2027 offseason). The name itself
+>   **stays**, ratified by a ~100-candidate search across every trademark-strength tier.
+> - **The domain.** `hotshotcalls.com` — named throughout this ADR and in the "Calls"
+>   rule — is replaced by **`hotshotpickem.com`** (purchase and configuration tracked in
+>   #661). The domain-only rule itself survives verbatim; only the qualifier word
+>   changes. A stale `mailto:admin@hotshotcalls.com` VAPID fallback remains in
+>   `src/lib/server/push.ts` until #661 lands; `VAPID_SUBJECT` is set in prod, so the
+>   fallback is cosmetic. [ADR-0034](0034-simplified-hotshot-logo-mark.md) restates the
+>   old domain too, and is superseded on that point by ADR-0041.
 >
 > The charcoal / brass-gold / cream palette and the de-gambling _intent_ are unaffected.
 
@@ -102,4 +109,7 @@ pipeline).
   fallback (this rebrand ships raster-only favicons).
 - **Hotshot award** — repurpose Hot Hand 🔥 → "Hotshot", or introduce a new marquee
   "The Hotshot" (best single-week score of the season). Tracked separately.
-- Domain purchase (`hotshotcalls.com` / `.app`) and any public store listing.
+- ~~Domain purchase (`hotshotcalls.com` / `.app`) and any public store listing.~~
+  Superseded by [ADR-0041](0041-hotshot-name-uncleared-and-domain.md): the domain is
+  **`hotshotpickem.com`** (purchase tracked in #661), and a public store listing is now
+  **gated** on attorney clearance of the uncleared "Hotshot" wordmark.
