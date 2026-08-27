@@ -2,9 +2,15 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 // The grade endpoint's dependencies. gradeWeek + refreshReadModels are the pair under test (#622):
 // each week is graded with the whole-table refresh SUPPRESSED, and refreshReadModels runs once for
-// the whole run. The recap/notification fan-out is stubbed to no-ops — this suite is about the
-// refresh call shape, not their behavior.
+// the whole run, and its outcome is folded into the job summary (#623). The recap/notification
+// fan-out is stubbed to no-ops — this suite is about the refresh call shape, not their behavior.
 const calls: string[] = [];
+
+// What refreshReadModels reports back (#623). Defaults to a clean refresh; a test flips it to a
+// failure to prove the outcome reaches the summary withCronLog persists.
+const CLEAN_REFRESH = { leaderboardStats: { ok: true }, playerRatings: { ok: true } };
+let readModelOutcome: unknown = CLEAN_REFRESH;
+
 vi.mock('$lib/server/grading', () => ({
   gradeWeek: vi.fn(async (weekId: number, opts?: { skipReadModelRefresh?: boolean }) => {
     calls.push(`gradeWeek:${weekId}:${opts?.skipReadModelRefresh ? 'skip' : 'refresh'}`);
@@ -12,6 +18,7 @@ vi.mock('$lib/server/grading', () => ({
   }),
   refreshReadModels: vi.fn(async () => {
     calls.push('refreshReadModels');
+    return readModelOutcome;
   })
 }));
 
@@ -63,6 +70,7 @@ describe('POST /api/cron/grade — hoisted read-model refresh (#622)', () => {
     calls.length = 0;
     recentWeeks = [];
     unsettledWeeks = [];
+    readModelOutcome = CLEAN_REFRESH;
   });
 
   it('refreshes the read models exactly once even when grading several weeks', async () => {
@@ -110,6 +118,35 @@ describe('POST /api/cron/grade — hoisted read-model refresh (#622)', () => {
     await POST(makeEvent());
 
     expect(mockRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  // #623: withCronLog persists whatever the job returns as cron_run_log.summary, so folding the
+  // refresh outcome into that return value is what makes a silent staleness visible on /admin.
+  it('records the read-model refresh outcome in the job summary', async () => {
+    recentWeeks = [{ id: 301 }];
+
+    const body = await (await POST(makeEvent())).json();
+
+    expect(body.result.readModels).toEqual(CLEAN_REFRESH);
+  });
+
+  it('records a failed refresh in the summary while the grade still succeeds', async () => {
+    recentWeeks = [{ id: 301 }];
+    readModelOutcome = {
+      leaderboardStats: { ok: false, error: 'deadlock detected' },
+      playerRatings: { ok: true }
+    };
+
+    const res = await POST(makeEvent());
+    const body = await res.json();
+
+    // The best-effort contract is unchanged: settlement committed, so the run is still a 200.
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.result.readModels.leaderboardStats).toEqual({
+      ok: false,
+      error: 'deadlock detected'
+    });
   });
 
   it('opts into the settled-prior-week gate (#744) so a finished season stops regrading', async () => {

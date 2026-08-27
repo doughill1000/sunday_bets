@@ -8,16 +8,44 @@ import { findTeamsByExternalKeys } from '$lib/server/db/queries/findTeamsByExter
 import { rebuildPlayerRatings } from '$lib/server/rating/rebuild';
 
 /**
+ * Outcome of one best-effort, post-grade read-model refresh step (#623).
+ *
+ * The step still never throws — this is a *report*, not a new failure mode. Returning it lets
+ * the grade cron fold "did the read models actually refresh?" into its `cron_run_log` summary,
+ * so silent staleness is visible on /admin without anyone grepping Sentry.
+ */
+export type RefreshOutcome = { ok: true } | { ok: false; error: string };
+
+/** Outcome of both whole-table read models a grade invalidates (#623). */
+export type ReadModelRefresh = {
+  leaderboardStats: RefreshOutcome;
+  playerRatings: RefreshOutcome;
+};
+
+/** Normalize whatever a best-effort step reported (Error, PostgrestError, thrown value). */
+function toOutcome(error: unknown): RefreshOutcome {
+  if (!error) return { ok: true };
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error !== null && 'message' in error
+        ? String((error as { message: unknown }).message)
+        : String(error);
+  return { ok: false, error: message };
+}
+
+/**
  * Refresh the materialized leaderboard/stats views after a grading run (issue #191).
  * The leaderboard and stats pages read these matviews, which only change during grading,
  * so we recompute them here instead of on every page load.
  *
- * A refresh failure is logged but never thrown: the grade has already committed, the
- * leaderboard simply shows the prior snapshot, and the next grade self-heals it. Keeping
+ * A refresh failure is logged and reported but never thrown: the grade has already committed,
+ * the leaderboard simply shows the prior snapshot, and the next grade self-heals it. Keeping
  * this off the grade's critical path is deliberate — a transient refresh error must not
- * abort or roll back grading.
+ * abort or roll back grading. Callers that write a run summary should record the returned
+ * outcome (#623); callers that don't may ignore it.
  */
-export async function refreshLeaderboardStats(): Promise<void> {
+export async function refreshLeaderboardStats(): Promise<RefreshOutcome> {
   const { error } = await supabaseService.rpc('refresh_leaderboard_stats');
   if (error) {
     Sentry.captureException(error, {
@@ -28,6 +56,7 @@ export async function refreshLeaderboardStats(): Promise<void> {
       error.message
     );
   }
+  return toOutcome(error);
 }
 
 /**
@@ -38,11 +67,20 @@ export async function refreshLeaderboardStats(): Promise<void> {
  * it can also run in node scripts) and never thrown, since the grade has already committed and the
  * prior ratings self-heal on the next grade.
  */
-async function rebuildRatings(): Promise<void> {
+async function rebuildRatings(): Promise<RefreshOutcome> {
+  // rebuildPlayerRatings swallows its own failure and surfaces it only through onError, so the
+  // hook is the one place the outcome is observable. Track it with an explicit flag rather than
+  // "did we capture a truthy error?" — onError could in principle be handed a falsy throw.
+  let failed = false;
+  let failure: unknown;
   await rebuildPlayerRatings(supabaseService, {
-    onError: (err) =>
-      Sentry.captureException(err, { tags: { area: 'grading', step: 'rebuild_player_ratings' } })
+    onError: (err) => {
+      failed = true;
+      failure = err;
+      Sentry.captureException(err, { tags: { area: 'grading', step: 'rebuild_player_ratings' } });
+    }
   });
+  return failed ? toOutcome(failure ?? new Error('rebuild_player_ratings failed')) : { ok: true };
 }
 
 /**
@@ -55,10 +93,14 @@ async function rebuildRatings(): Promise<void> {
  * twice per run and raced two concurrent full ratings rebuilds, which could transiently empty
  * `player_ratings`. Single-invocation admin graders (`gradeGame`/`gradeSeason`) keep refreshing
  * inline — there is no fan-out to race.
+ *
+ * Returns each step's outcome (#623). Neither step throws, so this is purely a report: a caller
+ * that logs a run summary can record a degraded refresh, and one that doesn't can ignore it.
  */
-export async function refreshReadModels(): Promise<void> {
-  await refreshLeaderboardStats();
-  await rebuildRatings();
+export async function refreshReadModels(): Promise<ReadModelRefresh> {
+  const leaderboardStats = await refreshLeaderboardStats();
+  const playerRatings = await rebuildRatings();
+  return { leaderboardStats, playerRatings };
 }
 
 /** Result summary shared by all three graders — powers the admin card's confirmation note. */

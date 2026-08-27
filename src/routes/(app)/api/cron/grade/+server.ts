@@ -60,7 +60,12 @@ export const POST: RequestHandler = async (event) => {
     // exactly once (#622). refreshReadModels() is best-effort internally — each step swallows and
     // logs its own error — so it never fails the grade. It runs BEFORE the recaps below because the
     // AI recap reads the freshly-refreshed leaderboard/stats matviews (ADR-0008).
-    await refreshReadModels();
+    //
+    // Its per-step outcomes go into the job summary below (#623) so a failure is legible from
+    // cron_run_log / the /admin cron card. Without that, this job returns 200 with a green
+    // cron_run_log row even when the leaderboard and ratings are silently stale, and the only
+    // record is a Sentry event nobody is watching for.
+    const readModels = await refreshReadModels();
 
     // Generate AI recap content for each enabled group (ADR-0008). Runs post-grade +
     // post the single refreshReadModels() above (leaderboard/stats matviews). This only
@@ -121,6 +126,7 @@ export const POST: RequestHandler = async (event) => {
     return {
       weekIds: weeks.map((w) => w.id),
       results,
+      readModels,
       aiRecaps,
       seasonWrappeds,
       badgeFlavors,
