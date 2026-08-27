@@ -7,7 +7,9 @@ import {
   shouldNotifyLineShift,
   pregamePushBody,
   formatRecapBody,
+  recapStatLine,
   recapPushBody,
+  weeklyRecapPushBody,
   holdsDedupSlot,
   testPushMessage,
   LINE_SHIFT_THRESHOLD_POINTS
@@ -110,6 +112,12 @@ describe('recapPushBody', () => {
   it('caps an overly long opener with an ellipsis', () => {
     const out = recapPushBody('A'.repeat(200) + '. Second.');
     expect(out.length).toBeLessThanOrEqual(151);
+    expect(out.endsWith('…')).toBe(true);
+  });
+
+  it('honours a tighter cap when one is passed (#813 merged body)', () => {
+    const out = recapPushBody('A'.repeat(200) + '. Second.', 120);
+    expect(out.length).toBeLessThanOrEqual(121);
     expect(out.endsWith('…')).toBe(true);
   });
 
@@ -388,5 +396,83 @@ describe('testPushMessage (#815)', () => {
     expect(testPushMessage({ sent: 1, total: 1, pruned: 0 }).text).toBe(
       'Sent test to 1 subscription.'
     );
+  });
+});
+
+describe('recapStatLine (#813)', () => {
+  const TALLY = { wins: 3, losses: 1, pushes: 1, missed: 0, net: 7 };
+
+  it('omits "this week" by default — the merged push title already names the week', () => {
+    expect(recapStatLine(TALLY)).toBe('3-1 with 1 push · +7 points');
+  });
+
+  it('appends "this week" when asked', () => {
+    expect(recapStatLine(TALLY, { thisWeek: true })).toBe('3-1 with 1 push · +7 points this week');
+  });
+
+  // The extraction is only safe if formatRecapBody is still exactly its old output —
+  // the describe block above is the byte-level proof, this is the structural one.
+  it('is the stat half of formatRecapBody', () => {
+    expect(formatRecapBody(TALLY)).toBe(
+      `${recapStatLine(TALLY, { thisWeek: true })}. Tap for the breakdown.`
+    );
+  });
+});
+
+describe('weeklyRecapPushBody (#813)', () => {
+  const TALLY = { wins: 3, losses: 1, pushes: 1, missed: 0, net: 7 };
+  const PROSE =
+    'Doug torched the board while Shanna’s Bills pick went up in smoke. Then it got worse.';
+
+  it('leads with the personal line and quotes the AI beat when both are due', () => {
+    expect(weeklyRecapPushBody({ weekNumber: 3, tally: TALLY, prose: PROSE })).toEqual({
+      title: 'Your Week 3 results',
+      body: '3-1 with 1 push · +7 points. “Doug torched the board while Shanna’s Bills pick went up in smoke.”'
+    });
+  });
+
+  // AC #3: a user with only one of the two prefs on gets that push unchanged.
+  it('is byte-identical to the old results push when no recap row exists', () => {
+    expect(weeklyRecapPushBody({ weekNumber: 3, tally: TALLY, prose: null })).toEqual({
+      title: 'Your Week 3 results',
+      body: formatRecapBody(TALLY)
+    });
+  });
+
+  it('is byte-identical to the old recap-ready push when there are no results', () => {
+    expect(weeklyRecapPushBody({ weekNumber: 3, tally: null, prose: PROSE })).toEqual({
+      title: 'Week 3 recap is ready',
+      body: recapPushBody(PROSE)
+    });
+  });
+
+  it('returns null when neither concern is due', () => {
+    expect(weeklyRecapPushBody({ weekNumber: 3, tally: null, prose: null })).toBeNull();
+  });
+
+  it('drops the breakdown tail and "this week" in the merged form only', () => {
+    const merged = weeklyRecapPushBody({ weekNumber: 3, tally: TALLY, prose: PROSE });
+    const resultsOnly = weeklyRecapPushBody({ weekNumber: 3, tally: TALLY, prose: null });
+    expect(merged?.body).not.toContain('Tap for the breakdown.');
+    expect(merged?.body).not.toContain('this week');
+    expect(resultsOnly?.body).toContain('Tap for the breakdown.');
+    expect(resultsOnly?.body).toContain('this week');
+  });
+
+  it('caps the beat tighter when it rides behind the record', () => {
+    const long = 'B'.repeat(300) + '. Second.';
+    const merged = weeklyRecapPushBody({ weekNumber: 3, tally: TALLY, prose: long });
+    // 120 rather than the standalone 150, so record + beat still land near 150 total.
+    expect(merged?.body).toBe(`${recapStatLine(TALLY)}. “${'B'.repeat(120)}…”`);
+    expect(merged?.body.length).toBeLessThanOrEqual(155);
+  });
+
+  // `prose: ''` is a row whose prose came back blank — a real (if unexpected) recap,
+  // which still earns the fallback copy. Only `null` means "no row", i.e. silence.
+  it('keeps the blank-prose fallback rather than going silent', () => {
+    expect(weeklyRecapPushBody({ weekNumber: 3, tally: null, prose: '' })).toEqual({
+      title: 'Week 3 recap is ready',
+      body: 'Your league’s AI recap just dropped.'
+    });
   });
 });
