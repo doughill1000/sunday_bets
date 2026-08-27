@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseNotificationPrefs,
+  prefsAfterSubscribe,
   DEFAULT_NOTIFICATION_PREFS,
   spreadRelativeToHome,
   lineShiftForPick,
@@ -53,6 +54,46 @@ describe('parseNotificationPrefs', () => {
     expect(parseNotificationPrefs({ enabled: true }).ai_recap).toBe(true);
     expect(parseNotificationPrefs({ ai_recap: false }).ai_recap).toBe(false);
     expect(parseNotificationPrefs({ ai_recap: 'yes' }).ai_recap).toBe(true);
+  });
+});
+
+describe('prefsAfterSubscribe (#858)', () => {
+  it('turns the master switch on when it is off', () => {
+    expect(prefsAfterSubscribe({ ...DEFAULT_NOTIFICATION_PREFS, enabled: false })).toEqual({
+      ...DEFAULT_NOTIFICATION_PREFS,
+      enabled: true
+    });
+  });
+
+  it('preserves every sub-toggle', () => {
+    const stored = {
+      enabled: false,
+      pick_reminders: false,
+      results_recap: false,
+      ai_recap: true,
+      line_shift: { enabled: false }
+    };
+    expect(prefsAfterSubscribe(stored)).toEqual({ ...stored, enabled: true });
+  });
+
+  it('returns null when already enabled, so no write is issued', () => {
+    expect(prefsAfterSubscribe({ ...DEFAULT_NOTIFICATION_PREFS, enabled: true })).toBeNull();
+  });
+
+  it('repairs a partial or legacy row rather than clobbering it', () => {
+    // A row predating results_recap/ai_recap, still carrying the #693 threshold.
+    expect(prefsAfterSubscribe({ pick_reminders: false, line_shift: { threshold: 5 } })).toEqual({
+      enabled: true,
+      pick_reminders: false,
+      results_recap: true,
+      ai_recap: true,
+      line_shift: { enabled: true }
+    });
+  });
+
+  it('treats null/garbage jsonb as defaults and enables', () => {
+    expect(prefsAfterSubscribe(null)).toEqual({ ...DEFAULT_NOTIFICATION_PREFS, enabled: true });
+    expect(prefsAfterSubscribe('nope')).toEqual({ ...DEFAULT_NOTIFICATION_PREFS, enabled: true });
   });
 });
 
