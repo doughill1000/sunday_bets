@@ -13,10 +13,11 @@ name: 'Cron: Backup Prod DB'
 
 on:
   schedule:
-    # Weekly, Monday 08:00 UTC. Flip to daily ('0 8 * * *') at NFL season start, when
-    # weekly picks make a day-level RPO worth the extra runs. Procedure:
+    # Daily, 08:00 UTC -- the in-season cadence, flipped at NFL 2026 season start
+    # because weekly picks make a day-level RPO worth the extra runs. Flip back to
+    # weekly ('0 8 * * 1' -- Monday) in the offseason if desired. Procedure:
     # docs/runbooks/backup-restore-drill.md#season-start-flip-the-backup-cadence-weekly--daily
-    - cron: '0 8 * * 1'
+    - cron: '0 8 * * *'
   workflow_dispatch:
 
 concurrency:
