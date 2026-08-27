@@ -32,10 +32,17 @@
     <a
       href="/demo/how-to-play"
       data-testid="demo-how-to-play-link"
-      class="-mx-2 inline-flex min-h-11 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-primary-ink underline-offset-4 transition-colors hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:basis-auto"
+      class="group -mx-2 inline-flex min-h-11 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-primary-ink focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:basis-auto"
     >
       <CircleHelp class="size-4 shrink-0" aria-hidden="true" />
-      <span>New here? How the game works</span>
+      <!-- The underline rests rather than waiting for hover: gold is the demo chrome's accent
+           colour everywhere (the DEMO chip, the sign-up button), so colour alone does not read as
+           a link here. Carried on the span so it does not run under the icon. -->
+      <span
+        class="underline decoration-primary-ink/40 underline-offset-4 transition-colors group-hover:decoration-primary-ink"
+      >
+        New here? How the game works
+      </span>
     </a>
   {/if}
 </div>
