@@ -111,7 +111,9 @@ Boundaries future work must preserve:
    rebuild failure is logged, not thrown, and self-heals on the next grade) while keeping
    the computation in TS rather than a SQL recursive-CTE matview. `player_ratings` is a
    persisted read model, never a source of truth — it can always be regenerated from
-   `pick_settlement`.
+   `pick_settlement`. Since #623 the rebuild also **reports** its outcome to the grade
+   cron, which records it in `cron_run_log.summary` so a swallowed failure is visible on
+   `/admin`; still-not-thrown, so this ruling is unchanged.
 
 9. **A third number, not a replacement.** Records stay raw (ADR-0005/0018). Season
    standings points stay drop-worst-week and remain the **Leaderboard's** canonical

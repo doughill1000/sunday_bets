@@ -34,11 +34,18 @@ environment secrets). Every run writes a row to `public.cron_run_log` (`job`,
 **Matviews do not have their own schedule.** `leaderboard_season_totals` and the seven
 `stats_*` views refresh automatically at the end of every grading run
 (`refresh_leaderboard_stats()`, called from `src/lib/server/grading.ts` post-commit —
-ADR-0013), plus after `update_group_config`. A refresh failure is logged to **Sentry
-only** and does not fail the grade or show up in `cron_run_log` — so a green `grade`
-cron does NOT guarantee the matviews actually refreshed; check Sentry for
-`refresh_leaderboard_stats` errors specifically if the leaderboard looks stale despite
-a green grade.
+ADR-0013), plus after `update_group_config`. A refresh failure **never fails the grade**
+(same for the credibility-ratings rebuild, ADR-0032 §8), so `cron_run_log.ok` stays
+`true` and the endpoint still returns 200 — a green `grade` cron does NOT by itself mean
+the read models refreshed.
+
+Since #623 the outcome is recorded rather than merely logged: the `grade` run's
+`cron_run_log.summary` carries
+`readModels: { leaderboardStats: {ok}, playerRatings: {ok, error?} }`, and `/admin`
+renders a degraded run as **`ok · stale reads`** with the failing step named. Read that
+first; Sentry (`step:refresh_leaderboard_stats` / `step:rebuild_player_ratings`) is the
+detail view, no longer the only witness. Rows written before #623 carry no `readModels`
+key — absent is not the same as healthy.
 
 ## Readiness mode (pre-season dry-run)
 
@@ -97,8 +104,11 @@ a green grade.
    `{sent, total, pruned}` per notification; `total: 0` there means nobody is
    subscribed (a subscription problem), while `sent: 0` with `total > 0` means the
    push service rejected every device (check Sentry).
-4. **Matview freshness via Sentry, not `cron_run_log`** (see note above) — search for
-   `refresh_leaderboard_stats` errors since the last grade. Use
+4. **Read-model freshness from the `grade` run's own summary** (see note above) — check
+   `summary->'readModels'` on the latest `grade` row for either step reporting
+   `ok: false`; `/admin` shows the same thing as `ok · stale reads`. Only fall through to
+   Sentry (`step:refresh_leaderboard_stats` / `step:rebuild_player_ratings`) for the
+   error detail, or when the run predates #623 and carries no `readModels` key. Use
    `mcp__sentry__search_issues` / `mcp__sentry__search_events` (resolve the org/project
    first with `mcp__sentry__find_organizations` / `find_projects` if not already known
    in this session).
@@ -113,8 +123,8 @@ a green grade.
   or trigger a manual cron run. If something's broken, say what and where, and let Doug
   (or a follow-up fix) decide the remedy.
 - **A green `grade` cron is necessary but not sufficient** for "the leaderboard is
-  correct this week" — the matview refresh can fail silently. Always check Sentry too
-  during week-health.
+  correct this week" — the refresh and the ratings rebuild are best-effort and cannot
+  fail the run. Read `summary->'readModels'` (#623), not just `ok`.
 - Don't hardcode season dates into this skill — derive "is this the season" from
   `weeks`/`games` table state, not a memorized kickoff date, so it stays correct across
   years without editing.

@@ -150,6 +150,20 @@ export function parseNotificationPrefs(raw: unknown): NotificationPrefs {
 }
 
 /**
+ * The prefs to store when a device successfully subscribes to push (#858).
+ *
+ * Subscribing is an explicit opt-in, so it turns the account-level master switch on;
+ * every sub-toggle keeps its stored value. The raw jsonb is coerced through
+ * `parseNotificationPrefs` first, so a legacy or partial row is repaired rather than
+ * clobbered. Returns null when the switch is already on — there is nothing to write.
+ */
+export function prefsAfterSubscribe(raw: unknown): NotificationPrefs | null {
+  const prefs = parseNotificationPrefs(raw);
+  if (prefs.enabled) return null;
+  return { ...prefs, enabled: true };
+}
+
+/**
  * Spread value re-expressed relative to the home team, so two lines stored
  * against different reference teams can be compared directly.
  * (A spread of -3 for the away team is +3 for the home team.)

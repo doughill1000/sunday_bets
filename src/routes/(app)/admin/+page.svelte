@@ -117,7 +117,14 @@
                   >
                   <TableCell class="text-xs">
                     {#if run.ok === true}
-                      <span class="font-medium text-success">ok</span>
+                      <!-- A best-effort read-model refresh can fail without failing the run
+                           (#623) — say so here rather than letting a green row imply fresh
+                           leaderboards. -->
+                      {#if run.staleReadModels.length > 0}
+                        <span class="font-medium text-warning">ok · stale reads</span>
+                      {:else}
+                        <span class="font-medium text-success">ok</span>
+                      {/if}
                     {:else if run.ok === false}
                       <span class="font-medium text-destructive">failed</span>
                     {:else}
@@ -125,7 +132,13 @@
                     {/if}
                   </TableCell>
                   <TableCell class="max-w-xs truncate text-xs text-muted-foreground">
-                    {run.error ?? '—'}
+                    {#if run.error}
+                      {run.error}
+                    {:else if run.staleReadModels.length > 0}
+                      refresh failed: {run.staleReadModels.join(', ')}
+                    {:else}
+                      —
+                    {/if}
                   </TableCell>
                 </TableRow>
               {/each}
