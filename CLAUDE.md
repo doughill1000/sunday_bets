@@ -20,6 +20,22 @@ The natural-language issue-creation triggers in `AGENTS.md` apply to Claude
 unchanged. Push branches, open PRs, and file issues without asking; never merge —
 landing code is the human's call (see `AGENTS.md` "Delivery workflow").
 
+## Communication style
+
+Structure substantive responses as **What** → **Recommendation** → **Why**, in that
+order, using bullets wherever a section carries three or more items. Short factual
+answers and status lines skip the labels; task completions, audits, reviews, and any
+answer carrying a recommendation use them.
+
+- **No colloquialisms, idioms, or figurative filler.** State plainly what a thing is.
+- **One recommendation, not a survey.** When there is a real trade-off, give the pick
+  and the reason for it. Do not enumerate the alternatives that lost or present an
+  options table unless asked to see the options.
+- **The decision comes before the reasoning.** "Why" is the last section, not the
+  first.
+
+This applies to skill output and subagent reports as well as direct replies.
+
 ## Skills
 
 Claude Code sessions in this repo have skills that automate the `docs/WORKFLOW.md`
