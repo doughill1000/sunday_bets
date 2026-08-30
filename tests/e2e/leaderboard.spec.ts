@@ -70,6 +70,34 @@ test('the trophy room is a client flip with a shareable URL', async ({ page }) =
   await expect(lb.honorsSeasonSelect()).toBeVisible();
 });
 
+test('the honors door is present all season and opens the room', async ({ page }) => {
+  // #867's core claim. #741 rendered this door only when `honors.reigningChampion` existed,
+  // which is false for the whole in-season stretch and forever for a league that has never
+  // finished a season. The regression to guard is ABSENCE, so this asserts presence plus a
+  // recognised branch rather than one branch's copy: which branch renders is a fixture
+  // question (CI's clean DB never grades a week and shows `empty`; a prod-cloned local DB
+  // shows `settled` or `crowned`), and the branch copy itself is unit-tested.
+  const lb = leaderboardPage(page);
+  await lb.goto();
+
+  await expect(lb.honorsStrip()).toBeVisible();
+  await expect(lb.honorsStrip()).toHaveAttribute('data-door-state', /^(crowned|settled|empty)$/);
+
+  // A fresh browser context has no seen marker, so the pip seeds silently rather than
+  // announcing weeks this device was never shown.
+  await expect(lb.honorsNewPip()).toHaveCount(0);
+
+  // It is a door, not a banner: tapping it lands in the room, and a door has no job inside
+  // the room it opened.
+  await lb.honorsStrip().click();
+  await expect(lb.championCard()).toBeVisible();
+  await expect(lb.honorsStrip()).toHaveCount(0);
+
+  // Standings remains the default tab — the door is a first-paint mechanism, not a flip.
+  await lb.standingsTab().click();
+  await expect(lb.honorsStrip()).toBeVisible();
+});
+
 test('the manage console is reachable from the League heading action', async ({ page }) => {
   // #631 lifted this out of a full-width card that rendered after </Tabs> — i.e. under both
   // tabs — into a heading action, leaving nothing outside the tab group. #660 then gated it on
