@@ -36,6 +36,21 @@ answer carrying a recommendation use them.
 
 This applies to skill output and subagent reports as well as direct replies.
 
+## Code comments
+
+Comments are capped at **three lines. Prefer one.** A comment that needs a paragraph
+is a sign the code needs a better name or a smaller function — fix that instead.
+
+- **Comment the why, not the what.** The code already states what it does. Reserve a
+  comment for the non-obvious reason, constraint, or gotcha behind it.
+- **Delete restatements.** A comment that paraphrases the line under it is noise.
+- **No banners or narration.** No section-divider bars, no step-by-step play-by-play
+  above a block that reads fine on its own.
+- **JSDoc follows the same cap** and earns its place only when it carries contract a
+  reader cannot see from the signature.
+
+This applies to code agents write and to code they touch while editing something else.
+
 ## Skills
 
 Claude Code sessions in this repo have skills that automate the `docs/WORKFLOW.md`
