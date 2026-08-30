@@ -153,6 +153,29 @@ the app is named after instead of the same brass as Sharp. The two never share a
 (picks board vs. /stats · /league), so Lock in keeps its crown as the loudest ember on
 any given page.
 
+## Gold weight ladder (cross-surface)
+
+The picks ladder above is one screen's answer to a rule that holds everywhere:
+`--primary` carries four meanings — _selected_, _actionable_, _primary_, _status_ —
+and [DESIGN.md](../DESIGN.md) principle 5 asks them to stay visually distinct. They are
+separated by **form**, not by a second colour (there is no "other" accent; `--chart-2`
+is data-viz only):
+
+- **Solid brass fill** (`bg-primary` + `--primary-foreground`) — _actionable / primary_:
+  a button, the feedback FAB, the demo's one "Start your league" CTA.
+- **Brass outline over a brass wash** (`border-primary-ink` + `bg-primary/15`) —
+  _selected_: the page-level Tabs trigger (`ACTIVE_TAB_TRIGGER_CLASS` in
+  `src/lib/ui/tabs.ts`, shared by `/league`, `/wrapped` and both demo mirrors), the picks
+  board's chosen weight. Its label stays `--foreground`: brass ink on a brass wash clears
+  AA on charcoal but falls under it on Parchment, so the ink is spent on the border.
+- **Brass ink alone** (`text-primary-ink`) — _identity / status_: the active nav item, an
+  eyebrow, the champion's honors line.
+
+A surface that needs gold picks the tier that matches its job rather than the loudest one
+available; #868 demoted the tabs from a fill to an outline for exactly this reason, and
+took the gold off the demo banner's orientation link so the sign-up CTA keeps the only
+fill on that chrome.
+
 ## Elevation layering
 
 Surfaces stack `background → card → popover`, and the shadow tier tracks that stack:

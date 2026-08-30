@@ -32,14 +32,18 @@
     <a
       href="/demo/how-to-play"
       data-testid="demo-how-to-play-link"
-      class="group -mx-2 inline-flex min-h-11 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-primary-ink focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:basis-auto"
+      class="group -mx-2 inline-flex min-h-11 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:basis-auto"
     >
       <CircleHelp class="size-4 shrink-0" aria-hidden="true" />
-      <!-- The underline rests rather than waiting for hover: gold is the demo chrome's accent
-           colour everywhere (the DEMO chip, the sign-up button), so colour alone does not read as
-           a link here. Carried on the span so it does not run under the icon. -->
+      <!-- The underline rests rather than waiting for hover, and it is now the link's ONLY
+           colour-independent affordance: #868 took the gold off this label. Gold is the demo
+           chrome's accent everywhere (the DEMO chip, the sign-up button, the selected tab), so a
+           gold orientation link read as a second call to action on first paint — DESIGN.md P6
+           wants one. Neutral ink plus a resting underline keeps it unmistakably a link while the
+           nav's sign-up button keeps the demo's one gold CTA. Carried on the span so the rule
+           does not run under the icon. -->
       <span
-        class="underline decoration-primary-ink/40 underline-offset-4 transition-colors group-hover:decoration-primary-ink"
+        class="underline decoration-muted-foreground/60 underline-offset-4 transition-colors group-hover:decoration-foreground"
       >
         New here? How the game works
       </span>
