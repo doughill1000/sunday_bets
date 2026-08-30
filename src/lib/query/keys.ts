@@ -33,7 +33,7 @@ export const queryKeys = {
   // so this ephemeral live data is never persisted to IndexedDB. Group-independent (identical
   // for everyone), so it takes no args — one cache entry, one shared poll.
   liveScores: () => ['live-scores'] as const,
-  // Recap prose + weekly hardware/shelf (ADR-0033, issue #602). Shareable and group +
+  // Recap prose + weekly hardware (ADR-0033, issue #602). Shareable and group +
   // season scoped, same shape as stats/group/leaderboard.
   recap: (groupId: string, seasonYear: number) => ['recap', groupId, seasonYear] as const
 };

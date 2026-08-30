@@ -160,9 +160,9 @@ test('?scope=alltime deep-links straight to the career window', async ({ page })
 });
 
 test('the Season recaps archive has a door and a way back', async ({ page }) => {
-  // /recap rendered the shelf + hardware + AI recaps for two releases while the authed nav
-  // linked to it nowhere — reachable only via the RecapFlash toast (#631 symptom 04). It is
-  // now a CTA-reached archive, so it must at least serve and offer a way back.
+  // /recap rendered the hardware + AI recaps (and, until #866, a season shelf) for two releases
+  // while the authed nav linked to it nowhere — reachable only via the RecapFlash toast (#631
+  // symptom 04). It is now a CTA-reached archive, so it must serve and offer a way back.
   await page.goto('/recap');
 
   await expect(page.getByRole('heading', { name: 'Season recaps' })).toBeVisible();

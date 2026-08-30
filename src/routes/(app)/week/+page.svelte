@@ -13,7 +13,7 @@
   let { data: pageData }: { data: PageData } = $props();
 
   // The week's hardware (#631) rides the SAME `['recap', groupId, season]` cache entry that
-  // /recap and the /league Honors shelf own (ADR-0033, #602), so no surface can disagree about a
+  // /recap owns (ADR-0033, #602), so no surface can disagree about a
   // week's awards. `+page.ts` prefetches it on the server for a flash-free first paint; a
   // client-side week switch re-renders from cache and revalidates in the background (ADR-0017).
   // The user-scoped pick breakdown stays on `pageData` (server load, boundary 3).
@@ -25,7 +25,7 @@
 
   const EMPTY_RECAP: RecapCachePayload = {
     recaps: [],
-    weeklyAwards: { season_year: 0, weeks: [], shelf: [] }
+    weeklyAwards: { season_year: 0, weeks: [] }
   };
   const recap = $derived(recapQuery.data ?? EMPTY_RECAP);
 

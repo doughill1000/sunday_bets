@@ -174,6 +174,10 @@ boundary) and it extends a cross-cutting pattern (ADR-0019's reveal/lock model).
   is unchanged.
 - **#283 / #189** — the AI layer may later voice declarations and override The Whale's
   flavor copy.
+- **#866** — the Bullseye weekly award mints for a `weight='A'` pick that won, reading the new
+  `group_pick_cover.weight` column. Cosmetic and derived on read after grading, so it changes
+  neither the reveal boundary (Decision point 5) nor scoring — it reports the settled result
+  and never re-pays the 10 points.
 - Reconsider a season-scarcity budget only with a new ADR and real usage data.
 
 ## Amendment history

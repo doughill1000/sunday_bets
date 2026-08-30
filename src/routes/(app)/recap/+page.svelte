@@ -14,7 +14,7 @@
 
   let { data: pageData }: { data: PageData } = $props();
 
-  // The shareable Recap payload (recent prose + weekly hardware/shelf) comes from a cached
+  // The shareable Recap payload (recent prose + weekly hardware) comes from a cached
   // `createQuery` keyed by `(groupId, season)`: a revisit renders the last value instantly
   // and revalidates in the background (ADR-0033, issue #602). `pageData.initialRecap` is
   // the server-prefetched value (present on the initial/SSR request) used as `initialData`,
@@ -28,7 +28,7 @@
 
   const EMPTY_RECAP: RecapCachePayload = {
     recaps: [],
-    weeklyAwards: { season_year: 0, weeks: [], shelf: [] }
+    weeklyAwards: { season_year: 0, weeks: [] }
   };
 
   const data = $derived(recapQuery.data ?? EMPTY_RECAP);
@@ -85,8 +85,8 @@
      nowhere, so it was reachable only via the RecapFlash toast. It is now the destination of the
      League honors CTA and of every Week tab's hardware recap link, which deep-link to the
      `#week-N` anchors below. It stays a CTA-reached archive; the season-long trophy shelf moved
-     to the /league Honors tab (#741), which finally has room for it beneath the curated awards —
-     leaving this page the pure week-by-week archive: prose + per-week hardware, newest first.
+     to the /league Honors tab in #741 and was cut outright in #866 — leaving this page the pure
+     week-by-week archive it had already become: prose + per-week hardware, newest first.
      Its own `px-4 py-6` came off with #768: the app shell's main element already pads, so the
      archive was insetting further than its sibling /wrapped and the two read as different
      screen kinds at 390px. -->

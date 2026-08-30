@@ -1,13 +1,12 @@
 // Weekly-hardware read model (issue #387): assembles the pure weekly-award engine's
 // inputs from the ADR-0013 matviews for one (group, season), gates them to the weeks
-// that have FULLY graded, and returns the per-week hardware plus the season shelf.
+// that have FULLY graded, and returns that week's hardware.
 //
 // Read-only, service-role (matviews carry no RLS). The group/season scoping is applied
 // on every read, so a caller only ever sees its own group's awards.
 import { supabaseService } from '$lib/supabase/service';
 import {
   computeWeeklyHardware,
-  computeSeasonShelf,
   type WeeklyPointsEntry,
   type WeeklyCoverEntry,
   type WeeklyConsensusEntry
@@ -15,6 +14,7 @@ import {
 import type { SeasonWeeklyAwards } from '$lib/types/server/weeklyAwards';
 
 type PickOutcome = 'win' | 'loss' | 'push' | 'missed';
+type PickWeight = 'L' | 'M' | 'H' | 'A';
 
 /**
  * The scoring weeks of this season that have fully graded — every game has a final. A
@@ -85,7 +85,7 @@ async function loadPoints(groupId: string, seasonYear: number): Promise<WeeklyPo
 async function loadCovers(groupId: string, seasonYear: number): Promise<WeeklyCoverEntry[]> {
   const { data, error } = await supabaseService
     .from('group_pick_cover')
-    .select('user_id, display_name, week_number, game_id, outcome, cover_margin')
+    .select('user_id, display_name, week_number, game_id, outcome, weight')
     .eq('group_id', groupId)
     .eq('season_year', seasonYear);
   if (error) throw error;
@@ -97,7 +97,7 @@ async function loadCovers(groupId: string, seasonYear: number): Promise<WeeklyCo
       r.week_number == null ||
       r.game_id == null ||
       r.outcome == null ||
-      r.cover_margin == null
+      r.weight == null
     )
       continue;
     rows.push({
@@ -106,7 +106,7 @@ async function loadCovers(groupId: string, seasonYear: number): Promise<WeeklyCo
       week_number: r.week_number,
       game_id: r.game_id,
       outcome: r.outcome as PickOutcome,
-      cover_margin: Number(r.cover_margin)
+      weight: r.weight as PickWeight
     });
   }
   return rows;
@@ -147,9 +147,9 @@ async function loadConsensus(groupId: string, seasonYear: number): Promise<Weekl
 }
 
 /**
- * Every fully-graded scoring week's four awards (newest first) plus the season shelf,
- * for one group and season. Awards are cosmetic and derived on read (like season badges):
- * no award rows are persisted.
+ * Every fully-graded scoring week's awards, newest first, for one group and season. Awards
+ * are cosmetic and derived on read (like season badges): no award rows are persisted. The
+ * season Trophy shelf that used to ride alongside them was cut in #866.
  */
 export async function getSeasonWeeklyAwards(
   groupId: string,
@@ -168,5 +168,5 @@ export async function getSeasonWeeklyAwards(
     consensus: consensus.filter((c) => completeWeeks.has(c.week_number))
   });
 
-  return { season_year: seasonYear, weeks, shelf: computeSeasonShelf(weeks) };
+  return { season_year: seasonYear, weeks };
 }

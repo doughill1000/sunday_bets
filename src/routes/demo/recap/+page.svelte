@@ -2,7 +2,7 @@
   // Demo Season recaps (#460, ADR-0026 — extended #669): mirrors the real /recap archive —
   // every graded week's hardware paired with its Commissioner recap, reading the frozen
   // snapshot instead of a `createQuery`. The season shelf moved to the demo League's Honors
-  // tab (#741), same as the real app.
+  // tab in #741 and was cut in #866, same as the real app.
   import type { PageData } from './$types';
   import BackLink from '$lib/components/BackLink.svelte';
   import RecapCard from '$lib/components/recap/RecapCard.svelte';

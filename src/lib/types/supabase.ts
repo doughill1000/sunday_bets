@@ -1502,6 +1502,7 @@ export type Database = {
           season_year: number | null;
           user_id: string | null;
           week_number: number | null;
+          weight: Database['public']['Enums']['weight_enum'] | null;
         };
         Relationships: [
           {

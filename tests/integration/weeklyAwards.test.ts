@@ -1,10 +1,14 @@
 // tests/integration/weeklyAwards.test.ts
 //
-// End-to-end check of the weekly-hardware read model (issue #387): seed a fully-graded
-// scoring week of real picks, grade + refresh the matviews, then assert getSeasonWeeklyAwards
-// derives the five awards, the season shelf, AND excludes a partially-graded week (the
+// End-to-end check of the weekly-hardware read model (issue #387, reshaped #866): seed a
+// fully-graded scoring week of real picks, grade + refresh the matviews, then assert
+// getSeasonWeeklyAwards derives the three awards AND excludes a partially-graded week (the
 // completeness gate). The award *selection* logic itself is unit-tested exhaustively in
 // src/lib/domain/__tests__/weeklyAwards.test.ts; this suite verifies the DB wiring.
+//
+// Week 1 seeds a winning All-In AND a losing one, so #866's new group_pick_cover.weight column
+// is proven to survive grading and the concurrent refresh in both directions -- wiring the unit
+// tests cannot reach.
 //
 // Owns season year 2093 (distinct from 2009/2099/2098/2097/2024/2041 used elsewhere).
 
@@ -108,7 +112,11 @@ async function insertPick(
   gameId: string,
   pickedTeamId: number,
   homeTeamId: number,
-  spreadAbs: number
+  spreadAbs: number,
+  // Declared conviction. Written straight to `picks` rather than through `lock_pick`, so the
+  // RPC's one-All-In-per-week cap (ADR-0023) is not in play here — each player still gets at
+  // most one 'A' per week below, matching what production can actually produce.
+  weight: 'L' | 'M' | 'H' | 'A' = 'M'
 ) {
   const { error } = await admin.from('picks').upsert(
     {
@@ -119,7 +127,7 @@ async function insertPick(
       // Home is favored by `spreadAbs`; the locked spread team is always the home side here.
       locked_spread_team_id: homeTeamId,
       locked_spread_value: spreadAbs,
-      weight: 'M',
+      weight,
       locked_by: userId,
       locked_at: '2093-09-06T18:00:00Z'
     },
@@ -164,8 +172,8 @@ beforeAll(async () => {
     away: 20
   });
   await insertLine(gA, teamId.KC, 3.5);
-  await insertPick(ALICE, gA, teamId.KC, teamId.KC, 3.5); // win
-  await insertPick(BOB, gA, teamId.BUF, teamId.KC, 3.5); // loss, cover -3.5 (the bad beat)
+  await insertPick(ALICE, gA, teamId.KC, teamId.KC, 3.5, 'A'); // win — Alice's All-In LANDS
+  await insertPick(BOB, gA, teamId.BUF, teamId.KC, 3.5); // loss, cover -3.5
   await insertPick(CAROL, gA, teamId.KC, teamId.KC, 3.5); // win
 
   // Game B: PHI(home) 24, DAL(away) 10; PHI -7 → PHI covers by 7.
@@ -175,7 +183,7 @@ beforeAll(async () => {
   });
   await insertLine(gB, teamId.PHI, 7);
   await insertPick(ALICE, gB, teamId.PHI, teamId.PHI, 7); // win (minority: only Alice on PHI)
-  await insertPick(BOB, gB, teamId.DAL, teamId.PHI, 7); // loss, cover -7
+  await insertPick(BOB, gB, teamId.DAL, teamId.PHI, 7, 'A'); // loss — Bob's All-In MISSES
   await insertPick(CAROL, gB, teamId.DAL, teamId.PHI, 7); // loss, cover -7
   gameIds.push(gA, gB);
 
@@ -214,32 +222,58 @@ afterAll(async () => {
   await deleteAuthUsers([ALICE, BOB, CAROL]);
 });
 
-describe('weekly hardware read model (#387)', () => {
-  test('mints all five awards for the fully-graded week with the right holders', async () => {
+describe('weekly hardware read model (#387, #866)', () => {
+  test('mints all three awards for the fully-graded week with the right holders', async () => {
     const { weeks } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
     const week1 = weeks.find((w) => w.week_number === 1);
     expect(week1).toBeDefined();
 
+    // Canonical order, and nothing else in the catalog.
+    expect(week1!.awards.map((a) => a.id)).toEqual(['game-ball', 'contrarian-win', 'bullseye']);
+
     const holdersById = Object.fromEntries(
       week1!.awards.map((a) => [a.id, a.holders.map((h) => h.user_id)])
     );
-    // Alice: 2 wins (top points); Bob: 2 losses (bottom); Bob's BUF loss (-3.5) is the closest
-    // cover; Alice's PHI win was the lone minority pick that hit. Alice and Carol both covered
-    // KC by the same 3.5 margin (the smallest of the week's wins) — a genuine tie, so #770
-    // mints both as Backdoor co-winners, listed by identity ("WA_Alice" < "WA_Carol").
+    // Alice wins both her picks (top points) and her PHI win was the lone minority pick that
+    // hit. Her KC pick was the All-In, so the Bullseye is hers too. Bob lost both; his DAL
+    // pick was an All-In that missed, and the all-positive catalog mints him nothing.
     expect(holdersById['game-ball']).toEqual([ALICE]);
-    expect(holdersById['donkey-of-week']).toEqual([BOB]);
-    expect(holdersById['bad-beat']).toEqual([BOB]);
-    expect(holdersById['backdoor']).toEqual([ALICE, CAROL]);
     expect(holdersById['contrarian-win']).toEqual([ALICE]);
+    expect(holdersById['bullseye']).toEqual([ALICE]);
+  });
 
-    // Bad Beat detail = the closest losing cover margin (Bob's BUF pick at -3.5).
-    const badBeat = week1!.awards.find((a) => a.id === 'bad-beat');
-    expect(badBeat && 'cover_margin' in badBeat ? badBeat.cover_margin : null).toBe(-3.5);
+  test('reads the All-In off group_pick_cover.weight, not off the points (#866)', async () => {
+    // The proof that the new matview column is what mints the Bullseye: Alice and Carol made
+    // the SAME winning KC pick at the same margin, differing only in declared weight. If the
+    // column were missing or wrong, either both would hold it or nobody would.
+    const { data, error } = await admin
+      .from('group_pick_cover')
+      .select('user_id, weight, outcome')
+      .eq('group_id', GROUP_ID)
+      .eq('season_year', SEASON_YEAR);
+    if (error) throw error;
 
-    // Backdoor detail = the smallest winning cover margin (Alice's KC pick at 3.5).
-    const backdoor = week1!.awards.find((a) => a.id === 'backdoor');
-    expect(backdoor && 'cover_margin' in backdoor ? backdoor.cover_margin : null).toBe(3.5);
+    const allIns = (data ?? []).filter((r) => r.weight === 'A');
+    expect(allIns).toHaveLength(2);
+    expect(allIns.find((r) => r.user_id === ALICE)?.outcome).toBe('win');
+    expect(allIns.find((r) => r.user_id === BOB)?.outcome).toBe('loss');
+
+    const { weeks } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
+    const bullseye = weeks
+      .find((w) => w.week_number === 1)!
+      .awards.find((a) => a.id === 'bullseye');
+    expect(bullseye?.holders.map((h) => h.user_id)).toEqual([ALICE]);
+    // Carol covered identically on the same game but declared 'M'; a lost All-In mints nothing.
+    expect(bullseye?.holders.map((h) => h.user_id)).not.toContain(CAROL);
+    expect(bullseye?.holders.map((h) => h.user_id)).not.toContain(BOB);
+  });
+
+  test('mints none of the retired awards (#866)', async () => {
+    const { weeks } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
+    const ids = weeks.flatMap((w) => w.awards.map((a) => String(a.id)));
+    for (const retired of ['donkey-of-week', 'bad-beat', 'backdoor']) {
+      expect(ids).not.toContain(retired);
+    }
   });
 
   test('excludes the partially-graded week via the completeness gate', async () => {
@@ -247,21 +281,5 @@ describe('weekly hardware read model (#387)', () => {
     // Week 2 has a graded game (C) but an ungraded one (D, no final), so it is incomplete
     // and must mint no hardware — even though settlements for game C exist in the matviews.
     expect(weeks.map((w) => w.week_number)).toEqual([1]);
-  });
-
-  test('the season shelf tallies each player’s hardware', async () => {
-    const { shelf } = await getSeasonWeeklyAwards(GROUP_ID, SEASON_YEAR);
-    const alice = shelf.find((e) => e.user_id === ALICE);
-    const bob = shelf.find((e) => e.user_id === BOB);
-    expect(alice?.total).toBe(3);
-    expect(bob?.total).toBe(2);
-    expect(new Set(alice?.awards.map((a) => a.id))).toEqual(
-      new Set(['game-ball', 'backdoor', 'contrarian-win'])
-    );
-    expect(new Set(bob?.awards.map((a) => a.id))).toEqual(new Set(['donkey-of-week', 'bad-beat']));
-    // Carol tied Alice's 3.5 Backdoor cover, so #770 banks her a full award of her own.
-    const carol = shelf.find((e) => e.user_id === CAROL);
-    expect(carol?.total).toBe(1);
-    expect(carol?.awards).toEqual([expect.objectContaining({ id: 'backdoor', count: 1 })]);
   });
 });

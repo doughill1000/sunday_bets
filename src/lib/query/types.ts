@@ -147,7 +147,7 @@ export type LeagueTrendsPayload = LeagueTrends;
 
 /**
  * Shareable Recap payload cached under `['recap', groupId, season]` (ADR-0033, issue
- * #602): the recent AI recap prose plus the season's weekly-hardware awards/shelf. Both
+ * #602): the recent AI recap prose plus the season's weekly-hardware awards. Both
  * halves are group_id + season_year filtered with no per-role branching, so — unlike
  * Wrapped's viewer-scoped half — the whole payload is freely shareable/persistable.
  */

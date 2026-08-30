@@ -370,7 +370,7 @@ function theLemming(consensus: BadgeConsensusEntry[], lemmingGuard: number): Bad
 // clear of the bar. So an axis yields 0, 1, or 2 titles, and which one is a fact about
 // the season rather than a rule about the schema.
 //
-// This is not a new idea in this file, just an unevenly-applied one: `donkeyOfWeek` and
+// This is not a new idea in this file, just an unevenly-applied one: `contrarianWinOfWeek` and
 // `theCardiac` already return null when nothing happened, and `lineSideTendency`
 // (`$lib/utils/stats`) already withholds inside a ±10-point dead zone. The paired titles
 // were the last place a sorted list was treated as proof — which is why the app could
@@ -598,7 +598,7 @@ function weeklyTopScorer(rows: BadgeTrendEntry[]): BadgeTrendEntry | null {
  * Week Winner: led weekly scoring (sole highest week_points that week) in more weeks than
  * anyone else. Always eligible to award — not season-end gated, since it's a running
  * tally, not a final-standing judgment. Requires sole possession of the top tally: a tie
- * at the top awards nobody (matching theCardiac/donkeyOfWeek). Weeks that were themselves
+ * at the top awards nobody (matching theCardiac). Weeks that were themselves
  * tied are led by nobody and simply don't enter the tally.
  */
 function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {

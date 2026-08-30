@@ -11,7 +11,10 @@ import { WEEKLY_AWARD_FLAVORS, WEEKLY_AWARD_ORDER } from '$lib/domain/weeklyAwar
  * — so a legend never describes a tier that isn't on the screen beside it. These guard the two
  * things that would silently rot it: an award added to `WEEKLY_AWARD_ORDER` that never reaches the
  * legend, and the two scopes bleeding into each other (a season title leaking into the weekly
- * legend, or vice versa — ADR-0035: a shelf chip must not read as a season badge).
+ * legend, or vice versa — ADR-0035: a weekly award must not read as a season badge).
+ *
+ * #866 cut the weekly paired region: Bad Beat and Backdoor were the one measure that only
+ * explained itself as a pair, and with both retired the weekly legend is a single flat list.
  *
  * `tests/setup.ts` stubs `matchMedia` with `matches: false`, so `MediaQuery('(min-width: 640px)')`
  * reports mobile and the guide opens as the bottom Sheet — the 390px form the issue is about.
@@ -42,41 +45,37 @@ describe('AwardsGuide — weekly scope', () => {
     const weekly = guide.querySelector('[data-testid="awards-guide-weekly"]');
     const text = weekly?.textContent ?? '';
 
-    const positions = WEEKLY_AWARD_ORDER.map((id) => ({
-      id,
-      // The pair renders as its own row above the solo three, so ordering is asserted
-      // within each grouping — which is where WEEKLY_AWARD_ORDER is observable.
-      at: text.indexOf(WEEKLY_AWARD_FLAVORS[id].label)
-    }));
-    expect(positions.every((p) => p.at >= 0)).toBe(true);
-
-    const pair = ['bad-beat', 'backdoor'] as const;
-    const solo = WEEKLY_AWARD_ORDER.filter((id) => !pair.includes(id as (typeof pair)[number]));
-    for (const group of [[...pair], solo]) {
-      const inGroup = group.map((id) => text.indexOf(WEEKLY_AWARD_FLAVORS[id].label));
-      expect(
-        [...inGroup].sort((a, b) => a - b),
-        `${group.join(',')} are out of order`
-      ).toEqual(inGroup);
-    }
+    // One flat list since #866, so WEEKLY_AWARD_ORDER is observable straight down the region.
+    const positions = WEEKLY_AWARD_ORDER.map((id) => text.indexOf(WEEKLY_AWARD_FLAVORS[id].label));
+    expect(positions.every((at) => at >= 0)).toBe(true);
+    expect(
+      [...positions].sort((a, b) => a - b),
+      'weekly awards are out of order'
+    ).toEqual(positions);
   });
 
-  it('renders Bad Beat and Backdoor as one paired row that names the unawarded field', async () => {
+  it('has no paired region left, and says three pieces mint (#866)', async () => {
     const guide = await openGuide('weekly', /hardware legend/i);
-    const pair = guide.querySelector('[data-testid="awards-guide-weekly-pair"]');
-    expect(pair, 'the paired cover-margin row is missing').not.toBeNull();
+    expect(
+      guide.querySelector('[data-testid="awards-guide-weekly-pair"]'),
+      'the retired cover-margin pair still renders'
+    ).toBeNull();
+    expect(guide.querySelector('[data-testid="awards-guide-weekly-solo"]')).not.toBeNull();
 
-    const text = pair?.textContent ?? '';
-    expect(text).toContain(WEEKLY_AWARD_FLAVORS['bad-beat'].label);
-    expect(text).toContain(WEEKLY_AWARD_FLAVORS.backdoor.label);
-    // The wide middle is the point: without it, "barely covered" reads as a rule most picks meet.
-    expect(text).toMatch(/takes neither/i);
+    const weekly = guide.querySelector('[data-testid="awards-guide-weekly"]');
+    const text = weekly?.textContent ?? '';
+    // The lead-in count has to track the catalog, or the legend lies about what a week mints.
+    expect(WEEKLY_AWARD_ORDER).toHaveLength(3);
+    expect(text).toMatch(/three pieces mint/i);
+    // The pair's dead-zone explainer went with the pair.
+    expect(text).not.toMatch(/takes neither/i);
+  });
 
-    // The other three explain themselves alone and must not be dragged into the pair.
-    for (const id of ['game-ball', 'donkey-of-week', 'contrarian-win'] as const) {
-      expect(text, `${id} should not sit inside the paired row`).not.toContain(
-        WEEKLY_AWARD_FLAVORS[id].label
-      );
+  it('names no retired award anywhere in the weekly legend (#866)', async () => {
+    const guide = await openGuide('weekly', /hardware legend/i);
+    const text = guide.textContent ?? '';
+    for (const label of ['Donkey', 'Bad Beat', 'Backdoor']) {
+      expect(text, `retired award "${label}" still appears in the legend`).not.toContain(label);
     }
   });
 

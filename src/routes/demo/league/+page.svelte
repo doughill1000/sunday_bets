@@ -2,7 +2,7 @@
   // Demo League (#460, ADR-0026 — extended #669): mirrors the real /league IA exactly — the
   // same two self-contained tabs (Standings · Honors, back to two lanes since #776 promoted
   // Week to its own nav destination, /demo/week here), the honors strip above them, the
-  // season/All-time select on Standings, and the trophy room (champion card + honors + shelf)
+  // season/All-time select on Standings, and the trophy room (champion card + honors case)
   // on Honors — reading the frozen snapshot instead of live queries. The demo only ever has
   // one completed season, so each select is a plain single-pin control rather than the real
   // page's multi-season `seasonScopeOptions` (no past seasons to list, and no `?season=`
@@ -12,7 +12,6 @@
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
   import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
-  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
@@ -155,8 +154,8 @@
     </TabsContent>
 
     <!-- The trophy room (#741): champion card (crowned — the demo season has concluded, so
-         the ember hero shows off), the honors case, and the season's weekly-hardware shelf
-         absorbed from the demo recap page. -->
+         the ember hero shows off) and the honors case. The season's weekly-hardware shelf sat
+         below them until #866 cut it. -->
     <TabsContent value="honors" data-testid="demo-honors-panel">
       <div data-testid="demo-honors-scope-bar" class={SCOPE_BAR_CLASS}>
         <span
@@ -194,10 +193,6 @@
           wrappedHref="/demo/wrapped"
           recapsHref="/demo/recap"
         />
-
-        {#if data.weeklyAwards.shelf.length > 0}
-          <SeasonShelf shelf={data.weeklyAwards.shelf} currentUserId={data.persona.userId} />
-        {/if}
       </div>
     </TabsContent>
   </Tabs>
