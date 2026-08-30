@@ -72,19 +72,23 @@ test('legacy routes redirect to the League home and manage subpage', async ({ pa
 
 test('League honors live on /league, not /stats or /league/manage', async ({ page }) => {
   // Off Stats since #305, and off the manage subpage after #561 relocated the honors case to the
-  // League home. The card only renders once a season has a champion or awarded badges, so on
-  // /league assert the destination loads (the Manage entry) rather than the data-dependent card.
+  // League home. The card itself only renders once a season has a champion or awarded badges —
+  // but since #867 the DOOR to it is evergreen, so /league can assert the way in directly
+  // rather than standing in the Manage entry for a data-dependent card.
   await page.goto('/stats');
   await expect(page.getByRole('heading', { name: 'Stats & history' })).toBeVisible();
   await expect(page.getByTestId('league-honors')).toHaveCount(0);
+  await expect(page.getByTestId('honors-strip')).toHaveCount(0);
 
   await page.goto('/league/manage');
   await expect(page).toHaveURL(/\/league\/manage$/);
   await expect(page.getByRole('list', { name: 'League members' })).toBeVisible();
   await expect(page.getByTestId('league-honors')).toHaveCount(0);
+  await expect(page.getByTestId('honors-strip')).toHaveCount(0);
 
   await page.goto('/league');
   await expect(page.getByTestId('manage-entry')).toBeVisible();
+  await expect(leaderboardPage(page).honorsStrip()).toBeVisible();
 });
 
 // /league/manage is a commissioner-only console since #660 — one flat scroll, no tab bar, every

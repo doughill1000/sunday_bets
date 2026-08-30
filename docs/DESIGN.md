@@ -87,9 +87,17 @@ changes what the entire page is, it's Tabs. Never both on one screen for sibling
 > League · Stats · Market), which retired #584's live-window auto-flip (its "games are on"
 > signal survives as the red pulse dot on the Week nav tab) and returned `/league` to two
 > lanes. Binding conditions: Standings stays the year-round default tab — unconditionally,
-> now that the auto-flip is gone (the honors strip is the one seasonal first-paint
-> mechanism), each tab keeps exactly one control, and a third `/league` view again
-> requires a new design study and a revision of this note.
+> now that the auto-flip is gone (the honors door above the tabs is the room's one
+> first-paint mechanism), each tab keeps exactly one control, and a third `/league` view
+> again requires a new design study and a revision of this note.
+>
+> **Revised 2026-08-30 (#867).** That door was still gated on a reigning champion existing,
+> so the room's one first-paint mechanism was dark for the whole in-season stretch and
+> forever for a league that had never finished a season — the quiet second tab carried the
+> entire burden exactly when the room was most alive. The door is now **evergreen and
+> season-state-aware** (the crowned-season rule below), which is what lets Standings keep
+> its unconditional default. #867's design study re-ran this note's test and again concluded
+> **against** a third view: Honors stays a tab, not a nav destination.
 
 > **Decision note (2026-08-14, #832) — kickoff is the boundary between `/picks` and
 > `/week`.** `/picks` holds only what you can still act on: the unpicked game cards and
@@ -347,10 +355,15 @@ first applied by #737 on `/league`):
   season's data-state, not the calendar — so the same season's page renders identically in
   July and November, and the archive tier (story charts, the race) always trails the
   answers. On `/league` the rule's application moved with #741: the crown's first paint is
-  the honors strip above the tabs plus the Honors tab itself (whose champion card is
+  the honors door above the tabs plus the Honors tab itself (whose champion card is
   crowned or an honest "not decided yet"), rather than #737's block reordering inside the
   standings panel — which retired when the honors left that panel. The block-order form
   still applies to any season-scoped surface that keeps honors and answers in one scroll.
+  **#867 gave the door the rule's second half too:** it used to render only for the crowned
+  case, so "otherwise the last graded thing" had nowhere to land. It is now keyed on the
+  viewed season's data-state end to end — the crown when there is one, otherwise the freshest
+  thing the room has settled, degrading to a plain way in when nothing has. A door that
+  disappears when its section has no crown fails this rule, not just its own.
 
 **The second consumer triggers extraction.** "Seen in" is a starting point, not a licence
 to copy markup: as soon as a second surface needs a pattern, extract it into a shared

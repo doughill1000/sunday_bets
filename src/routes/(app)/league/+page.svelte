@@ -35,6 +35,13 @@
   import { seasonScopeOptions } from '$lib/utils/stats';
   import { hasGradedWeek, rankMovements } from '$lib/utils/leaderboardTrend';
   import { ACTIVE_TAB_TRIGGER_CLASS } from '$lib/ui/tabs';
+  import {
+    selectHonorsDoorState,
+    honorsSeenKey,
+    honorsNewCount,
+    readHonorsSeenWeek,
+    writeHonorsSeenWeek
+  } from '$lib/ui/honorsDoor';
   import Users from '@lucide/svelte/icons/users';
 
   let { data: pageData }: { data: PageData } = $props();
@@ -184,6 +191,51 @@
     const leader = data.totals[0];
     return leader ? `${leader.display_name} leads through Week ${lastGradedWeek}` : null;
   });
+
+  // What the honors door says (#867). It is no longer gated on a reigning champion existing —
+  // that condition was false all in-season and false forever for a league that had never
+  // finished a season, so the room's only first-paint door was dark exactly when the room was
+  // most alive. The state is keyed on the VIEWED season, like the ChampionCard hero it opens
+  // onto: browsing 2023 shows 2023's crown, not the reigning one. On a client-side cache miss
+  // `group` is the empty shape, which selects the plain "Trophy room" door — the same honest
+  // degrade the state machine already has for a season with nothing settled, so the door needs
+  // no skeleton of its own.
+  const honorsDoorState = $derived(
+    selectHonorsDoorState({
+      viewedChampion,
+      badges: group.badges,
+      lastGradedWeek
+    })
+  );
+
+  // The "new since you last looked" pip (#867), per device and per (group, season). The count's
+  // grain is the graded week — the finest freshness signal the page holds, and the same one the
+  // door's own line rides, so the two can never disagree (see honorsDoor.ts).
+  let seenWeek = $state<number | null>(null);
+
+  // First sight on this device seeds the marker silently rather than announcing every week that
+  // ever graded: we don't know what the member has already seen, and "6 new" on a first open is
+  // noise the pip can't earn back. From the next graded week on, it counts honestly.
+  $effect(() => {
+    const key = honorsSeenKey(pageData.groupId, data.seasonYear);
+    const week = lastGradedWeek;
+    const stored = readHonorsSeenWeek(key);
+    if (stored === null) {
+      writeHonorsSeenWeek(key, week);
+      seenWeek = week;
+    } else {
+      seenWeek = stored;
+    }
+  });
+
+  // Opening the room IS seeing it — clear on view, not on some later dismissal.
+  $effect(() => {
+    if (activeTab !== 'honors') return;
+    writeHonorsSeenWeek(honorsSeenKey(pageData.groupId, data.seasonYear), lastGradedWeek);
+    seenWeek = lastGradedWeek;
+  });
+
+  const honorsNew = $derived(honorsNewCount(lastGradedWeek, seenWeek));
 
   // Fold the currently-displayed season into the option set so the dropdown can always
   // represent `scopeValue`. `resolveSeasonYear` can land on a season that has no standings
@@ -365,14 +417,16 @@
     {/if}
   </div>
 
-  <!-- The honors strip (#741): #727's evergreen champion identity, compressed from the old
-       full-height banner into a one-line door that opens the Honors tab. Still the one block
-       outside the tab group, and still gold-quiet — the ember moment is the champion card
-       inside the room. Hidden while Honors is active: a door has no job inside the room. -->
-  {#if group.honors.reigningChampion && activeTab !== 'honors'}
+  <!-- The honors door (#741, ungated by #867): a one-line entrance that opens the Honors tab,
+       and still the one block outside the tab group. #741 rendered it only when a reigning
+       champion existed; it is now present all season and speaks from the viewed season's
+       data-state — the crown, the freshest settled title, or a plain "Trophy room →". Hidden
+       while Honors is active: a door has no job inside the room. -->
+  {#if activeTab !== 'honors'}
     <HonorsStrip
-      reigningChampion={group.honors.reigningChampion}
+      state={honorsDoorState}
       currentUserId={data.currentUserId}
+      newCount={honorsNew}
       onOpen={() => (activeTab = 'honors')}
     />
   {/if}
@@ -385,12 +439,26 @@
         class={ACTIVE_TAB_TRIGGER_CLASS}>Standings</TabsTrigger
       >
       <!-- The trophy room (#741): the curated honors' named home. #776 returned the third tab
-           (Week) to its own top-level nav destination, so the bar is back to two lanes. -->
+           (Week) to its own top-level nav destination, so the bar is back to two lanes. #867
+           gave the trigger the same brass count the door carries — the tab was the room's only
+           other entrance and it never said whether anything was waiting behind it. -->
       <TabsTrigger
         value="honors"
         data-testid="leaderboard-tab-honors"
-        class={ACTIVE_TAB_TRIGGER_CLASS}>Honors</TabsTrigger
+        class="{ACTIVE_TAB_TRIGGER_CLASS} gap-1.5"
       >
+        Honors
+        {#if honorsNew > 0}
+          <!-- Brass ink, matching the door's pip: the gold ladder (design-system.md) gives
+               status the ink tier, and the selected-tab wash right beside it already owns the
+               outline tier. Only ever seen on the INACTIVE trigger anyway — activating the tab
+               clears the count in the same tick. -->
+          <span data-testid="honors-tab-pip" class="font-bold text-primary-ink tabular-nums">
+            {honorsNew}
+          </span>
+          <span class="sr-only">new since you last opened the trophy room</span>
+        {/if}
+      </TabsTrigger>
     </TabsList>
 
     <TabsContent value="standings" data-testid="standings-panel">
