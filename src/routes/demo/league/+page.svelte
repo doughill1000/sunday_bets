@@ -16,6 +16,7 @@
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
+  import { selectHonorsDoorState } from '$lib/ui/honorsDoor';
   import { hasRatedMember } from '$lib/domain/rating';
 
   let { data }: { data: PageData } = $props();
@@ -40,6 +41,18 @@
     return row ? `${row.wins}-${row.losses}-${row.pushes}` : null;
   });
 
+  // The honors door's state (#867), mirroring the real page's selector. The demo's one season
+  // is concluded, so it always resolves to `crowned`; the in-season and empty branches have no
+  // fixture to reach them here. No pip: the "new since you last looked" marker is a per-device
+  // convenience for a member who keeps coming back, and a marketing surface has no such member.
+  const demoDoorState = $derived(
+    selectHonorsDoorState({
+      viewedChampion: demoChampion,
+      badges: data.honors.badges,
+      lastGradedWeek: 0
+    })
+  );
+
   const subtitle = $derived(
     scope === 'alltime' && activeTab === 'standings'
       ? 'All-time · every season combined.'
@@ -62,12 +75,12 @@
     <p class="mt-1 text-muted-foreground">{subtitle}</p>
   </div>
 
-  <!-- The honors strip (#741): mirrors the real /league door above the tabs — the champion's
-       evergreen identity, opening the Honors tab. Hidden while the room is open, as on the
-       real page. -->
-  {#if data.honors.honors.reigningChampion && activeTab !== 'honors'}
+  <!-- The honors door (#741, evergreen since #867): mirrors the real /league door above the
+       tabs — the viewed season's state, opening the Honors tab. Hidden while the room is open,
+       as on the real page. -->
+  {#if activeTab !== 'honors'}
     <HonorsStrip
-      reigningChampion={data.honors.honors.reigningChampion}
+      state={demoDoorState}
       currentUserId={data.persona.userId}
       onOpen={() => (activeTab = 'honors')}
     />

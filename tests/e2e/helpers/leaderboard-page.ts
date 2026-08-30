@@ -76,10 +76,19 @@ export function leaderboardPage(page: Page) {
       return page.getByTestId('champion-card');
     },
 
-    /** The one-line honors door above the tab group (#741) — renders only once the league
-     *  has a reigning champion, so it is absent from the e2e fixture. */
+    /** The one-line honors door above the tab group (#741, ungated by #867). It renders in
+     *  EVERY fixture state now — the e2e fixture never grades a week, so it shows the plain
+     *  "Trophy room" door — and is hidden only while the Honors tab itself is active. Its
+     *  `data-door-state` attribute names the branch: `crowned` | `settled` | `empty`. */
     honorsStrip(): Locator {
       return page.getByTestId('honors-strip');
+    },
+
+    /** The brass "new since you last looked" count on the door (#867). Backed by a per-device
+     *  `localStorage` marker that seeds silently on first sight, so it is absent on a fresh
+     *  browser context — which is every e2e run. */
+    honorsNewPip(): Locator {
+      return page.getByTestId('honors-new-pip');
     },
 
     /** Click the Honors tab and wait for the trophy room to render. A pure client flip (no
