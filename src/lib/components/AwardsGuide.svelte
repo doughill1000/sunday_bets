@@ -61,30 +61,13 @@
   );
   const glossaryMilestones = BADGE_GLOSSARY.filter((g) => g.kind === 'milestone');
 
-  // Weekly hardware (#387) is a *different tier* from the curated season titles above, and the
-  // legend has to say so with its shape (#771). The Sharp → Game Ball rename (`weeklyAwards.ts`)
-  // exists precisely so a "3× Sharp" shelf chip could not claim kinship with a "The Sharp"
-  // season badge under ADR-0035's boundary rule; a single merged list would undo that work in
-  // the one place a confused player goes to resolve the difference. So: two regions, not one.
+  // Weekly hardware is a separate tier from the season titles, and the legend says so with its
+  // shape (#771) — two regions, never one merged list, per ADR-0035's boundary rule. Reading
+  // WEEKLY_AWARD_FLAVORS directly means the legend cannot drift from the tiles.
   //
-  // Every entry reads WEEKLY_AWARD_FLAVORS directly — the same constant the tiles render — so
-  // the legend structurally cannot drift from the hardware it explains.
-  //
-  // Bad Beat and Backdoor only explain themselves as a pair: one measure (cover margin), the
-  // two picks that finished nearest the spread from either side of it. Same reasoning as
-  // BADGE_AXES, expressed as a local parallel rather than by widening that season-badge type
-  // to carry weekly awards.
-  const WEEKLY_PAIR_IDS: WeeklyAwardId[] = ['bad-beat', 'backdoor'];
-
+  // One flat list since #866 retired the Bad Beat / Backdoor pair (see the markup below).
   const weeklyEntry = (id: WeeklyAwardId) => ({ id, ...WEEKLY_AWARD_FLAVORS[id] });
-  // Both lists are sliced out of WEEKLY_AWARD_ORDER rather than written out, so an award added
-  // to the catalog lands in the legend on its own and in the canonical order.
-  const weeklyPair = WEEKLY_AWARD_ORDER.filter((id) => WEEKLY_PAIR_IDS.includes(id)).map(
-    weeklyEntry
-  );
-  const weeklySolo = WEEKLY_AWARD_ORDER.filter((id) => !WEEKLY_PAIR_IDS.includes(id)).map(
-    weeklyEntry
-  );
+  const weeklySolo = WEEKLY_AWARD_ORDER.map(weeklyEntry);
 
   // Awards guide opens as a centered dialog on desktop, a bottom sheet on mobile
   // (matches WelcomeGuide). Controlled so one trigger drives whichever is mounted.
@@ -176,45 +159,14 @@
       <div>
         <p class="text-sm font-semibold">Weekly hardware</p>
         <p class="text-xs text-muted-foreground">
-          A separate tier — five pieces mint every graded week, then reset. They stack up on the
-          season shelf and count for nothing in the standings.
+          A separate tier — three pieces mint every graded week, then reset. They count for nothing
+          in the standings.
         </p>
       </div>
 
-      <div class="space-y-2" data-testid="awards-guide-weekly-pair">
-        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Paired hardware — the week's two closest calls
-        </p>
-        <ul class="space-y-3">
-          <li class="space-y-1.5 rounded-lg border bg-muted/30 p-3">
-            <p class="text-sm font-medium">Cover margin</p>
-            {#each weeklyPair as face, i (face.id)}
-              <div class="flex gap-2 text-sm">
-                <span class="shrink-0" aria-hidden="true">{face.emoji}</span>
-                <span>
-                  <span class="font-medium">{face.label}</span>
-                  <span class="text-muted-foreground"> — {face.description}</span>
-                </span>
-              </div>
-              <!-- Mirrors the season axes' zero row, inverted: here the two faces hug the line
-                   from either side, so what sits between them is the spread itself and the
-                   unawarded field is everything outside the pair. Stating it is the point —
-                   otherwise "barely covered" reads as a rule most picks could satisfy. -->
-              {#if i === 0}
-                <p class="pl-6 text-xs text-muted-foreground italic">
-                  The spread sits between them — every other pick, comfortable win or blowout loss,
-                  takes neither.
-                </p>
-              {/if}
-            {/each}
-          </li>
-        </ul>
-      </div>
-
+      <!-- One flat list since #866: the "Cover margin" pair it replaced needed a dead-zone line
+           to be legible, and both of its awards are gone. -->
       <div class="space-y-2" data-testid="awards-guide-weekly-solo">
-        <p class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Solo hardware — one holder each week
-        </p>
         <ul class="space-y-2">
           {#each weeklySolo as a (a.id)}
             <li class="flex gap-2 text-sm">

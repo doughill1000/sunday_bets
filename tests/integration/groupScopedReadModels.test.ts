@@ -153,8 +153,6 @@ describe('getRecapCachePayload — per-group isolation', () => {
     expect(week).toBeDefined();
     const holderIds = week!.awards.flatMap((a) => a.holders.map((h) => h.user_id));
     expect(holderIds).not.toContain(fx.exclusiveUserBId);
-    const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
-    expect(shelfIds).not.toContain(fx.exclusiveUserBId);
   });
 
   it('group B payload contains only group B recap prose and award holders', async () => {
@@ -167,7 +165,5 @@ describe('getRecapCachePayload — per-group isolation', () => {
     expect(week).toBeDefined();
     const holderIds = week!.awards.flatMap((a) => a.holders.map((h) => h.user_id));
     expect(holderIds).not.toContain(fx.exclusiveUserAId);
-    const shelfIds = payload.weeklyAwards.shelf.map((s) => s.user_id);
-    expect(shelfIds).not.toContain(fx.exclusiveUserAId);
   });
 });

@@ -77,9 +77,9 @@ async function loadLeagueHome(event: Parameters<PageServerLoad>[0], groupId: str
   // Season standings (shareable) come from the client `createQuery` keyed by `(groupId, season)`
   // so a revisit renders from cache (ADR-0017); `+page.ts` prefetches them on the server for a
   // flash-free first paint. This load stays light: both remaining lanes ride shareable client
-  // caches (Standings the leaderboard/all-time payloads, Honors the group + recap caches, the
-  // latter prefetched by `+page.ts` only on a `?view=honors` request so the trophy shelf SSRs
-  // without a flash). The user-scoped weekly pick breakdown moved to /week's own server load (#776).
+  // caches (Standings the leaderboard/all-time payloads, Honors the group cache — it also read
+  // the recap cache for the trophy shelf until #866 cut it). The user-scoped weekly pick
+  // breakdown moved to /week's own server load (#776).
   return {
     groupId,
     currentSeasonYear,

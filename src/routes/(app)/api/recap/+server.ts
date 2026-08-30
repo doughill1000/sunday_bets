@@ -1,6 +1,6 @@
 // GET /api/recap?groupId=&season= — validated-param read route backing the client Recap
 // cache (ADR-0033, issue #602). Returns recent recap prose + the season's weekly-hardware
-// awards/shelf; membership-scoped via the shared ADR-0017 guard.
+// awards; membership-scoped via the shared ADR-0017 guard.
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { guardGroupScopedRead } from '$lib/server/api/groupScopedRead';
 import { getRecapCachePayload } from '$lib/server/readModels/recapCache';

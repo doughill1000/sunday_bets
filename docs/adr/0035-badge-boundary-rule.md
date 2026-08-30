@@ -176,6 +176,10 @@ amendment history.
   because the rules and the changes that apply them only make sense read as one.
 - **#652** — the sweat-board streak status: Hot Hand's idea relocated per §5, deliberately
   ephemeral and off the honors shelf.
+- **#866** — the same boundary test applied to the _weekly_ tier: five awards cut to three
+  (Bad Beat + Backdoor were one measure read from both ends; Donkey aimed at the bottom every
+  week), Bullseye added, and the season Trophy shelf removed — its All-In tally would have
+  been Big Game Hunter's count-without-a-rate defect rebuilt one tier down.
 - The `alphaFirst` tie-break defect on genuine single-holder titles (The Whale, The Oracle,
   The Ghost, …) remains a known, explicitly out-of-scope follow-up — a separate decision,
   not covered by this ADR. #651 removed The Grinder and The Choker from its scope, but only

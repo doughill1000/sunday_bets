@@ -1,45 +1,21 @@
-// Weekly "hardware" (issue #387): five deterministic, cosmetic awards minted for every
-// fully-graded scoring week, plus a per-season shelf that tallies how many of each a
-// player has won ("3× Game Ball"). Pure and deterministic in the same spirit as the
-// season-badge engine (`src/lib/domain/badges.ts`): the selectors take pre-fetched
-// matview rows and return award holders with stable tie-breaks and no side effects.
+// Weekly "hardware" (#387, reshaped to three all-positive awards in #866): cosmetic awards
+// minted per fully-graded scoring week. Pure and deterministic like `badges.ts` — selectors
+// take pre-fetched matview rows and return holders with stable tie-breaks, no side effects.
 //
-// The five awards and their sources:
-//   Game Ball of the Week  — most points that week          (stats_season_trend.week_points)
-//   Donkey of the Week     — fewest points that week        (stats_season_trend.week_points)
-//   Bad Beat of the Week   — the loss that came closest to   (group_pick_cover.cover_margin)
-//                            covering (greatest, i.e. least-negative, losing cover margin)
-//   Backdoor of the Week   — the win that barely covered     (group_pick_cover.cover_margin)
-//                            (smallest positive, winning cover margin — mirror of Bad Beat, #636)
-//   Contrarian Win of Week — won the loneliest pick          (group_pick_consensus)
-//                            (minority winner with the lowest consensus_pct)
-//
-// The week's points leader was "Sharp of the Week" through #631. "Sharp" already named two
-// unrelated things — the season badge `the-sharp` (best season win rate, deleted in #634 per
-// ADR-0035's "the rating owns the market" boundary) and the /stats credibility tier
-// (ADR-0032) — so a shelf chip reading "3× Sharp" beside a "The Sharp" badge claimed a
-// kinship that does not exist. Renamed to the football tradition, which says "best
-// performer this week" without borrowing a word the app spends elsewhere. The award ids are
-// derived on read (never persisted), so the rename needed no data migration.
-//
-// Non-scoring rounds (ADR-0016) never reach here: every source matview filters
-// `w.is_scoring`, so those weeks contribute no rows and are absent from the week set.
+// Non-scoring rounds (ADR-0016) never reach here: every source matview filters `w.is_scoring`,
+// so those weeks contribute no rows and are absent from the week set.
 
-// pick_settlement.outcome / group_pick_consensus.graded_outcome, stated inline to keep
-// this domain module free of the generated DB types (matches badges.ts).
+// pick_settlement.outcome / group_pick_consensus.graded_outcome, stated inline to keep this
+// module free of the generated DB types (matches badges.ts).
 type PickOutcome = 'win' | 'loss' | 'push' | 'missed';
 
-export type WeeklyAwardId =
-  'game-ball' | 'donkey-of-week' | 'bad-beat' | 'backdoor' | 'contrarian-win';
+/** picks.weight. 'A' is the All-In (ADR-0023), capped at one per player per week. */
+type PickWeight = 'L' | 'M' | 'H' | 'A';
 
-/** Canonical ordering used everywhere awards are listed (weekly tiles + season shelf). */
-export const WEEKLY_AWARD_ORDER: WeeklyAwardId[] = [
-  'game-ball',
-  'donkey-of-week',
-  'bad-beat',
-  'backdoor',
-  'contrarian-win'
-];
+export type WeeklyAwardId = 'game-ball' | 'contrarian-win' | 'bullseye';
+
+/** Canonical ordering used everywhere awards are listed. */
+export const WEEKLY_AWARD_ORDER: WeeklyAwardId[] = ['game-ball', 'contrarian-win', 'bullseye'];
 
 // --- Inputs (shaped from matview rows; all fields already non-null) ---
 
@@ -51,15 +27,18 @@ export type WeeklyPointsEntry = {
   week_points: number;
 };
 
-/** Per-settled-pick cover margin, from group_pick_cover. */
+/**
+ * Per-settled-pick outcome and declared weight, from group_pick_cover. That view also carries
+ * `cover_margin`; no surviving award ranks on it since #866, so it is deliberately not read.
+ */
 export type WeeklyCoverEntry = {
   user_id: string;
   display_name: string;
   week_number: number;
   game_id: string;
   outcome: PickOutcome;
-  /** Picked team's margin over the locked spread; < 0 = did not cover (a loss). */
-  cover_margin: number;
+  /** Conviction as declared at lock — the same value grading scored the pick on. */
+  weight: PickWeight;
 };
 
 /** Per-settled-pick consensus context, from group_pick_consensus. */
@@ -87,53 +66,29 @@ export type WeeklyAwardHolder = { user_id: string; display_name: string };
 type WeeklyAwardBase = {
   id: WeeklyAwardId;
   label: string;
-  /** Short name for the season shelf ("3× Game Ball"). */
+  /** Short name for the award tile chip ("Game Ball"). */
   short: string;
   emoji: string;
   description: string;
-  /**
-   * Everyone who tied on the ranked stat — co-winners (#770). Always at least one, listed in
-   * `byIdentity` order. A genuine tie is as deterministic as a single winner, so we mint them
-   * all rather than silently handing the award to whoever sorts first alphabetically.
-   */
+  /** Everyone tied on the ranked stat — co-winners (#770). Always at least one. */
   holders: WeeklyAwardHolder[];
 };
 
 /**
- * One minted weekly award. The detail field is award-specific (discriminated by `id`):
- * points for Game Ball/Donkey, cover_margin for Bad Beat/Backdoor, consensus_pct for
- * Contrarian Win.
+ * One minted weekly award, its detail field discriminated by `id`. Bullseye carries none: an
+ * All-In is one per player per week, so co-winners hold *different* picks and no single number
+ * describes the award without misreporting one of them.
  */
 export type WeeklyAward =
   | (WeeklyAwardBase & { id: 'game-ball'; points: number })
-  | (WeeklyAwardBase & { id: 'donkey-of-week'; points: number })
-  | (WeeklyAwardBase & { id: 'bad-beat'; cover_margin: number })
-  | (WeeklyAwardBase & { id: 'backdoor'; cover_margin: number })
-  | (WeeklyAwardBase & { id: 'contrarian-win'; consensus_pct: number });
+  | (WeeklyAwardBase & { id: 'contrarian-win'; consensus_pct: number })
+  | (WeeklyAwardBase & { id: 'bullseye' });
 
 /** All awards minted for a single fully-graded scoring week, in canonical order. */
 export type WeeklyHardware = {
   week_number: number;
   awards: WeeklyAward[];
 };
-
-/** One award's tally for a player on the season shelf. */
-export type ShelfAward = {
-  id: WeeklyAwardId;
-  short: string;
-  emoji: string;
-  count: number;
-};
-
-/** A player's season shelf: every award they've won this season, most-decorated first. */
-export type SeasonShelfEntry = {
-  user_id: string;
-  display_name: string;
-  total: number;
-  awards: ShelfAward[];
-};
-
-// --- Flavor (hardcoded; the AI voice layer #283 Wave 3 can cite these later) ---
 
 export const WEEKLY_AWARD_FLAVORS: Record<
   WeeklyAwardId,
@@ -143,42 +98,29 @@ export const WEEKLY_AWARD_FLAVORS: Record<
     label: 'Game Ball of the Week',
     short: 'Game Ball',
     emoji: '🏈',
-    description: 'Scored the most points this week.'
-  },
-  'donkey-of-week': {
-    label: 'Donkey of the Week',
-    short: 'Donkey',
-    emoji: '🫏',
-    description: 'Scored the fewest points this week.'
-  },
-  'bad-beat': {
-    label: 'Bad Beat of the Week',
-    short: 'Bad Beat',
-    emoji: '💔',
-    description: 'Lost the pick that came closest to covering this week.'
-  },
-  backdoor: {
-    label: 'Backdoor of the Week',
-    short: 'Backdoor',
-    emoji: '🚪',
-    description: 'Won the pick that barely covered this week.'
+    description: 'Most points in the room this week. No argument.'
   },
   'contrarian-win': {
     label: 'Contrarian Win of the Week',
     short: 'Contrarian',
     emoji: '🃏',
-    description: 'Won the loneliest pick — the lowest-consensus winner this week.'
+    description: 'Won the pick almost nobody else would touch.'
+  },
+  bullseye: {
+    label: 'Bullseye of the Week',
+    short: 'Bullseye',
+    emoji: '🎯',
+    description: 'Declared All-In in front of everyone — and hit it.'
   }
 };
 
-// --- Selection primitives (pure; total-order comparators keep ties deterministic) ---
+// --- Selection primitives ---
 
 type IdentifiedRow = { user_id: string; display_name: string; game_id?: string };
 
 /**
- * Deterministic identity tie-break shared by every selector: earlier display_name, then
- * lower user_id, then lower game_id. Returns negative if `a` should rank ahead of `b`.
- * All three fields are stable, so the resulting order is total and input-order independent.
+ * Deterministic identity tie-break shared by every selector: display_name, then user_id, then
+ * game_id. All three are stable, so the order is total and input-order independent.
  */
 function byIdentity(a: IdentifiedRow, b: IdentifiedRow): number {
   const byName = a.display_name.localeCompare(b.display_name);
@@ -191,9 +133,9 @@ function byIdentity(a: IdentifiedRow, b: IdentifiedRow): number {
 }
 
 /**
- * Every row tied at the best `rank` (higher wins), in `byIdentity` order (#770). Exact-value
- * equality is the tie test: every input comes from the same matview computation, so there is
- * no float drift to absorb and no epsilon to tune. Returns [] only for empty input.
+ * Every row tied at the best `rank` (higher wins), in `byIdentity` order (#770). Exact equality
+ * is the tie test: inputs come from one matview computation, so there is no float drift to
+ * absorb. Returns [] only for empty input.
  */
 function allBestBy<T extends IdentifiedRow>(rows: T[], rank: (r: T) => number): T[] {
   if (rows.length === 0) return [];
@@ -202,10 +144,8 @@ function allBestBy<T extends IdentifiedRow>(rows: T[], rank: (r: T) => number): 
 }
 
 /**
- * Tied rows → holders, one per player. The per-pick awards (bad beat / backdoor / contrarian)
- * rank individual picks, so one player can hold two rows tied at the same margin or consensus;
- * they are still one co-winner. Input arrives `byIdentity`-sorted, so first-wins dedupe keeps
- * the display order.
+ * Tied rows → holders, one per player. Per-pick awards can supply two rows for one player; they
+ * are still one co-winner. Input arrives sorted, so first-wins dedupe keeps display order.
  */
 function holdersOf(rows: IdentifiedRow[]): WeeklyAwardHolder[] {
   const seen = new Set<string>();
@@ -218,12 +158,12 @@ function holdersOf(rows: IdentifiedRow[]): WeeklyAwardHolder[] {
   return holders;
 }
 
-// --- Selectors (all co-winners, or null when nobody qualifies; deterministic) ---
+// --- Selectors (co-winners throughout, or null when nobody qualifies) ---
 
 /**
- * Game Ball of the Week: most points. Everyone on the week high shares it. Null only on an
- * empty week — which means a flat week with 2+ players crowns *everybody* (it is still "most
- * points"). The Donkey-side asymmetry below is deliberate.
+ * Game Ball: most points that week (stats_season_trend). Null only on an empty week, so a flat
+ * week crowns everybody — still true, and since #866 cut Donkey there is no bottom-end mirror
+ * this had to stay asymmetric with.
  */
 export function gameBallOfWeek(
   points: WeeklyPointsEntry[]
@@ -233,59 +173,7 @@ export function gameBallOfWeek(
   return { holders: holdersOf(best), points: best[0].week_points };
 }
 
-/**
- * Donkey of the Week: fewest points. Requires 2+ players AND a real spread — if everyone
- * scored the same there is no distinct donkey (and it could never differ from the game ball),
- * so we award nobody. Everyone tied at the bottom shares it.
- */
-export function donkeyOfWeek(
-  points: WeeklyPointsEntry[]
-): { holders: WeeklyAwardHolder[]; points: number } | null {
-  if (points.length < 2) return null;
-  const min = Math.min(...points.map((p) => p.week_points));
-  const max = Math.max(...points.map((p) => p.week_points));
-  if (min === max) return null; // flat week: no donkey
-  // Rank by fewest points: negate so allBestBy's "higher wins" finds the minimum.
-  const worst = allBestBy(points, (p) => -p.week_points);
-  return { holders: holdersOf(worst), points: worst[0].week_points };
-}
-
-/**
- * Bad Beat of the Week: the losing pick that came closest to covering — the greatest
- * (least-negative) cover_margin among losses. Every pick on that margin mints its owner;
- * a player holding two such picks is one co-winner. Null if no pick lost.
- */
-export function badBeatOfWeek(
-  covers: WeeklyCoverEntry[]
-): { holders: WeeklyAwardHolder[]; cover_margin: number } | null {
-  const worst = allBestBy(
-    covers.filter((c) => c.outcome === 'loss'),
-    (c) => c.cover_margin
-  );
-  if (worst.length === 0) return null;
-  return { holders: holdersOf(worst), cover_margin: worst[0].cover_margin };
-}
-
-/**
- * Backdoor of the Week: the winning pick that barely covered — the smallest positive
- * cover_margin among wins. Tie → co-winners. Null if no pick won. Mirror of badBeatOfWeek (#636).
- */
-export function backdoorOfWeek(
-  covers: WeeklyCoverEntry[]
-): { holders: WeeklyAwardHolder[]; cover_margin: number } | null {
-  // Narrowest = smallest positive margin: negate so allBestBy's "higher wins" finds the minimum.
-  const narrowest = allBestBy(
-    covers.filter((c) => c.outcome === 'win'),
-    (c) => -c.cover_margin
-  );
-  if (narrowest.length === 0) return null;
-  return { holders: holdersOf(narrowest), cover_margin: narrowest[0].cover_margin };
-}
-
-/**
- * Contrarian Win of the Week: the lowest-consensus minority pick that won. Tie → co-winners.
- * Null if no minority pick won this week.
- */
+/** Contrarian Win: the lowest-consensus minority pick that won (group_pick_consensus). */
 export function contrarianWinOfWeek(
   consensus: WeeklyConsensusEntry[]
 ): { holders: WeeklyAwardHolder[]; consensus_pct: number } | null {
@@ -296,6 +184,19 @@ export function contrarianWinOfWeek(
   );
   if (lone.length === 0) return null;
   return { holders: holdersOf(lone), consensus_pct: lone[0].consensus_pct };
+}
+
+/**
+ * Bullseye: every player whose declared All-In won (#866). A qualification, not a ranking —
+ * hence no `allBestBy`. A lost or pushed All-In mints nothing: the award is for a call that
+ * landed, not the nerve to make it (that is The Whale's job, and it has a rate behind it).
+ */
+export function bullseyeOfWeek(
+  covers: WeeklyCoverEntry[]
+): { holders: WeeklyAwardHolder[] } | null {
+  const hits = covers.filter((c) => c.weight === 'A' && c.outcome === 'win').sort(byIdentity);
+  if (hits.length === 0) return null;
+  return { holders: holdersOf(hits) };
 }
 
 // --- Assembly ---
@@ -316,9 +217,9 @@ function distinctWeeks(inputs: WeeklyAwardInputs): number[] {
 }
 
 /**
- * Mint every week's hardware from pre-fetched season inputs. Returns one entry per week
- * that produced at least one award, newest week first (the recap surface reads it that
- * way). Each week's awards are in WEEKLY_AWARD_ORDER. Pure and deterministic.
+ * Mint every week's hardware from pre-fetched season inputs — one entry per week that produced
+ * an award, newest first (the order the recap surface reads), each week's awards in
+ * WEEKLY_AWARD_ORDER. Pure and deterministic.
  */
 export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware[] {
   const result: WeeklyHardware[] = [];
@@ -337,30 +238,6 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
         points: gameBall.points
       });
 
-    const donkey = donkeyOfWeek(points);
-    if (donkey)
-      awards.push({
-        ...flavorFor('donkey-of-week'),
-        holders: donkey.holders,
-        points: donkey.points
-      });
-
-    const badBeat = badBeatOfWeek(covers);
-    if (badBeat)
-      awards.push({
-        ...flavorFor('bad-beat'),
-        holders: badBeat.holders,
-        cover_margin: badBeat.cover_margin
-      });
-
-    const backdoor = backdoorOfWeek(covers);
-    if (backdoor)
-      awards.push({
-        ...flavorFor('backdoor'),
-        holders: backdoor.holders,
-        cover_margin: backdoor.cover_margin
-      });
-
     const contrarian = contrarianWinOfWeek(consensus);
     if (contrarian)
       awards.push({
@@ -369,54 +246,10 @@ export function computeWeeklyHardware(inputs: WeeklyAwardInputs): WeeklyHardware
         consensus_pct: contrarian.consensus_pct
       });
 
+    const bullseye = bullseyeOfWeek(covers);
+    if (bullseye) awards.push({ ...flavorFor('bullseye'), holders: bullseye.holders });
+
     if (awards.length > 0) result.push({ week_number: week, awards });
   }
-  // Newest week first for the recap surface.
   return result.sort((a, b) => b.week_number - a.week_number);
-}
-
-/**
- * Fold a season's weekly hardware into a per-player shelf: how many of each award every
- * player has won, most-decorated first (ties broken alphabetically, then by user_id).
- * Each player's awards are listed in WEEKLY_AWARD_ORDER, count > 0 only.
- *
- * Co-winners each bank a full award (#770) — a shared Game Ball is +1 on every holder's shelf,
- * never a fraction. The shelf counts hardware won, and they all won it.
- */
-export function computeSeasonShelf(hardware: WeeklyHardware[]): SeasonShelfEntry[] {
-  type Acc = { user_id: string; display_name: string; counts: Map<WeeklyAwardId, number> };
-  const byUser = new Map<string, Acc>();
-
-  for (const week of hardware) {
-    for (const award of week.awards) {
-      for (const { user_id, display_name } of award.holders) {
-        let acc = byUser.get(user_id);
-        if (!acc) {
-          acc = { user_id, display_name, counts: new Map() };
-          byUser.set(user_id, acc);
-        }
-        acc.counts.set(award.id, (acc.counts.get(award.id) ?? 0) + 1);
-      }
-    }
-  }
-
-  const entries: SeasonShelfEntry[] = [...byUser.values()].map((acc) => {
-    const awards: ShelfAward[] = WEEKLY_AWARD_ORDER.filter(
-      (id) => (acc.counts.get(id) ?? 0) > 0
-    ).map((id) => ({
-      id,
-      short: WEEKLY_AWARD_FLAVORS[id].short,
-      emoji: WEEKLY_AWARD_FLAVORS[id].emoji,
-      count: acc.counts.get(id) as number
-    }));
-    const total = awards.reduce((s, a) => s + a.count, 0);
-    return { user_id: acc.user_id, display_name: acc.display_name, total, awards };
-  });
-
-  return entries.sort(
-    (a, b) =>
-      b.total - a.total ||
-      a.display_name.localeCompare(b.display_name) ||
-      (a.user_id <= b.user_id ? -1 : 1)
-  );
 }

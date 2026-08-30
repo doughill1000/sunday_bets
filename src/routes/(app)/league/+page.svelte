@@ -2,17 +2,11 @@
   import { goto, replaceState } from '$app/navigation';
   import { createQuery } from '@tanstack/svelte-query';
   import { queryKeys } from '$lib/query/keys';
-  import {
-    fetchLeaderboard,
-    fetchAllTimeLeaderboard,
-    fetchGroup,
-    fetchRecap
-  } from '$lib/query/fetchers';
+  import { fetchLeaderboard, fetchAllTimeLeaderboard, fetchGroup } from '$lib/query/fetchers';
   import type {
     LeaderboardCachePayload,
     AllTimeLeaderboardPayload,
-    GroupCachePayload,
-    RecapCachePayload
+    GroupCachePayload
   } from '$lib/query/types';
   import type { PageData } from './$types';
   import {
@@ -26,7 +20,6 @@
   import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
   import SeasonRaceChart from '$lib/components/leaderboard/SeasonRaceChart.svelte';
   import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
-  import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
   import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
   import ChampionCard from '$lib/components/group/ChampionCard.svelte';
   import HonorsStrip from '$lib/components/group/HonorsStrip.svelte';
@@ -51,7 +44,7 @@
   // Standings the season/All-time window, Honors a season select. #776 returned the third slot
   // (Week) to its own top-level nav destination, relieving the three-view pressure #741 spent.
   // ADR-0035's lane law is the tab boundary: the market lane (table, ladder, race) lives on
-  // Standings; the room lane (champion, spoon, titles, shelf) lives in the trophy room. `scope`
+  // Standings; the room lane (champion, spoon, titles) lives in the trophy room. `scope`
   // is a pure client flip; changing the *season* navigates so the season-scoped query re-keys
   // (ADR-0017).
   let activeTab = $state<'standings' | 'honors'>(pageData.view);
@@ -94,18 +87,8 @@
     initialData: pageData.initialGroup
   }));
 
-  // The Honors tab renders the season's trophy shelf (#741). Rather than adding a payload to the
-  // server load, it reuses the SAME cached recap query `/recap` and /week already own — one
-  // `['recap', groupId, season]` entry serves every surface (ADR-0033, #602), so none can disagree
-  // about a week's awards. Gated on the Honors tab so a Standings visitor never pays for it;
-  // `+page.ts` prefetches it only on a `?view=honors` request, the one way the shelf is ever
-  // server-rendered.
-  const recapQuery = createQuery(() => ({
-    queryKey: queryKeys.recap(pageData.groupId, pageData.seasonYear),
-    queryFn: () => fetchRecap(fetch, pageData.groupId, pageData.seasonYear),
-    initialData: pageData.initialRecap,
-    enabled: activeTab === 'honors'
-  }));
+  // #866 cut the trophy shelf, the only reader of the recap cache entry here, so its query and
+  // `?view=honors` prefetch went too — /recap and /week still own that entry (ADR-0033, #602).
 
   // Empty shapes so the render stays valid while a query loads on a cache miss (the pending
   // branches gate real render; honors self-hides on the empty shape).
@@ -131,15 +114,9 @@
     badges: []
   };
 
-  const EMPTY_RECAP: RecapCachePayload = {
-    recaps: [],
-    weeklyAwards: { season_year: 0, weeks: [], shelf: [] }
-  };
-
   const data = $derived({ ...(leaderboardQuery.data ?? EMPTY_LEADERBOARD), ...pageData });
   const allTime = $derived(allTimeQuery.data ?? EMPTY_ALLTIME);
   const group = $derived(groupQuery.data ?? EMPTY_GROUP);
-  const recap = $derived(recapQuery.data ?? EMPTY_RECAP);
 
   // `data.championUserId` would resolve to the layout's streamed champion Promise (added in
   // #339); the reigning champion for the standings crown comes from the cached standings
@@ -343,18 +320,6 @@
     <CardContent class="space-y-3 p-6" aria-hidden="true">
       {#each [0, 1, 2, 3, 4, 5] as i (i)}
         <div class="h-8 w-full animate-pulse rounded bg-muted"></div>
-      {/each}
-    </CardContent>
-  </Card>
-{/snippet}
-
-{#snippet honorsLoading()}
-  <!-- Honors-tab cache miss: the shelf's recap query loads on first tap. A small pulse
-       block that keeps the card rhythm (P11) rather than swapping in a spinner. -->
-  <Card>
-    <CardContent class="space-y-3 p-6" aria-hidden="true">
-      {#each [0, 1, 2] as i (i)}
-        <div class="h-6 w-full animate-pulse rounded bg-muted"></div>
       {/each}
     </CardContent>
   </Card>
@@ -590,9 +555,8 @@
     </TabsContent>
 
     <!-- The trophy room (#741): the room lane of ADR-0035's boundary — champion, spoon,
-         trophy case, season titles, and the weekly-hardware shelf absorbed from /recap.
-         Curation leads, volume trails: the hero and titles come before the shelf's
-         ~4-per-week gongs, so the room reads as an honors case, not a pile. -->
+         trophy case, and season titles. The weekly-hardware shelf sat below them until #866
+         cut it; what stays is the curated tier only, which is what an honors case is. -->
     <TabsContent value="honors" data-testid="honors-panel">
       <!-- Honors' one control: a season select with no All-time pin (honors are
            season-grain; there is no all-time honors view to offer). -->
@@ -658,15 +622,6 @@
           selectedSeason={data.seasonYear}
           recapsHref={`/recap?season=${data.seasonYear}`}
         />
-
-        <!-- The season's weekly-hardware shelf, absorbed from /recap (#741): the room's
-             in-season pulse — ~4 pieces mint every graded week from Week 1, so the tab is
-             alive in October, not just January. /recap keeps the per-week archive. -->
-        {#if recapQuery.isPending}
-          {@render honorsLoading()}
-        {:else if recap.weeklyAwards.shelf.length > 0}
-          <SeasonShelf shelf={recap.weeklyAwards.shelf} currentUserId={data.currentUserId} />
-        {/if}
       </div>
     </TabsContent>
   </Tabs>

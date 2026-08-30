@@ -13,6 +13,7 @@ import { load as loadDemoWeek } from '../../../../routes/demo/week/+page.server'
 import { liveCoverState, type CoverVerdict } from '$lib/domain/liveCover';
 import { MIN_QUALIFIED_DECISIONS, RATING_PAR, ratingTier } from '$lib/domain/rating';
 import { BADGE_GLOSSARY } from '$lib/domain/badges';
+import { WEEKLY_AWARD_ORDER } from '$lib/domain/weeklyAwards';
 import DemoPicksPage from '../../../../routes/demo/+page.svelte';
 import DemoWeekPage from '../../../../routes/demo/week/+page.svelte';
 import DemoStatsPage from '../../../../routes/demo/stats/+page.svelte';
@@ -20,7 +21,6 @@ import DemoMarketPage from '../../../../routes/demo/market/+page.svelte';
 import StandingsTable from '$lib/components/leaderboard/StandingsTable.svelte';
 import RatingLadder from '$lib/components/leaderboard/RatingLadder.svelte';
 import WeeklyHardware from '$lib/components/recap/WeeklyHardware.svelte';
-import SeasonShelf from '$lib/components/recap/SeasonShelf.svelte';
 import WeeklyLiveBoard from '$lib/components/leaderboard/WeeklyLiveBoard.svelte';
 import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
 import LeagueHonors from '$lib/components/group/LeagueHonors.svelte';
@@ -235,12 +235,18 @@ describe('demo surfaces render against the fixture', () => {
     expect(getByTestId('weekly-hardware')).toBeInTheDocument();
   });
 
-  it('the season shelf on the recap archive (#669)', () => {
-    expect(snapshot.weeklyAwards.shelf.length).toBeGreaterThan(0);
-    const { getByTestId } = render(SeasonShelf, {
-      props: { shelf: snapshot.weeklyAwards.shelf, currentUserId: snapshot.persona.userId }
-    });
-    expect(getByTestId('season-shelf')).toBeInTheDocument();
+  it('freezes only the post-#866 award catalog', () => {
+    // A snapshot generated before #866 still *renders* — the tiles just loop over whatever ids
+    // it froze — so the shape checks alone would let a stale fixture stay green while /demo/week
+    // showed a Donkey the live app no longer mints. The catalog is what has to be asserted.
+    const ids = new Set(snapshot.weeklyAwards.weeks.flatMap((w) => w.awards.map((a) => a.id)));
+    expect(ids.size, 'the fixture minted no hardware at all').toBeGreaterThan(0);
+    for (const id of ids) {
+      expect(
+        WEEKLY_AWARD_ORDER as string[],
+        `retired award "${id}" is still in the fixture`
+      ).toContain(id);
+    }
   });
 
   it('demo Stats (#669) — real Stats surfaces off the frozen `stats` payload', () => {

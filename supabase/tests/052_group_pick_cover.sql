@@ -11,12 +11,14 @@
 --   6. Auto-missed settlements (pick_id NULL) are excluded.
 --   7. Cross-group isolation: group B picks never appear in group A.
 --   8. Non-scoring rounds are excluded.
+--   9. weight carries picks.weight through to the matview (#866), so the Bullseye award can
+--      select a declared All-In that won -- and cannot mistake one that lost for a hit.
 --
 -- This suite owns season year 2094 to avoid colliding with other test files.
 
 BEGIN;
 
-SELECT plan(12);
+SELECT plan(17);
 
 -- ── Stable UUIDs (052_ namespace) ────────────────────────────────────────────
 
@@ -106,18 +108,22 @@ ON CONFLICT (external_game_id) DO NOTHING;
 --   Group A game A: Alice → home, Bob → away (locked home -3.5)
 --   Group B game B: Carol → away (locked home -7)
 --   Group A game C (non-scoring): Alice → home
+--
+-- Weights carry the #866 cases: Bob declares an All-In on the pick that WINS (the Bullseye),
+-- Carol declares one on the pick that LOSES (mints nothing), and Alice stays 'M' throughout, so
+-- the matview has to carry the declaration itself rather than let the outcome stand in for it.
 INSERT INTO public.picks (
   group_id, user_id, game_id, picked_team_id, weight, locked_at, locked_spread_team_id, locked_spread_value, locked_by
 )
 SELECT
-  p.group_id, p.user_id, g.id, team.id, 'M'::public.weight_enum,
+  p.group_id, p.user_id, g.id, team.id, p.weight,
   g.commence_time - interval '1 hour', g.home_team_id, p.spread, p.user_id
 FROM (VALUES
-  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_alice'), 'cv-052-game-a', 'CV_HOME',  3.5::numeric),
-  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_bob'),   'cv-052-game-a', 'CV_AWAY',  3.5::numeric),
-  ('00000000-0000-4000-8000-000000005202'::uuid, tests.get_supabase_uid('cv_carol'), 'cv-052-game-b', 'CV_AWAY2', 7::numeric),
-  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_alice'), 'cv-052-game-c', 'CV_HOME',  3.5::numeric)
-) p(group_id, user_id, game_key, team_key, spread)
+  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_alice'), 'cv-052-game-a', 'CV_HOME',  3.5::numeric, 'M'::public.weight_enum),
+  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_bob'),   'cv-052-game-a', 'CV_AWAY',  3.5::numeric, 'A'::public.weight_enum),
+  ('00000000-0000-4000-8000-000000005202'::uuid, tests.get_supabase_uid('cv_carol'), 'cv-052-game-b', 'CV_AWAY2', 7::numeric,   'A'::public.weight_enum),
+  ('00000000-0000-4000-8000-000000005201'::uuid, tests.get_supabase_uid('cv_alice'), 'cv-052-game-c', 'CV_HOME',  3.5::numeric, 'M'::public.weight_enum)
+) p(group_id, user_id, game_key, team_key, spread, weight)
 JOIN public.games g ON g.external_game_id = p.game_key
 JOIN public.teams team ON team.external_key = p.team_key
 ON CONFLICT (group_id, user_id, game_id) DO NOTHING;
@@ -217,6 +223,47 @@ SELECT results_eq(
      WHERE game_id = (SELECT id FROM public.games WHERE external_game_id = 'cv-052-game-c') $$,
   $$ VALUES (0) $$,
   '8. Non-scoring round (week 6) game C is excluded from group_pick_cover'
+);
+
+-- ── 9: weight passthrough — the Bullseye award's whole input (#866) ─────────────
+
+SELECT has_column('public', 'group_pick_cover', 'weight', '9a. group_pick_cover exposes the pick weight');
+
+-- Bob's away pick won AND was declared All-In: the one row a Bullseye may mint from.
+SELECT results_eq(
+  $$ SELECT weight::text, outcome::text FROM public.group_pick_cover
+     WHERE group_id = '00000000-0000-4000-8000-000000005201'
+       AND user_id = tests.get_supabase_uid('cv_bob') AND season_year = 2094 $$,
+  $$ VALUES ('A', 'win') $$,
+  '9b. Bob''s winning All-In carries weight A'
+);
+
+-- Alice picked the same game and lost it on an ordinary weight: the matview must say so,
+-- otherwise a lost 'M' pick could not be told apart from a lost All-In.
+SELECT results_eq(
+  $$ SELECT weight::text, outcome::text FROM public.group_pick_cover
+     WHERE group_id = '00000000-0000-4000-8000-000000005201'
+       AND user_id = tests.get_supabase_uid('cv_alice') AND season_year = 2094 $$,
+  $$ VALUES ('M', 'loss') $$,
+  '9c. Alice''s ordinary pick carries weight M'
+);
+
+-- Carol's All-In LOST. It must still be present and marked 'A' -- the award filters it out on
+-- `outcome`, so a matview that dropped or downgraded it would hide a real declaration.
+SELECT results_eq(
+  $$ SELECT weight::text, outcome::text FROM public.group_pick_cover
+     WHERE group_id = '00000000-0000-4000-8000-000000005202'
+       AND user_id = tests.get_supabase_uid('cv_carol') AND season_year = 2094 $$,
+  $$ VALUES ('A', 'loss') $$,
+  '9d. Carol''s losing All-In is still carried, marked A'
+);
+
+-- The award's own predicate, run against the matview: exactly one hit across both groups.
+SELECT results_eq(
+  $$ SELECT count(*)::int FROM public.group_pick_cover
+     WHERE season_year = 2094 AND weight = 'A' AND outcome = 'win' $$,
+  $$ VALUES (1) $$,
+  '9e. exactly one weight=A/outcome=win row (Bob) -- Carol''s lost All-In is not a hit'
 );
 
 SELECT * FROM finish();

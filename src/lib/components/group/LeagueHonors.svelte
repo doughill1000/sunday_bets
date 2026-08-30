@@ -201,8 +201,8 @@
       <!-- Awards: per-season titles and milestones, grouped by member (#281). Set off behind
            its own rule and a primary-ink label (#631) so the curated season titles read as a
            distinct tier from the champion chips above rather than more of the same jewellery.
-           The high-volume weekly-hardware shelf deliberately lives on the Season recaps
-           archive below, never beside these. -->
+           The weekly-hardware tier deliberately lives on the Week tab and the Season recaps
+           archive, never beside these. -->
       <div class="space-y-3 border-t pt-5" data-testid="badge-chips">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex flex-wrap items-center gap-3">
@@ -262,7 +262,7 @@
       </div>
 
       <!-- The two durable doors out of honors. Season Wrapped is the once-a-season set piece;
-           Season recaps is the week-by-week archive that also holds the trophy shelf (#631) —
+           Season recaps is the week-by-week hardware-and-prose archive (#631) —
            neither has a nav tab, so this card is where they stay reachable. -->
       <div class="space-y-2">
         {#if trophyCase.length > 0}
@@ -280,7 +280,7 @@
         {/if}
 
         {#if recapsHref}
-          <!-- #741 moved the trophy shelf out of the archive and into the Honors tab, so this
+          <!-- #741 moved the trophy shelf out of the archive and #866 cut it entirely, so this
                door now promises only what /recap still holds: the week-by-week stories. -->
           <a
             href={recapsHref}

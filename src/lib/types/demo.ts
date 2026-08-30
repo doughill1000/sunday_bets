@@ -129,9 +129,9 @@ export type DemoSnapshot = {
   /** Recent weekly AI recaps for the completed season, newest first. */
   recaps: RecapRow[];
   /**
-   * Every fully-graded scoring week's hardware plus the season shelf, identical shape to
-   * `getSeasonWeeklyAwards` (#669) — powers `WeeklyHardware` on the Week tab/recap and
-   * `SeasonShelf` on the recap.
+   * Every fully-graded scoring week's hardware, identical shape to
+   * `getSeasonWeeklyAwards` (#669) — powers `WeeklyHardware` on the Week tab and the recap
+   * archive.
    */
   weeklyAwards: SeasonWeeklyAwards;
   /** The completed season's Stats payload, identical shape to `/api/stats` (#669). Aspirational

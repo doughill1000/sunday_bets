@@ -113,8 +113,8 @@
         <span class="font-medium text-foreground">League</span> has two tabs. Standings ranks the season
         and hands out tier honors: the reigning champion wears a crown, past champions fill a trophy case,
         and last place takes the wooden spoon. Week shows that round's board and its Weekly Hardware —
-        awards for the round's standout picks, separate from the season's tier honors and collected on
-        a season shelf as they're won.
+        three awards for the round's standout picks, separate from the season's tier honors and reset
+        every week.
       </li>
       <li>
         <span class="font-medium text-foreground">Stats</span> tracks your own accuracy over the season,
