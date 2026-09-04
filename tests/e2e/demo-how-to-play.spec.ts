@@ -17,6 +17,16 @@ test.use({ storageState: { cookies: [], origins: [] } });
 const TABS = ['Picks', 'Week', 'League', 'Stats', 'Market'];
 
 test('unauthenticated visitor reaches the rules from /demo in one action', async ({ page }) => {
+  // Isolate the banner re-entry door: mark the first-teach primer already seen so its overlay
+  // doesn't intercept the click. The auto-open path has its own spec (demo-welcome-guide).
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('hotshot:demo-guide-seen', '2026-01-01T00:00:00Z');
+    } catch {
+      /* storage blocked — the primer just shows; not what this test covers */
+    }
+  });
+
   await page.goto('/demo');
   await expect(page).toHaveURL(/\/demo$/);
 
