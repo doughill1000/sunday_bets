@@ -1,9 +1,7 @@
-// First-teach for the public demo (ADR-0026). The authenticated app auto-opens WelcomeGuide
-// once per new account (guideSeenAt); the demo has no account, so "seen" is a per-browser
-// localStorage flag instead. Kept as a pure function so the open/skip decision is unit-tested
-// without a DOM — the component owns the (browser-guarded, try/catch) localStorage access.
-export const DEMO_GUIDE_SEEN_KEY = 'hotshot:demo-guide-seen';
-
-export function shouldAutoOpenDemoGuide(p: { seen: string | null; pathname: string }): boolean {
-  return p.seen === null && !p.pathname.startsWith('/demo/how-to-play');
+// The demo how-to-play popup auto-opens on every /demo visit (ADR-0026, builds on #864): the
+// demo is a marketing surface for strangers, so it re-teaches the game each time rather than
+// remembering a dismissal. The one exception is the standalone rules page, which already shows
+// the same content — don't stack the popup on top of it.
+export function shouldAutoOpenDemoGuide(pathname: string): boolean {
+  return !pathname.startsWith('/demo/how-to-play');
 }

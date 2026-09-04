@@ -23,5 +23,5 @@
   {@render children()}
 </div>
 
-<DemoWelcomeGuide personaName={data.persona.displayName} />
+<DemoWelcomeGuide />
 <DemoBottomTabBar />
