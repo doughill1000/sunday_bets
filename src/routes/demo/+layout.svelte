@@ -3,6 +3,7 @@
   import DemoNav from '$lib/components/demo/DemoNav.svelte';
   import DemoBottomTabBar from '$lib/components/demo/DemoBottomTabBar.svelte';
   import DemoBanner from '$lib/components/demo/DemoBanner.svelte';
+  import DemoWelcomeGuide from '$lib/components/demo/DemoWelcomeGuide.svelte';
 
   let { children, data }: { children: import('svelte').Snippet; data: LayoutData } = $props();
 </script>
@@ -22,4 +23,5 @@
   {@render children()}
 </div>
 
+<DemoWelcomeGuide />
 <DemoBottomTabBar />

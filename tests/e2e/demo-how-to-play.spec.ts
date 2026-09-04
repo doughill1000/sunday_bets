@@ -20,6 +20,10 @@ test('unauthenticated visitor reaches the rules from /demo in one action', async
   await page.goto('/demo');
   await expect(page).toHaveURL(/\/demo$/);
 
+  // The how-to-play popup auto-opens on every visit; dismiss it to reach the banner re-entry
+  // door underneath (the auto-open path has its own spec, demo-welcome-guide).
+  await page.getByTestId('demo-guide-dismiss').click();
+
   await page.getByTestId('demo-how-to-play-link').click();
 
   await expect(page).toHaveURL(/\/demo\/how-to-play$/);

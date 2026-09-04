@@ -3,10 +3,10 @@
   // the "you" lens (personalized surfaces render from this player's frozen payload). Conversion
   // lives in the single sticky nav CTA, not here — the demo keeps exactly one sign-up button.
   //
-  // It also carries the one door to the rules (#864). The banner already owns "what you're
-  // looking at"; "what the game is" is the same orientation job, so it lands here rather than
-  // as a sixth nav tab (How to Play is not a tab in the real app either). Styled as a quiet
-  // text link so it reads as orientation and stays subordinate to the nav's sign-up CTA.
+  // It carries a persistent re-entry door to the rules (#864): first-teach now auto-opens once
+  // (DemoWelcomeGuide), so this is the quiet way back for anyone who dismissed it. Lands here,
+  // not as a sixth nav tab (How to Play is not a tab in the real app either), and stays a quiet
+  // text link subordinate to the nav's sign-up CTA.
   import Eye from '@lucide/svelte/icons/eye';
   import CircleHelp from '@lucide/svelte/icons/circle-help';
   import { page } from '$app/state';
@@ -35,17 +35,15 @@
       class="group -mx-2 inline-flex min-h-11 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:basis-auto"
     >
       <CircleHelp class="size-4 shrink-0" aria-hidden="true" />
-      <!-- The underline rests rather than waiting for hover, and it is now the link's ONLY
-           colour-independent affordance: #868 took the gold off this label. Gold is the demo
-           chrome's accent everywhere (the DEMO chip, the sign-up button, the selected tab), so a
-           gold orientation link read as a second call to action on first paint — DESIGN.md P6
-           wants one. Neutral ink plus a resting underline keeps it unmistakably a link while the
-           nav's sign-up button keeps the demo's one gold CTA. Carried on the span so the rule
-           does not run under the icon. -->
+      <!-- Resting (not hover-only) underline as the link's sole colour-independent affordance:
+           #868 took the gold off this label. Gold is the demo chrome's accent everywhere (the
+           DEMO chip, sign-up button, selected tab), so a gold link read as a second CTA — DESIGN
+           P6 wants one. Neutral ink + a resting underline keeps it a link while the nav's sign-up
+           button stays the demo's one gold CTA. Carried on the span so the rule clears the icon. -->
       <span
         class="underline decoration-muted-foreground/60 underline-offset-4 transition-colors group-hover:decoration-foreground"
       >
-        New here? How the game works
+        How to play
       </span>
     </a>
   {/if}
