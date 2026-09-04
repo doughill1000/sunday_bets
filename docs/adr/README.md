@@ -86,5 +86,6 @@ current status.
 | [ADR-0039](0039-joining-is-the-only-participation-boundary.md)              | Joining is the only participation boundary — retires ADR-0037's rulings 4 and 5 (the start-week controls)   |
 | [ADR-0040](0040-unpickable-games-cannot-cost-points.md)                     | An unpickable game cannot cost you points — the missed-penalty pickability gate                             |
 | [ADR-0041](0041-hotshot-name-uncleared-and-domain.md)                       | Hotshot stays but is uncleared — `hotshotpickem.com` and the commercialization clearance gate               |
+| [ADR-0042](0042-comments-social-boundary.md)                                | The group chat is the social surface — comments off (#832), post-kickoff read gate, author-only deletion    |
 
 _The numbering is sequential; the next ADR is 0042._
