@@ -129,6 +129,55 @@ describe('LeagueHonors — tap-to-explain award popover (#881)', () => {
     expect(pop.textContent).toContain('Best win rate on All-In picks');
   });
 
+  it("shows the holder's winning measure below the description", async () => {
+    const whale = badge('the-whale', 'Doug');
+    whale.holders[0].detail = { label: 'All-In win rate', value: '62% · 5/8' };
+    const { getByTestId } = renderCard([whale]);
+
+    await fireEvent.click(getByTestId('badge-chip-the-whale'));
+
+    const detail = getByTestId('badge-holder-detail-the-whale-Doug');
+    expect(detail.textContent).toContain('All-In win rate');
+    expect(detail.textContent).toContain('62% · 5/8');
+    expect(detail.querySelector('.text-eyebrow')).toBeTruthy();
+  });
+
+  it('maps a different winning measure to each holder of a milestone', async () => {
+    const perfect = badge('perfect-week', 'Alice');
+    perfect.kind = 'milestone';
+    perfect.holders = [
+      {
+        user_id: 'u1',
+        display_name: 'Alice',
+        detail: { label: 'Perfect weeks', value: '2 weeks' }
+      },
+      {
+        user_id: 'u2',
+        display_name: 'Bob',
+        detail: { label: 'Perfect weeks', value: '1 week' }
+      }
+    ];
+    const { getByTestId } = renderCard([perfect]);
+
+    await fireEvent.click(getByTestId('badge-chip-perfect-week'));
+
+    const alice = getByTestId('badge-holder-detail-perfect-week-u1');
+    const bob = getByTestId('badge-holder-detail-perfect-week-u2');
+    expect(alice.textContent).toContain('Alice');
+    expect(alice.textContent).toContain('2 weeks');
+    expect(bob.textContent).toContain('Bob');
+    expect(bob.textContent).toContain('1 week');
+  });
+
+  it('omits the measure block when an award has no meaningful holder stat', async () => {
+    const { getByTestId, queryByTestId } = renderCard([badge('cardiac', 'Doug')]);
+
+    await fireEvent.click(getByTestId('badge-chip-cardiac'));
+
+    expect(getByTestId('badge-popover-cardiac')).toBeTruthy();
+    expect(queryByTestId('badge-holder-detail-cardiac-Doug')).toBeNull();
+  });
+
   it('makes the chip a real labelled button, not a hover-only tooltip', () => {
     const { getByTestId } = renderCard([badge('the-whale', 'Doug')]);
     const chip = getByTestId('badge-chip-the-whale');

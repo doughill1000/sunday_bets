@@ -162,6 +162,25 @@
             </p>
             <p class="mt-1 text-xs font-medium">{badge.flavor}</p>
             <p class="mt-1.5 text-xs text-muted-foreground">{badge.description}</p>
+            {#if badge.holders.some((holder) => holder.detail)}
+              <div class="mt-3 space-y-2 border-t pt-2.5">
+                {#each badge.holders as holder (holder.user_id)}
+                  {#if holder.detail}
+                    <div data-testid="badge-holder-detail-{badge.id}-{holder.user_id}">
+                      {#if badge.holders.length > 1}
+                        <p class="mb-0.5 text-xs font-medium">
+                          {nameFor(holder.user_id, holder.display_name)}
+                        </p>
+                      {/if}
+                      <p class="text-eyebrow text-muted-foreground">{holder.detail.label}</p>
+                      <p class="mt-0.5 text-sm font-semibold tabular-nums">
+                        {holder.detail.value}
+                      </p>
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
           </PopoverContent>
         </Popover>
         {#each badge.holders as h (h.user_id)}

@@ -103,6 +103,10 @@ function holderNames(badges: ReturnType<typeof computeBadges>, id: string): stri
   return badges.find((b) => b.id === id)?.holders.map((h) => h.display_name) ?? [];
 }
 
+function holderDetail(badges: ReturnType<typeof computeBadges>, id: string, userId: string) {
+  return badges.find((b) => b.id === id)?.holders.find((h) => h.user_id === userId)?.detail;
+}
+
 // --- Sample guard ---
 
 describe('computeSampleGuard', () => {
@@ -158,7 +162,7 @@ describe('The Grinder', () => {
       ...EMPTY,
       seasonTotals: [
         totals({ user_id: 'u1', display_name: 'Alice', decisions: 14, missed: 0 }),
-        totals({ user_id: 'u2', display_name: 'Bob', decisions: 14, missed: 0 }),
+        totals({ user_id: 'u2', display_name: 'Bob', decisions: 12, missed: 0 }),
         totals({ user_id: 'u3', display_name: 'Zara', decisions: 14, missed: 3 })
       ]
     };
@@ -167,6 +171,14 @@ describe('The Grinder', () => {
     // Attendance is a threshold, not a competition: two clean seasons, two winners.
     expect(badge?.kind).toBe('milestone');
     expect(holderNames(badges, 'the-grinder')).toEqual(['Alice', 'Bob']);
+    expect(holderDetail(badges, 'the-grinder', 'u1')).toEqual({
+      label: 'Picks placed',
+      value: '14 picks'
+    });
+    expect(holderDetail(badges, 'the-grinder', 'u2')).toEqual({
+      label: 'Picks placed',
+      value: '12 picks'
+    });
   });
 
   it('is not awarded to a player who missed even one game', () => {
@@ -322,7 +334,16 @@ describe('The Choker', () => {
         })
       ]
     };
-    expect(holderNames(computeBadges(inputs), 'the-choker')).toEqual(['Alice', 'Zara']);
+    const badges = computeBadges(inputs);
+    expect(holderNames(badges, 'the-choker')).toEqual(['Alice', 'Zara']);
+    expect(holderDetail(badges, 'the-choker', 'u2')).toEqual({
+      label: 'All-In record',
+      value: '0% · 0/5'
+    });
+    expect(holderDetail(badges, 'the-choker', 'u1')).toEqual({
+      label: 'All-In record',
+      value: '0% · 0/3'
+    });
   });
 
   it('is not awarded to a 1-for-1 All-In loser — the 2022 absurdity', () => {
@@ -414,6 +435,10 @@ describe('The Whale', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-whale');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'All-In win rate',
+      value: '75% · 3/4'
+    });
   });
 
   it('respects WHALE_MIN_ALLINS — a 1-for-1 player is not crowned', () => {
@@ -608,6 +633,7 @@ describe('The Ghost', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-ghost');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({ label: 'Picks missed', value: '5 picks' });
   });
 
   it('is not awarded when nobody has missed picks', () => {
@@ -680,6 +706,7 @@ describe('Perfect Week', () => {
     const badge = computeBadges(inputs).find((b) => b.id === 'perfect-week');
     expect(badge?.kind).toBe('milestone');
     expect(badge?.holders.map((h) => h.user_id).sort()).toEqual(['u1', 'u3']);
+    expect(badge?.holders.every((holder) => holder.detail?.value === '1 week')).toBe(true);
   });
 
   it('does not count a week with 0 wins as perfect', () => {
@@ -711,6 +738,7 @@ describe('Perfect Week', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'perfect-week');
     expect(badge?.holders).toHaveLength(1);
+    expect(badge?.holders[0].detail).toEqual({ label: 'Perfect weeks', value: '2 weeks' });
   });
 
   it('is not awarded when there are no trend rows', () => {
@@ -1099,6 +1127,14 @@ describe('Crowd lean axis', () => {
     );
     expect(holderNames(badges, 'lone-wolf')).toEqual(['Harry']);
     expect(holderNames(badges, 'sheep')).toEqual(['Colin']);
+    expect(holderDetail(badges, 'lone-wolf', 'u1')).toEqual({
+      label: 'Fade rate vs room',
+      value: '28% fade · room 21%'
+    });
+    expect(holderDetail(badges, 'sheep', 'u2')).toEqual({
+      label: 'Fade rate vs room',
+      value: '14% fade · room 21%'
+    });
   });
 
   it('awards one end when only that end clears the bar — the 2024 case', () => {
@@ -1232,6 +1268,10 @@ describe('The Oracle', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'oracle');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'Against the crowd',
+      value: '80% · 4/5'
+    });
   });
 
   it('does not award when no player reaches the oracle guard', () => {
@@ -1373,6 +1413,10 @@ describe('The Lemming', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'the-lemming');
     expect(badge?.holders[0].user_id).toBe('u2');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'With the crowd',
+      value: '20% · 1/5'
+    });
   });
 
   it('does not award when no player reaches its guard on majority picks', () => {
@@ -1551,6 +1595,10 @@ describe('Chalk Eater', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'chalk-eater');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'Line lean vs room',
+      value: '60 pts chalk · room 20 pts chalk'
+    });
   });
 
   it('uses share, not raw count (fewer picks but higher ratio wins)', () => {
@@ -1706,6 +1754,10 @@ describe('Dog Lover', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'dog-lover');
     expect(badge?.holders[0].user_id).toBe('u2');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'Line lean vs room',
+      value: '80 pts dog · room 10 pts dog'
+    });
   });
 
   it('forms an opposite pair with Chalk Eater on the same axis', () => {
@@ -1957,6 +2009,10 @@ describe('The Comeback', () => {
     };
     const badge = computeBadges(inputs, true).find((b) => b.id === 'the-comeback');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({
+      label: 'Season climb',
+      value: '4 spots · #5 to #1'
+    });
   });
 
   it('is not awarded mid-season (seasonComplete=false)', () => {
@@ -2062,6 +2118,7 @@ describe('Week Winner', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'week-winner');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toEqual({ label: 'Weeks led', value: '2 weeks' });
   });
 
   it('is not awarded when two players tie on weeks-led (no sole possession)', () => {
@@ -2183,6 +2240,7 @@ describe('Best of the Rest', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'best-of-the-rest');
     expect(badge?.holders.map((h) => h.user_id)).toEqual(['u3']);
+    expect(badge?.holders[0].detail).toEqual({ label: 'Standout weeks', value: '1 week' });
   });
 
   it('is not awarded when the week top scorer is in the top half', () => {
@@ -2296,6 +2354,7 @@ describe('Best of the Rest', () => {
     };
     const badge = computeBadges(inputs).find((b) => b.id === 'best-of-the-rest');
     expect(badge?.holders).toHaveLength(1);
+    expect(badge?.holders[0].detail).toEqual({ label: 'Standout weeks', value: '2 weeks' });
   });
 });
 
@@ -2345,6 +2404,7 @@ describe('Cardiac', () => {
     };
     const badge = computeBadges(inputs, true).find((b) => b.id === 'cardiac');
     expect(badge?.holders[0].user_id).toBe('u1');
+    expect(badge?.holders[0].detail).toBeUndefined();
   });
 
   it('also awards when sole possession was first taken the week before the finale', () => {
