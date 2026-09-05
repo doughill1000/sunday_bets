@@ -129,10 +129,10 @@
           open={openBadgeId === badge.id}
           onOpenChange={(o) => (openBadgeId = o ? badge.id : null)}
         >
-          <!-- The 44px target is the button; the pill inside keeps the chip's own size, so
-               the row reaches a thumb without inflating the jewellery. -->
+          <!-- This shelf is intentionally dense: the pill gets a compact 32px row while
+               retaining the same keyboard focus treatment and explanatory popover. -->
           <PopoverTrigger
-            class="group flex min-h-11 shrink-0 items-center focus-visible:outline-none"
+            class="group flex min-h-8 shrink-0 items-center focus-visible:outline-none"
             data-testid="badge-chip-{badge.id}"
             aria-label="{badge.label} — what this award means"
           >
