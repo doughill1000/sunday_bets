@@ -8,12 +8,14 @@
   } from '$lib/components/ui/card';
   import UserAvatar from '$lib/components/UserAvatar.svelte';
   import AwardsGuide from '$lib/components/AwardsGuide.svelte';
+  import { Popover, PopoverContent, PopoverTrigger } from '$lib/components/ui/popover';
   import { BADGE_AXES, AXIS_BADGE_IDS, BADGE_GLOSSARY } from '$lib/domain/badges';
-  import type { BadgeAward, LeagueHonors } from '$lib/types/honors';
+  import type { BadgeAward, BadgeId, LeagueHonors } from '$lib/types/honors';
   import Trophy from '@lucide/svelte/icons/trophy';
   import Gift from '@lucide/svelte/icons/gift';
   import Sparkles from '@lucide/svelte/icons/sparkles';
   import ArrowRight from '@lucide/svelte/icons/arrow-right';
+  import Info from '@lucide/svelte/icons/info';
 
   let {
     honors,
@@ -100,6 +102,10 @@
     Object.fromEntries(members.map((m) => [m.userId, m.avatarKey]))
   );
 
+  // One popover at a time: the chips share this slot rather than each owning an `open`
+  // flag, so opening one closes whichever was already open.
+  let openBadgeId = $state<BadgeId | null>(null);
+
   function nameFor(userId: string, displayName: string): string {
     return userId === currentUserId ? `${displayName} (you)` : displayName;
   }
@@ -110,17 +116,45 @@
      all inline. Shared by every group so an axis end, a plain title, and a milestone all
      read as the same kind of thing. -->
 {#snippet awardRows(awards: BadgeAward[])}
-  <ul class="space-y-1.5">
+  <ul class="space-y-1">
     {#each awards as badge (badge.id)}
       <li class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span
-          class="flex shrink-0 items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pr-2.5 pl-2 text-xs"
-          data-testid="badge-chip-{badge.id}"
-          title={badge.flavor}
+        <Popover
+          open={openBadgeId === badge.id}
+          onOpenChange={(o) => (openBadgeId = o ? badge.id : null)}
         >
-          <span aria-hidden="true">{badge.emoji}</span>
-          <span class="font-medium">{badge.label}</span>
-        </span>
+          <!-- The 44px target is the button; the pill inside keeps the chip's own size, so
+               the row reaches a thumb without inflating the jewellery. -->
+          <PopoverTrigger
+            class="group flex min-h-11 shrink-0 items-center focus-visible:outline-none"
+            data-testid="badge-chip-{badge.id}"
+            aria-label="{badge.label} — what this award means"
+          >
+            <span
+              class="flex items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pr-2 pl-2 text-xs transition-colors group-hover:bg-muted/70 group-focus-visible:ring-[3px] group-focus-visible:ring-ring/50 group-data-[state=open]:border-primary-ink group-data-[state=open]:bg-primary/10"
+            >
+              <span aria-hidden="true">{badge.emoji}</span>
+              <span class="font-medium">{badge.label}</span>
+              <Info
+                class="size-3 text-muted-foreground group-data-[state=open]:text-primary-ink"
+                aria-hidden="true"
+              />
+            </span>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={6}
+            class="w-64"
+            data-testid="badge-popover-{badge.id}"
+          >
+            <p class="flex items-center gap-1.5 font-semibold">
+              <span aria-hidden="true">{badge.emoji}</span>
+              {badge.label}
+            </p>
+            <p class="mt-1 text-xs font-medium">{badge.flavor}</p>
+            <p class="mt-1.5 text-xs text-muted-foreground">{badge.description}</p>
+          </PopoverContent>
+        </Popover>
         {#each badge.holders as h (h.user_id)}
           <span class="flex min-w-0 items-center gap-1.5">
             <UserAvatar

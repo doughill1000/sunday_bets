@@ -91,8 +91,8 @@
     <p class="text-muted-foreground">
       Once per week you can mark a single pick as your All-In. It is worth plus 10 if you are right
       and minus 10 if you are wrong. You only get one each week, so save it for the game you trust
-      most. In the season's final week, your commissioner may unlock unlimited All-Ins — letting you go
-      All-In on every pick that week.
+      most. In the season's final week, your commissioner may unlock unlimited All-Ins — letting you
+      go All-In on every pick that week.
     </p>
   </section>
 
@@ -142,9 +142,8 @@
     <p class="text-muted-foreground">
       Your weekly points roll up into a season total on the leaderboard, where you can see how you
       stack up against your league. Your commissioner sets a few house rules, like which line your
-      picks
-      grade against and the occasional special week such as an unlimited All-In finale. Any twists
-      your league adds show up as you play.
+      picks grade against and the occasional special week such as an unlimited All-In finale. Any
+      twists your league adds show up as you play.
     </p>
   </section>
 </div>
