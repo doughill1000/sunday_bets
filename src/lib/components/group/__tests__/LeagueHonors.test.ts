@@ -1,7 +1,7 @@
 // The awards card's axis grouping (#635). The engine decides whether a badge is deserved
 // (badges.test.ts); this covers the half only the card can answer — that an unearned axis
 // costs no lines, and that a half-earned one says so out loud.
-import { render } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect } from 'vitest';
 import LeagueHonors from '../LeagueHonors.svelte';
 import type { BadgeAward, BadgeId, LeagueHonors as Honors } from '$lib/types/honors';
@@ -105,5 +105,57 @@ describe('LeagueHonors — axis grouping', () => {
     const { getByTestId } = renderCard([badge('dog-lover', 'Doug'), badge('the-grinder', 'Doug')]);
     expect(getByTestId('badge-chip-dog-lover')).toBeTruthy();
     expect(getByTestId('badge-chip-the-grinder')).toBeTruthy();
+  });
+});
+
+// The chip used to carry `title={badge.flavor}` — a hover tooltip a phone can never fire.
+// These cover the half only the card can answer: that the tap now lands somewhere.
+describe('LeagueHonors — tap-to-explain award popover (#881)', () => {
+  function explained(id: BadgeId, flavor: string, description: string): BadgeAward {
+    return { ...badge(id, 'Doug'), flavor, description };
+  }
+
+  it('opens a popover on the tapped chip carrying its flavor and how it is earned', async () => {
+    const { getByTestId, queryByTestId } = renderCard([
+      explained('the-whale', 'Goes big and cashes', 'Best win rate on All-In picks')
+    ]);
+    expect(queryByTestId('badge-popover-the-whale')).toBeNull();
+
+    await fireEvent.click(getByTestId('badge-chip-the-whale'));
+
+    const pop = getByTestId('badge-popover-the-whale');
+    expect(pop.textContent).toContain('the-whale');
+    expect(pop.textContent).toContain('Goes big and cashes');
+    expect(pop.textContent).toContain('Best win rate on All-In picks');
+  });
+
+  it('makes the chip a real labelled button, not a hover-only tooltip', () => {
+    const { getByTestId } = renderCard([badge('the-whale', 'Doug')]);
+    const chip = getByTestId('badge-chip-the-whale');
+    expect(chip.tagName).toBe('BUTTON');
+    expect(chip.getAttribute('aria-label')).toContain('the-whale');
+    expect(chip.getAttribute('title')).toBeNull();
+  });
+
+  it('keeps one popover open at a time', async () => {
+    const { getByTestId, queryByTestId } = renderCard([
+      badge('the-whale', 'Doug'),
+      badge('the-grinder', 'Mike')
+    ]);
+    await fireEvent.click(getByTestId('badge-chip-the-whale'));
+    expect(queryByTestId('badge-popover-the-whale')).toBeTruthy();
+
+    await fireEvent.click(getByTestId('badge-chip-the-grinder'));
+    expect(queryByTestId('badge-popover-the-whale')).toBeNull();
+    expect(queryByTestId('badge-popover-the-grinder')).toBeTruthy();
+  });
+
+  it('dismisses on Escape', async () => {
+    const { getByTestId, queryByTestId } = renderCard([badge('the-whale', 'Doug')]);
+    await fireEvent.click(getByTestId('badge-chip-the-whale'));
+    expect(queryByTestId('badge-popover-the-whale')).toBeTruthy();
+
+    await fireEvent.keyDown(document, { key: 'Escape' });
+    expect(queryByTestId('badge-popover-the-whale')).toBeNull();
   });
 });
