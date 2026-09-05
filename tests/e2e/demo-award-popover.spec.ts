@@ -40,7 +40,8 @@ test('tapping an award chip opens a popover pinned to it, and Esc dismisses it',
   await expect(popover).toBeHidden();
 });
 
-test('the chip is a real 44px button and only one popover is open at a time', async ({ page }) => {
+test('the chip is a compact button and only one popover is open at a time', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await openHonors(page);
 
   const chips = page.locator('[data-testid^="badge-chip-"]');
@@ -48,7 +49,7 @@ test('the chip is a real 44px button and only one popover is open at a time', as
   const second = chips.nth(1);
 
   expect(await first.evaluate((el) => el.tagName)).toBe('BUTTON');
-  expect((await first.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect((await first.boundingBox())!.height).toBeLessThanOrEqual(33);
 
   const firstId = (await first.getAttribute('data-testid'))!.replace('badge-chip-', '');
   const secondId = (await second.getAttribute('data-testid'))!.replace('badge-chip-', '');
@@ -64,13 +65,15 @@ test('the chip is a real 44px button and only one popover is open at a time', as
 test('award rows stay compact and opening a popover preserves focus and scroll', async ({
   page
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await openHonors(page);
 
   const titleRows = page.getByTestId('awards-titles').locator('li');
   const firstRow = (await titleRows.nth(0).boundingBox())!;
   const secondRow = (await titleRows.nth(1).boundingBox())!;
 
-  // The 44px targets may touch, but the list should not add another vertical gutter.
+  // At the 390px mobile canvas, rows stay at 32px and the list adds no second gutter.
+  expect(firstRow.height).toBeLessThanOrEqual(33);
   expect(secondRow.y - (firstRow.y + firstRow.height)).toBeLessThanOrEqual(1);
 
   const chip = titleRows.nth(1).locator('[data-testid^="badge-chip-"]');
