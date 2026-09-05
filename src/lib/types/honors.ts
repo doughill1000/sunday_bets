@@ -52,9 +52,18 @@ export type BadgeId =
 /** 'title' = superlative (one holder); 'milestone' = threshold (zero or more holders). */
 export type BadgeKind = 'title' | 'milestone';
 
+export type BadgeHolderDetail = {
+  /** Uppercase measure label in the award popover. */
+  label: string;
+  /** Display-ready value carried from the selector that awarded this holder. */
+  value: string;
+};
+
 export type BadgeHolder = {
   user_id: string;
   display_name: string;
+  /** The winning measure for this holder; absent when the award has no honest single stat. */
+  detail?: BadgeHolderDetail;
 };
 
 export type BadgeAward = {

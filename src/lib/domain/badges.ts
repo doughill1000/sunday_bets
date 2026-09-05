@@ -2,6 +2,7 @@ import type {
   BadgeAward,
   BadgeGlossaryEntry,
   BadgeHolder,
+  BadgeHolderDetail,
   BadgeId,
   BadgeKind
 } from '$lib/types/honors';
@@ -234,8 +235,29 @@ function alphaFirst<T extends { display_name: string }>(a: T, b: T): T {
   return a.display_name <= b.display_name ? a : b;
 }
 
-function holder(entry: { user_id: string; display_name: string }): BadgeHolder {
-  return { user_id: entry.user_id, display_name: entry.display_name };
+type DetailedBadgeId = Exclude<BadgeId, 'cardiac'>;
+
+function holder(
+  entry: { user_id: string; display_name: string },
+  detail?: BadgeHolderDetail
+): BadgeHolder {
+  return { user_id: entry.user_id, display_name: entry.display_name, ...(detail && { detail }) };
+}
+
+function detail(id: DetailedBadgeId, value: string): BadgeHolderDetail {
+  return { label: DETAIL_LABELS[id], value };
+}
+
+function percent(numerator: number, denominator: number): number {
+  return Math.round((numerator / denominator) * 100);
+}
+
+function rateValue(wins: number, decisions: number): string {
+  return `${percent(wins, decisions)}% · ${wins}/${decisions}`;
+}
+
+function countValue(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 // --- Title badge helpers (superlative: one holder or null) ---
@@ -257,30 +279,29 @@ function theWhale(weights: BadgeWeightEntry[], guard: number): BadgeHolder | nul
   const allins = weights.filter((w) => w.weight === 'A' && w.wins + w.losses >= guard);
   const winning = allins.filter((w) => w.wins / (w.wins + w.losses) > WHALE_MIN_WIN_RATE);
   if (winning.length === 0) return null;
-  return holder(
-    winning.reduce((best, curr) => {
-      const currRate = curr.wins / (curr.wins + curr.losses);
-      const bestRate = best.wins / (best.wins + best.losses);
-      if (currRate > bestRate) return curr;
-      if (currRate === bestRate) {
-        if (curr.decisions > best.decisions) return curr;
-        if (curr.decisions === best.decisions) return alphaFirst(curr, best);
-      }
-      return best;
-    })
-  );
+  const winner = winning.reduce((best, curr) => {
+    const currRate = curr.wins / (curr.wins + curr.losses);
+    const bestRate = best.wins / (best.wins + best.losses);
+    if (currRate > bestRate) return curr;
+    if (currRate === bestRate) {
+      if (curr.decisions > best.decisions) return curr;
+      if (curr.decisions === best.decisions) return alphaFirst(curr, best);
+    }
+    return best;
+  });
+  const decisions = winner.wins + winner.losses;
+  return holder(winner, detail('the-whale', rateValue(winner.wins, decisions)));
 }
 
 function theGhost(totals: BadgeSeasonTotalsEntry[]): BadgeHolder | null {
   const eligible = totals.filter((t) => t.missed > 0);
   if (eligible.length === 0) return null;
-  return holder(
-    eligible.reduce((most, curr) => {
-      if (curr.missed > most.missed) return curr;
-      if (curr.missed === most.missed) return alphaFirst(curr, most);
-      return most;
-    })
-  );
+  const winner = eligible.reduce((most, curr) => {
+    if (curr.missed > most.missed) return curr;
+    if (curr.missed === most.missed) return alphaFirst(curr, most);
+    return most;
+  });
+  return holder(winner, detail('the-ghost', countValue(winner.missed, 'pick')));
 }
 
 // The Nemesis and The Homer used to live here. Both were cut in #647.
@@ -317,17 +338,19 @@ function oracle(consensus: BadgeConsensusEntry[], oracleGuard: number): BadgeHol
       c.contrarian_wins / c.contrarian_picks >= ORACLE_MIN_RATE
   );
   if (eligible.length === 0) return null;
+  const winner = eligible.reduce((best, curr) => {
+    const currRate = curr.contrarian_wins / curr.contrarian_picks;
+    const bestRate = best.contrarian_wins / best.contrarian_picks;
+    if (currRate > bestRate) return curr;
+    if (currRate === bestRate) {
+      if (curr.contrarian_picks > best.contrarian_picks) return curr;
+      if (curr.contrarian_picks === best.contrarian_picks) return alphaFirst(curr, best);
+    }
+    return best;
+  });
   return holder(
-    eligible.reduce((best, curr) => {
-      const currRate = curr.contrarian_wins / curr.contrarian_picks;
-      const bestRate = best.contrarian_wins / best.contrarian_picks;
-      if (currRate > bestRate) return curr;
-      if (currRate === bestRate) {
-        if (curr.contrarian_picks > best.contrarian_picks) return curr;
-        if (curr.contrarian_picks === best.contrarian_picks) return alphaFirst(curr, best);
-      }
-      return best;
-    })
+    winner,
+    detail('oracle', rateValue(winner.contrarian_wins, winner.contrarian_picks))
   );
 }
 
@@ -348,17 +371,19 @@ function theLemming(consensus: BadgeConsensusEntry[], lemmingGuard: number): Bad
       c.majority_wins / c.majority_picks <= LEMMING_MAX_RATE
   );
   if (eligible.length === 0) return null;
+  const winner = eligible.reduce((worst, curr) => {
+    const currRate = curr.majority_wins / curr.majority_picks;
+    const worstRate = worst.majority_wins / worst.majority_picks;
+    if (currRate < worstRate) return curr;
+    if (currRate === worstRate) {
+      if (curr.majority_picks > worst.majority_picks) return curr;
+      if (curr.majority_picks === worst.majority_picks) return alphaFirst(curr, worst);
+    }
+    return worst;
+  });
   return holder(
-    eligible.reduce((worst, curr) => {
-      const currRate = curr.majority_wins / curr.majority_picks;
-      const worstRate = worst.majority_wins / worst.majority_picks;
-      if (currRate < worstRate) return curr;
-      if (currRate === worstRate) {
-        if (curr.majority_picks > worst.majority_picks) return curr;
-        if (curr.majority_picks === worst.majority_picks) return alphaFirst(curr, worst);
-      }
-      return worst;
-    })
+    winner,
+    detail('the-lemming', rateValue(winner.majority_wins, winner.majority_picks))
   );
 }
 
@@ -388,7 +413,7 @@ type AxisDef<Row extends { user_id: string; display_name: string }> = {
   /** Short name of the measure, used as the awards-card heading. */
   measure: string;
   /** The badge each end awards. */
-  ends: Record<AxisSide, BadgeId>;
+  ends: Record<AxisSide, DetailedBadgeId>;
   /**
    * The player's position on the measure, or null when they are ineligible (thin sample).
    * Ineligible rows take no part in the "most extreme" comparison.
@@ -405,7 +430,15 @@ type AxisDef<Row extends { user_id: string; display_name: string }> = {
   bar: number;
   /** Volume tie-break: more of this wins when two players sit at the same value. */
   sample: (row: Row) => number;
+  /** Formats the exact player value and room zero used to award either end. */
+  detailValue: (row: Row, zero: number) => string;
 };
+
+function leanValue(value: number, low: string, high: string): string {
+  const points = Math.round(Math.abs(value) * 100);
+  if (points === 0) return 'even';
+  return `${points} pts ${value < 0 ? low : high}`;
+}
 
 /**
  * Awards one axis: 0, 1, or 2 titles. An end awards only when some eligible player is
@@ -440,7 +473,8 @@ function awardAxis<Row extends { user_id: string; display_name: string }>(
       }
       return best;
     });
-    awards.push(award(axis.ends[side], 'title', [holder(winner)]));
+    const id = axis.ends[side];
+    awards.push(award(id, 'title', [holder(winner, detail(id, axis.detailValue(winner, zero)))]));
   }
 
   return awards;
@@ -495,7 +529,9 @@ function lineLeanAxis(guard: number): AxisDef<BadgeLineSideEntry> {
     value,
     zero: (rows) => leagueMean(rows, value),
     bar: LINE_LEAN_BAR,
-    sample: (l) => l.decisions
+    sample: (l) => l.decisions,
+    detailValue: (row, zero) =>
+      `${leanValue(value(row)!, 'dog', 'chalk')} · room ${leanValue(zero, 'dog', 'chalk')}`
   };
 }
 
@@ -526,7 +562,9 @@ function crowdLeanAxis(guard: number): AxisDef<BadgeConsensusEntry> {
     value,
     zero: (rows) => leagueMean(rows, value),
     bar: CROWD_LEAN_BAR,
-    sample: (c) => c.decisions
+    sample: (c) => c.decisions,
+    detailValue: (row, zero) =>
+      `${Math.round(value(row)! * 100)}% fade · room ${Math.round(zero * 100)}%`
   };
 }
 
@@ -556,7 +594,13 @@ function theComeback(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHo
     else byUser.set(r.user_id, [r]);
   }
 
-  type Candidate = { user_id: string; display_name: string; delta: number };
+  type Candidate = {
+    user_id: string;
+    display_name: string;
+    delta: number;
+    lowPointRank: number;
+    finalRank: number;
+  };
   const climbers: Candidate[] = [];
   for (const rows of byUser.values()) {
     const sorted = [...rows].sort((a, b) => a.week_number - b.week_number);
@@ -564,16 +608,27 @@ function theComeback(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHo
     const lowPointRank = Math.max(...rows.map((r) => r.cumulative_rank_this_week));
     const delta = lowPointRank - finalRow.cumulative_rank_this_week; // positive = climbed
     if (delta > 0) {
-      climbers.push({ user_id: finalRow.user_id, display_name: finalRow.display_name, delta });
+      climbers.push({
+        user_id: finalRow.user_id,
+        display_name: finalRow.display_name,
+        delta,
+        lowPointRank,
+        finalRank: finalRow.cumulative_rank_this_week
+      });
     }
   }
   if (climbers.length === 0) return null;
+  const winner = climbers.reduce((best, curr) => {
+    if (curr.delta > best.delta) return curr;
+    if (curr.delta === best.delta) return alphaFirst(curr, best);
+    return best;
+  });
   return holder(
-    climbers.reduce((best, curr) => {
-      if (curr.delta > best.delta) return curr;
-      if (curr.delta === best.delta) return alphaFirst(curr, best);
-      return best;
-    })
+    winner,
+    detail(
+      'the-comeback',
+      `${countValue(winner.delta, 'spot')} · #${winner.lowPointRank} to #${winner.finalRank}`
+    )
   );
 }
 
@@ -617,7 +672,7 @@ function weekWinner(trend: BadgeTrendEntry[]): BadgeHolder | null {
   const maxWeeksLed = Math.max(...candidates.map((c) => c.weeksLed));
   const leaders = candidates.filter((c) => c.weeksLed === maxWeeksLed);
   if (leaders.length !== 1) return null;
-  return holder(leaders[0]);
+  return holder(leaders[0], detail('week-winner', countValue(leaders[0].weeksLed, 'week')));
 }
 
 /**
@@ -652,7 +707,7 @@ function theCardiac(trend: BadgeTrendEntry[], seasonComplete: boolean): BadgeHol
  */
 function bestOfTheRest(trend: BadgeTrendEntry[]): BadgeHolder[] {
   const weeks = [...new Set(trend.map((r) => r.week_number))];
-  const seen = new Map<string, BadgeHolder>();
+  const seen = new Map<string, { user_id: string; display_name: string; standoutWeeks: number }>();
   for (const w of weeks) {
     const rows = trend.filter((r) => r.week_number === w);
     if (rows.length === 0) continue;
@@ -660,11 +715,22 @@ function bestOfTheRest(trend: BadgeTrendEntry[]): BadgeHolder[] {
     const fieldSize = rows.length;
     for (const r of rows) {
       if (r.week_points === maxPoints && r.cumulative_rank_this_week > fieldSize / 2) {
-        seen.set(r.user_id, { user_id: r.user_id, display_name: r.display_name });
+        const existing = seen.get(r.user_id);
+        if (existing) existing.standoutWeeks++;
+        else
+          seen.set(r.user_id, {
+            user_id: r.user_id,
+            display_name: r.display_name,
+            standoutWeeks: 1
+          });
       }
     }
   }
-  return [...seen.values()].sort((a, b) => a.display_name.localeCompare(b.display_name));
+  return [...seen.values()]
+    .map((entry) =>
+      holder(entry, detail('best-of-the-rest', countValue(entry.standoutWeeks, 'week')))
+    )
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
 // --- Milestone badge helpers (threshold: zero or more holders) ---
@@ -704,7 +770,7 @@ function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder[] {
   if (!attendanceRecorded) return [];
   return totals
     .filter((t) => t.missed === 0)
-    .map((t) => ({ user_id: t.user_id, display_name: t.display_name }))
+    .map((t) => holder(t, detail('the-grinder', countValue(t.decisions, 'pick'))))
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
@@ -724,21 +790,48 @@ function theGrinder(totals: BadgeSeasonTotalsEntry[]): BadgeHolder[] {
 function theChoker(weights: BadgeWeightEntry[], guard: number): BadgeHolder[] {
   return weights
     .filter((w) => w.weight === 'A' && w.wins + w.losses >= guard && w.wins === 0)
-    .map((w) => ({ user_id: w.user_id, display_name: w.display_name }))
+    .map((w) => holder(w, detail('the-choker', rateValue(w.wins, w.wins + w.losses))))
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
 function perfectWeek(trend: BadgeTrendEntry[]): BadgeHolder[] {
-  const seen = new Map<string, BadgeHolder>();
+  const seen = new Map<string, { user_id: string; display_name: string; perfectWeeks: number }>();
   for (const row of trend) {
     if (row.week_wins > 0 && row.week_losses === 0 && row.week_missed === 0) {
-      seen.set(row.user_id, { user_id: row.user_id, display_name: row.display_name });
+      const existing = seen.get(row.user_id);
+      if (existing) existing.perfectWeeks++;
+      else
+        seen.set(row.user_id, {
+          user_id: row.user_id,
+          display_name: row.display_name,
+          perfectWeeks: 1
+        });
     }
   }
-  return [...seen.values()].sort((a, b) => a.display_name.localeCompare(b.display_name));
+  return [...seen.values()]
+    .map((entry) => holder(entry, detail('perfect-week', countValue(entry.perfectWeeks, 'week'))))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
 // --- Hardcoded flavor slots (AI layer #189 overrides these later) ---
+
+/** Measure labels for the per-holder stat line, kept beside the award copy they support. */
+const DETAIL_LABELS: Record<DetailedBadgeId, string> = {
+  'the-grinder': 'Picks placed',
+  'the-choker': 'All-In record',
+  'the-whale': 'All-In win rate',
+  'the-ghost': 'Picks missed',
+  'perfect-week': 'Perfect weeks',
+  'lone-wolf': 'Fade rate vs room',
+  sheep: 'Fade rate vs room',
+  oracle: 'Against the crowd',
+  'the-lemming': 'With the crowd',
+  'chalk-eater': 'Line lean vs room',
+  'dog-lover': 'Line lean vs room',
+  'the-comeback': 'Season climb',
+  'week-winner': 'Weeks led',
+  'best-of-the-rest': 'Standout weeks'
+};
 
 const FLAVORS: Record<
   BadgeId,
