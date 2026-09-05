@@ -61,6 +61,29 @@ test('the chip is a real 44px button and only one popover is open at a time', as
   await expect(page.getByTestId(`badge-popover-${secondId}`)).toBeVisible();
 });
 
+test('award rows stay compact and opening a popover preserves focus and scroll', async ({
+  page
+}) => {
+  await openHonors(page);
+
+  const titleRows = page.getByTestId('awards-titles').locator('li');
+  const firstRow = (await titleRows.nth(0).boundingBox())!;
+  const secondRow = (await titleRows.nth(1).boundingBox())!;
+
+  // The 44px targets may touch, but the list should not add another vertical gutter.
+  expect(secondRow.y - (firstRow.y + firstRow.height)).toBeLessThanOrEqual(1);
+
+  const chip = titleRows.nth(1).locator('[data-testid^="badge-chip-"]');
+  await chip.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  await chip.focus();
+  const scrollBeforeOpen = await page.evaluate(() => window.scrollY);
+
+  await chip.press('Enter');
+  await expect(page.locator('[data-testid^="badge-popover-"]:visible')).toBeVisible();
+  await expect(chip).toBeFocused();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeOpen);
+});
+
 test('the Awards legend still opens its own sheet, unnested', async ({ page }) => {
   await openHonors(page);
 
