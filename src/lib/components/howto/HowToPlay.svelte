@@ -2,10 +2,11 @@
   <section>
     <h2 class="mb-2 text-xl font-semibold tracking-tight">The weekly loop</h2>
     <p class="text-muted-foreground">
-      Each week you pick the side you think beats the spread across the week's full slate of NFL
-      games. Lock your picks before kickoff, then watch the live sweat board track scores and each
-      pick's cover status while games are underway. Stake more points on the games you are most
-      confident in. You pick once and it counts in every league you belong to.
+      Hotshot is a weekly NFL pick'em you play with your friends. Each week everyone picks the side
+      they think beats the spread across the full slate of games, all competing to top the
+      leaderboard. Lock your picks in before kickoff — stake more points on the games you are most
+      confident in — then watch the live sweat board track scores and each pick's cover status as
+      the games play out.
     </p>
   </section>
 
