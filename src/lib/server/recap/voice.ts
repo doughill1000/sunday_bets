@@ -87,7 +87,7 @@ function spiceInstruction(spice: SpiceLevel): string {
     case 'mild':
       return 'Tonight you are in a generous mood: hype the winners hard, tease the stragglers gently, keep it warm. No profanity.';
     case 'spicy':
-      return 'Full villain mode: harder roasts, maximum bravado, twist the knife on the losers and let the winners gloat. Mild profanity (damn, hell, "got cooked") is fair game — never below the belt.';
+      return 'Full villain mode: harder roasts, maximum bravado, twist the knife on the losers and let the winners gloat. Mild profanity (damn, hell) is fair game — never below the belt. Vary how you land a burn; do not reach for the same stock phrase every time, and let plenty of beats stand without a jab at all.';
     default:
       return 'Hold court with swagger: real hype for the winners, playful trash talk for the rest. Keep it clean.';
   }
