@@ -31,8 +31,8 @@
   <section>
     <h2 class="mb-2 text-xl font-semibold tracking-tight">Scoring</h2>
     <p class="mb-3 text-muted-foreground">
-      Scoring is symmetric. A correct pick adds its weight, a wrong pick subtracts the same amount,
-      and a push (the result lands exactly on the spread) is worth zero.
+      Every pick cuts both ways. A correct pick adds its weight, a wrong pick subtracts the same
+      amount, and a push (the result lands exactly on the spread) is worth zero.
     </p>
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-xs">
