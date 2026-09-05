@@ -2,10 +2,10 @@
   <section>
     <h2 class="mb-2 text-xl font-semibold tracking-tight">The weekly loop</h2>
     <p class="text-muted-foreground">
-      Each week you pick the side you think beats the spread in a handful of NFL games. Lock your
-      picks before kickoff, then watch the live sweat board track scores and each pick's cover
-      status while games are underway. Picks you feel better about are worth more points. You pick
-      once and it counts in every league you belong to.
+      Each week you pick the side you think beats the spread across the week's full slate of NFL
+      games. Lock your picks before kickoff, then watch the live sweat board track scores and each
+      pick's cover status while games are underway. Stake more points on the games you are most
+      confident in. You pick once and it counts in every league you belong to.
     </p>
   </section>
 
@@ -31,8 +31,8 @@
   <section>
     <h2 class="mb-2 text-xl font-semibold tracking-tight">Scoring</h2>
     <p class="mb-3 text-muted-foreground">
-      Scoring is symmetric. A correct pick adds its weight, a wrong pick subtracts the same amount,
-      and a push (the result lands exactly on the spread) is worth zero.
+      Every pick cuts both ways. A correct pick adds its weight, a wrong pick subtracts the same
+      amount, and a push (the result lands exactly on the spread) is worth zero.
     </p>
     <div class="overflow-x-auto">
       <table class="w-full border-collapse text-xs">
@@ -90,7 +90,7 @@
     <p class="text-muted-foreground">
       Once per week you can mark a single pick as your All-In. It is worth plus 10 if you are right
       and minus 10 if you are wrong. You only get one each week, so save it for the game you trust
-      most. In the season's final week, your commish may unlock unlimited All-Ins — letting you go
+      most. In the season's final week, your commissioner may unlock unlimited All-Ins — letting you go
       All-In on every pick that week.
     </p>
   </section>
@@ -140,7 +140,8 @@
     <h2 class="mb-2 text-xl font-semibold tracking-tight">The leaderboard and house rules</h2>
     <p class="text-muted-foreground">
       Your weekly points roll up into a season total on the leaderboard, where you can see how you
-      stack up against your league. Your commish sets a few house rules, like which line your picks
+      stack up against your league. Your commissioner sets a few house rules, like which line your
+      picks
       grade against and the occasional special week such as an unlimited All-In finale. Any twists
       your league adds show up as you play.
     </p>
