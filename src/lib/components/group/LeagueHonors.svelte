@@ -109,6 +109,12 @@
   function nameFor(userId: string, displayName: string): string {
     return userId === currentUserId ? `${displayName} (you)` : displayName;
   }
+
+  // This popover is explanatory, not interactive. Keeping focus on the trigger avoids the
+  // portaled content's autofocus scrolling a long Honors page when the popover opens.
+  function preserveTriggerFocus(event: Event): void {
+    event.preventDefault();
+  }
 </script>
 
 <!-- One row per award: the chip leads, its holder(s) follow. Wraps to a second line at
@@ -116,7 +122,7 @@
      all inline. Shared by every group so an axis end, a plain title, and a milestone all
      read as the same kind of thing. -->
 {#snippet awardRows(awards: BadgeAward[])}
-  <ul class="space-y-1">
+  <ul>
     {#each awards as badge (badge.id)}
       <li class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Popover
@@ -144,6 +150,9 @@
           <PopoverContent
             align="start"
             sideOffset={6}
+            trapFocus={false}
+            onOpenAutoFocus={preserveTriggerFocus}
+            onCloseAutoFocus={preserveTriggerFocus}
             class="w-64"
             data-testid="badge-popover-{badge.id}"
           >
